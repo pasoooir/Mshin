@@ -1387,3 +1387,56 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android acceptance: test idle Zzz, material shortage, ready product tap, full storage retention, upgrade-ready hard hat, camera distance LOD and save/reload.
 
 **Implementation boundary:** the notification buttons are CanvasLayer controls continuously projected from 3D roof anchors. They face the camera by screen projection and provide reliable mobile touch targets; the underlying building model remains 3D. This intentionally avoids fragile Sprite3D hit-testing while preserving a world-anchored visual result. StorageFull is a distinct notification state but retains the real product icon and queue item identity. The product is never removed from its queue unless City Storage accepts it.
+
+## Native mobile factory order input repair — 2026-11-16
+
+- [x] Traced factory touch from `CityInput._try_interact()` → `HUD.open_production_panel()` → projected product `Button.gui_input` → `_on_production_item_pressed()` → `_accept_production_drop()` → `ProductionComponent.start_factory()`.
+- [x] Confirmed `Building.setup_production_from_definition()` assigns the production component's `owner_building`, factory type and slot count; `start_factory()` already validates the factory catalogue, Mayor Level, empty slot and operational road access.
+- [x] Found competing input routes on each product card: native `gui_input` plus `BaseButton.pressed`, while `project.godot` also enabled `emulate_mouse_from_touch`. A physical touch could therefore be represented through two activation paths while the first callback rebuilt the production modal.
+- [x] Removed the product-card `pressed` callback. Native `InputEventScreenTouch` and real desktop `InputEventMouseButton` now enter one `gui_input` handler and one order-submission path.
+- [x] Disabled touch-to-mouse emulation so mobile production does not depend on, or race against, a synthetic mouse event.
+- [x] Updated GameplaySmoke to assert native touch configuration and submit both first and second factory orders through Viewport-routed `InputEventScreenTouch`; existing checks verify one order per tap and a live countdown.
+- [ ] Godot 4.3 validation and full GameplaySmoke CI for this change.
+- [ ] Android Debug APK export and mobile Chromium smoke for this change.
+- [ ] Physical Android test: tap Metal at Mayor Level 1 and Wood at Mayor Level 2; verify one slot is filled and the timer begins.
+
+**Scope:** No change to the legacy `Building.start_factory_production()` path. Factory orders continue through `ProductionComponent.start_factory()`.
+
+
+
+## PR #553 store input regression correction — 2026-11-16
+
+- [x] Investigated both failing CI workflows: Godot GameplaySmoke and Web GameplaySmoke reported the same 15 commercial-store assertions; project import/parse and Android Debug APK export/signature passed.
+- [x] Root cause was stale test input: the store regression still invoked `Button.pressed.emit_signal()`, but PR #553 intentionally removed that signal path so native mobile touch is handled only by `Button.gui_input`.
+- [x] Added a reusable GameplaySmoke helper that sends a viewport-routed `InputEventScreenTouch` down/up pair to the target Control using its canvas transform.
+- [x] Converted the blocked Nails details test and both sequential Nails order taps to the same native touch path; kept direct stale-card guard testing separate.
+- [ ] Re-run Godot GameplaySmoke and Web GameplaySmoke; confirm the 15 store assertions pass.
+- [ ] Confirm Android APK export and Web Chromium/Pages build on the corrected head.
+- [ ] Physical Android acceptance remains required; simulated viewport touch is not a device test.
+
+**Boundary:** production and inventory logic are unchanged. This correction makes the regression test exercise the same native input contract as the revised product cards instead of bypassing it through the removed `pressed` signal.
+
+
+## PR #553 — native touch dispatch root-cause correction — 2026-11-16
+
+- [x] Re-read the failed Godot and Web GameplaySmoke logs: both still had 15 failures, beginning with the missing-material detail tap and followed by both Nails queue taps/timers/collection. APK export was successful but does not validate touch dispatch.
+- [x] Corrected the actual input route: native `InputEventScreenTouch` is now handled in HUD `_input()` before GUI dispatch, using viewport-space `Control.get_global_rect()` hit-testing against the active product cards. The hit is consumed before `CityInput._unhandled_input()` can see it.
+- [x] Added explicit product/building identity metadata to each card so stale cards cannot submit to a different building.
+- [x] Kept `gui_input` as the desktop mouse path only; mobile touch no longer depends on Control receiving ScreenTouch through its GUI callback, nor on mouse emulation.
+- [x] Corrected the smoke-test event injection: card positions are already in viewport coordinates, so `Viewport.push_input()` must receive them in viewport space (default `in_local_coords=false`), not transform them a second time.
+- [ ] Re-run both CI gameplay tests and confirm all 15 prior store failures are gone.
+- [ ] Physical Android tap and drag acceptance remains outstanding; CI event injection is not a physical-device test.
+
+**Honesty note:** the prior test helper passed viewport coordinates as local coordinates and the prior input fix relied on `gui_input` for native touch. Both assumptions are corrected here; no test pass is claimed until the new CI runs complete.
+
+
+## PR #553 — confirmed native production tap path — 2026-11-16
+
+- [x] CI diagnostics proved the previous helper's coordinate bug: a card center at viewport `(414.8, 582.8)` arrived at HUD as `(8296.1, 11656.9)` when passed to `Viewport.push_input()` with the default coordinate mode. The 20× mismatch caused every hit-test to miss; passing `in_local_coords=true` preserves the already canvas-transformed viewport position.
+- [x] Native phone taps are now intercepted in HUD `_input()` and matched against the visible product card's global rect; the event is marked handled before `CityInput._unhandled_input()`. Desktop mouse remains on the card's `gui_input` path. Touch-to-mouse emulation stays disabled.
+- [x] The Godot GameplaySmoke run passed with real viewport-routed ScreenTouch down/up events; log shows the Nails unavailable-material detail tap and both Nails queue taps hit the intended card and submit, followed by the overall GameplaySmoke PASS.
+- [x] The same CI run's Android Debug APK export completed and package/signature verification passed.
+- [ ] Web Chromium launch and Pages deployment are still being checked on this cleaned-up commit.
+- [ ] Physical Android acceptance remains outstanding; automated viewport input does not prove hardware touch behavior.
+
+**No test was skipped or weakened:** the blocked-item explanation, two sequential queue orders, material deduction, sequential timer, ready state and collection assertions remain active.

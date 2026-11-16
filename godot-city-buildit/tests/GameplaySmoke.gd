@@ -151,6 +151,25 @@ func _find_building(type_id: String):
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
 
+func _tap_native_control(control: Control) -> void:
+	if not is_instance_valid(control) or not control.is_inside_tree():
+		_check(false, "Native touch test target must remain inside the active scene tree.")
+		return
+	var touch_position: Vector2 = control.get_global_transform_with_canvas() * (control.size * 0.5)
+	var touch_down := InputEventScreenTouch.new()
+	touch_down.index = 0
+	touch_down.pressed = true
+	touch_down.position = touch_position
+	get_viewport().push_input(touch_down, true)
+	await get_tree().process_frame
+	var touch_up := InputEventScreenTouch.new()
+	touch_up.index = 0
+	touch_up.pressed = false
+	touch_up.position = touch_position
+	get_viewport().push_input(touch_up, true)
+	await get_tree().process_frame
+
+
 func _test_building_notification_grouping() -> void:
 	var component := ProductionComponentScript.new()
 	component.shop_id = "building_supplies"
@@ -3878,6 +3897,7 @@ func _run_gameplay_test() -> void:
 	_check(queue_scroll_region != null and queue_scroll_region.custom_minimum_size.y >= 96.0, "Production queue scroll region must reserve enough vertical space for the enlarged readable queue cards.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
+	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile production must use native ScreenTouch events without a parallel synthetic mouse event.")
 	if metal_button:
 		production_hud._update_production_orbit_projection()
 		_check(metal_button.size.x > 0.0 and metal_button.size.y > 0.0, "Projected factory material buttons must have a real non-zero touch hitbox; custom_minimum_size alone is insufficient.")
@@ -3928,8 +3948,20 @@ func _run_gameplay_test() -> void:
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
 	if second_metal_button:
-		second_metal_button.emit_signal("pressed")
-	_check(not factory_component.get_slot(1).is_empty(), "A second tap must enqueue another parallel factory batch directly.")
+		var second_touch_position: Vector2 = second_metal_button.get_global_transform_with_canvas() * (second_metal_button.size * 0.5)
+		var second_touch_down := InputEventScreenTouch.new()
+		second_touch_down.index = 0
+		second_touch_down.pressed = true
+		second_touch_down.position = second_touch_position
+		get_viewport().push_input(second_touch_down, true)
+		await get_tree().process_frame
+		var second_touch_up := InputEventScreenTouch.new()
+		second_touch_up.index = 0
+		second_touch_up.pressed = false
+		second_touch_up.position = second_touch_position
+		get_viewport().push_input(second_touch_up, true)
+		await get_tree().process_frame
+	_check(not factory_component.get_slot(1).is_empty(), "A second native ScreenTouch tap must enqueue another parallel factory batch directly.")
 	# End-to-end factory lifecycle: preserve the catalog duration, then shorten
 	# only the persisted finish timestamps in this smoke test so real process
 	# ticks can exercise the visible countdown and ready/collect transitions.
@@ -4000,7 +4032,7 @@ func _run_gameplay_test() -> void:
 	var unavailable_nails_button := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(unavailable_nails_button != null and not unavailable_nails_button.disabled, "A recipe with missing ingredients must remain selectable so the player can inspect its shortage.")
 	if unavailable_nails_button:
-		unavailable_nails_button.emit_signal("pressed")
+		await _tap_native_control(unavailable_nails_button)
 		var missing_reason := production_hud.production_panel.find_child("ProductionBlockReason", true, false) as Label
 		_check(missing_reason != null and missing_reason.text.contains("Metal") and missing_reason.text.contains("2"), "The selected unavailable product must disclose the exact missing City Storage ingredient and quantity.")
 		_check(not production_hud._can_accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 0), "A store order with missing City Storage ingredients must be rejected before acceptance.")
@@ -4018,14 +4050,14 @@ func _run_gameplay_test() -> void:
 		_check(nails_button_0.z_index >= 30 and nails_button_0.get_theme_stylebox("normal") is StyleBoxFlat, "Store product cards must render as opaque white tiles above the selected store.")
 	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "Every store product must have its own projected 3D hex platform around the store.")
 	if nails_button_0:
-		nails_button_0.emit_signal("pressed")
+		await _tap_native_control(nails_button_0)
 	else:
 		_check(false, "Building Supplies must offer Nails at level 1.")
 	_check(not shop_component.get_slot(0).is_empty(), "One tap on a stocked Nails tile must immediately enqueue production.")
 	production_hud.open_production_panel(supplies)
 	var nails_button_1 := production_hud.production_overlay.find_child("Slot1_nails", true, false) as Button
 	if nails_button_1:
-		nails_button_1.emit_signal("pressed")
+		await _tap_native_control(nails_button_1)
 	else:
 		_check(false, "Building Supplies second slot must offer Nails after the first tap order.")
 	_check(not shop_component.get_slot(1).is_empty(), "A second tap must add the next store order directly to the production queue.")

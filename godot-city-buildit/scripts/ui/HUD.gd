@@ -2307,15 +2307,13 @@ func open_production_panel(building: Building) -> void:
 		tile_content.add_child(status_label)
 		item_button.disabled = not lock_reason.is_empty()
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
-		# BaseButton normally emits pressed on release. Use BUTTON_PRESS so a
-		# touchscreen tap and a mouse click both submit immediately on pointer-down.
-		# This is the single authoritative input path; no parallel gui_input /
-		# global touch-up handler can swallow or duplicate the order.
-		item_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-		# Handle native touch directly at the product Control. Do not depend on
-		# browser/device touch-to-mouse emulation for the primary mobile action.
+		# One input path owns production orders. gui_input receives the native
+		# ScreenTouch on phones and a real MouseButton on desktop; do not also
+		# connect BaseButton.pressed, which can fire during the same GUI event
+		# and rebuild the modal while Godot is still dispatching that pointer.
+		item_button.set_meta("production_item_id", item_id)
+		item_button.set_meta("production_building_id", building.get_instance_id())
 		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
-		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
 		_production_orbit_buttons.append(item_button)
@@ -2730,10 +2728,13 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
-	# Touch is a complete action on touch-down. Do not wait for touch-up, drag,
-	# a second tap, or a queue-slot tap: those intermediate states caused the
-	# mobile product selection to remain visually selected but never queued.
-	if not (event is InputEventScreenTouch) or not event.pressed:
+	# Accept the native mobile touch event directly. A real desktop mouse click
+	# uses the same single handler, without converting phone touches into mouse
+	# events or depending on BaseButton.pressed signal ordering.
+	# Native touch is routed centrally in _input() using viewport-space
+	# hit testing. Keep this GUI callback for desktop mouse only, avoiding a
+	# second activation path for the same phone touch.
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
 	if not is_instance_valid(building) or building != _production_building:
 		return
@@ -2743,12 +2744,9 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 		return
 	if _production_touch_drag_active:
 		return
-	# The Button.pressed signal may also arrive on touch release. Mark it as
-	# consumed only after direct submission, preventing a duplicate order.
-	item_button.set_meta("touch_drag_consumed", false)
+	# Resolve the first empty slot at event time, then pass through the same
+	# operation/catalog gates used by ProductionComponent.start_factory().
 	_on_production_item_pressed(building, item_id, -1, item_button)
-	if is_instance_valid(item_button):
-		item_button.set_meta("touch_drag_consumed", true)
 	get_viewport().set_input_as_handled()
 
 
@@ -2756,6 +2754,23 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 # essential: once the finger leaves the hexagon, its GUI control no longer owns
 # the pointer, but the drag must continue all the way to the bottom queue dock.
 func _input(event: InputEvent) -> void:
+	# Godot delivers native ScreenTouch through the viewport input pipeline
+	# before Control.gui_input. Route taps here with viewport-space hit tests;
+	# this remains reliable when touch-to-mouse emulation is disabled.
+	if event is InputEventScreenTouch and event.pressed:
+		if is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree() and is_instance_valid(_production_building):
+			for button in _production_orbit_buttons:
+				if not is_instance_valid(button):
+					continue
+				var rect := button.get_global_rect()
+				if not button.is_visible_in_tree() or button.disabled or not rect.has_point(event.position):
+					continue
+				var target_building := _production_building
+				var target_item_id := str(button.get_meta("production_item_id", ""))
+				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
+					_on_production_item_pressed(target_building, target_item_id, -1, button)
+					get_viewport().set_input_as_handled()
+					return
 	if not _production_touch_drag_active:
 		return
 	if event is InputEventScreenDrag and event.index == _production_touch_drag_index:
