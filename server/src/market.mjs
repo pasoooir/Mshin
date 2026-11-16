@@ -89,6 +89,20 @@ async function writeAtomic(file, value) {
   await rename(temporary, file);
 }
 
+async function commitMutation({ profiles, marketFile, market, previousMarket, writeProfile }) {
+  const originals = profiles.map(entry => ({ playerId: entry.playerId, profile: structuredClone(entry.original) }));
+  try {
+    for (const entry of profiles) await writeProfile(entry.playerId, entry.next);
+    await writeAtomic(marketFile, market);
+  } catch (error) {
+    for (const entry of originals) {
+      try { await writeProfile(entry.playerId, entry.profile); } catch {}
+    }
+    try { await writeAtomic(marketFile, previousMarket); } catch {}
+    throw error;
+  }
+}
+
 export async function handleMarketRequest({
   request, response, url, session, dataDir, readProfile, writeProfile, withPlayerLock, readJsonBody, send
 }) {
@@ -135,6 +149,7 @@ export async function handleMarketRequest({
       }
       const result = await withPlayerLock(0, async () => {
         const profile = await readProfile(session.playerId);
+        const originalProfile = structuredClone(profile);
         const state = gameState(profile);
         if (Number(state.game?.level || 1) < item.level) return { status: 409, error: "item_locked" };
         const items = state.storage.items;
@@ -144,6 +159,7 @@ export async function handleMarketRequest({
         items[itemId] -= quantity;
         if (items[itemId] === 0) delete items[itemId];
         const market = await readListings(listingsFile);
+        const originalMarket = structuredClone(market);
         const activeCount = market.listings.filter(x => x.seller_id === session.playerId && x.status === "active").length;
         if (activeCount >= 20) return { status: 409, error: "seller_listing_limit" };
         const listing = {
@@ -158,8 +174,10 @@ export async function handleMarketRequest({
         });
         profile.revision += 1;
         profile.updated_at = new Date().toISOString();
-        await writeProfile(session.playerId, profile);
-        await writeAtomic(listingsFile, market);
+        await commitMutation({
+          profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
+          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+        });
         return { status: 201, listing: { ...listing, total_price: cost }, revision: profile.revision };
       });
       send(response, result.status, result);
@@ -180,6 +198,9 @@ export async function handleMarketRequest({
         if (listing.seller_id === session.playerId) return { status: 409, error: "cannot_buy_own_listing" };
         const seller = await readProfile(listing.seller_id);
         const buyer = await readProfile(session.playerId);
+        const originalSeller = structuredClone(seller);
+        const originalBuyer = structuredClone(buyer);
+        const originalMarket = structuredClone(market);
         const sellerState = gameState(seller);
         const buyerState = gameState(buyer);
         const item = ITEM_CATALOG[listing.item_id];
@@ -188,6 +209,7 @@ export async function handleMarketRequest({
         const buyerBalance = balance(buyerState);
         const sellerBalance = balance(sellerState);
         if (buyerBalance < total) return { status: 409, error: "insufficient_simoleons" };
+        if (!Number.isSafeInteger(sellerBalance + total)) return { status: 409, error: "seller_balance_limit" };
         if (usedStorage(buyerState) + listing.quantity > buyerState.storage.capacity) return { status: 409, error: "warehouse_capacity" };
         const sellerBefore = sellerBalance;
         const buyerBefore = buyerBalance;
@@ -207,9 +229,13 @@ export async function handleMarketRequest({
         buyer.revision += 1;
         const now = new Date().toISOString();
         seller.updated_at = now; buyer.updated_at = now;
-        await writeProfile(listing.seller_id, seller);
-        await writeProfile(session.playerId, buyer);
-        await writeAtomic(listingsFile, market);
+        await commitMutation({
+          profiles: [
+            { playerId: listing.seller_id, original: originalSeller, next: seller },
+            { playerId: session.playerId, original: originalBuyer, next: buyer }
+          ],
+          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+        });
         return { status: 200, listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity, total_paid: total, buyer_balance: buyerState.economy.simoleons, seller_balance: sellerState.economy.simoleons };
       });
       send(response, result.status, result);
@@ -229,6 +255,8 @@ export async function handleMarketRequest({
         if (!listing) return { status: 404, error: "listing_not_available" };
         if (listing.seller_id !== session.playerId) return { status: 403, error: "not_listing_owner" };
         const profile = await readProfile(session.playerId);
+        const originalProfile = structuredClone(profile);
+        const originalMarket = structuredClone(market);
         const state = gameState(profile);
         if (usedStorage(state) + listing.quantity > state.storage.capacity) return { status: 409, error: "warehouse_capacity" };
         state.storage.items[listing.item_id] = Number(state.storage.items[listing.item_id] || 0) + listing.quantity;
@@ -239,8 +267,10 @@ export async function handleMarketRequest({
         listing.cancelled_at = new Date().toISOString();
         profile.revision += 1;
         profile.updated_at = new Date().toISOString();
-        await writeProfile(session.playerId, profile);
-        await writeAtomic(listingsFile, market);
+        await commitMutation({
+          profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
+          marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
+        });
         return { status: 200, listing_id: listingId, returned_item_id: listing.item_id, returned_quantity: listing.quantity, revision: profile.revision };
       });
       send(response, result.status, result);
