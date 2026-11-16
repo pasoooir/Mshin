@@ -77,7 +77,7 @@ func _rebuild_visuals() -> void:
 
 		var count_label := Label3D.new()
 		count_label.name = "Count"
-		count_label.text = "×%d" % data.count if data.count > 1 else ""
+		count_label.text = "×%d" % data.count if data.type == BuildingNotification.Type.PRODUCTION_READY else ""
 		count_label.font_size = 28
 		count_label.outline_size = 7
 		count_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
