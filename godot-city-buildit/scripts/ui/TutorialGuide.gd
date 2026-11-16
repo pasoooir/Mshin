@@ -10,7 +10,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"title": "Name your city",
 		"description": "Type your city name in the field below, then tap SAVE CITY. The moving finger points directly to the field.",
 		"hint": "👆 TAP THE FIELD  →  Enter a name  →  SAVE CITY",
-		"result": "YOU SHOULD SEE  Your chosen city name is saved and shown in this coach."
+		"result": "YOU SHOULD SEE  Your city name is saved with your city."
 	},
 	{
 		"id": "home",
@@ -86,6 +86,7 @@ var _skip_button: Button
 var _later_button: Button
 var _dismissed := false
 var _city_name_input: LineEdit
+var _city_name_row: HBoxContainer
 var _city_name_button: Button
 var _finger_pointer: Label
 var _finger_elapsed := 0.0
@@ -231,6 +232,12 @@ func _build_guide_panel() -> void:
 	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(_title)
 
+	_city_name_row = HBoxContainer.new()
+	_city_name_row.name = "CityNameEntryRow"
+	_city_name_row.add_theme_constant_override("separation", 8)
+	_city_name_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	layout.add_child(_city_name_row)
+
 	_city_name_input = LineEdit.new()
 	_city_name_input.name = "CityNameInput"
 	_city_name_input.placeholder_text = "Enter your city name"
@@ -240,13 +247,13 @@ func _build_guide_panel() -> void:
 	_city_name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_city_name_input.text = GameManager.city_name
 	_city_name_input.mouse_filter = Control.MOUSE_FILTER_STOP
-	layout.add_child(_city_name_input)
+	_city_name_row.add_child(_city_name_input)
 
 	_city_name_button = _make_action_button("SAVE CITY", Color("#55D6A0"), Color("#123348"), 136)
 	_city_name_button.name = "SaveCityNameButton"
 	_city_name_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_city_name_button.pressed.connect(_submit_city_name)
-	layout.add_child(_city_name_button)
+	_city_name_row.add_child(_city_name_button)
 
 	var scroll := ScrollContainer.new()
 	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -396,10 +403,14 @@ func _refresh_guide() -> void:
 
 func _update_city_name_controls() -> void:
 	var is_name_step := current_step == 0 and not completed
-	if is_instance_valid(_city_name_input):
-		_city_name_input.visible = is_name_step
-	if is_instance_valid(_city_name_button):
-		_city_name_button.visible = is_name_step
+	if is_instance_valid(_city_name_row):
+		_city_name_row.visible = is_name_step
+	if is_instance_valid(_icon_legend):
+		_icon_legend.visible = not is_name_step
+	if is_instance_valid(_result):
+		_result.visible = not is_name_step
+	if is_instance_valid(_icon_legend) and not GameManager.city_name.is_empty():
+		_icon_legend.text = "🏙 " + GameManager.city_name + "    🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
 
 func _submit_city_name() -> void:
 	if not is_instance_valid(_city_name_input):
