@@ -38,6 +38,10 @@ Both API startup and the seed command verify that the configured repository is a
 
 For local automated tests only, the service continues to use filesystem JSON when `GITHUB_JSON_REPOSITORY` is absent. Production must be configured with the private repository and token.
 
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for the independent Docker-host deployment steps, required secrets, two-account acceptance cycle, and operational limits.
+
 ## API
 
 - `GET /healthz`: process health only.
