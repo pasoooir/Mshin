@@ -93,8 +93,6 @@ func _refresh_processing() -> void:
 		is_focus_animating
 		or pan_velocity.length() > PAN_INERTIA_STOP_SPEED
 		or absf(orbit_velocity) > ORBIT_INERTIA_STOP_SPEED
-		or not touch_points.is_empty()
-		or is_mouse_panning
 	)
 
 func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:
@@ -234,16 +232,16 @@ func _update_pinch() -> void:
 		var centroid_delta := centroid - last_pinch_centroid
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
 			_pan(centroid_delta)
-			var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			pan_velocity = centroid_delta / frame_delta
+			var pan_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+			pan_velocity = centroid_delta / pan_frame_delta
 		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
 		if absf(distance_delta) >= PINCH_DEADZONE:
 			_zoom(distance_delta)
 		var angle_delta: float = wrapf(angle - last_pinch_angle, -PI, PI)
 		if absf(angle_delta) >= TWIST_DEADZONE:
 			rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(angle_delta), -180.0, 180.0)
-			var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			orbit_velocity = angle_delta / frame_delta
+			var orbit_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
+			orbit_velocity = angle_delta / orbit_frame_delta
 	last_pinch_distance = distance
 	last_pinch_angle = angle
 	last_pinch_centroid = centroid
