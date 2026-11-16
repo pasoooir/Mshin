@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { createApp, signAccessToken } from "../src/index.mjs";
 
 const secret = "test-only-secret-that-is-long-enough-123456";
@@ -16,10 +17,13 @@ async function fixture() {
   const base = "http://127.0.0.1:" + server.address().port;
   const token = id => signAccessToken(id, secret);
   const json = async (id, route, method = "GET", body) => {
+    const requestBody = body && route === "/v1/market/list" && !body.request_id
+      ? { ...body, request_id: "test-" + randomUUID() }
+      : body;
     const response = await fetch(base + route, {
       method,
-      headers: { authorization: "Bearer " + token(id), ...(body ? { "content-type": "application/json" } : {}) },
-      body: body ? JSON.stringify(body) : undefined
+      headers: { authorization: "Bearer " + token(id), ...(requestBody ? { "content-type": "application/json" } : {}) },
+      body: requestBody ? JSON.stringify(requestBody) : undefined
     });
     return { status: response.status, body: await response.json() };
   };
@@ -82,6 +86,21 @@ test("admin lists stock, player2 buys it, both wallets and inventories reconcile
   assert.equal(admin.economy_ledger.transaction_ledger.at(-1).type, "player_market_sale");
   assert.equal(player2.economy_ledger.transaction_ledger.at(-1).type, "player_market_purchase");
   assert.equal((await f.json(100002, "/v1/market/" + listingId + "/buy", "POST", {})).status, 404, "a sold listing cannot be bought twice");
+});
+
+test("repeated listing requests with the same idempotency key reserve stock only once", async t => {
+  const f = await fixture(); t.after(f.close);
+  await f.seed(100001, state({ coins: 100, items: { metal: 5 } }));
+  const request = { item_id: "metal", quantity: 2, unit_price: 10, request_id: "same-request-id-0001" };
+  const first = await f.json(100001, "/v1/market/list", "POST", request);
+  const retry = await f.json(100001, "/v1/market/list", "POST", request);
+  assert.equal(first.status, 201);
+  assert.equal(retry.status, 200);
+  assert.equal(retry.body.replayed, true);
+  assert.equal(retry.body.listing.listing_id, first.body.listing.listing_id);
+  const profile = (await f.json(100001, "/v1/profile")).body.game_state;
+  assert.equal(profile.storage.items.metal, 3);
+  assert.equal(profile.economy_ledger.transaction_ledger.filter(x => x.type === "player_market_listing_reserved").length, 1);
 });
 
 test("seller can cancel an active listing and receive the exact reserved stock back", async t => {
