@@ -1387,3 +1387,18 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android acceptance: test idle Zzz, material shortage, ready product tap, full storage retention, upgrade-ready hard hat, camera distance LOD and save/reload.
 
 **Implementation boundary:** the notification buttons are CanvasLayer controls continuously projected from 3D roof anchors. They face the camera by screen projection and provide reliable mobile touch targets; the underlying building model remains 3D. This intentionally avoids fragile Sprite3D hit-testing while preserving a world-anchored visual result. StorageFull is a distinct notification state but retains the real product icon and queue item identity. The product is never removed from its queue unless City Storage accepts it.
+
+## Native mobile factory order input repair — 2026-11-16
+
+- [x] Traced factory touch from `CityInput._try_interact()` → `HUD.open_production_panel()` → projected product `Button.gui_input` → `_on_production_item_pressed()` → `_accept_production_drop()` → `ProductionComponent.start_factory()`.
+- [x] Confirmed `Building.setup_production_from_definition()` assigns the production component's `owner_building`, factory type and slot count; `start_factory()` already validates the factory catalogue, Mayor Level, empty slot and operational road access.
+- [x] Found competing input routes on each product card: native `gui_input` plus `BaseButton.pressed`, while `project.godot` also enabled `emulate_mouse_from_touch`. A physical touch could therefore be represented through two activation paths while the first callback rebuilt the production modal.
+- [x] Removed the product-card `pressed` callback. Native `InputEventScreenTouch` and real desktop `InputEventMouseButton` now enter one `gui_input` handler and one order-submission path.
+- [x] Disabled touch-to-mouse emulation so mobile production does not depend on, or race against, a synthetic mouse event.
+- [x] Updated GameplaySmoke to assert native touch configuration and submit both first and second factory orders through Viewport-routed `InputEventScreenTouch`; existing checks verify one order per tap and a live countdown.
+- [ ] Godot 4.3 validation and full GameplaySmoke CI for this change.
+- [ ] Android Debug APK export and mobile Chromium smoke for this change.
+- [ ] Physical Android test: tap Metal at Mayor Level 1 and Wood at Mayor Level 2; verify one slot is filled and the timer begins.
+
+**Scope:** No change to the legacy `Building.start_factory_production()` path. Factory orders continue through `ProductionComponent.start_factory()`.
+
