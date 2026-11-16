@@ -1428,3 +1428,15 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android tap and drag acceptance remains outstanding; CI event injection is not a physical-device test.
 
 **Honesty note:** the prior test helper passed viewport coordinates as local coordinates and the prior input fix relied on `gui_input` for native touch. Both assumptions are corrected here; no test pass is claimed until the new CI runs complete.
+
+
+## PR #553 — confirmed native production tap path — 2026-11-16
+
+- [x] CI diagnostics proved the previous helper's coordinate bug: a card center at viewport `(414.8, 582.8)` arrived at HUD as `(8296.1, 11656.9)` when passed to `Viewport.push_input()` with the default coordinate mode. The 20× mismatch caused every hit-test to miss; passing `in_local_coords=true` preserves the already canvas-transformed viewport position.
+- [x] Native phone taps are now intercepted in HUD `_input()` and matched against the visible product card's global rect; the event is marked handled before `CityInput._unhandled_input()`. Desktop mouse remains on the card's `gui_input` path. Touch-to-mouse emulation stays disabled.
+- [x] The Godot GameplaySmoke run passed with real viewport-routed ScreenTouch down/up events; log shows the Nails unavailable-material detail tap and both Nails queue taps hit the intended card and submit, followed by the overall GameplaySmoke PASS.
+- [x] The same CI run's Android Debug APK export completed and package/signature verification passed.
+- [ ] Web Chromium launch and Pages deployment are still being checked on this cleaned-up commit.
+- [ ] Physical Android acceptance remains outstanding; automated viewport input does not prove hardware touch behavior.
+
+**No test was skipped or weakened:** the blocked-item explanation, two sequential queue orders, material deduction, sequential timer, ready state and collection assertions remain active.
