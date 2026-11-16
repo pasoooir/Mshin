@@ -163,6 +163,7 @@ func _format_reward(value: int) -> String:
 
 func _gui_input(_event: InputEvent) -> void:
 	# Deliberately non-modal: all taps continue to reach the city HUD while this effect animates.
+	pass
 
 func _process(delta: float) -> void:
 	_elapsed += delta
