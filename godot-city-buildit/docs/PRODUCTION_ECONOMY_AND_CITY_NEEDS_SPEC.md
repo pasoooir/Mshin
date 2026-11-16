@@ -437,7 +437,7 @@ Residential panel:
 - Show production time on the card or detail view.
 - Use consistent selected outline and pressed state.
 - The current Mshin gameplay test already expects floating hexagonal item tiles and a separate white recipe detail card for commercial products. Preserve this accepted direction unless a reference screenshot review identifies a concrete improvement.
-- The current test also expects a dimmed city backdrop, horizontally browsable product-card row, queue slots, countdown, progress bar, and Collect action. These are current Mshin acceptance contracts, not a claim that every pixel matches SCBI.
+- The current UI contract is a dimmed city backdrop, horizontally browsable product-card row, and a live production-orders panel. The panel renders occupied orders only—never empty or locked slot placeholders—and shows per-order state, a live `MM:SS` countdown, progress, and a real Collect action. Empty state is one helpful instruction, not a fake queue slot. Product taps submit to the first available internal slot; the underlying capacity and scheduler remain authoritative.
 
 ### 9.5 Responsive/mobile requirements
 
