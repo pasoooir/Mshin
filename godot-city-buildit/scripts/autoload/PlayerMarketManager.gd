@@ -7,6 +7,8 @@ signal market_transaction_completed(result: Dictionary)
 var public_listings: Array[Dictionary] = []
 var my_listings: Array[Dictionary] = []
 var busy := false
+var _pending_listing_request_id := ""
+var _pending_listing_fingerprint := ""
 
 func _api_base() -> String:
 	return str(ProjectSettings.get_setting("mshin/account/api_base_url", "")).strip_edges().trim_suffix("/")
@@ -60,13 +62,23 @@ func create_listing(item_id: String, quantity: int, unit_price: int) -> Dictiona
 	if busy or item_id.is_empty() or quantity <= 0 or unit_price <= 0:
 		return {"success": false, "reason": "invalid_request"}
 	busy = true
+	var fingerprint := "%d|%s|%d|%d" % [PlayerAccountManager.player_id, item_id, quantity, unit_price]
+	if _pending_listing_request_id.is_empty() or _pending_listing_fingerprint != fingerprint:
+		_pending_listing_request_id = "%d-%d" % [PlayerAccountManager.player_id, Time.get_ticks_usec()]
+		_pending_listing_fingerprint = fingerprint
 	var response := await _request_market("/v1/market/list", HTTPClient.METHOD_POST, {
-		"item_id": item_id, "quantity": quantity, "unit_price": unit_price
+		"item_id": item_id, "quantity": quantity, "unit_price": unit_price,
+		"request_id": _pending_listing_request_id
 	})
 	busy = false
 	if not response.ok:
+		if int(response.status) >= 400 and int(response.status) < 500:
+			_pending_listing_request_id = ""
+			_pending_listing_fingerprint = ""
 		market_error.emit(str(response.error))
 		return {"success": false, "reason": str(response.error), "details": response.body}
+	_pending_listing_request_id = ""
+	_pending_listing_fingerprint = ""
 	await refresh_my_shop()
 	await refresh_market()
 	var result: Dictionary = response.body
