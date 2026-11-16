@@ -3904,25 +3904,40 @@ func _run_gameplay_test() -> void:
 	if second_metal_button:
 		second_metal_button.emit_signal("pressed")
 	_check(not factory_component.get_slot(1).is_empty(), "A second tap must enqueue another parallel factory batch directly.")
+	# End-to-end factory lifecycle: preserve the catalog duration, then shorten
+	# only the persisted finish timestamps in this smoke test so real process
+	# ticks can exercise the visible countdown and ready/collect transitions.
+	var metal_storage_before := StorageManager.get_count("metal")
+	var metal_duration := int(ProductionManager.raw_materials["metal"].get("time_sec", 0))
 	for slot_index in range(2):
 		var slot: Dictionary = factory_component.slots[slot_index]
-		slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+		_check(int(slot.get("finish_unix", 0)) - int(slot.get("start_unix", 0)) == metal_duration and metal_duration > 0, "A tapped Metal order must use the catalog's exact factory production duration.")
+		slot["finish_unix"] = int(Time.get_unix_time_from_system()) + 3
+		slot["ready"] = false
 		factory_component.slots[slot_index] = slot
-	factory_component.refresh_slots()
-	_check(bool(factory_component.get_slot(0).get("ready",false)), "Metal batch must become ready at its Unix finish timestamp.")
-	production_hud.open_production_panel(factory)
+	production_hud._update_production_timers()
+	var metal_timer_0 := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+	var metal_timer_1 := production_hud.production_panel.find_child("TimerSlot1", true, false) as Label
+	_check(metal_timer_0 != null and metal_timer_1 != null, "Both parallel Metal queue slots must expose live second-based countdown labels.")
+	var metal_timer_before := metal_timer_0.text if metal_timer_0 else ""
+	await get_tree().create_timer(1.15).timeout
+	production_hud._update_production_timers()
+	metal_timer_0 = production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+	_check(metal_timer_0 != null and metal_timer_0.text != metal_timer_before, "The Metal countdown label must visibly tick down while production is running.")
+	await get_tree().create_timer(2.2).timeout
+	production_hud._update_production_timers()
+	_check(bool(factory_component.get_slot(0).get("ready", false)) and bool(factory_component.get_slot(1).get("ready", false)), "Both Metal orders must transition to ready automatically when their countdown expires.")
 	var collect_metal_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(collect_metal_0 != null and not collect_metal_0.disabled, "A completed Metal order must expose an enabled Collect action.")
 	if collect_metal_0:
 		collect_metal_0.emit_signal("pressed")
-	else:
-		_check(false, "Ready Metal slot must expose a Collect button.")
+	_check(factory_component.get_slot(0).is_empty() and StorageManager.get_count("metal") == metal_storage_before + 1, "Collecting the first completed Metal order must clear its queue square and transfer exactly one Metal to City Storage.")
 	production_hud.open_production_panel(factory)
 	var collect_metal_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	_check(collect_metal_1 != null and not collect_metal_1.disabled, "The second completed Metal order must also expose an enabled Collect action.")
 	if collect_metal_1:
 		collect_metal_1.emit_signal("pressed")
-	else:
-		_check(false, "Second ready Metal slot must expose a Collect button.")
-	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
+	_check(factory_component.get_slot(1).is_empty() and StorageManager.get_count("metal") == metal_storage_before + 2, "Collecting the second Metal order must clear its queue square and transfer the second Metal to City Storage.")
 
 	# A product card may have been created with an earlier slot hint. The tap
 	# handler must resolve the current free slot, not reuse that stale index.
@@ -3990,24 +4005,41 @@ func _run_gameplay_test() -> void:
 	_check(not shop_component.get_slot(1).is_empty(), "A second tap must add the next store order directly to the production queue.")
 	_check(StorageManager.get_count("metal") == 0, "Queuing two Nails orders must deduct their ingredients from City Storage.")
 	_check(int(shop_component.get_slot(0).get("finish_unix", 0)) > 0 and int(shop_component.get_slot(1).get("finish_unix", 0)) == 0, "Commercial store orders must run sequentially, with later orders waiting in the queue.")
+	var nails_storage_before := StorageManager.get_count("nails")
+	var nails_duration := int(ProductionManager.get_recipe("nails").get("time_sec", 0))
 	var first_shop_slot: Dictionary = shop_component.slots[0]
-	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	_check(int(first_shop_slot.get("finish_unix", 0)) - int(first_shop_slot.get("start_unix", 0)) == nails_duration and nails_duration > 0, "The first Nails order must use the catalog's exact store production duration.")
+	first_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) + 3
 	shop_component.slots[0] = first_shop_slot
-	shop_component.refresh_slots()
-	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0, "The next commercial order must start when the previous order completes.")
-	production_hud.open_production_panel(supplies)
+	production_hud._update_production_timers()
+	var nails_timer_before := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+	_check(nails_timer_before != null, "The active Nails store order must expose a live countdown.")
+	var nails_timer_text_before := nails_timer_before.text if nails_timer_before else ""
+	await get_tree().create_timer(1.15).timeout
+	production_hud._update_production_timers()
+	var nails_timer_after := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
+	_check(nails_timer_after != null and nails_timer_after.text != nails_timer_text_before, "The active Nails store countdown must visibly tick down by seconds.")
+	await get_tree().create_timer(2.2).timeout
+	production_hud._update_production_timers()
+	_check(bool(shop_component.get_slot(0).get("ready", false)) and int(shop_component.get_slot(1).get("finish_unix", 0)) > 0, "When the first Nails countdown expires, it must become ready and automatically start the next queued Nails order.")
 	var collect_nails_0 := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(collect_nails_0 != null and not collect_nails_0.disabled, "The completed first Nails order must expose an enabled Collect action.")
 	if collect_nails_0:
 		collect_nails_0.emit_signal("pressed")
-	var second_shop_slot: Dictionary = shop_component.slots[1]
-	second_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-	shop_component.slots[1] = second_shop_slot
-	shop_component.refresh_slots()
+	_check(shop_component.get_slot(0).is_empty() and StorageManager.get_count("nails") == nails_storage_before + 1, "Collecting the first Nails order must transfer it to City Storage and clear only its queue square.")
 	production_hud.open_production_panel(supplies)
+	var second_shop_slot: Dictionary = shop_component.slots[1]
+	_check(int(second_shop_slot.get("finish_unix", 0)) > 0 and int(second_shop_slot.get("start_unix", 0)) > 0, "The second Nails order must have a real start and finish timestamp after its queue turn begins.")
+	second_shop_slot["finish_unix"] = int(Time.get_unix_time_from_system()) + 2
+	shop_component.slots[1] = second_shop_slot
+	await get_tree().create_timer(2.2).timeout
+	production_hud._update_production_timers()
+	_check(bool(shop_component.get_slot(1).get("ready", false)), "The second Nails order must become ready when its own countdown expires.")
 	var collect_nails_1 := production_hud.production_panel.find_child("CollectSlot1", true, false) as Button
+	_check(collect_nails_1 != null and not collect_nails_1.disabled, "The completed second Nails order must expose an enabled Collect action.")
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
-	_check(StorageManager.get_count("nails") == 2, "Both completed Nails orders must return to City Storage.")
+	_check(shop_component.get_slot(1).is_empty() and StorageManager.get_count("nails") == nails_storage_before + 2, "Collecting the second Nails order must transfer it to City Storage and clear its queue square.")
 	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
 	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
 	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The two-sided honeycomb store catalog must expose every registered product.")
