@@ -256,13 +256,28 @@ export function createApp({
             return { conflict: true, revision: current.revision };
           }
           const now = new Date().toISOString();
+          const incomingState = structuredClone(body.game_state);
+          let marketAccount = current.market_account;
+          if (marketAccount && typeof marketAccount === "object") {
+            incomingState.economy ??= {};
+            incomingState.economy.simoleons = marketAccount.simoleons;
+            incomingState.storage = structuredClone(marketAccount.storage);
+          } else {
+            const initialBalance = Number(incomingState.economy?.simoleons);
+            const initialStorage = incomingState.storage && typeof incomingState.storage === "object" ? incomingState.storage : { capacity: 50, items: {} };
+            marketAccount = {
+              simoleons: Number.isSafeInteger(initialBalance) && initialBalance >= 0 ? initialBalance : 0,
+              storage: structuredClone(initialStorage)
+            };
+          }
           const next = {
             schema_version: 1,
             user_id: playerId,
             revision: current.revision + 1,
             created_at: current.created_at || now,
             updated_at: now,
-            game_state: body.game_state
+            market_account: marketAccount,
+            game_state: incomingState
           };
           await writeProfile(playerId, next);
           return { profile: next };
