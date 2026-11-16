@@ -5012,20 +5012,55 @@ func _build_player_market_content(parent: VBoxContainer) -> void:
 		row.add_child(sell)
 
 	for listing in PlayerMarketManager.my_listings:
-		if str(listing.get("status", "")) != "active":
-			continue
+		var listing_status := str(listing.get("status", ""))
 		var row := HBoxContainer.new()
 		row.custom_minimum_size.y = 44 * _ui_scale
 		parent.add_child(row)
 		var info := Label.new()
-		info.text = "%s ×%d · §%d each · ACTIVE" % [str(listing.get("item_id", "Item")).capitalize(), int(listing.get("quantity", 0)), int(listing.get("unit_price", 0))]
+		info.text = "%s ×%d · §%d each · %s" % [
+			str(listing.get("item_id", "Item")).capitalize(),
+			int(listing.get("quantity", 0)),
+			int(listing.get("unit_price", 0)),
+			listing_status.to_upper()
+		]
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(info)
-		var cancel := Button.new()
-		cancel.text = "CANCEL"
-		cancel.pressed.connect(_cancel_player_market_listing.bind(str(listing.get("listing_id", ""))))
-		row.add_child(cancel)
+		if listing_status == "active":
+			var cancel := Button.new()
+			cancel.text = "CANCEL"
+			cancel.pressed.connect(_cancel_player_market_listing.bind(str(listing.get("listing_id", ""))))
+			row.add_child(cancel)
+
+	var orders_heading := Label.new()
+	orders_heading.text = "MY RECENT MARKET ORDERS"
+	orders_heading.add_theme_font_size_override("font_size", _popup_font_size(17))
+	orders_heading.add_theme_color_override("font_color", Color("#28799C"))
+	parent.add_child(orders_heading)
+	var market_transactions: Array[Dictionary] = []
+	for transaction in EconomyManager.get_recent_transactions(30):
+		var transaction_type := str(transaction.get("type", ""))
+		if transaction_type in ["player_market_purchase", "player_market_sale", "player_market_listing_reserved", "player_market_listing_cancelled"]:
+			market_transactions.append(transaction)
+	market_transactions.reverse()
+	if market_transactions.is_empty():
+		_trade_message(parent, "Your player-market activity will appear here.")
+	for transaction in market_transactions.slice(0, 10):
+		var metadata: Dictionary = transaction.get("metadata", {})
+		var order_row := HBoxContainer.new()
+		order_row.custom_minimum_size.y = 36 * _ui_scale
+		parent.add_child(order_row)
+		var order_label := Label.new()
+		var action_label := str(transaction.get("type", "")).replace("player_market_", "").replace("_", " ").to_upper()
+		order_label.text = "%s · %s ×%d · §%d" % [
+			action_label,
+			str(metadata.get("item_id", "Goods")).capitalize(),
+			int(metadata.get("quantity", transaction.get("amount", 0))),
+			int(transaction.get("amount", 0)) if str(transaction.get("currency", "")) == "simoleons" else 0
+		]
+		order_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		order_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_row.add_child(order_label)
 
 func _refresh_player_market() -> void:
 	await PlayerMarketManager.refresh_market()
