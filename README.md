@@ -1286,3 +1286,18 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Extend the same notification model to construction milestones, residential upgrade opportunities, missing road access, service outages, fire/police/health alerts, traffic and warehouse capacity warnings.
 
 **Implementation note:** the existing world-space `Sprite3D` thumbnail was not a complete SimCity-style interaction: it had no reliable screen-space tap target and the notification logic was limited to one visible product thumbnail per building. The new layer supplies persistent, accessible tap targets and groups all ready queue slots without changing the production/economy state machine. CI and Chromium tests do not replace physical-device acceptance.
+
+## Production Queue tap-routing correction — 2026-11-16
+
+- [x] Re-resolve the first currently empty production slot at the instant a product card is tapped; do not trust the slot index captured when the orbit/catalogue was first built.
+- [x] Keep stale modal/building ownership protection, so a card from a previous factory/store cannot submit to a different building.
+- [x] Align the UI acceptance gate with the production engine's building-operational requirement; a building without valid operation is now rejected before submission rather than failing silently inside `start_factory` / `start_craft`.
+- [x] Show a specific tap rejection reason for full queues, missing City Storage ingredients, unavailable recipes, unlock restrictions, and non-operational buildings.
+- [x] Add a GameplaySmoke regression: occupy factory slot 0 after a card is rendered, then tap using its stale slot hint and verify the order is routed to the live free slot 1.
+- [ ] Godot 4.3 import/parse and full GameplaySmoke, including stale-slot regression.
+- [ ] Android Debug APK export/signature and Web export + desktop/mobile Chromium smoke.
+- [ ] Merge PR and verify GitHub Pages deployment on the merged main commit.
+- [ ] Physical Android touch acceptance; automated signal tests do not replace real screen-touch verification.
+
+**Scope and honesty:** this corrects stale queue-slot routing and the mismatch between UI pre-validation and the production component's operational gate. Store orders still correctly require every recipe ingredient to exist in City Storage; tapping a blocked product must explain the missing quantity and must not create an order or consume inventory.
+

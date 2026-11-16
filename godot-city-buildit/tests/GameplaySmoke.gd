@@ -3924,6 +3924,19 @@ func _run_gameplay_test() -> void:
 		_check(false, "Second ready Metal slot must expose a Collect button.")
 	_check(StorageManager.get_count("metal") == 2, "Two parallel factory collections must add two Metal to City Storage.")
 
+	# A product card may have been created with an earlier slot hint. The tap
+	# handler must resolve the current free slot, not reuse that stale index.
+	_check(factory_component.start_factory("metal", 0), "Test setup could not occupy factory slot 0 before stale-slot tap regression.")
+	production_hud.open_production_panel(factory)
+	var metal_slot_1_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
+	_check(metal_slot_1_button != null, "Factory catalogue must rebuild against the currently free slot 1.")
+	if metal_slot_1_button:
+		production_hud._on_production_item_pressed(factory, "metal", 0, metal_slot_1_button)
+	_check(not factory_component.get_slot(0).is_empty() and not factory_component.get_slot(1).is_empty(), "Product tap must ignore a stale slot hint and enqueue into the current free factory slot.")
+	factory_component.slots[0] = {}
+	factory_component.slots[1] = {}
+	factory_component.slots_changed.emit()
+
 	# Product taps are the sole UI order action; no drag target is required.
 
 	var supplies = _find_building("building_supplies")
