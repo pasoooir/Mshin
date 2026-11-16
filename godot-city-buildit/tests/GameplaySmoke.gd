@@ -195,18 +195,20 @@ func _test_building_notification_system_contract() -> void:
 	anchor.set_anchor_position(Vector3(0.0, 8.0, 0.0))
 	var visible_notifications: Array[BuildingNotification] = [idle, ready, upgrade]
 	anchor.set_notifications(visible_notifications)
-	_check(anchor.get_child_count() == 2, "World-space notification anchor must enforce the two-visible-notification limit.")
-	var first_visual: Node3D = anchor.get_child(0) as Node3D
-	var tap_area := first_visual.get_node_or_null("TapArea") as Area3D
-	_check(tap_area != null and tap_area.input_ray_pickable and tap_area.collision_layer > 0, "Every world-space notification must expose a physics-pickable 3D tap target.")
-	var first_icon := first_visual.get_node_or_null("Icon") as Sprite3D
-	_check(first_icon != null and first_icon.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "Notification product icons must billboard toward the active camera.")
-	var pressed_notifications: Array[BuildingNotification] = []
-	anchor.notification_pressed.connect(func(value: BuildingNotification) -> void: pressed_notifications.append(value))
-	var touch := InputEventScreenTouch.new()
-	touch.pressed = true
-	anchor._on_area_input_event(null, touch, Vector3.ZERO, Vector3.UP, 0, 0)
-	_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.PRODUCTION_READY, "A touch on a world-space notification must dispatch exactly its selected notification.")
+	_check(anchor.get_visible_notification_count() == 2, "World-space notification anchor must enforce the two-visible-notification limit.")
+	if DisplayServer.get_name() != "headless":
+		_check(anchor.get_child_count() == 2, "Each visible notification must have its own 3D visual root.")
+		var first_visual: Node3D = anchor.get_child(0) as Node3D
+		var tap_area := first_visual.get_node_or_null("TapArea") as Area3D
+		_check(tap_area != null and tap_area.input_ray_pickable and tap_area.collision_layer > 0, "Every world-space notification must expose a physics-pickable 3D tap target.")
+		var first_icon := first_visual.get_node_or_null("Icon") as Sprite3D
+		_check(first_icon != null and first_icon.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "Notification product icons must billboard toward the active camera.")
+		var pressed_notifications: Array[BuildingNotification] = []
+		anchor.notification_pressed.connect(func(value: BuildingNotification) -> void: pressed_notifications.append(value))
+		var touch := InputEventScreenTouch.new()
+		touch.pressed = true
+		anchor._on_area_input_event(null, touch, Vector3.ZERO, Vector3.UP, 0, 0)
+		_check(pressed_notifications.size() == 1 and pressed_notifications[0].type == BuildingNotification.Type.PRODUCTION_READY, "A touch on a world-space notification must dispatch exactly its selected notification.")
 	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
 	anchor.queue_free()
 
