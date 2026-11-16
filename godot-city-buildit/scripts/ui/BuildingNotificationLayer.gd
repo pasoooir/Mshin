@@ -64,11 +64,11 @@ func _sync_notifications() -> void:
 			anchor = AnchorScript.new()
 			anchor.name = "BuildingNotificationAnchor"
 			building.add_child(anchor)
-			anchor.position = _get_roof_anchor_local(building)
+			anchor.set_anchor_position(_get_roof_anchor_local(building))
 			anchor.notification_pressed.connect(_on_notification_pressed)
 			_anchors[building_id] = anchor
 		else:
-			anchor.position = _get_roof_anchor_local(building)
+			anchor.set_anchor_position(_get_roof_anchor_local(building))
 		anchor.set_notifications(data.notifications)
 
 	_prune_component_connections()
@@ -232,8 +232,8 @@ func _get_roof_anchor_local(building: Node3D) -> Vector3:
 			var mesh_instance := node as MeshInstance3D
 			if mesh_instance.mesh == null:
 				continue
-			var bounds: AABB = mesh_instance.get_aabb()
-			var local_top := mesh_instance.position.y + bounds.position.y + bounds.size.y
+			var world_bounds: AABB = mesh_instance.global_transform * mesh_instance.get_aabb()
+			var local_top := building.to_local(world_bounds.end).y
 			roof_y = maxf(roof_y, local_top)
 	return Vector3(0.0, roof_y + 1.15, 0.0)
 
