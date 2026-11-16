@@ -261,13 +261,10 @@ export function createApp({
           if (marketAccount && typeof marketAccount === "object") {
             incomingState.economy ??= {};
             incomingState.economy.simoleons = marketAccount.simoleons;
-            incomingState.storage = structuredClone(marketAccount.storage);
           } else {
             const initialBalance = Number(incomingState.economy?.simoleons);
-            const initialStorage = incomingState.storage && typeof incomingState.storage === "object" ? incomingState.storage : { capacity: 50, items: {} };
             marketAccount = {
-              simoleons: Number.isSafeInteger(initialBalance) && initialBalance >= 0 ? initialBalance : 0,
-              storage: structuredClone(initialStorage)
+              simoleons: Number.isSafeInteger(initialBalance) && initialBalance >= 0 ? initialBalance : 0
             };
           }
           const next = {
