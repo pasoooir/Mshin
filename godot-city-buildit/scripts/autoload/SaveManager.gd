@@ -148,7 +148,7 @@ func load_game() -> bool:
 
 	is_loading = true
 	var game_data: Dictionary = parsed.get("game", {})
-	GameManager.city_name = str(game_data.get("city_name", "Pasoo City"))
+	GameManager.city_name = str(game_data.get("city_name", "")).strip_edges()
 	var economy_data: Dictionary = parsed.get("economy", {})
 	var storage_data: Dictionary = parsed.get("storage", {})
 
