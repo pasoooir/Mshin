@@ -139,7 +139,7 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Added an icon-first quick legend for roads, homes, factories, shops and City Storage, while keeping one contextual task, tap path and expected result visible.
 - [x] Reduced the reopen affordance to a small persistent **☁ HELP** button; players can dismiss the coach and reopen it at any time.
 - [x] Added periodic reconciliation against the live building registry and City Storage as a recovery path when a gameplay event occurs before the guide connects; milestone completion still depends on real city state and collected inventory.
-- [ ] Run Godot GameplaySmoke and playable-web CI against this commit; inspect the coach at common Android landscape resolutions.
+- [x] Godot GameplaySmoke and Playable Web desktop/mobile Chromium checks passed after the pointer-target correction (PR #559; main runs 43848134141 and 43848134338). Android landscape review on a physical device remains open.
 - [ ] Verify click-through behavior, text wrapping, touch targets and HUD overlap on a physical Android device.
 
 
@@ -147,7 +147,7 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 
 - [x] Changed the floating coach container from input-ignore to input-pass so child guide actions can receive taps while taps on the coach background continue to underlying HUD controls.
 - [x] Set the guide layout containers to input-pass and the Later, Skip/Close and HELP buttons explicitly to input-stop.
-- [ ] Verify guide buttons and every primary HUD category/action button with automated browser pointer/touch interaction tests.
+- [x] GameplaySmoke exercises native screen-touch interaction for city-name entry, SAVE CITY, Later, HELP, Residential, Villa House details and BUILD; the coach finger is checked against the actual Residential, Villa House and BUILD controls.
 - [ ] Verify on a physical Android device in landscape; CI/browser success is not a substitute for device acceptance.
 
 
@@ -160,9 +160,9 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] GameplaySmoke native-touch regression passed: city-name LineEdit focus, SAVE CITY, Later, HELP, Residential category, Villa House details and BUILD all handled through `InputEventScreenTouch` without synthetic mouse emulation (commit `7ce8942`).
 - [x] Godot City BuildIt Validation and Mshin Playable Web Chromium desktop/mobile smoke both passed on commit `7ce8942`.
 - [ ] Verify the complete touch experience on a physical Android landscape device; CI does not replace device testing.
-- [ ] Merge and confirm the GitHub Pages deployment before calling the live-site fix complete.
-- [ ] Run Godot GameplaySmoke and playable-web Chromium interaction checks against this change.
-- [ ] Verify the pointer target alignment, keyboard behavior and touch interaction on a physical Android landscape device. Physical-device acceptance is not claimed.
+- [x] Merged as PR #559 (commit `a85c0c6f4f90c03082be8befe9e79195fd17b115`) and confirmed GitHub Pages deployment in run 43848134338.
+- [x] Godot GameplaySmoke and playable-web Chromium desktop/mobile checks passed on the merged main commit (runs 43848134141 and 43848134338).
+- [x] Automated pointer alignment checks now cover the category button, catalog card and BUILD action; the LineEdit focus/keyboard request path and native touch buttons are covered by GameplaySmoke.\n- [ ] Verify the complete experience, including the on-screen keyboard, on a physical Android landscape device. Physical-device acceptance is not claimed.
 
 
 ## City coach: actionable touch guidance and fixture safety — 2026-11-16
@@ -173,3 +173,13 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Building notification polling ignores non-Building test/migration fixtures before reading Building-only fields; the integration smoke test explicitly refreshes notifications while such a fixture is registered.
 - [x] Main-branch verification passed after merge: Godot City BuildIt Validation [run 43842039456](https://github.com/pasoooir/Mshin/actions/runs/43842039456), including GameplaySmoke and Android Debug APK export; Playable Web [run 43842039295](https://github.com/pasoooir/Mshin/actions/runs/43842039295), including desktop/mobile Chromium launch and GitHub Pages deployment.
 - [ ] Physical Android acceptance in landscape remains outstanding; CI touch simulation and Chromium mobile viewport are not a substitute for testing on the user's phone.
+
+
+## City coach pointer-target root-cause correction — 2026-11-16
+
+- [x] Fixed the tutorial's submenu lookup: `ToolSubmenu` is nested inside `ToolSubmenuScroll`, so a direct-child lookup left the finger stuck on the category icon after the player opened Residential/Industrial/Commercial.
+- [x] Converted pointer anchors between the HUD and coach CanvasLayers through viewport coordinates; this avoids mixing local Control positions with another CanvasLayer's global rectangle.
+- [x] Extended GameplaySmoke to follow real `InputEventScreenTouch` actions through Residential → Villa House → BUILD and assert that the finger tracks each actual control.
+- [x] Godot Validation, GameplaySmoke and Android Debug APK export passed on main: [run 43848134141](https://github.com/pasoooir/Mshin/actions/runs/43848134141).
+- [x] Playable Web desktop/mobile Chromium verification and GitHub Pages deployment passed on main: [run 43848134338](https://github.com/pasoooir/Mshin/actions/runs/43848134338).
+- [ ] Physical Android landscape testing remains outstanding; automated touch simulation and Chromium mobile viewport do not replace testing on the phone.
