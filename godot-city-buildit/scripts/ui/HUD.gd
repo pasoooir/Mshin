@@ -2661,33 +2661,64 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	detail_row.add_child(drop_hint)
 
 
-func _on_production_item_pressed(building: Building, item_id: String, slot_index: int, item_button: Button) -> void:
+func _find_first_available_production_slot(component: ProductionComponent) -> int:
+	if not is_instance_valid(component):
+		return -1
+	# Resolve capacity at interaction time. A slot number captured when the
+	# orbit was built can become stale after another order, collection or refresh.
+	for index in range(component.get_slot_count()):
+		if component.get_slot(index).is_empty():
+			return index
+	return -1
+
+
+func _on_production_item_pressed(building: Building, item_id: String, _slot_hint: int, item_button: Button) -> void:
 	# A card from a previous modal session must never enqueue work on a
 	# different building after the player has switched factories/stores.
 	if not is_instance_valid(_production_building) or _production_building != building or not is_instance_valid(production_overlay):
 		return
-	if item_button.has_meta("touch_drag_consumed") and bool(item_button.get_meta("touch_drag_consumed")):
+	if is_instance_valid(item_button) and item_button.has_meta("touch_drag_consumed") and bool(item_button.get_meta("touch_drag_consumed")):
 		item_button.set_meta("touch_drag_consumed", false)
 		return
 	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
 		return
+	var component: ProductionComponent = building.production_component
+	var slot_index := _find_first_available_production_slot(component)
 	var payload := {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
+
+	if not BuildManager.is_building_operational(building):
+		_show_production_item_details(building, item_id, slot_index)
+		status_label.text = "Production blocked: restore this building's road access, utilities and workforce."
+		return
 	if slot_index >= 0 and _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
 		_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
 		return
-	# A tap on a blocked product still explains the exact shortage or lock;
-	# it never reserves inputs or creates a phantom queue entry.
+
+	# A blocked tap remains inspectable, but it must state the real blocker and
+	# must never consume ingredients or create a phantom queue entry.
 	_show_production_item_details(building, item_id, slot_index)
-	var component: ProductionComponent = building.production_component
-	if component.is_factory:
-		if slot_index < 0:
-			status_label.text = "All factory production slots are occupied."
+	if slot_index < 0:
+		status_label.text = "All production slots are occupied. Collect a finished item or wait for a free slot."
+	elif component.is_factory:
+		var raw_definition: Dictionary = ProductionManager.raw_materials.get(item_id, {})
+		if not ProductionManager.get_factory_material_ids(str(component.factory_type)).has(item_id) or raw_definition.is_empty():
+			status_label.text = "This material is not part of this factory's catalogue."
+		elif int(raw_definition.get("level", 1)) > GameManager.level:
+			status_label.text = "This material unlocks at Mayor Level %d." % int(raw_definition.get("level", 1))
+		else:
+			status_label.text = "Factory rejected the order. Check building operation and production capacity."
 	else:
-		var missing := ProductionManager.get_missing_inputs_text(item_id)
-		if not missing.is_empty():
-			status_label.text = "Missing City Storage: " + missing
-		elif slot_index < 0:
-			status_label.text = "All store production slots are occupied."
+		var recipe := ProductionManager.get_recipe(item_id)
+		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level)
+		if recipe.is_empty() or str(recipe.get("store", "")) != str(component.shop_id):
+			status_label.text = "This product has no verified recipe for this store."
+		elif not lock_reason.is_empty():
+			status_label.text = lock_reason
+		elif not ProductionManager.are_recipe_inputs_unlocked(recipe):
+			status_label.text = "A required ingredient is not unlocked yet."
+		else:
+			var missing := ProductionManager.get_missing_inputs_text(item_id)
+			status_label.text = "Missing City Storage: " + missing if not missing.is_empty() else "Store rejected the order. Check its operation and queue capacity."
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
@@ -2926,6 +2957,11 @@ func _can_accept_production_drop(_at_position: Vector2, data: Variant, building:
 	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
 		return false
 	if int(data.get("building_id", 0)) != building.get_instance_id():
+		return false
+	# Keep the UI acceptance gate identical to the production component's
+	# operational requirement; otherwise a product looks valid but is rejected
+	# only after the click reaches start_factory/start_craft.
+	if not BuildManager.is_building_operational(building):
 		return false
 	var component: ProductionComponent = building.production_component
 	if slot_index < 0 or slot_index >= component.get_slot_count() or not component.get_slot(slot_index).is_empty():
