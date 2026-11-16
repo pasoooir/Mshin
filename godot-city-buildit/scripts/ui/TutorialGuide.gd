@@ -16,7 +16,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"id": "home",
 		"target": "Tool_Residential",
 		"title": "Build your first home",
-		"description": "Open Residential on the right. Choose Villa House, then tap the highlighted empty plot beside a road.",
+		"description": "Open Residential, choose Villa House, then tap BUILD in its information card. The finger will then point to a valid empty plot beside a road.",
 		"hint": "TAP PATH  Residential  →  Small House  →  Empty plot",
 		"result": "YOU SHOULD SEE  A house construction site appear on the selected plot."
 	},
@@ -464,7 +464,10 @@ func _update_finger_pointer() -> void:
 			"home", "factory", "store":
 				var category := "residential" if step_id == "home" else ("industrial" if step_id == "factory" else "commercial")
 				var option_id := "residential_villa" if step_id == "home" else ("factory_small" if step_id == "factory" else "building_supplies")
-				if BuildManager.is_placing:
+				var info_panel := hud.get("catalog_info_panel") as Control
+				if is_instance_valid(info_panel) and info_panel.visible:
+					target = info_panel.find_child("CatalogBuildButton", true, false) as Control
+				elif BuildManager.is_placing:
 					var placement := _get_valid_placement_world_target()
 					has_world_target = bool(placement.get("valid", false))
 					world_target = placement.get("position", Vector3.ZERO)
