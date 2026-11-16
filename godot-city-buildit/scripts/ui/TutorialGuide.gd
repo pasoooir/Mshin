@@ -167,7 +167,7 @@ func _build_guide_panel() -> void:
 	_panel.name = "FirstCityTutorial"
 	_panel.z_index = 110
 	# Visual overlay only: clicks on the city pass through the coach.
-	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	add_child(_panel)
 
