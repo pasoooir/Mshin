@@ -188,6 +188,11 @@ func _test_building_notification_system_contract() -> void:
 	var visible_notifications: Array[BuildingNotification] = [idle, ready, upgrade]
 	anchor.set_notifications(visible_notifications)
 	_check(anchor.get_child_count() == 2, "World-space notification anchor must enforce the two-visible-notification limit.")
+	var first_visual: Node3D = anchor.get_child(0) as Node3D
+	var tap_area := first_visual.get_node_or_null("TapArea") as Area3D
+	_check(tap_area != null and tap_area.input_ray_pickable and tap_area.collision_layer > 0, "Every world-space notification must expose a physics-pickable 3D tap target.")
+	var first_icon := first_visual.get_node_or_null("Icon") as Sprite3D
+	_check(first_icon != null and first_icon.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "Notification product icons must billboard toward the active camera.")
 	_check(is_equal_approx(anchor.position.y, 8.0), "World-space notification anchor must retain its configured roof height while bobbing.")
 	anchor.queue_free()
 
