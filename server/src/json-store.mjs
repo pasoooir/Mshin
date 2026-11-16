@@ -14,18 +14,6 @@ export function createFilesystemJsonStore(dataDir) {
   const root = path.resolve(dataDir);
   return {
     kind: "filesystem-json",
-    async verifyPrivateRepository() {
-    const repository = await this.request("/repos/" + this.repository);
-    if (repository.private !== true) {
-      throw new Error("github_json_repository_must_be_private");
-    }
-    const ref = await this.request(
-      "/repos/" + this.repository + "/git/ref/heads/" + encodeURIComponent(this.branch)
-    );
-    if (!ref.object?.sha) throw new Error("github_json_branch_ref_missing");
-    return { private: true, branch: this.branch, commit_sha: ref.object.sha };
-  }
-
   async readJson(relativePath) {
       try {
         return JSON.parse(await readFile(path.join(root, safePath(relativePath)), "utf8"));
@@ -97,6 +85,18 @@ export class GitHubJsonStore {
       throw error;
     }
     return body;
+  }
+
+  async verifyPrivateRepository() {
+    const repository = await this.request("/repos/" + this.repository);
+    if (repository.private !== true) {
+      throw new Error("github_json_repository_must_be_private");
+    }
+    const ref = await this.request(
+      "/repos/" + this.repository + "/git/ref/heads/" + encodeURIComponent(this.branch)
+    );
+    if (!ref.object?.sha) throw new Error("github_json_branch_ref_missing");
+    return { private: true, branch: this.branch, commit_sha: ref.object.sha };
   }
 
   async readJson(relativePath) {
