@@ -7,7 +7,7 @@
 
 - [x] Four procedural mountain ridge strips overlap at the world corners; the playable world no longer relies on isolated short ridge ends.
 - [x] The regional highway is rendered continuously for 700 m and crosses the north and south mountain ridges through dedicated tunnel openings with interior walls/ceiling and framed portals on both ends.
-- [x] Tunnel cutouts are reserved in the two road-crossed ridges and distant vegetation is excluded from those openings.
+- [x] The mountain crown remains continuous above both tunnels; portal-mouth vegetation is excluded so the inner and outer entrances stay readable.
 - [x] One original lightweight 3D car is spawned at the permanent city Gateway, routed by BFS through Gateway-connected road tiles to the farthest reachable tile, then returned to and removed at the Gateway.
 - [x] The active route is cancelled if a road change disconnects any route tile from the Gateway graph.
 - [ ] The current Gateway remains the city-side root rather than a fully modeled highway source/sink in the authoritative road graph. Physical tunnel scenery does not by itself implement motorway entry/exit routing. One-way edges, lane direction, turn restrictions, congestion-weighted routing, segment-level traffic, and delivery/construction vehicle classes remain open.
