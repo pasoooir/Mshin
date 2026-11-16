@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { createHmac, timingSafeEqual, randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { handleMarketRequest } from "./market.mjs";
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const TOKEN_ISSUER = "mshin-auth";
@@ -202,6 +203,21 @@ export function createApp({
       return;
     }
 
+    if (url.pathname === "/v1/market" || url.pathname.startsWith("/v1/market/")) {
+      const authorization = request.headers.authorization || "";
+      const match = authorization.match(/^Bearer\\s+(.+)$/i);
+      const session = match ? verifyAccessToken(match[1], authSecret) : null;
+      if (!session) {
+        send(response, 401, { error: "unauthorized" });
+        return;
+      }
+      await handleMarketRequest({
+        request, response, url, session, dataDir, readProfile, writeProfile,
+        withPlayerLock, readJsonBody, send
+      });
+      return;
+    }
+
     if (url.pathname === "/v1/profile" && (request.method === "GET" || request.method === "PUT")) {
       const authorization = request.headers.authorization || "";
       const match = authorization.match(/^Bearer\s+(.+)$/i);
@@ -234,7 +250,7 @@ export function createApp({
           send(response, 400, { error: "email_fields_are_forbidden" });
           return;
         }
-        const result = await withPlayerLock(playerId, async () => {
+        const result = await withPlayerLock(0, async () => {
           const current = await readProfile(playerId);
           if (body.expected_revision !== current.revision) {
             return { conflict: true, revision: current.revision };
