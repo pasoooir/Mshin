@@ -1984,10 +1984,10 @@ func open_production_panel(building: Building) -> void:
 	var category := str(building.definition.get("category", ""))
 	if category not in ["industrial", "commercial"]:
 		return
-	var component = building.production_component
-	if not is_instance_valid(component) or component.owner_building != building:
+	var selected_component = building.production_component
+	if not is_instance_valid(selected_component) or selected_component.owner_building != building:
 		return
-	if bool(component.is_factory) != (category == "industrial"):
+	if bool(selected_component.is_factory) != (category == "industrial"):
 		return
 
 	# Only one building-detail modal may own input at a time. The residential
