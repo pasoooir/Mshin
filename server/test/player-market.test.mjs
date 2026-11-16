@@ -98,6 +98,11 @@ test("repeated listing requests with the same idempotency key reserve stock only
   assert.equal(retry.status, 200);
   assert.equal(retry.body.replayed, true);
   assert.equal(retry.body.listing.listing_id, first.body.listing.listing_id);
+  const reusedKey = await f.json(100001, "/v1/market/list", "POST", {
+    item_id: "wood", quantity: 1, unit_price: 20, request_id: request.request_id
+  });
+  assert.equal(reusedKey.status, 409);
+  assert.equal(reusedKey.body.error, "idempotency_key_reused_with_different_payload");
   const profile = (await f.json(100001, "/v1/profile")).body.game_state;
   assert.equal(profile.storage.items.metal, 3);
   assert.equal(profile.economy_ledger.transaction_ledger.filter(x => x.type === "player_market_listing_reserved").length, 1);
