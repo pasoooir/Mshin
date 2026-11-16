@@ -169,6 +169,9 @@ export async function handleMarketRequest({
         const originalMarket = structuredClone(market);
         const previousRequest = market.listings.find(x => x.seller_id === session.playerId && x.request_id === requestId);
         if (previousRequest) {
+          if (previousRequest.item_id !== itemId || previousRequest.quantity !== quantity || previousRequest.unit_price !== unitPrice) {
+            return { status: 409, error: "idempotency_key_reused_with_different_payload" };
+          }
           return {
             status: 200, replayed: true,
             listing: { ...previousRequest, total_price: previousRequest.quantity * previousRequest.unit_price },
