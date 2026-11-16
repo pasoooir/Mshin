@@ -3992,20 +3992,20 @@ func _run_gameplay_test() -> void:
 		var drag_start := InputEventScreenTouch.new()
 		drag_start.index = 0
 		drag_start.pressed = true
-		drag_start.position = drag_source.get_global_rect().get_center()
+		drag_start.position = drag_source.get_global_transform_with_canvas() * (drag_source.size * 0.5)
 		drag_source.gui_input.emit(drag_start)
 		_check(production_hud._production_touch_drag_active and not production_hud._production_touch_dragged, "Touch-down on the material card must capture a pending drag, not submit the order.")
 		_check(factory_component.get_slot(0).is_empty(), "Touch-down alone must not fill the production queue.")
 		var drag_move := InputEventScreenDrag.new()
 		drag_move.index = 0
-		drag_move.position = drag_target.get_global_rect().get_center()
+		drag_move.position = drag_target.get_global_transform_with_canvas() * (drag_target.size * 0.5)
 		drag_move.relative = drag_move.position - drag_start.position
 		production_hud._input(drag_move)
 		_check(production_hud._production_touch_dragged, "Moving the captured finger must activate the drag gesture.")
 		var drag_release := InputEventScreenTouch.new()
 		drag_release.index = 0
 		drag_release.pressed = false
-		drag_release.position = drag_target.get_global_rect().get_center()
+		drag_release.position = drag_target.get_global_transform_with_canvas() * (drag_target.size * 0.5)
 		production_hud._input(drag_release)
 		_check(not production_hud._production_touch_drag_active, "Releasing the product over the queue must clear the captured pointer state.")
 		_check(str(factory_component.get_slot(0).get("item_id", "")) == "metal", "Dropping Metal on the lower EMPTY queue square must enqueue it in that square.")
