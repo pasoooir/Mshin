@@ -154,4 +154,5 @@ func _on_area_input_event(_camera: Camera3D, event: InputEvent, _position: Vecto
 	elif event is InputEventScreenTouch:
 		activated = (event as InputEventScreenTouch).pressed
 	if activated and index >= 0 and index < _notifications.size():
+		get_viewport().set_input_as_handled()
 		notification_pressed.emit(_notifications[index])
