@@ -50,6 +50,11 @@ test("admin lists stock, player2 buys it, both wallets and inventories reconcile
   assert.equal(listing.status, 201);
   const listingId = listing.body.listing.listing_id;
   assert.equal(listing.body.listing.total_price, 60);
+  const myShop = await f.json(100001, "/v1/market/mine");
+  assert.equal(myShop.status, 200);
+  assert.equal(myShop.body.listings.length, 1);
+  assert.equal(myShop.body.listings[0].listing_id, listingId);
+  assert.equal((await f.json(100001, "/v1/market")).body.listings.length, 0, "sellers must not see their own listing as purchasable stock");
   let admin = (await f.json(100001, "/v1/profile")).body.game_state;
   assert.equal(admin.storage.items.metal, 3, "listing must reserve seller goods");
   assert.equal(admin.economy.simoleons, 500, "listing must not pay seller before purchase");
