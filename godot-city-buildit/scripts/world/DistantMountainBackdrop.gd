@@ -4,7 +4,7 @@ extends Node3D
 ## replace an exposed world edge with a continuous natural backdrop.
 
 const LAND_SIZE := Vector2(1000.0, 1000.0)
-const RIDGE_INNER_RADIUS := 150.0
+const RIDGE_INNER_RADIUS := 170.0
 const RIDGE_OUTER_RADIUS := 330.0
 const RIDGE_HALF_LENGTH := 330.0
 const RIDGE_SEGMENTS := 64
@@ -28,10 +28,26 @@ func _build_backdrop_land() -> void:
 	plane.subdivide_depth = 4
 	ground.mesh = plane
 	ground.position.y = -0.14
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("#294D2E")
-	material.roughness = 1.0
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_disabled;
+varying vec3 world_position;
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	// Keep the existing coastal water visible through the green backdrop.
+	if (world_position.x > 49.0 && world_position.x < 160.0 && abs(world_position.z) < 96.0) {
+		discard;
+	}
+	float grain = sin(world_position.x * 0.12 + world_position.z * 0.08) * cos(world_position.z * 0.11 - world_position.x * 0.06);
+	ALBEDO = vec3(0.16, 0.31, 0.18) + vec3(grain * 0.012);
+	ROUGHNESS = 1.0;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
 	ground.material_override = material
 	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ground)
