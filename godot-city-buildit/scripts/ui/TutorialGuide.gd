@@ -33,7 +33,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ProductionProductCards",
 		"title": "Make and collect Metal",
 		"description": "Tap the completed factory. Tap the Metal product card once to place an order in the first empty production slot. Wait for the countdown, then collect the ready Metal.",
-		"hint": "TAP PATH  Factory  →  Metal card  →  Wait  →  Collect",
+		"hint": "TAP IN ORDER  Factory  →  Metal card  →  Wait  →  Collect",
 		"result": "YOU SHOULD SEE  Metal in a queue slot, a seconds countdown, then Metal added to City Storage after Collect."
 	},
 	{
@@ -49,7 +49,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ProductionProductCards",
 		"title": "Craft and collect a product",
 		"description": "Tap the Building Supplies store. Choose a product whose ingredients are available in City Storage. Wait for its timer, then collect it.",
-		"hint": "TAP PATH  Building Supplies  →  Available product  →  Wait  →  Collect",
+		"hint": "TAP IN ORDER  Building Supplies  →  Available product  →  Wait  →  Collect",
 		"result": "YOU SHOULD SEE  The product added to City Storage. Products with missing ingredients stay unavailable."
 	},
 	{
@@ -57,7 +57,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "ResidentialUpgradeButton",
 		"title": "Upgrade your home",
 		"description": "Select your completed home. Review the required materials, then deliver them to start the next construction stage.",
-		"hint": "TAP PATH  Select home  →  Review materials  →  Deliver",
+		"hint": "TAP IN ORDER  Select home  →  Review materials  →  Deliver",
 		"result": "YOU SHOULD SEE  The home enter construction and its upgrade stage advance when complete."
 	}
 ]
@@ -478,8 +478,10 @@ func _update_finger_pointer() -> void:
 					has_world_target = bool(placement.get("valid", false))
 					world_target = placement.get("position", Vector3.ZERO)
 				elif str(hud.get("active_category")) == category:
-					var submenu := hud.get_node_or_null("ToolSubmenu")
-					if submenu != null and submenu.visible:
+					# ToolSubmenu is nested inside ToolSubmenuScroll, not a direct HUD child.
+					# Search recursively so the pointer advances from the category icon to its real card.
+					var submenu := hud.find_child("ToolSubmenu", true, false) as Control
+					if is_instance_valid(submenu) and submenu.is_visible_in_tree():
 						target = hud.find_child(option_id, true, false) as Control
 				if not is_instance_valid(target) and not has_world_target:
 					target = hud.find_child("Tool_" + category.capitalize(), true, false) as Control
