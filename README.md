@@ -1468,7 +1468,7 @@ The two-finger baseline is built from stable pointer-ID ordering and records cen
 
 - Camera pan sensitivity is derived from camera FOV, zoom distance and viewport height. Equivalent normalized drags therefore behave consistently on different phone resolutions and aspect ratios.
 - Pan and orbit inertia use exponential, delta-time-based damping; a capped camera integration step prevents a long frame hitch from producing a large camera teleport.
-- The camera node disables its idle `_process` callback and wakes only for active touch/mouse input, focus animation or remaining inertia.
+- The camera node disables its idle `_process` callback; touch/mouse gestures are event-driven, and per-frame processing runs only for focus animation or remaining inertia.
 - Camera transform updates occur on zoom/focus changes, not as unconditional per-frame work.
 - Gesture state is limited to the active pointer set; no physics raycast or building-wide collision scan is added to each camera frame.
 - Production/residential detail overlays, road editing and building relocation retain input ownership and must not move the city camera behind their UI/tool interaction.
