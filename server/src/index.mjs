@@ -102,10 +102,20 @@ export function createApp({
   devAuthEnabled = process.env.DEV_AUTH_ENABLED === "true",
   nodeEnv = process.env.NODE_ENV || "development",
   devIdentities = parseDevIdentities(process.env.DEV_IDENTITIES),
-  allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://pasoooir.github.io").split(",").map(x => x.trim()).filter(Boolean)
+  allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://pasoooir.github.io").split(",").map(x => x.trim()).filter(Boolean),
+  jsonStore = null
 } = {}) {
   if (authSecret.length < 32) throw new Error("AUTH_TOKEN_SECRET must contain at least 32 characters");
-  const playersDir = path.resolve(dataDir, "players");
+  const storage = jsonStore || (process.env.GITHUB_JSON_REPOSITORY
+    ? new GitHubJsonStore({
+        repository: process.env.GITHUB_JSON_REPOSITORY,
+        token: process.env.GITHUB_JSON_TOKEN,
+        branch: process.env.GITHUB_JSON_BRANCH || "main"
+      })
+    : createFilesystemJsonStore(dataDir));
+  if (nodeEnv === "production" && storage.kind !== "github-private-json") {
+    throw new Error("Production requires a dedicated private GitHub JSON repository; filesystem fallback is disabled.");
+  }
   const locks = new Map();
 
   async function withPlayerLock(playerId, operation) {
