@@ -425,6 +425,11 @@ func _submit_city_name() -> void:
 	milestones["city_name"] = true
 	_save_progress()
 	SaveManager.save_game()
+	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+	if is_instance_valid(hud):
+		var status := hud.get("status_label") as Label
+		if is_instance_valid(status):
+			status.text = "Welcome to %s! Your city is ready to grow." % GameManager.city_name
 	_advance_completed_steps()
 	_refresh_guide()
 
