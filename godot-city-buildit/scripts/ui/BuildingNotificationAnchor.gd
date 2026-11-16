@@ -39,12 +39,19 @@ func set_notifications(notifications: Array[BuildingNotification]) -> void:
 	_notifications = ordered
 	_rebuild_visuals()
 
+func get_visible_notification_count() -> int:
+	return _notifications.size()
+
 func _rebuild_visuals() -> void:
 	for child in get_children():
 		child.queue_free()
 	_icons.clear()
 	_counts.clear()
 	_hit_areas.clear()
+	# The dummy headless renderer cannot allocate Sprite3D's internal quad mesh.
+	# Keep notification data available to headless tests and render in Web/Android.
+	if DisplayServer.get_name() == "headless":
+		return
 	for index in range(_notifications.size()):
 		var data := _notifications[index]
 		var root := Node3D.new()
