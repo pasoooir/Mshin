@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-11-16
+- Connected native touchscreen input on production product cards directly to the GUI input handler instead of relying on touch-to-mouse emulation alone.
+- Updated the gameplay smoke test to inject native `InputEventScreenTouch` events through the Viewport and verify exactly one queued production order.
+- Preserved the production queue lifecycle assertions for timer/progress and collection into City Storage.
+- CI passed for the underlying fix: Godot City BuildIt Validation and Mshin Playable Web (desktop + mobile Chromium launch). Physical Android-device touch remains unverified.
+
 ## 0.6.0
 - Fixed the undefined commercial building selection by wiring the commercial HUD action to `building_supplies`.
 - Added full rectangular footprint occupancy checks for multi-cell buildings.
