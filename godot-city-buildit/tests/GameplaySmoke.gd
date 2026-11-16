@@ -3370,12 +3370,12 @@ func _test_tutorial_guide_contract() -> void:
 			var hud := get_node_or_null("HUD")
 			if is_instance_valid(hud):
 				var residential_button := hud.find_child("Tool_Residential", true, false) as Button
-				_check(residential_button != null and residential_button.mouse_filter == Control.MOUSE_FILTER_STOP, "The primary Residential HUD action must exist and consume its own touch events.")
+				_check(residential_button != null and residential_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The primary Residential HUD action must exist and consume its own touch events.")
 				if residential_button != null:
 					await _tap_native_control(residential_button)
 					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
 					var villa_button := hud.find_child("residential_villa", true, false) as Button
-					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_STOP, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
+					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
 					if villa_button != null:
 						await _tap_native_control(villa_button)
 						_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on the Villa House catalog item must start placement mode.")
