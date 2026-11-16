@@ -47,12 +47,12 @@ func _build_mountain_ridges() -> void:
 			for depth_index in range(RIDGE_DEPTH_STEPS):
 				var d0 := float(depth_index) / RIDGE_DEPTH_STEPS
 				var d1 := float(depth_index + 1) / RIDGE_DEPTH_STEPS
-			_add_ridge_vertex(surface, side, t0, d0)
-			_add_ridge_vertex(surface, side, t1, d0)
-			_add_ridge_vertex(surface, side, t0, d1)
-			_add_ridge_vertex(surface, side, t1, d0)
-			_add_ridge_vertex(surface, side, t1, d1)
-			_add_ridge_vertex(surface, side, t0, d1)
+				_add_ridge_vertex(surface, side, t0, d0)
+				_add_ridge_vertex(surface, side, t1, d0)
+				_add_ridge_vertex(surface, side, t0, d1)
+				_add_ridge_vertex(surface, side, t1, d0)
+				_add_ridge_vertex(surface, side, t1, d1)
+				_add_ridge_vertex(surface, side, t0, d1)
 		surface.generate_normals()
 		var ridge := MeshInstance3D.new()
 		ridge.name = ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"][side]
