@@ -124,7 +124,7 @@ export async function handleMarketRequest({
 
   if (method === "GET" && route === "/v1/market") {
     try {
-      const data = await readListings(listingsFile);
+      const data = await withPlayerLock(0, async () => await readListings(listingsFile));
       send(response, 200, { listings: data.listings.filter(x => x.status === "active" && x.seller_id !== session.playerId).map(x => ({
         listing_id: x.listing_id, seller_id: x.seller_id, item_id: x.item_id,
         quantity: x.quantity, unit_price: x.unit_price, total_price: x.quantity * x.unit_price,
@@ -138,7 +138,7 @@ export async function handleMarketRequest({
 
   if (method === "GET" && route === "/v1/market/mine") {
     try {
-      const data = await readListings(listingsFile);
+      const data = await withPlayerLock(0, async () => await readListings(listingsFile));
       send(response, 200, { listings: data.listings.filter(x => x.seller_id === session.playerId) });
     } catch {
       send(response, 500, { error: "market_read_failed" });
