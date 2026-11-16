@@ -33,6 +33,14 @@ func _on_production_slots_changed() -> void:
 func configure(hud: Node) -> void:
 	_hud = hud
 
+func _get_optional_property(object: Object, property_name: String, fallback: Variant = null) -> Variant:
+	if not is_instance_valid(object):
+		return fallback
+	for property in object.get_property_list():
+		if str(property.get("name", "")) == property_name:
+			return object.get(property_name)
+	return fallback
+
 func refresh_now() -> void:
 	_sync_notifications()
 	_update_positions()
@@ -50,7 +58,7 @@ func _sync_notifications() -> void:
 		if not is_instance_valid(building) or str(building.status) != "completed":
 			continue
 		var building_id := str(building.building_id)
-		var component = building.production_component
+		var component = _get_optional_property(building, "production_component")
 		if is_instance_valid(component):
 			if component.has_signal("slots_changed") and not component.slots_changed.is_connected(_on_production_slots_changed):
 				component.slots_changed.connect(_on_production_slots_changed)
@@ -69,7 +77,7 @@ func _sync_notifications() -> void:
 				else:
 					var key := _entry_key(building_id, "idle", "")
 					candidates[key] = _make_entry(building, "idle", "", [])
-		if bool(building.upgrade_ready):
+		if bool(_get_optional_property(building, "upgrade_ready", false)):
 			var upgrade_key := _entry_key(building_id, "upgrade", "")
 			candidates[upgrade_key] = _make_entry(building, "upgrade", "", [])
 
