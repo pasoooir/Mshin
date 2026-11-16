@@ -3181,7 +3181,7 @@ func _test_citizen_feedback_bubbles() -> void:
 	home.definition = {"category":"residential", "size":Vector2i(2, 2)}
 	add_child(home)
 	BuildManager.buildings[home.building_id] = home
-	var notifications := get_node_or_null("BuildingNotifications")
+	var notifications := get_node_or_null("HUD/BuildingNotificationLayer")
 	_check(notifications != null and notifications.has_method("refresh_now"), "Building notification layer must be present for non-Building fixture regression coverage.")
 	if notifications != null:
 		notifications.refresh_now()
