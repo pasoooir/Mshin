@@ -19,6 +19,16 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if StorageManager.has_signal("storage_changed") and not StorageManager.storage_changed.is_connected(_on_storage_changed):
+		StorageManager.storage_changed.connect(_on_storage_changed)
+	if StorageManager.has_signal("capacity_changed") and not StorageManager.capacity_changed.is_connected(_on_storage_changed):
+		StorageManager.capacity_changed.connect(_on_storage_changed)
+
+func _on_storage_changed(_unused = null) -> void:
+	call_deferred("refresh_now")
+
+func _on_production_slots_changed() -> void:
+	call_deferred("refresh_now")
 
 func configure(hud: Node) -> void:
 	_hud = hud
@@ -42,6 +52,8 @@ func _sync_notifications() -> void:
 		var building_id := str(building.building_id)
 		var component = building.production_component
 		if is_instance_valid(component):
+			if component.has_signal("slots_changed") and not component.slots_changed.is_connected(_on_production_slots_changed):
+				component.slots_changed.connect(_on_production_slots_changed)
 			component.refresh_slots()
 			var groups := get_ready_product_groups(component)
 			for item_id in groups:
