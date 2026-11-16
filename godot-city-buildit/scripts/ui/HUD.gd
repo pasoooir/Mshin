@@ -2367,7 +2367,7 @@ func open_production_panel(building: Building) -> void:
 	queue_row.name = "ProductionQueueSlots"
 	queue_row.add_theme_constant_override("separation", 5)
 	queue_scroll.add_child(queue_row)
-	var visible_queue_slots := maxi(3, component.get_slot_count())
+	var visible_queue_slots := maxi(6, component.get_slot_count())
 	for slot_index in range(visible_queue_slots):
 		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
