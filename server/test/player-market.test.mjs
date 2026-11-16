@@ -24,7 +24,10 @@ async function fixture() {
     return { status: response.status, body: await response.json() };
   };
   const seed = async (id, gameState) => {
-    const response = await json(id, "/v1/profile", "PUT", { expected_revision: 0, game_state: gameState });
+    const current = await json(id, "/v1/profile");
+    const response = await json(id, "/v1/profile", "PUT", {
+      expected_revision: Number(current.body.revision || 0), game_state: gameState
+    });
     assert.equal(response.status, 200);
   };
   return {
