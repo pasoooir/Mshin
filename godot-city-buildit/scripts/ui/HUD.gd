@@ -725,7 +725,7 @@ func _build_toolbars() -> void:
 		button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 		button.tooltip_text = str(item[1])
 		button.focus_mode = Control.FOCUS_NONE
-		button.mouse_filter = Control.MOUSE_FILTER_PASS
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 		button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
@@ -757,7 +757,7 @@ func _build_toolbars() -> void:
 	land_button.custom_minimum_size = Vector2(toolbar_width, 84.0 * _ui_scale)
 	land_button.tooltip_text = "Expand city land with Dozer Wheel, Dozer Blade and Dozer Exhaust."
 	land_button.focus_mode = Control.FOCUS_NONE
-	land_button.mouse_filter = Control.MOUSE_FILTER_PASS
+	land_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	land_button.z_index = 61
 	land_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	land_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
@@ -1093,7 +1093,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.name = option_id
 	button.custom_minimum_size = Vector2(164, 188) * _ui_scale
 	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.disabled = disabled and not level_locked
 	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
@@ -1354,7 +1354,7 @@ func _finish_submenu_row(show_back: bool = false) -> void:
 		back.tooltip_text = "Back to categories"
 		back.custom_minimum_size = Vector2(54, 188) * _ui_scale
 		back.focus_mode = Control.FOCUS_NONE
-		back.mouse_filter = Control.MOUSE_FILTER_PASS
+		back.mouse_filter = Control.MOUSE_FILTER_STOP
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			back.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		back.add_theme_color_override("font_color", Color("#526B7A"))
