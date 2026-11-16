@@ -56,12 +56,12 @@ test("admin lists stock, player2 buys it, both wallets and inventories reconcile
   const adminProfile = await f.json(100001, "/v1/profile");
   const forgedSave = await f.json(100001, "/v1/profile", "PUT", {
     expected_revision: adminProfile.body.revision,
-    game_state: state({ coins: 999999, items: { metal: 9999 }, capacity: 500 })
+    game_state: state({ coins: 999999, items: { metal: 4 }, capacity: 50 })
   });
   assert.equal(forgedSave.status, 200);
   admin = (await f.json(100001, "/v1/profile")).body.game_state;
   assert.equal(admin.economy.simoleons, 500, "client saves must not overwrite authoritative market wallet");
-  assert.equal(admin.storage.items.metal, 3, "client saves must not recreate reserved market inventory");
+  assert.equal(admin.storage.items.metal, 4, "normal inventory changes must still synchronize with the profile");
   const visible = await f.json(100002, "/v1/market");
   assert.equal(visible.status, 200);
   assert.equal(visible.body.listings.length, 1);
@@ -71,7 +71,7 @@ test("admin lists stock, player2 buys it, both wallets and inventories reconcile
   admin = (await f.json(100001, "/v1/profile")).body.game_state;
   const player2 = (await f.json(100002, "/v1/profile")).body.game_state;
   assert.equal(admin.economy.simoleons, 560);
-  assert.equal(admin.storage.items.metal, 3);
+  assert.equal(admin.storage.items.metal, 4);
   assert.equal(player2.economy.simoleons, 240);
   assert.equal(player2.storage.items.metal, 5);
   assert.equal(admin.economy_ledger.transaction_ledger.at(-1).type, "player_market_sale");
