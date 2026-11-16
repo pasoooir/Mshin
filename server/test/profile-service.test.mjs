@@ -143,3 +143,39 @@ test("invalid or expired tokens cannot read profiles", async t => {
   assert.equal(invalid.status, 401);
   assert.equal(expired.status, 401);
 });
+
+
+test("GitHub JSON storage refuses public repositories and verifies the configured branch", async () => {
+  const calls = [];
+  const store = new GitHubJsonStore({
+    repository: "pasoooir/mshin-player-data",
+    token: "github-token-for-unit-test-123456",
+    fetchImpl: async url => {
+      calls.push(url);
+      if (url.endsWith("/repos/pasoooir/mshin-player-data")) {
+        return new Response(JSON.stringify({ private: true }), { status: 200 });
+      }
+      if (url.endsWith("/git/ref/heads/main")) {
+        return new Response(JSON.stringify({ object: { sha: "private-main-head" } }), { status: 200 });
+      }
+      throw new Error("unexpected GitHub API request " + url);
+    }
+  });
+  const result = await store.verifyPrivateRepository();
+  assert.deepEqual(result, { private: true, branch: "main", commit_sha: "private-main-head" });
+  assert.equal(calls.length, 2);
+});
+
+test("GitHub JSON storage rejects a public repository before reading or writing player data", async () => {
+  let calls = 0;
+  const store = new GitHubJsonStore({
+    repository: "pasoooir/Mshin",
+    token: "github-token-for-unit-test-123456",
+    fetchImpl: async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ private: false }), { status: 200 });
+    }
+  });
+  await assert.rejects(store.verifyPrivateRepository(), /github_json_repository_must_be_private/);
+  assert.equal(calls, 1);
+});

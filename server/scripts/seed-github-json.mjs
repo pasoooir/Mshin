@@ -8,6 +8,8 @@ if (!repository || !token) {
 }
 
 const store = new GitHubJsonStore({ repository, token, branch });
+await store.verifyPrivateRepository();
+console.log("Verified private GitHub repository and branch:", repository + "/" + branch);
 const seeds = [
   {
     path: "players/100001.json",

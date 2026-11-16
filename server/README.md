@@ -32,7 +32,7 @@ The initializer creates only missing files and never overwrites existing player 
 - `players/100002.json` — player2
 - `market/listings.json` — shared active and historical listings
 
-The GitHub adapter reads JSON through the Contents API and writes a complete transaction through GitHub's Git Blobs, Trees and Commits APIs. Buyer profile, seller profile and market listings are placed in one Git commit, so readers see the transaction as one repository revision. The API token is never sent to Godot or the browser.
+Both API startup and the seed command verify that the configured repository is actually private and that the configured branch exists. A public repository is rejected before player data can be read or written. The GitHub adapter reads JSON through the Contents API and writes a complete transaction through GitHub's Git Blobs, Trees and Commits APIs. Buyer profile, seller profile and market listings are placed in one Git commit, so readers see the transaction as one repository revision. The API token is never sent to Godot or the browser.
 
 **Important operating limits:** GitHub is versioned file storage, not a high-throughput database. Each save/market mutation creates a Git commit and API reads consume the token's GitHub API quota. This implementation is intentionally an initial two-account/test deployment. Before opening the market to many players or frequent autosaves, add a server-side write queue/cache and measure GitHub API quota and latency; do not silently fall back to public files or Cloudflare storage.
 
