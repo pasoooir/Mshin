@@ -1989,6 +1989,14 @@ func open_production_panel(building: Building) -> void:
 		return
 	if bool(selected_component.is_factory) != (category == "industrial"):
 		return
+	if selected_component.is_factory:
+		# A component must keep the exact factory catalog assigned to its owner.
+		if str(selected_component.factory_type) != str(building.building_type):
+			return
+	else:
+		var expected_shop_id := str(building.definition.get("shop_id", "building_supplies" if building.building_type == "shop_chain" else building.building_type))
+		if str(selected_component.shop_id) != expected_shop_id:
+			return
 
 	# Only one building-detail modal may own input at a time. The residential
 	# overlay has a higher z-index than production, so leaving it alive would
@@ -3573,16 +3581,16 @@ func open_residential_panel(building: Building) -> void:
 		return
 	if str(building.definition.get("category", "")) != "residential":
 		return
-	for city_building in BuildManager.buildings.values():
-		if is_instance_valid(city_building) and str(city_building.definition.get("category", "")) == "residential":
-			city_building.set_residential_plan_selected(false)
-	building.set_residential_plan_selected(true)
+	# Tear down the previous home panel before assigning the new owner. queue_free
+	# alone leaves the old high-z Control alive until the end of the frame.
+	_close_residential_panel()
 	# Switching to a home always tears down every competing building modal.
 	_close_city_needs_panel()
 	_close_production_panel()
 	_close_storage_panel()
 	_close_trade_panel()
 	_close_epic_project_panel()
+	building.set_residential_plan_selected(true)
 	_residential_orbit_buttons.clear()
 	_residential_building = building
 	if is_instance_valid(_residential_world_orbit):
@@ -3830,12 +3838,14 @@ func open_residential_panel(building: Building) -> void:
 		layout.add_child(epic_action)
 
 func _upgrade_residential_from_panel(building: Building) -> void:
-	if is_instance_valid(building) and building.try_upgrade():
+	if not is_instance_valid(building) or _residential_building != building or not is_instance_valid(residential_overlay):
+		return
+	if building.try_upgrade():
 		_close_residential_panel()
 
 
 func _open_epic_project_panel(building: Building) -> void:
-	if not is_instance_valid(building):
+	if not is_instance_valid(building) or _residential_building != building or not is_instance_valid(residential_overlay):
 		return
 	_close_residential_panel()
 	_close_epic_project_panel()
