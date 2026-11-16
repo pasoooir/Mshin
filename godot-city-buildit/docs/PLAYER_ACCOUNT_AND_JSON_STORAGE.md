@@ -1,8 +1,8 @@
 # حساب بازیکن و ذخیره‌سازی JSON مستقل — ممیزی و اجرای مرحله اول
 
 **تاریخ:** 2026-11-16  
-**شاخه:** `feat/player-json-account-storage`  
-**وضعیت:** هسته ذخیره‌سازی و اتصال اولیه در کد؛ استقرار سرور و اتصال Google نیازمند تنظیمات محیط واقعی است.
+**PR:** [#567](https://github.com/pasoooir/Mshin/pull/567) — merged to main (`5ea0716a60cf37a02bdc30230563ed106686d52f`)  
+**وضعیت:** کد هسته در main ادغام شده است. Godot Validation، Node JSON profile tests و GitHub Pages deploy در PR/main موفق شده‌اند؛ استقرار API مستقل و پیکربندی Google/D1 هنوز انجام نشده است.
 
 ## تصمیم معماری
 1. Google OpenID Connect فقط هویت را تأیید می‌کند.
