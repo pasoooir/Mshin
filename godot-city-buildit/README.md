@@ -105,3 +105,8 @@ godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn
 ```
 
 The integration test builds a connected road, checks building footprints and road access, completes construction, collects two Metal, crafts Nails, verifies power/water coverage, upgrades the house, checks population growth and writes a save file. GitHub Actions runs this test using Godot 4.3 on every relevant push and pull request.
+
+
+## Senior-friendly popup accessibility — 2026-11-16
+
+Popup/detail-window typography now has a 16 px minimum after UI scaling, rather than allowing dense labels to fall to 8–13 px. Factory/store product cards and residential material tokens are enlarged together with their icons and six-sided 3D platforms. This change is intended for mobile landscape and low-vision users; physical-device verification is tracked separately and is not inferred from automated tests.

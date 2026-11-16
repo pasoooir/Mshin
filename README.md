@@ -1239,3 +1239,16 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch/visual acceptance; CI and mobile Chromium are not a substitute for a real device test.
 
 **Additional root cause:** residential detail UI was not registered as a blocking modal in `CityInput`, and its long-press state was not cleared while the home panel was active. The production modal also did not validate that a component's catalog key still matched its owner building.
+
+
+## Senior-friendly mobile popup accessibility — 2026-11-16
+
+- [ ] Enlarge factory/store product diamond cards and their artwork for low-vision readability.
+- [ ] Enlarge residential material diamond cards and their artwork.
+- [ ] Enforce a 16 px minimum font size in popup/detail windows, including production, inventory, residential, trade and service panels.
+- [ ] Increase 3D hex platform radius/depth to visually match the enlarged selectable cards.
+- [ ] Add GameplaySmoke assertions for popup font floor and production/residential touch-card dimensions.
+- [ ] Run Godot validation, full GameplaySmoke, Android Debug APK export, Web build and desktop/mobile Chromium smoke.
+- [ ] Verify GitHub Pages deployment and request physical Android accessibility acceptance.
+
+**Acceptance:** no popup text override may render below 16 px at the game UI scale; production and residential projected material/product controls must be at least 120 × 130 px before UI scaling. Physical-device readability remains a separate acceptance step.

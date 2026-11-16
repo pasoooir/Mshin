@@ -3670,10 +3670,16 @@ func _run_gameplay_test() -> void:
 	var home_material_tokens: Array = needs_hud.residential_overlay.find_children("ResidentialNeed_*", "Button", true, false)
 	_check(needs_hud._residential_world_orbit != null and needs_hud._residential_world_orbit.get_child_count() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "A selected home must show its required upgrade materials as real 3D hex platforms around the building.")
 	_check(home_material_tokens.size() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "Every residential upgrade material must have a tappable projected token.")
+	_check(needs_hud._popup_font_size(8) >= 16 and needs_hud._popup_font_size(12) >= 16, "Popup text must enforce a readable 16 px minimum for low-vision and senior players.")
 	if home_material_tokens.size() > 0:
 		var home_hex := needs_hud._residential_world_orbit.get_child(0) as Node3D
 		var home_hex_face := home_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D
 		_check(home_hex_face != null and home_hex_face.mesh is CylinderMesh and (home_hex_face.mesh as CylinderMesh).radial_segments == 6, "Residential material tokens must use the same raised white six-sided 3D platform as factory/store products.")
+		var home_token_button := home_material_tokens[0] as Button
+		_check(home_token_button.custom_minimum_size.x >= 120.0 and home_token_button.custom_minimum_size.y >= 130.0, "Residential material diamond hit targets must be enlarged for low-vision mobile players.")
+		var home_token_content := home_token_button.get_child(0) as VBoxContainer
+		var home_token_icon := home_token_content.get_child(0) as TextureRect if is_instance_valid(home_token_content) and home_token_content.get_child_count() > 0 else null
+		_check(is_instance_valid(home_token_icon) and home_token_icon.custom_minimum_size.x >= 78.0, "Residential material artwork must be enlarged, not only its surrounding hit target.")
 	# End-to-end home material tap: selecting missing Metal must resolve the
 	# actual completed factory and submit the real factory order without a drag.
 	var residential_supplier_factory = _find_building("industrial_1")
@@ -3850,6 +3856,11 @@ func _run_gameplay_test() -> void:
 		_check(metal_button.get_global_rect().has_point(metal_button.get_global_rect().get_center()), "The visible factory material button center must lie inside its actual GUI hit rectangle.")
 		_check(metal_button.mouse_filter == Control.MOUSE_FILTER_STOP and metal_button.z_index >= 30, "Factory material tap targets must receive GUI input and render above the building/backdrop.")
 		_check(metal_button.size.x >= 90.0 and metal_button.size.y >= 100.0, "Factory material cards must remain large enough for comfortable mobile touch.")
+		_check(metal_button.custom_minimum_size.x >= 120.0 and metal_button.custom_minimum_size.y >= 130.0, "Factory/store product diamonds must use enlarged low-vision-friendly card dimensions.")
+		var metal_tile_content := metal_button.get_child(0) as VBoxContainer
+		var metal_tile_icon := metal_tile_content.get_child(0) as TextureRect if is_instance_valid(metal_tile_content) and metal_tile_content.get_child_count() > 0 else null
+		_check(is_instance_valid(metal_tile_icon) and metal_tile_icon.custom_minimum_size.x >= 75.0, "Factory/store product artwork must be enlarged, not only its surrounding hit target.")
+		_check(production_hud._popup_font_size(8) >= 16, "All popup labels must use a readable minimum font size.")
 		_check(metal_button.get_theme_stylebox("normal") is StyleBoxFlat, "Factory material cards must have an opaque white surface, not transparent controls hidden against the building.")
 		_check(metal_button.visible, "Camera-facing factory material orbit must keep front-facing product cards visible.")
 	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Every factory material must have a real 3D hex platform arranged around the selected building.")
