@@ -101,6 +101,16 @@ export async function handleMarketRequest({
     return true;
   }
 
+  if (method === "GET" && route === "/v1/market/mine") {
+    try {
+      const data = await readListings(listingsFile);
+      send(response, 200, { listings: data.listings.filter(x => x.seller_id === session.playerId) });
+    } catch {
+      send(response, 500, { error: "market_read_failed" });
+    }
+    return true;
+  }
+
   if (method === "POST" && route === "/v1/market/list") {
     try {
       const body = await readJsonBody(request);
