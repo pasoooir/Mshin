@@ -1396,6 +1396,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] The existing global touch handler now receives that captured finger's movement/release, displays the drag ghost, highlights valid empty queue squares and submits only when released over a valid destination.
 - [x] A stationary tap remains a one-touch production action on release; the Button pressed callback is suppressed to prevent duplicate orders.
 - [x] Added a GameplaySmoke regression that sends touch-down, drag and release through the product card handler and global HUD input path, then checks queue occupancy, a future Unix countdown timestamp and the rendered timer label.
+- [x] Replaced the obsolete native-Viewport test that expected production to start on touch-down with a real Viewport-routed touch → drag → lower queue → release acceptance test.
 - [ ] Godot 4.3 import/parse and full GameplaySmoke CI for this repair.
 - [ ] Android Debug APK export and mobile Chromium smoke for this repair.
 - [ ] Physical Android landscape test confirming finger drag from the product card to the lower EMPTY square.
