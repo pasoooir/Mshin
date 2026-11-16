@@ -3429,6 +3429,10 @@ func _test_tutorial_guide_contract() -> void:
 				guide.current_step = saved_guide_step
 				guide.completed = saved_guide_completed
 				guide._dismissed = saved_guide_dismissed
+				if saved_guide_dismissed:
+					guide._panel.hide()
+				else:
+					guide._panel.show()
 				if guide.completed:
 					guide._show_completion()
 				else:
