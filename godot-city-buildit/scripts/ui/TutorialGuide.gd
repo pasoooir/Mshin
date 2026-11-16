@@ -67,9 +67,11 @@ var _hint: Label
 var _result: Label
 var _progress: ProgressBar
 var _counter: Label
+var _icon_legend: Label
 var _skip_button: Button
 var _later_button: Button
 var _dismissed := false
+var _state_poll_elapsed := 0.0
 
 func _ready() -> void:
 	if not tutorial_enabled:
@@ -100,7 +102,10 @@ func _sync_existing_city_state() -> void:
 		if not is_instance_valid(building):
 			continue
 		var type_id := str(building.get("building_type"))
-		var category := str(BuildManager.building_types.get(type_id, {}).get("category", ""))
+		if type_id.is_empty():
+			type_id = str(building.get("type"))
+		var definition: Dictionary = building.get("definition") if building.get("definition") is Dictionary else {}
+		var category := str(definition.get("category", BuildManager.building_types.get(type_id, {}).get("category", "")))
 		if category == "residential":
 			milestones["home"] = true
 			if int(building.get("upgrade_stage")) >= 2:
@@ -136,8 +141,16 @@ func _on_item_produced(item_id: String, _amount: int) -> void:
 		milestones["crafted"] = true
 	_advance_completed_steps()
 
-func _process(_delta: float) -> void:
-	if completed or _dismissed or not is_instance_valid(_panel):
+func _process(delta: float) -> void:
+	if completed or _dismissed:
+		return
+	_state_poll_elapsed += delta
+	if _state_poll_elapsed >= 1.0:
+		_state_poll_elapsed = 0.0
+		# Recover if gameplay events fired before the guide connected.
+		_sync_existing_city_state()
+		_advance_completed_steps()
+	if not is_instance_valid(_panel):
 		return
 	if bool(milestones.get("home", false)) and not bool(milestones.get("upgrade", false)):
 		for building in BuildManager.buildings.values():
@@ -153,7 +166,8 @@ func _build_guide_panel() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "FirstCityTutorial"
 	_panel.z_index = 110
-	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Visual overlay only: clicks on the city pass through the coach.
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	add_child(_panel)
 
@@ -164,7 +178,7 @@ func _build_guide_panel() -> void:
 	var header := HBoxContainer.new()
 	layout.add_child(header)
 	var eyebrow := Label.new()
-	eyebrow.text = "CITY GUIDE  •  YOUR NEXT TASK"
+	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
 	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
 	eyebrow.add_theme_font_size_override("font_size", 15)
@@ -173,12 +187,22 @@ func _build_guide_panel() -> void:
 	_counter = Label.new()
 	_counter.add_theme_color_override("font_color", Color("#F5FAFF"))
 	_counter.add_theme_font_size_override("font_size", 17)
+	_counter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_child(_counter)
+
+	_icon_legend = Label.new()
+	_icon_legend.text = "🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
+	_icon_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_icon_legend.add_theme_color_override("font_color", Color("#D7F0FA"))
+	_icon_legend.add_theme_font_size_override("font_size", 16)
+	_icon_legend.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(_icon_legend)
 
 	_title = Label.new()
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_title.add_theme_color_override("font_color", Color.WHITE)
-	_title.add_theme_font_size_override("font_size", 26)
+	_title.add_theme_font_size_override("font_size", 21)
+	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(_title)
 
 	var scroll := ScrollContainer.new()
@@ -194,19 +218,22 @@ func _build_guide_panel() -> void:
 	_description = Label.new()
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_description.add_theme_color_override("font_color", Color("#F0F6FA"))
-	_description.add_theme_font_size_override("font_size", 21)
+	_description.add_theme_font_size_override("font_size", 17)
+	_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(_description)
 
 	_hint = Label.new()
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.add_theme_color_override("font_color", Color("#A8E7B0"))
-	_hint.add_theme_font_size_override("font_size", 19)
+	_hint.add_theme_font_size_override("font_size", 16)
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(_hint)
 
 	_result = Label.new()
 	_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_result.add_theme_color_override("font_color", Color("#D5E8FF"))
-	_result.add_theme_font_size_override("font_size", 18)
+	_result.add_theme_font_size_override("font_size", 15)
+	_result.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(_result)
 
 	_progress = ProgressBar.new()
@@ -235,16 +262,16 @@ func _build_guide_panel() -> void:
 
 func _make_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#102B3B")
-	style.border_color = Color("#72CBEF")
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(22)
-	style.content_margin_left = 24
-	style.content_margin_right = 24
-	style.content_margin_top = 20
-	style.content_margin_bottom = 18
-	style.shadow_color = Color(0, 0, 0, 0.35)
-	style.shadow_size = 12
+	style.bg_color = Color(0.045, 0.13, 0.19, 0.88)
+	style.border_color = Color(0.45, 0.80, 0.94, 0.90)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(28)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 10
+	style.shadow_color = Color(0, 0, 0, 0.22)
+	style.shadow_size = 8
 	return style
 
 func _make_progress_style(color: Color) -> StyleBoxFlat:
@@ -279,15 +306,15 @@ func _layout_guide_panel() -> void:
 	if not is_instance_valid(_panel):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(600.0, maxf(300.0, viewport_size.x - 24.0))
-	var panel_height := minf(340.0, maxf(250.0, viewport_size.y - 24.0))
+	var panel_width := minf(430.0, maxf(280.0, viewport_size.x - 24.0))
+	var panel_height := minf(205.0, maxf(150.0, viewport_size.y - 100.0))
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 0.0
 	_panel.anchor_top = 0.0
 	_panel.anchor_bottom = 0.0
-	_panel.offset_left = (viewport_size.x - panel_width) * 0.5
+	_panel.offset_left = 12.0
 	_panel.offset_right = _panel.offset_left + panel_width
-	_panel.offset_top = maxf(12.0, (viewport_size.y - panel_height) * 0.5)
+	_panel.offset_top = 78.0
 	_panel.offset_bottom = _panel.offset_top + panel_height
 
 func _on_viewport_size_changed() -> void:
@@ -360,9 +387,9 @@ func _build_reopen_button() -> void:
 		return
 	var reopen := Button.new()
 	reopen.name = "ReopenTutorial"
-	reopen.text = "?  GUIDE"
-	reopen.tooltip_text = "Open the city guide"
-	reopen.custom_minimum_size = Vector2(132, 54)
+	reopen.text = "☁  HELP"
+	reopen.tooltip_text = "Open the city coach"
+	reopen.custom_minimum_size = Vector2(104, 48)
 	reopen.add_theme_font_size_override("font_size", 19)
 	reopen.add_theme_color_override("font_color", Color("#123348"))
 	reopen.add_theme_stylebox_override("normal", _make_button_style(Color("#D9F2FF")))
@@ -372,9 +399,9 @@ func _build_reopen_button() -> void:
 	reopen.anchor_top = 1.0
 	reopen.anchor_bottom = 1.0
 	reopen.offset_left = 14
-	reopen.offset_right = 146
-	reopen.offset_top = -70
-	reopen.offset_bottom = -14
+	reopen.offset_right = 118
+	reopen.offset_top = 14
+	reopen.offset_bottom = 62
 	reopen.z_index = 111
 	reopen.pressed.connect(_reopen_guide)
 	add_child(reopen)
