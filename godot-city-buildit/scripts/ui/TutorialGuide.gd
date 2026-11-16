@@ -6,7 +6,15 @@ extends CanvasLayer
 const SAVE_PATH := "user://tutorial_progress.cfg"
 const STEP_DATA: Array[Dictionary] = [
 	{
+		"id": "city_name",
+		"title": "Name your city",
+		"description": "Type your city name in the field below, then tap SAVE CITY. The moving finger points directly to the field.",
+		"hint": "👆 TAP THE FIELD  →  Enter a name  →  SAVE CITY",
+		"result": "YOU SHOULD SEE  Your chosen city name is saved and shown in this coach."
+	},
+	{
 		"id": "home",
+		"target": "Tool_Residential",
 		"title": "Build your first home",
 		"description": "Open the Residential menu on the right. Choose Small House, then tap an empty plot beside a road.",
 		"hint": "TAP PATH  Residential  →  Small House  →  Empty plot",
@@ -14,6 +22,7 @@ const STEP_DATA: Array[Dictionary] = [
 	},
 	{
 		"id": "factory",
+		"target": "Tool_Industrial",
 		"title": "Build a factory",
 		"description": "Open Industrial, choose Small Factory, and place it on an empty plot connected to your road network.",
 		"hint": "TAP PATH  Industrial  →  Small Factory  →  Empty plot",
@@ -21,6 +30,7 @@ const STEP_DATA: Array[Dictionary] = [
 	},
 	{
 		"id": "raw",
+		"target": "ProductionProductCards",
 		"title": "Make and collect Metal",
 		"description": "Tap the completed factory. Tap the Metal product card once to place an order in the first empty production slot. Wait for the countdown, then collect the ready Metal.",
 		"hint": "TAP PATH  Factory  →  Metal card  →  Wait  →  Collect",
@@ -28,6 +38,7 @@ const STEP_DATA: Array[Dictionary] = [
 	},
 	{
 		"id": "store",
+		"target": "Tool_Commercial",
 		"title": "Build a supply store",
 		"description": "Open Commercial and place a Building Supplies store on an empty plot beside a connected road.",
 		"hint": "TAP PATH  Commercial  →  Building Supplies  →  Empty plot",
@@ -35,6 +46,7 @@ const STEP_DATA: Array[Dictionary] = [
 	},
 	{
 		"id": "crafted",
+		"target": "ProductionProductCards",
 		"title": "Craft and collect a product",
 		"description": "Tap the Building Supplies store. Choose a product whose ingredients are available in City Storage. Wait for its timer, then collect it.",
 		"hint": "TAP PATH  Building Supplies  →  Available product  →  Wait  →  Collect",
@@ -42,6 +54,7 @@ const STEP_DATA: Array[Dictionary] = [
 	},
 	{
 		"id": "upgrade",
+		"target": "ResidentialUpgradeButton",
 		"title": "Upgrade your home",
 		"description": "Select your completed home. Review the required materials, then deliver them to start the next construction stage.",
 		"hint": "TAP PATH  Select home  →  Review materials  →  Deliver",
@@ -50,6 +63,7 @@ const STEP_DATA: Array[Dictionary] = [
 ]
 
 var milestones: Dictionary = {
+	"city_name": false,
 	"home": false,
 	"factory": false,
 	"raw": false,
@@ -71,6 +85,10 @@ var _icon_legend: Label
 var _skip_button: Button
 var _later_button: Button
 var _dismissed := false
+var _city_name_input: LineEdit
+var _city_name_button: Button
+var _finger_pointer: Label
+var _finger_elapsed := 0.0
 var _state_poll_elapsed := 0.0
 
 func _ready() -> void:
@@ -121,6 +139,8 @@ func _sync_existing_city_state() -> void:
 			milestones["raw"] = true
 		if ProductionManager.crafted_items.has(item_id):
 			milestones["crafted"] = true
+	if not GameManager.city_name.strip_edges().is_empty():
+		milestones["city_name"] = true
 	_advance_completed_steps()
 
 func _on_building_placed(building_data: Dictionary) -> void:
@@ -152,6 +172,8 @@ func _process(delta: float) -> void:
 		_advance_completed_steps()
 	if not is_instance_valid(_panel):
 		return
+	_finger_elapsed += delta
+	_update_finger_pointer()
 	if bool(milestones.get("home", false)) and not bool(milestones.get("upgrade", false)):
 		for building in BuildManager.buildings.values():
 			if not is_instance_valid(building):
@@ -208,6 +230,23 @@ func _build_guide_panel() -> void:
 	_title.add_theme_font_size_override("font_size", 21)
 	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(_title)
+
+	_city_name_input = LineEdit.new()
+	_city_name_input.name = "CityNameInput"
+	_city_name_input.placeholder_text = "Enter your city name"
+	_city_name_input.max_length = 28
+	_city_name_input.custom_minimum_size = Vector2(0, 48)
+	_city_name_input.add_theme_font_size_override("font_size", 19)
+	_city_name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_city_name_input.text = GameManager.city_name
+	_city_name_input.mouse_filter = Control.MOUSE_FILTER_STOP
+	layout.add_child(_city_name_input)
+
+	_city_name_button = _make_action_button("SAVE CITY", Color("#55D6A0"), Color("#123348"), 136)
+	_city_name_button.name = "SaveCityNameButton"
+	_city_name_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_city_name_button.pressed.connect(_submit_city_name)
+	layout.add_child(_city_name_button)
 
 	var scroll := ScrollContainer.new()
 	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -267,7 +306,16 @@ func _build_guide_panel() -> void:
 	_skip_button.pressed.connect(_skip_tutorial)
 	actions.add_child(_skip_button)
 
+	_finger_pointer = Label.new()
+	_finger_pointer.name = "ActionFingerPointer"
+	_finger_pointer.text = "👆"
+	_finger_pointer.add_theme_font_size_override("font_size", 42)
+	_finger_pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_finger_pointer.z_index = 220
+	add_child(_finger_pointer)
+
 	_layout_guide_panel()
+	_update_city_name_controls()
 
 func _make_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -336,16 +384,64 @@ func _refresh_guide() -> void:
 		_show_completion()
 		return
 	var step: Dictionary = STEP_DATA[current_step]
+	_update_city_name_controls()
 	_title.text = str(step.get("title", ""))
 	_description.text = str(step.get("description", ""))
 	_hint.text = str(step.get("hint", ""))
 	_result.text = str(step.get("result", ""))
 	_counter.text = "STEP %d OF %d" % [current_step + 1, STEP_DATA.size()]
 	_progress.value = current_step
+	_update_finger_pointer()
+
+func _update_city_name_controls() -> void:
+	var is_name_step := current_step == 0 and not completed
+	if is_instance_valid(_city_name_input):
+		_city_name_input.visible = is_name_step
+	if is_instance_valid(_city_name_button):
+		_city_name_button.visible = is_name_step
+
+func _submit_city_name() -> void:
+	if not is_instance_valid(_city_name_input):
+		return
+	var chosen_name := _city_name_input.text.strip_edges()
+	if chosen_name.is_empty():
+		_city_name_input.placeholder_text = "Please enter a city name first"
+		_city_name_input.grab_focus()
+		return
+	if not GameManager.set_city_name(chosen_name):
+		return
+	milestones["city_name"] = true
+	_save_progress()
+	SaveManager.save_game()
+	_advance_completed_steps()
+	_refresh_guide()
+
+func _update_finger_pointer() -> void:
+	if not is_instance_valid(_finger_pointer) or _dismissed or completed:
+		if is_instance_valid(_finger_pointer):
+			_finger_pointer.hide()
+		return
+	var target: Control = null
+	if current_step == 0:
+		target = _city_name_input
+	else:
+		var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+		if is_instance_valid(hud):
+			var target_name := str(STEP_DATA[current_step].get("target", ""))
+			target = hud.find_child(target_name, true, false) as Control if not target_name.is_empty() else null
+	if not is_instance_valid(target) or not target.is_visible_in_tree():
+		_finger_pointer.hide()
+		return
+	var target_rect := target.get_global_rect()
+	_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	_finger_pointer.show()
 
 func _show_completion() -> void:
 	if not is_instance_valid(_panel):
 		return
+	_update_city_name_controls()
+	if is_instance_valid(_finger_pointer):
+		_finger_pointer.hide()
 	_title.text = "Your city is taking shape!"
 	_description.text = "You have completed the starter guide. Keep building, producing goods, upgrading homes and improving city services."
 	_hint.text = "OPEN ANY TIME  Tap the GUIDE button to review this guide."
@@ -386,6 +482,8 @@ func _hide_for_later() -> void:
 	_dismissed = true
 	if is_instance_valid(_panel):
 		_panel.hide()
+	if is_instance_valid(_finger_pointer):
+		_finger_pointer.hide()
 	_build_reopen_button()
 
 func _close_guide() -> void:
@@ -421,6 +519,8 @@ func _reopen_guide() -> void:
 	if is_instance_valid(_panel):
 		_panel.show()
 		_layout_guide_panel()
+		_update_city_name_controls()
+		_update_finger_pointer()
 		if completed:
 			_show_completion()
 		else:
