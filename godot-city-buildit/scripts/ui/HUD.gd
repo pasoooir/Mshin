@@ -2730,9 +2730,9 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
-	# Touch is a complete action on touch-down. Do not wait for touch-up, drag,
-	# a second tap, or a queue-slot tap: those intermediate states caused the
-	# mobile product selection to remain visually selected but never queued.
+	# Start a real pointer-owned gesture here. The previous implementation
+	# submitted on touch-down and never initialized _production_touch_drag_active,
+	# so the global _input handler could not track a finger to the lower queue.
 	if not (event is InputEventScreenTouch) or not event.pressed:
 		return
 	if not is_instance_valid(building) or building != _production_building:
@@ -2743,12 +2743,14 @@ func _on_production_item_gui_input(event: InputEvent, building: Building, item_i
 		return
 	if _production_touch_drag_active:
 		return
-	# The Button.pressed signal may also arrive on touch release. Mark it as
-	# consumed only after direct submission, preventing a duplicate order.
+	_production_touch_drag_active = true
+	_production_touch_dragged = false
+	_production_touch_drag_index = event.index
+	_production_touch_drag_origin = event.position
+	_production_touch_drag_item_id = item_id
+	_production_touch_drag_building = building
+	_production_touch_drag_source_button = item_button
 	item_button.set_meta("touch_drag_consumed", false)
-	_on_production_item_pressed(building, item_id, -1, item_button)
-	if is_instance_valid(item_button):
-		item_button.set_meta("touch_drag_consumed", true)
 	get_viewport().set_input_as_handled()
 
 
