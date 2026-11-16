@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createApp, signAccessToken } from "../src/index.mjs";
+import { GitHubJsonStore } from "../src/json-store.mjs";
 
 const secret = "test-only-secret-that-is-long-enough-123456";
 async function fixture(options = {}) {
@@ -28,6 +29,53 @@ async function json(url, token, method = "GET", body) {
   });
   return { status: response.status, body: await response.json() };
 }
+
+
+test("GitHub JSON storage commits multiple player and market files in one Git commit", async () => {
+  const calls = [];
+  const fakeFetch = async (url, options = {}) => {
+    const method = options.method || "GET";
+    calls.push({ url, method, body: options.body ? JSON.parse(options.body) : null });
+    let payload = {};
+    if (url.endsWith("/git/ref/heads/main")) payload = { object: { sha: "base-commit" } };
+    else if (url.endsWith("/git/commits/base-commit")) payload = { tree: { sha: "base-tree" } };
+    else if (url.endsWith("/git/blobs")) payload = { sha: "blob-" + calls.length };
+    else if (url.endsWith("/git/trees")) payload = { sha: "new-tree" };
+    else if (url.endsWith("/git/commits") && method === "POST") payload = { sha: "new-commit" };
+    else if (url.endsWith("/git/refs/heads/main") && method === "PATCH") payload = { ref: "refs/heads/main" };
+    else throw new Error("unexpected GitHub API request " + method + " " + url);
+    return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const store = new GitHubJsonStore({
+    repository: "pasoooir/mshin-player-data",
+    token: "github-token-for-unit-test-123456",
+    fetchImpl: fakeFetch
+  });
+  const result = await store.writeMany([
+    { path: "players/100001.json", value: { user_id: 100001, game_state: null } },
+    { path: "players/100002.json", value: { user_id: 100002, game_state: null } },
+    { path: "market/listings.json", value: { schema_version: 1, listings: [] } }
+  ]);
+  assert.equal(result.commit_sha, "new-commit");
+  const treeCall = calls.find(call => call.url.endsWith("/git/trees"));
+  assert.equal(treeCall.body.tree.length, 3);
+  const commitCall = calls.find(call => call.url.endsWith("/git/commits") && call.method === "POST");
+  assert.deepEqual(commitCall.body.parents, ["base-commit"]);
+  assert.equal(calls.filter(call => call.url.endsWith("/git/refs/heads/main") && call.method === "PATCH").length, 1);
+});
+
+test("GitHub JSON storage rejects path traversal and duplicate paths", async () => {
+  const store = new GitHubJsonStore({
+    repository: "pasoooir/mshin-player-data",
+    token: "github-token-for-unit-test-123456",
+    fetchImpl: async () => { throw new Error("network must not be called"); }
+  });
+  await assert.rejects(store.writeMany([{ path: "../outside.json", value: {} }]), /invalid_json_storage_path/);
+  await assert.rejects(store.writeMany([
+    { path: "players/100001.json", value: {} },
+    { path: "players/100001.json", value: {} }
+  ]), /duplicate_json_storage_path/);
+});
 
 test("profile files are isolated by numeric player id", async t => {
   const f = await fixture(); t.after(f.close);
