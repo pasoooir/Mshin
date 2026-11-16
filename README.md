@@ -1276,9 +1276,9 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Keep these persistent action notifications separate from the rotating, temporary `CitizenFeedbackBubbles` hint system.
 - [x] Add a mobile-safe four-column notification layout and position bubbles from the building's rendered roof bounds.
 - [x] Add GameplaySmoke coverage for grouping multiple ready slots by product and updating the displayed quantity after collection.
-- [ ] Godot 4.3 import/parse, full GameplaySmoke and Android Debug APK export/signature on this branch.
-- [ ] Web export and desktop/mobile Chromium smoke.
-- [ ] Merge and verify GitHub Pages deployment.
+- [x] Godot 4.3 import/parse, full GameplaySmoke (including notification grouping regression) and Android Debug APK export/signature passed (run `43791303212`).
+- [x] Web export and desktop/mobile Chromium smoke passed (run `43791303224`).
+- [ ] Merge and verify GitHub Pages deployment (PR Web build and Chromium checks passed; production Pages deployment runs after merge).
 - [ ] Physical Android test: finish a factory/store batch, leave it uncollected, verify the product bubble remains above the correct building, tap it, and verify City Storage increments; repeat with full storage and multiple ready product types.
 - [ ] Extend the same notification model to construction milestones, residential upgrade opportunities, missing road access, service outages, fire/police/health alerts, traffic and warehouse capacity warnings.
 
