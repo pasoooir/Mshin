@@ -14,7 +14,7 @@ const CITY_HALF_EXTENT := 40
 const HIGHWAY_CENTER_X := -55.0
 const HIGHWAY_ASPHALT_WIDTH := 24.0
 const HIGHWAY_SHOULDER_WIDTH := 26.8
-const HIGHWAY_LENGTH := 190.0
+const HIGHWAY_LENGTH := 700.0
 const HIGHWAY_LANE_COUNT := 6
 const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
@@ -374,7 +374,7 @@ func _build_coastal_highway() -> void:
 	for index in range(2):
 		var side := -1.0 if index == 0 else 1.0
 		var basis := Basis.IDENTITY.scaled(Vector3(1.0, 1.0, 0.48))
-		median_multimesh.set_instance_transform(index, Transform3D(basis, Vector3(HIGHWAY_CENTER_X, 0.435, side * 49.5)))
+		median_multimesh.set_instance_transform(index, Transform3D(basis, Vector3(HIGHWAY_CENTER_X, 0.435, side * 178.0)))
 	var median := MultiMeshInstance3D.new()
 	median.name = "HighwayConcreteMedian"
 	median.multimesh = median_multimesh
@@ -508,7 +508,7 @@ func _add_highway_lane_dashes() -> void:
 		HIGHWAY_CENTER_X - 6.6, HIGHWAY_CENTER_X - 3.3,
 		HIGHWAY_CENTER_X + 3.3, HIGHWAY_CENTER_X + 6.6
 	]:
-		for segment in range(-15, 16):
+		for segment in range(-55, 56):
 			lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
