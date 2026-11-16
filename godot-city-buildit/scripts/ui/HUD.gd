@@ -2688,8 +2688,10 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 		_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
 		return
 
-	# A blocked tap reports the exact reason without opening an intermediate
-	# product-details capsule or asking for a second action.
+	# Only blocked products open the explanatory details panel. Eligible
+	# products returned above directly into the queue on this same tap.
+	# Keep this path so missing BOM ingredients and quantities remain visible.
+	_show_production_item_details(building, item_id, slot_index)
 	if slot_index < 0:
 		status_label.text = "All production slots are occupied. Collect a finished item or wait for a free slot."
 	elif component.is_factory:
