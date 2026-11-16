@@ -60,6 +60,7 @@ func _rebuild_visuals() -> void:
 		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 		sprite.texture = _icon_for(data)
 		sprite.modulate = _color_for(data.type)
+		sprite.visible = data.type != BuildingNotification.Type.IDLE
 		sprite.position = Vector3.ZERO
 		sprite.no_depth_test = true
 		root.add_child(sprite)
@@ -71,7 +72,7 @@ func _rebuild_visuals() -> void:
 			idle_label.font_size = 48
 			idle_label.outline_size = 8
 			idle_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			idle_label.position = Vector3(0.0, 0.52, 0.0)
+			idle_label.position = Vector3(0.0, 0.0, 0.0)
 			idle_label.modulate = Color("#8ED8FF")
 			root.add_child(idle_label)
 
@@ -109,7 +110,7 @@ func _icon_for(data: BuildingNotification) -> Texture2D:
 		BuildingNotification.Type.STORAGE_FULL:
 			return Icons.get_tex("status", "storage_full")
 		BuildingNotification.Type.NEEDS_MATERIALS:
-			return Icons.get_icon_tex("warning")
+			return Icons.get_icon_tex(data.item_id) if not data.item_id.is_empty() else Icons.get_icon_tex("warning")
 		_:
 			return Icons.get_icon_tex("industrial")
 
