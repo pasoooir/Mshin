@@ -16,7 +16,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"id": "home",
 		"target": "Tool_Residential",
 		"title": "Build your first home",
-		"description": "Open the Residential menu on the right. Choose Small House, then tap an empty plot beside a road.",
+		"description": "Open Residential on the right. Choose Villa House, then tap the highlighted empty plot beside a road.",
 		"hint": "TAP PATH  Residential  →  Small House  →  Empty plot",
 		"result": "YOU SHOULD SEE  A house construction site appear on the selected plot."
 	},
@@ -433,47 +433,98 @@ func _update_finger_pointer() -> void:
 		if is_instance_valid(_finger_pointer):
 			_finger_pointer.hide()
 		return
-	var target: Control = null
+	var step_id := str(STEP_DATA[current_step].get("id", ""))
 	if current_step == 0:
-		target = _city_name_input
-	else:
-		var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
-		if is_instance_valid(hud):
-			var target_name := str(STEP_DATA[current_step].get("target", ""))
+		if is_instance_valid(_city_name_input) and _city_name_input.is_visible_in_tree():
+			_point_to_control(_city_name_input)
+		else:
+			_finger_pointer.hide()
+		return
+
+	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+	var target: Control = null
+	var world_target := Vector3.ZERO
+	var has_world_target := false
+	if is_instance_valid(hud):
+		match step_id:
+			"home", "factory", "store":
+				var category := "residential" if step_id == "home" else ("industrial" if step_id == "factory" else "commercial")
+				var option_id := "residential_villa" if step_id == "home" else ("factory_small" if step_id == "factory" else "building_supplies")
+				if BuildManager.is_placing:
+					var placement := _get_valid_placement_world_target()
+				has_world_target = bool(placement.get("valid", false))
+					world_target = placement.get("position", Vector3.ZERO)
+				elif str(hud.get("active_category")) == category:
+					var submenu := hud.get_node_or_null("ToolSubmenu")
+					if submenu != null and submenu.visible:
+						target = hud.find_child(option_id, true, false) as Control
+				if not is_instance_valid(target) and not has_world_target:
+					target = hud.find_child("Tool_" + category.capitalize(), true, false) as Control
+			_:
+				var target_name := str(STEP_DATA[current_step].get("target", ""))
 			target = hud.find_child(target_name, true, false) as Control if not target_name.is_empty() else null
+
 	if is_instance_valid(target) and target.is_visible_in_tree():
-		var target_rect := target.get_global_rect()
-		_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
-		_finger_pointer.show()
+		_point_to_control(target)
 		return
-	# When the next action is on a 3D building, point to the real building
-	# projected into screen space; once its detail panel opens, prefer its UI card.
-	var wanted_category := ""
-	match str(STEP_DATA[current_step].get("id", "")):
-		"raw": wanted_category = "industrial"
-		"crafted": wanted_category = "commercial"
-		"upgrade": wanted_category = "residential"
-	if wanted_category.is_empty():
+	if not has_world_target:
+		var wanted_category := ""
+		match step_id:
+			"raw": wanted_category = "industrial"
+			"crafted": wanted_category = "commercial"
+			"upgrade": wanted_category = "residential"
+		if not wanted_category.is_empty():
+			var camera := get_viewport().get_camera_3d()
+			if camera != null:
+				for building in BuildManager.buildings.values():
+					if not is_instance_valid(building) or str(building.get("status")) != "completed":
+						continue
+					var definition: Dictionary = building.get("definition") if building.get("definition") is Dictionary else {}
+					if str(definition.get("category", "")) != wanted_category:
+						continue
+					world_target = building.global_position + Vector3(0.0, 5.0, 0.0)
+					if not camera.is_position_behind(world_target):
+						has_world_target = true
+						break
+	if has_world_target:
+		_point_to_world_position(world_target)
+	else:
+		_finger_pointer.hide()
+
+func _point_to_control(target: Control) -> void:
+	if not is_instance_valid(target) or not target.is_visible_in_tree():
 		_finger_pointer.hide()
 		return
+	var target_rect := target.get_global_rect()
+	_finger_pointer.position = Vector2(target_rect.position.x + target_rect.size.x * 0.72, target_rect.position.y + target_rect.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	_finger_pointer.show()
+
+func _point_to_world_position(world_position: Vector3) -> void:
 	var camera := get_viewport().get_camera_3d()
-	if camera == null:
+	if camera == null or camera.is_position_behind(world_position):
 		_finger_pointer.hide()
 		return
-	for building in BuildManager.buildings.values():
-		if not is_instance_valid(building) or str(building.get("status")) != "completed":
-			continue
-		var definition: Dictionary = building.get("definition") if building.get("definition") is Dictionary else {}
-		if str(definition.get("category", "")) != wanted_category:
-			continue
-		var world_target: Vector3 = building.global_position + Vector3(0.0, 5.0, 0.0)
-		if camera.is_position_behind(world_target):
-			continue
-		var screen_target := camera.unproject_position(world_target)
-		_finger_pointer.position = screen_target + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
-		_finger_pointer.show()
-		return
-	_finger_pointer.hide()
+	_finger_pointer.position = camera.unproject_position(world_position) + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
+	_finger_pointer.show()
+
+func _get_valid_placement_world_target() -> Dictionary:
+	var type_id := BuildManager.selected_building_type
+	if type_id.is_empty() or not BuildManager.building_types.has(type_id):
+		return {"valid": false}
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	var footprint: Vector2i = definition.get("size", Vector2i(2, 2))
+	var scene := get_tree().current_scene
+	var road_system := scene.get_node_or_null("World/RoadSystem") if scene else null
+	if road_system == null:
+		return {"valid": false}
+	for road_cell in road_system.roads.keys():
+		for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+			var candidate: Vector2i = road_cell + direction
+			if not BuildManager.can_place_at(candidate, type_id):
+				continue
+			var world_position: Vector3 = BuildManager.grid_to_world(candidate) + Vector3((footprint.x - 1) * BuildManager.GRID_SIZE * 0.5, 0.0, (footprint.y - 1) * BuildManager.GRID_SIZE * 0.5)
+			return {"valid": true, "position": world_position + Vector3(0.0, 4.0, 0.0)}
+	return {"valid": false}
 
 func _show_completion() -> void:
 	if not is_instance_valid(_panel):
