@@ -1392,6 +1392,7 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 - [x] Root cause identified in `HUD.gd`: the touch handler submitted the product immediately on touch-down, while the global drag handler depended on `_production_touch_drag_active` being initialized; no code ever initialized it, so touch drags could never reach the lower queue.
 - [x] Touch-down now captures the initiating finger, source product, owning building and origin position without consuming ingredients or starting production.
+- [x] Queue hover/release hit tests convert viewport touch coordinates through each queue Control's full canvas transform, avoiding mismatches between screen coordinates and CanvasLayer-local rectangles.
 - [x] The existing global touch handler now receives that captured finger's movement/release, displays the drag ghost, highlights valid empty queue squares and submits only when released over a valid destination.
 - [x] A stationary tap remains a one-touch production action on release; the Button pressed callback is suppressed to prevent duplicate orders.
 - [x] Added a GameplaySmoke regression that sends touch-down, drag and release through the product card handler and global HUD input path, then checks queue occupancy, a future Unix countdown timestamp and the rendered timer label.
