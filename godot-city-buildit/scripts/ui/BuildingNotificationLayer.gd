@@ -58,8 +58,8 @@ func _sync_notifications() -> void:
 
 	for building_id in wanted:
 		var data: Dictionary = wanted[building_id]
-		var building: Node3D = data.building
-		var anchor: Node3D = _anchors.get(building_id)
+		var building: Building = data.building
+		var anchor = _anchors.get(building_id)
 		if not is_instance_valid(anchor):
 			anchor = AnchorScript.new()
 			anchor.name = "BuildingNotificationAnchor"
@@ -73,7 +73,7 @@ func _sync_notifications() -> void:
 
 	_prune_component_connections()
 
-func _build_notifications(building: Node3D) -> Array[BuildingNotification]:
+func _build_notifications(building: Building) -> Array[BuildingNotification]:
 	var result: Array[BuildingNotification] = []
 	var building_id := str(building.get("building_id"))
 	var component = building.get("production_component")
