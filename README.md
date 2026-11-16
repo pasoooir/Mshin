@@ -1307,8 +1307,9 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Remove the misleading “TAP TO START” details prompt; a valid product tap submits directly to the first live empty queue slot.
 - [x] Keep blocked-order feedback in the status line only; do not open a product-details step that implies another click is required.
 - [x] Extend GameplaySmoke to verify the tapped Metal item is stored in the free queue slot and no intermediate details card is opened.
-- [ ] Run Godot import/parse and GameplaySmoke CI for this correction.
-- [ ] Run Android APK export and Web/Chromium validation; verify the deployed Pages build.
+- [x] Godot import/parse and full GameplaySmoke CI for this correction.
+- [x] Android Debug APK export and signature/package verification for this correction.
+- [ ] Web Chromium validation and deployed Pages build.
 - [ ] Verify the interaction with a real Android screen touch; automated tests do not replace device acceptance.
 
 **Acceptance:** one tap on an eligible product tile must immediately place that item in the first currently empty queue square. Blocked products must remain unqueued and explain the actual blocker without displaying a second-step “START” prompt.
@@ -1317,7 +1318,8 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 - [x] Restore the explanatory product-details panel only on rejected/blocked product taps, preserving exact missing City Storage ingredients and quantities.
 - [x] Keep eligible product taps on the direct path: submit to the first live empty queue slot and return without opening the details panel.
-- [ ] Re-run the full Godot GameplaySmoke gate and Web/Android workflows after the correction.
+- [x] Re-run the full Godot import/parse, startup, GameplaySmoke, city geometry, currency and macro-economy validation after the correction.
+- [x] Re-run Android Debug APK export, signature/package verification and artifact upload after the correction.
 - [ ] Confirm Pages deployment and perform physical Android touch acceptance.
 
 **Regression found and corrected:** the previous direct-tap change removed the blocked-product details panel as well as the unwanted second-step prompt. GameplaySmoke correctly caught the lost missing-ingredient disclosure. The panel is now retained for blocked products only; the prompt asking the player to start a valid product is not restored.
