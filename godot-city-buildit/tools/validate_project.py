@@ -670,8 +670,10 @@ if '_toolbar_style(Color(0.08, 0.16, 0.21, 0.97)' in hud:
 project_settings = (ROOT / "project.godot").read_text(encoding="utf-8")
 tutorial_source = (ROOT / "scripts/ui/TutorialGuide.gd").read_text(encoding="utf-8")
 level_up_source = (ROOT / "scripts/ui/LevelUpEffect.gd").read_text(encoding="utf-8")
-if 'emulate_mouse_from_touch=true' not in project_settings:
-    errors.append("Native mobile touch-to-GUI emulation must be enabled in project.godot.")
+if 'emulate_mouse_from_touch=false' not in project_settings:
+    errors.append("Native mobile touch-to-GUI emulation must remain disabled; use the single native touch router.")
+if 'func _route_native_ui_touch(event: InputEvent) -> bool:' not in (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8"):
+    errors.append("HUD is missing the native touch router for Buttons, LineEdits and scroll containers.")
 for contract in [
     '_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE',
     'layout.mouse_filter = Control.MOUSE_FILTER_IGNORE',
