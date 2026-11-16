@@ -53,6 +53,15 @@ test("admin lists stock, player2 buys it, both wallets and inventories reconcile
   let admin = (await f.json(100001, "/v1/profile")).body.game_state;
   assert.equal(admin.storage.items.metal, 3, "listing must reserve seller goods");
   assert.equal(admin.economy.simoleons, 500, "listing must not pay seller before purchase");
+  const adminProfile = await f.json(100001, "/v1/profile");
+  const forgedSave = await f.json(100001, "/v1/profile", "PUT", {
+    expected_revision: adminProfile.body.revision,
+    game_state: state({ coins: 999999, items: { metal: 9999 }, capacity: 500 })
+  });
+  assert.equal(forgedSave.status, 200);
+  admin = (await f.json(100001, "/v1/profile")).body.game_state;
+  assert.equal(admin.economy.simoleons, 500, "client saves must not overwrite authoritative market wallet");
+  assert.equal(admin.storage.items.metal, 3, "client saves must not recreate reserved market inventory");
   const visible = await f.json(100002, "/v1/market");
   assert.equal(visible.status, 200);
   assert.equal(visible.body.listings.length, 1);
@@ -98,19 +107,19 @@ test("market rejects insufficient funds, full warehouse, self purchase and locke
   let buyer = (await f.json(100002, "/v1/profile")).body.game_state;
   assert.equal(buyer.economy.simoleons, 5);
   assert.equal(buyer.storage.items.metal, undefined);
-  const cancel = await f.json(100001, "/v1/market/" + metalId + "/cancel", "POST", {});
-  assert.equal(cancel.status, 200);
+  assert.equal((await f.json(100001, "/v1/market/" + metalId + "/cancel", "POST", {})).status, 200);
 
-  await f.seed(100001, state({ coins: 100, items: { metal: 2 } }));
-  const second = await f.json(100001, "/v1/market/list", "POST", { item_id: "metal", quantity: 2, unit_price: 2 });
+  const g = await fixture(); t.after(g.close);
+  await g.seed(100001, state({ coins: 100, items: { metal: 2, electrical: 2 } }));
+  await g.seed(100002, state({ coins: 100, items: { wood: 5 }, capacity: 5 }));
+  const second = await g.json(100001, "/v1/market/list", "POST", { item_id: "metal", quantity: 2, unit_price: 2 });
+  assert.equal(second.status, 201);
   const secondId = second.body.listing.listing_id;
-  await f.seed(100002, state({ coins: 100, items: { wood: 5 }, capacity: 5 }));
-  assert.equal((await f.json(100002, "/v1/market/" + secondId + "/buy", "POST", {})).body.error, "warehouse_capacity");
-  const buyerAfter = (await f.json(100002, "/v1/profile")).body.game_state;
+  assert.equal((await g.json(100002, "/v1/market/" + secondId + "/buy", "POST", {})).body.error, "warehouse_capacity");
+  const buyerAfter = (await g.json(100002, "/v1/profile")).body.game_state;
   assert.equal(buyerAfter.economy.simoleons, 100);
   assert.equal(buyerAfter.storage.items.metal, undefined);
-
-  const locked = await f.json(100001, "/v1/market/list", "POST", { item_id: "electrical", quantity: 1, unit_price: 100 });
+  const locked = await g.json(100001, "/v1/market/list", "POST", { item_id: "electrical", quantity: 1, unit_price: 100 });
   assert.equal(locked.status, 409);
 });
 
