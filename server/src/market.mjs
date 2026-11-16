@@ -240,14 +240,18 @@ export async function handleMarketRequest({
         if (usedStorage(buyerState) + listing.quantity > buyerState.storage.capacity) return { status: 409, error: "warehouse_capacity" };
         const sellerBefore = sellerBalance;
         const buyerBefore = buyerBalance;
+        const buyerInventoryBefore = { ...buyerState.storage.items };
+        const sellerInventoryBefore = { ...sellerState.storage.items };
         buyerState.economy.simoleons = buyerBalance - total;
         sellerState.economy.simoleons = sellerBalance + total;
         buyerState.storage.items[listing.item_id] = Number(buyerState.storage.items[listing.item_id] || 0) + listing.quantity;
         appendLedger(buyerState, "player_market_purchase", "simoleons", total, buyerBefore, buyerState.economy.simoleons, {
-          listing_id: listingId, seller_id: listing.seller_id, item_id: listing.item_id, quantity: listing.quantity
+          listing_id: listingId, seller_id: listing.seller_id, item_id: listing.item_id, quantity: listing.quantity,
+          inventory_before: buyerInventoryBefore, inventory_after: { ...buyerState.storage.items }
         });
         appendLedger(sellerState, "player_market_sale", "simoleons", total, sellerBefore, sellerState.economy.simoleons, {
-          listing_id: listingId, buyer_id: session.playerId, item_id: listing.item_id, quantity: listing.quantity
+          listing_id: listingId, buyer_id: session.playerId, item_id: listing.item_id, quantity: listing.quantity,
+          inventory_before: sellerInventoryBefore, inventory_after: { ...sellerState.storage.items }
         });
         listing.status = "sold";
         listing.buyer_id = session.playerId;
@@ -293,9 +297,11 @@ export async function handleMarketRequest({
         const originalMarket = structuredClone(market);
         const state = gameState(profile);
         if (usedStorage(state) + listing.quantity > state.storage.capacity) return { status: 409, error: "warehouse_capacity" };
+        const inventoryBefore = { ...state.storage.items };
         state.storage.items[listing.item_id] = Number(state.storage.items[listing.item_id] || 0) + listing.quantity;
         appendLedger(state, "player_market_listing_cancelled", "items", listing.quantity, balance(state), balance(state), {
-          listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity
+          listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity,
+          inventory_before: inventoryBefore, inventory_after: { ...state.storage.items }
         });
         listing.status = "cancelled";
         listing.cancelled_at = new Date().toISOString();
