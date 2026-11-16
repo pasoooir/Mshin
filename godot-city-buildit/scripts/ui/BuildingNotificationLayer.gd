@@ -21,6 +21,10 @@ func _ready() -> void:
 func configure(hud: Node) -> void:
 	_hud = hud
 
+func refresh_now() -> void:
+	_sync_notifications()
+	_update_positions()
+
 func _process(delta: float) -> void:
 	_refresh_elapsed += delta
 	if _refresh_elapsed >= REFRESH_INTERVAL:
