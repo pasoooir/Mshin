@@ -452,7 +452,7 @@ func _update_finger_pointer() -> void:
 				var option_id := "residential_villa" if step_id == "home" else ("factory_small" if step_id == "factory" else "building_supplies")
 				if BuildManager.is_placing:
 					var placement := _get_valid_placement_world_target()
-				has_world_target = bool(placement.get("valid", false))
+					has_world_target = bool(placement.get("valid", false))
 					world_target = placement.get("position", Vector3.ZERO)
 				elif str(hud.get("active_category")) == category:
 					var submenu := hud.get_node_or_null("ToolSubmenu")
@@ -462,7 +462,7 @@ func _update_finger_pointer() -> void:
 					target = hud.find_child("Tool_" + category.capitalize(), true, false) as Control
 			_:
 				var target_name := str(STEP_DATA[current_step].get("target", ""))
-			target = hud.find_child(target_name, true, false) as Control if not target_name.is_empty() else null
+				target = hud.find_child(target_name, true, false) as Control if not target_name.is_empty() else null
 
 	if is_instance_valid(target) and target.is_visible_in_tree():
 		_point_to_control(target)
