@@ -3297,7 +3297,15 @@ func _test_tutorial_guide_contract() -> void:
 		_check(not str(step.get("title", "")).is_empty() and not str(step.get("description", "")).is_empty() and not str(step.get("hint", "")).is_empty(), "Every tutorial step must provide a title, actionable explanation and UI hint.")
 		_check(not seen_ids.has(step_id), "Tutorial milestone identifiers must be unique.")
 		seen_ids[step_id] = true
-	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(6).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(7).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+
+func _test_city_name_contract() -> void:
+	var previous_name := GameManager.city_name
+	_check(not GameManager.set_city_name("   "), "City name must reject blank input.")
+	_check(GameManager.set_city_name("New Harbor"), "City name must accept a non-empty player-entered value.")
+	_check(GameManager.city_name == "New Harbor", "City name setter must retain the player's chosen name.")
+	_check(GameManager.set_city_name("A".repeat(40)) and GameManager.city_name.length() == 28, "City name must be limited to the same 28 characters as the onboarding input.")
+	GameManager.city_name = previous_name
 
 func _test_mayor_xp_progression() -> void:
 	var previous_level := GameManager.level
@@ -3349,6 +3357,7 @@ func _run_gameplay_test() -> void:
 	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
 	_test_tutorial_guide_contract()
+	_test_city_name_contract()
 	_test_mobile_haptics_contract()
 	_test_performance_benchmark_contract()
 	_test_epic_project_core()
