@@ -1,25 +1,42 @@
 # Mshin independent JSON profile service
 
-This service is the only game-data API. It stores one private JSON document per numeric player ID under `MSHIN_DATA_DIR/players/<player_id>.json`. It does not use Cloudflare, D1, R2, or another database for game state.
+This service is the only game-data API. Production game data is stored as JSON files in a **separate private GitHub repository**, not in the public Mshin Pages repository. Cloudflare is limited to authentication and issuing the numeric player ID; it does not store game state, inventory, wallet or market data.
 
-## Runtime
+## GitHub JSON storage
 
-- Node.js 20+
-- Persistent local disk or a mounted persistent volume
-- One active writer process for a data directory (profile and market reads/writes share an in-process lock)
-- HTTPS reverse proxy in production
+Configure a dedicated private repository, for example `pasoooir/mshin-player-data`. It must be private, have an initialized default branch, and must never be made public. Create a fine-grained GitHub token restricted to that one repository with **Contents: Read and write** only. Store the token only as a secret on the independent API host.
 
-Run:
+Required environment:
 
 ```sh
-npm test
-AUTH_TOKEN_SECRET='replace-with-at-least-32-random-bytes' \
-MSHIN_DATA_DIR='/var/lib/mshin' \
-ALLOWED_ORIGINS='https://pasoooir.github.io' \
-NODE_ENV=production PORT=8788 npm start
+GITHUB_JSON_REPOSITORY='pasoooir/mshin-player-data'
+GITHUB_JSON_BRANCH='main'
+GITHUB_JSON_TOKEN='server-side-secret'
+AUTH_TOKEN_SECRET='same-secret-used-by-auth-worker-at-least-32-bytes'
+ALLOWED_ORIGINS='https://pasoooir.github.io'
+NODE_ENV=production
+PORT=8788
+npm start
 ```
 
-The directory must be on persistent storage and included in the host's backup plan. Do not deploy this service on an ephemeral filesystem. Do not expose the data directory through a static web server.
+Initialize the two test accounts and shared market document once:
+
+```sh
+GITHUB_JSON_REPOSITORY='pasoooir/mshin-player-data' \
+GITHUB_JSON_BRANCH='main' \
+GITHUB_JSON_TOKEN='server-side-secret' npm run seed:github
+```
+
+The initializer creates only missing files and never overwrites existing player data:
+- `players/100001.json` — admin
+- `players/100002.json` — player2
+- `market/listings.json` — shared active and historical listings
+
+The GitHub adapter reads JSON through the Contents API and writes a complete transaction through GitHub's Git Blobs, Trees and Commits APIs. Buyer profile, seller profile and market listings are placed in one Git commit, so readers see the transaction as one repository revision. The API token is never sent to Godot or the browser.
+
+**Important operating limits:** GitHub is versioned file storage, not a high-throughput database. Each save/market mutation creates a Git commit and API reads consume the token's GitHub API quota. This implementation is intentionally an initial two-account/test deployment. Before opening the market to many players or frequent autosaves, add a server-side write queue/cache and measure GitHub API quota and latency; do not silently fall back to public files or Cloudflare storage.
+
+For local automated tests only, the service continues to use filesystem JSON when `GITHUB_JSON_REPOSITORY` is absent. Production must be configured with the private repository and token.
 
 ## API
 
