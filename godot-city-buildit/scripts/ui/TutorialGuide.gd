@@ -67,6 +67,7 @@ var _hint: Label
 var _result: Label
 var _progress: ProgressBar
 var _counter: Label
+var _icon_legend: Label
 var _skip_button: Button
 var _later_button: Button
 var _dismissed := false
@@ -186,12 +187,22 @@ func _build_guide_panel() -> void:
 	_counter = Label.new()
 	_counter.add_theme_color_override("font_color", Color("#F5FAFF"))
 	_counter.add_theme_font_size_override("font_size", 17)
+	_counter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_child(_counter)
+
+	_icon_legend = Label.new()
+	_icon_legend.text = "🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
+	_icon_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_icon_legend.add_theme_color_override("font_color", Color("#D7F0FA"))
+	_icon_legend.add_theme_font_size_override("font_size", 16)
+	_icon_legend.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(_icon_legend)
 
 	_title = Label.new()
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_title.add_theme_color_override("font_color", Color.WHITE)
 	_title.add_theme_font_size_override("font_size", 21)
+	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(_title)
 
 	var scroll := ScrollContainer.new()
