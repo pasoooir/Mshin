@@ -3295,7 +3295,7 @@ func _test_tutorial_guide_contract() -> void:
 		if is_instance_valid(level_effect):
 			var level_card := level_effect.find_child("CenterCard", true, false) as Control
 			_check(level_effect.mouse_filter == Control.MOUSE_FILTER_IGNORE and level_card != null and level_card.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The visual level-up celebration must never become a full-screen input shield.")
-	_check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "Native mobile touch must be translated into GUI mouse events so Godot Buttons and LineEdits are actionable.")
+	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile input must remain native-only; the centralized router must handle Controls without synthetic mouse duplication.")
 	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
 	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
