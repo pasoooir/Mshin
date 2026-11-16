@@ -3878,6 +3878,7 @@ func _run_gameplay_test() -> void:
 	_check(queue_scroll_region != null and queue_scroll_region.custom_minimum_size.y >= 96.0, "Production queue scroll region must reserve enough vertical space for the enlarged readable queue cards.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
+	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile production must use native ScreenTouch events without a parallel synthetic mouse event.")
 	if metal_button:
 		production_hud._update_production_orbit_projection()
 		_check(metal_button.size.x > 0.0 and metal_button.size.y > 0.0, "Projected factory material buttons must have a real non-zero touch hitbox; custom_minimum_size alone is insufficient.")
@@ -3928,8 +3929,20 @@ func _run_gameplay_test() -> void:
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
 	if second_metal_button:
-		second_metal_button.emit_signal("pressed")
-	_check(not factory_component.get_slot(1).is_empty(), "A second tap must enqueue another parallel factory batch directly.")
+		var second_touch_position: Vector2 = second_metal_button.get_global_transform_with_canvas() * (second_metal_button.size * 0.5)
+		var second_touch_down := InputEventScreenTouch.new()
+		second_touch_down.index = 0
+		second_touch_down.pressed = true
+		second_touch_down.position = second_touch_position
+		get_viewport().push_input(second_touch_down, true)
+		await get_tree().process_frame
+		var second_touch_up := InputEventScreenTouch.new()
+		second_touch_up.index = 0
+		second_touch_up.pressed = false
+		second_touch_up.position = second_touch_position
+		get_viewport().push_input(second_touch_up, true)
+		await get_tree().process_frame
+	_check(not factory_component.get_slot(1).is_empty(), "A second native ScreenTouch tap must enqueue another parallel factory batch directly.")
 	# End-to-end factory lifecycle: preserve the catalog duration, then shorten
 	# only the persisted finish timestamps in this smoke test so real process
 	# ticks can exercise the visible countdown and ready/collect transitions.
