@@ -154,9 +154,9 @@ func _wait_seconds(seconds: float) -> void:
 func _finger_points_to_control(finger: Control, target: Control) -> bool:
 	if not is_instance_valid(finger) or not is_instance_valid(target) or not target.is_visible_in_tree() or not finger.visible:
 		return false
-	var target_rect := target.get_global_rect()
-	var finger_tip := finger.position + Vector2(finger.size.x * 0.5, 0.0)
-	return finger_tip.x >= target_rect.position.x + target_rect.size.x * 0.5 and finger_tip.x <= target_rect.end.x and finger.position.y >= target_rect.position.y + target_rect.size.y - 8.0 and finger.position.y <= target_rect.end.y + 10.0
+	var finger_anchor_in_viewport := finger.get_global_transform_with_canvas().origin
+	var expected_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y + 2.0)
+	return finger_anchor_in_viewport.distance_to(expected_anchor_in_viewport) <= 8.0
 
 
 func _tap_native_control(control: Control) -> void:
