@@ -1278,7 +1278,10 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [x] Add GameplaySmoke coverage for grouping multiple ready slots by product and updating the displayed quantity after collection.
 - [x] Godot 4.3 import/parse, full GameplaySmoke (including notification grouping regression) and Android Debug APK export/signature passed (run `43791303212`).
 - [x] Web export and desktop/mobile Chromium smoke passed (run `43791303224`).
-- [ ] Merge and verify GitHub Pages deployment (PR Web build and Chromium checks passed; production Pages deployment runs after merge).
+- [x] PR #537 merged to `main` as `7fb225945408df65775d507ce125323570457017`.
+- [x] Post-merge Godot validation, full GameplaySmoke and Android Debug APK export/signature passed (run `43791662419`).
+- [x] Post-merge Web export and desktop/mobile Chromium smoke passed (run `43791662421`).
+- [x] GitHub Pages build and deployment passed for merge commit `7fb225945408df65775d507ce125323570457017` (run `43791661794`).
 - [ ] Physical Android test: finish a factory/store batch, leave it uncollected, verify the product bubble remains above the correct building, tap it, and verify City Storage increments; repeat with full storage and multiple ready product types.
 - [ ] Extend the same notification model to construction milestones, residential upgrade opportunities, missing road access, service outages, fire/police/health alerts, traffic and warehouse capacity warnings.
 
