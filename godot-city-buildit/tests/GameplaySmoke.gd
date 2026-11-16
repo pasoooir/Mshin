@@ -3289,6 +3289,12 @@ func _test_audio_manager_contract() -> void:
 func _test_tutorial_guide_contract() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
+	var level_hud := get_node_or_null("HUD")
+	if is_instance_valid(level_hud):
+		var level_effect := level_hud.find_child("LevelUpCelebration", true, false) as Control
+		if is_instance_valid(level_effect):
+			var level_card := level_effect.find_child("CenterCard", true, false) as Control
+			_check(level_effect.mouse_filter == Control.MOUSE_FILTER_IGNORE and level_card != null and level_card.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The visual level-up celebration must never become a full-screen input shield.")
 	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
 	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
