@@ -635,10 +635,17 @@ func _load_progress() -> void:
 	current_step = clampi(int(config.get_value("tutorial", "current_step", 0)), 0, STEP_DATA.size())
 	completed = bool(config.get_value("tutorial", "completed", false))
 	var saved_milestones: Variant = config.get_value("tutorial", "milestones", {})
+	var has_city_name_history := saved_milestones is Dictionary and saved_milestones.has("city_name")
 	if saved_milestones is Dictionary:
 		for key in milestones:
 			milestones[key] = bool(saved_milestones.get(key, false))
-	if completed:
+	# A pre-city-name save must not silently skip the new real input step,
+	# even if an older tutorial version had already been marked complete.
+	if not has_city_name_history and GameManager.city_name.is_empty():
+		completed = false
+		current_step = 0
+		milestones["city_name"] = false
+	elif completed:
 		current_step = STEP_DATA.size()
 
 func _save_progress() -> void:
