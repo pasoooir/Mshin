@@ -608,8 +608,8 @@ func _build_reopen_button() -> void:
 	reopen.anchor_bottom = 1.0
 	reopen.offset_left = 14
 	reopen.offset_right = 118
-	reopen.offset_top = 14
-	reopen.offset_bottom = 62
+	reopen.offset_top = -62
+	reopen.offset_bottom = -14
 	reopen.z_index = 111
 	reopen.mouse_filter = Control.MOUSE_FILTER_STOP
 	reopen.pressed.connect(_reopen_guide)
