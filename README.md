@@ -1500,3 +1500,18 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] Tune rendering bottlenecks from recorded device measurements; no unmeasured visual-quality reductions are permitted.
 
 **Status honesty:** PR #560 is merged into `main` as `a250b123`; Godot, Android and desktop/mobile Chromium CI passed. The milestone remains open only for the deployed Pages URL check and physical Android performance/touch acceptance.
+
+
+## Expanded city overview and natural mountain horizon — 2026-11-16
+
+- [x] Increase the camera's maximum zoom distance from 55 m to 150 m so players can pull back for a much wider city overview without reducing the existing close-up zoom.
+- [x] Expand the camera pan boundary to 130 m while keeping the playable city and building interaction rules unchanged.
+- [x] Add a continuous 1,000 m green ground backdrop behind the playable terrain so camera movement cannot expose the empty grey world background.
+- [x] Build a distant four-sided mountain rim with rolling green ridges, dark evergreen shrub clusters and dark green grass.
+- [x] Batch mountain shrubs and grass with MultiMesh and disable their shadow casting to keep the distant scenery inexpensive on mobile GPUs.
+- [x] Keep the mountain backdrop local and procedural: no CDN, runtime download or third-party asset dependency.
+- [x] Add source-level validation contracts for the expanded zoom range and the natural horizon geometry.
+- [ ] Run Godot import/parse, full GameplaySmoke, Android APK export and desktop/mobile Chromium checks for this milestone.
+- [ ] Verify the deployed immutable Pages build and inspect all four map edges at maximum zoom on a physical Android device.
+
+**Visual acceptance:** at maximum zoom and at every reachable pan edge, the player must see continuous natural ground and green mountain scenery rather than an exposed grey void. The whole currently built city should fit comfortably in the overview where its unlocked footprint allows it. Existing close zoom, production interactions, building placement and road editing must remain unchanged.
