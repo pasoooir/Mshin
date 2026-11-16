@@ -2758,15 +2758,19 @@ func _input(event: InputEvent) -> void:
 	# before Control.gui_input. Route taps here with viewport-space hit tests;
 	# this remains reliable when touch-to-mouse emulation is disabled.
 	if event is InputEventScreenTouch and event.pressed:
-		if is_instance_valid(production_overlay) and production_overlay.visible and is_instance_valid(_production_building):
+		print("[NativeProductionTouch] pos=", event.position, " overlay=", is_instance_valid(production_overlay), " visible=", production_overlay.is_visible_in_tree() if is_instance_valid(production_overlay) else false, " building=", is_instance_valid(_production_building), " cards=", _production_orbit_buttons.size())
+		if is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree() and is_instance_valid(_production_building):
 			for button in _production_orbit_buttons:
-				if not is_instance_valid(button) or not button.visible or button.disabled:
+				if not is_instance_valid(button):
 					continue
-				if not button.get_global_rect().has_point(event.position):
+				var rect := button.get_global_rect()
+				print("[NativeProductionTouch] card=", button.name, " visible=", button.is_visible_in_tree(), " disabled=", button.disabled, " rect=", rect, " hit=", rect.has_point(event.position))
+				if not button.is_visible_in_tree() or button.disabled or not rect.has_point(event.position):
 					continue
 				var target_building := _production_building
 				var target_item_id := str(button.get_meta("production_item_id", ""))
 				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
+					print("[NativeProductionTouch] submit item=", target_item_id)
 					_on_production_item_pressed(target_building, target_item_id, -1, button)
 					get_viewport().set_input_as_handled()
 					return
