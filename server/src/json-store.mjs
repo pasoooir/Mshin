@@ -94,10 +94,19 @@ export class GitHubJsonStore {
         "/repos/" + this.repository + "/contents/" + filePath.split("/").map(encodeURIComponent).join("/") +
         "?ref=" + encodeURIComponent(this.branch)
       );
-      if (result.type !== "file" || result.encoding !== "base64" || typeof result.content !== "string") {
+      if (result.type !== "file" || typeof result.sha !== "string") {
         throw new Error("github_json_file_invalid");
       }
-      return JSON.parse(Buffer.from(result.content.replace(/\n/g, ""), "base64").toString("utf8"));
+      let encoded = result.content;
+      if (result.encoding !== "base64" || typeof encoded !== "string" || !encoded.length) {
+        // Contents API omits inline content for larger files; fetch the blob by SHA.
+        const blob = await this.request("/repos/" + this.repository + "/git/blobs/" + result.sha);
+        if (blob.encoding !== "base64" || typeof blob.content !== "string") {
+          throw new Error("github_json_blob_invalid");
+        }
+        encoded = blob.content;
+      }
+      return JSON.parse(Buffer.from(encoded.replace(/\\n/g, ""), "base64").toString("utf8"));
     } catch (error) {
       if (error.status === 404) return null;
       throw error;
