@@ -1387,3 +1387,17 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android acceptance: test idle Zzz, material shortage, ready product tap, full storage retention, upgrade-ready hard hat, camera distance LOD and save/reload.
 
 **Implementation boundary:** the notification buttons are CanvasLayer controls continuously projected from 3D roof anchors. They face the camera by screen projection and provide reliable mobile touch targets; the underlying building model remains 3D. This intentionally avoids fragile Sprite3D hit-testing while preserving a world-anchored visual result. StorageFull is a distinct notification state but retains the real product icon and queue item identity. The product is never removed from its queue unless City Storage accepts it.
+
+## Mobile production card-to-queue drag repair — 2026-11-16
+
+- [x] Root cause identified in `HUD.gd`: the touch handler submitted the product immediately on touch-down, while the global drag handler depended on `_production_touch_drag_active` being initialized; no code ever initialized it, so touch drags could never reach the lower queue.
+- [x] Touch-down now captures the initiating finger, source product, owning building and origin position without consuming ingredients or starting production.
+- [x] The existing global touch handler now receives that captured finger's movement/release, displays the drag ghost, highlights valid empty queue squares and submits only when released over a valid destination.
+- [x] A stationary tap remains a one-touch production action on release; the Button pressed callback is suppressed to prevent duplicate orders.
+- [x] Added a GameplaySmoke regression that sends touch-down, drag and release through the product card handler and global HUD input path, then checks queue occupancy, a future Unix countdown timestamp and the rendered timer label.
+- [ ] Godot 4.3 import/parse and full GameplaySmoke CI for this repair.
+- [ ] Android Debug APK export and mobile Chromium smoke for this repair.
+- [ ] Physical Android landscape test confirming finger drag from the product card to the lower EMPTY square.
+
+**Acceptance rule:** do not claim this repair complete until CI passes; physical-device acceptance remains separate from automated tests.
+
