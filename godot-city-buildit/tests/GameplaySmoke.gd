@@ -3896,15 +3896,16 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
-		# Exercise the connected GUI signal, not the handler directly. This
-		# catches a missing signal connection that a direct function call hides.
-		_check(metal_button.gui_input.get_connections().size() > 0, "The actual Metal product button must be wired to the production touch handler.")
+		# Test the real Viewport -> Control -> BaseButton input route. The
+		# product button must emit pressed on touch-down, not wait for touch-up.
+		_check(metal_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "Product buttons must use BUTTON_PRESS so a mobile tap submits on finger-down.")
 		var metal_touch_down := InputEventScreenTouch.new()
 		metal_touch_down.index = 0
 		metal_touch_down.pressed = true
 		metal_touch_down.position = metal_button.get_global_rect().get_center()
-		metal_button.gui_input.emit(metal_touch_down)
-		_check(not factory_component.get_slot(0).is_empty(), "A single product touch-down must synchronously enqueue production; touch-up, drag and queue-slot interaction are not prerequisites.")
+		get_viewport().push_input(metal_touch_down)
+		await get_tree().process_frame
+		_check(not factory_component.get_slot(0).is_empty(), "A real viewport-routed product touch-down must enqueue production without synthetic gui_input emission or touch-up.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
