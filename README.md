@@ -1261,3 +1261,25 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 - [ ] Physical Android touch/visual acceptance and direct low-vision readability check.
 
 **Acceptance:** no popup text override may render below 16 px at the game UI scale; production and residential projected material/product controls must be at least 120 × 130 px before UI scaling. Automated CI is not a substitute for physical-device accessibility acceptance.
+
+## Persistent building notifications — SimCity BuildIt reference — 2026-11-16
+
+**Reference behavior verified against EA's official SimCity BuildIt beginner guide:** finished factory materials and finished commercial products appear above their source building and can be tapped to collect. See https://help.ea.com/en/articles/simcity/simcity-buildit/beginner-guide/ .
+
+**Mshin notification architecture (separate from transient citizen hints):**
+
+- [x] Add a dedicated `BuildingNotificationLayer` for persistent, screen-space, world-anchored building action bubbles.
+- [x] Show the actual local PNG item icon above factories and commercial buildings whenever one or more production slots are ready.
+- [x] Group identical ready products into one bubble with an accurate quantity badge; keep different product types independently tappable.
+- [x] Tap a product bubble to collect its ready batches directly into City Storage; if storage is full, preserve the product at the building and show a clear warning.
+- [x] Keep residential upgrade-ready hard-hat notifications actionable and route them to the correct building panel.
+- [x] Keep these persistent action notifications separate from the rotating, temporary `CitizenFeedbackBubbles` hint system.
+- [x] Add a mobile-safe four-column notification layout and position bubbles from the building's rendered roof bounds.
+- [x] Add GameplaySmoke coverage for grouping multiple ready slots by product and updating the displayed quantity after collection.
+- [x] Godot 4.3 import/parse, full GameplaySmoke (including notification grouping regression) and Android Debug APK export/signature passed (run `43791303212`).
+- [x] Web export and desktop/mobile Chromium smoke passed (run `43791303224`).
+- [ ] Merge and verify GitHub Pages deployment (PR Web build and Chromium checks passed; production Pages deployment runs after merge).
+- [ ] Physical Android test: finish a factory/store batch, leave it uncollected, verify the product bubble remains above the correct building, tap it, and verify City Storage increments; repeat with full storage and multiple ready product types.
+- [ ] Extend the same notification model to construction milestones, residential upgrade opportunities, missing road access, service outages, fire/police/health alerts, traffic and warehouse capacity warnings.
+
+**Implementation note:** the existing world-space `Sprite3D` thumbnail was not a complete SimCity-style interaction: it had no reliable screen-space tap target and the notification logic was limited to one visible product thumbnail per building. The new layer supplies persistent, accessible tap targets and groups all ready queue slots without changing the production/economy state machine. CI and Chromium tests do not replace physical-device acceptance.

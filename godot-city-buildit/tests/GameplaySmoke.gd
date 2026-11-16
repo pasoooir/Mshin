@@ -10,6 +10,7 @@ const ProductionComponentScript = preload("res://scripts/production/ProductionCo
 const BuildingScene = preload("res://scenes/buildings/Building.tscn")
 const GhostPreviewScript = preload("res://scripts/systems/GhostPreview.gd")
 const CitizenFeedbackBubblesScript = preload("res://scripts/ui/CitizenFeedbackBubbles.gd")
+const BuildingNotificationLayerScript = preload("res://scripts/ui/BuildingNotificationLayer.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
@@ -149,6 +150,24 @@ func _find_building(type_id: String):
 
 func _wait_seconds(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
+
+func _test_building_notification_grouping() -> void:
+	var component := ProductionComponentScript.new()
+	component.shop_id = "building_supplies"
+	component.slot_count = 3
+	component.slots = [
+		{"item_id":"nails", "finish_unix":0, "ready":true},
+		{"item_id":"nails", "finish_unix":0, "ready":true},
+		{"item_id":"planks", "finish_unix":0, "ready":true}
+	]
+	add_child(component)
+	var groups := BuildingNotificationLayerScript.get_ready_product_groups(component)
+	_check(groups.has("nails") and groups.has("planks"), "Persistent building notifications must expose every distinct ready product, not only the first queue item.")
+	_check(groups.get("nails", []).size() == 2 and groups.get("planks", []).size() == 1, "Matching ready queue slots must be grouped into one tappable product bubble with an accurate quantity.")
+	component.slots[1] = {}
+	groups = BuildingNotificationLayerScript.get_ready_product_groups(component)
+	_check(groups.get("nails", []).size() == 1, "A collected queue slot must immediately reduce the matching product notification count.")
+	component.queue_free()
 
 func _test_live_production_queue_eta() -> void:
 	var queue_probe = ProductionComponentScript.new()
@@ -4320,6 +4339,7 @@ func _run_gameplay_test() -> void:
 	GameManager.level = previous_mayor_level
 
 	_test_automatic_production_chain()
+	_test_building_notification_grouping()
 	_test_non_residential_upgrade_execution()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,

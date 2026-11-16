@@ -4,6 +4,7 @@ const Icons = preload("res://scripts/ui/Icons.gd")
 const LevelUpEffectScript = preload("res://scripts/ui/LevelUpEffect.gd")
 const LandExpansionPanelScript = preload("res://scripts/ui/LandExpansionPanel.gd")
 const CurrencyPanelsScript = preload("res://scripts/ui/CurrencyPanels.gd")
+const BuildingNotificationLayerScript = preload("res://scripts/ui/BuildingNotificationLayer.gd")
 
 const STORAGE_CAPACITY_UPGRADE_GAIN := 5
 
@@ -150,6 +151,7 @@ var _production_touch_drag_source_button: Button = null
 var _production_touch_drag_ghost: Control = null
 var _production_tick_accum := 0.0
 var _factory_ready_scan_accum := 0.0
+var _building_notification_layer: Control
 var catalog_info_panel: PanelContainer
 var catalog_base_bar: PanelContainer
 var catalog_advisor: Control
@@ -205,6 +207,10 @@ func _ready() -> void:
 	_ui_scale = clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
 	_build_top_hud()
 	_build_toolbars()
+	_building_notification_layer = BuildingNotificationLayerScript.new()
+	_building_notification_layer.name = "BuildingNotificationLayer"
+	_building_notification_layer.configure(self)
+	add_child(_building_notification_layer)
 	var land_expansion_panel := LandExpansionPanelScript.new()
 	land_expansion_panel.name = "LandExpansionPanel"
 	add_child(land_expansion_panel)
@@ -1735,42 +1741,30 @@ func _process(delta: float) -> void:
 
 
 func _refresh_factory_ready_icons() -> void:
-	# One world-space action hint per building: product thumbnail for ready
-	# output, an upgrade marker when a residential upgrade can actually start.
-	# Construction and non-residential upgrades auto-complete; they must not
-	# display a fake "collect/claim" badge.
-	var scene := get_tree().current_scene
-	if scene == null:
-		return
-	for node in scene.find_children("*", "Building", true, false):
-		var building := node as Building
-		if not is_instance_valid(building) or building.status != "completed":
+	# Persistent action bubbles are rendered in screen space by a dedicated
+	# layer. Keep legacy world labels hidden to avoid duplicate/overlapping icons.
+	if is_instance_valid(_building_notification_layer):
+		_building_notification_layer.refresh_now()
+	for building in BuildManager.buildings.values():
+		if not is_instance_valid(building):
 			continue
-		if is_instance_valid(building.action_notification_label):
-			building.action_notification_label.text = "⬆"
-			building.action_notification_label.visible = bool(building.upgrade_ready)
-		var component = building.production_component
-		var ready_item := ""
-		var ready_count := 0
-		var storage_full := false
-		if is_instance_valid(component):
-			component.refresh_slots()
-			for slot_index in range(component.get_slot_count()):
-				var slot: Dictionary = component.get_slot(slot_index)
-				if not slot.is_empty() and bool(slot.get("ready", false)):
-					if ready_item.is_empty():
-						ready_item = str(slot.get("item_id", ""))
-					storage_full = storage_full or not StorageManager.can_add(str(slot.get("item_id", "")), 1)
-					ready_count += 1
 		if is_instance_valid(building.ready_item_sprite):
-			building.ready_item_sprite.texture = Icons.get_tex("raw" if is_instance_valid(component) and component.is_factory else "crafted", ready_item) if not ready_item.is_empty() else null
-			building.ready_item_sprite.visible = not ready_item.is_empty()
+			building.ready_item_sprite.visible = false
+		if is_instance_valid(building.action_notification_label):
+			building.action_notification_label.visible = false
 		if is_instance_valid(building.production_icon):
-			building.production_icon.text = "!" if storage_full else ("×%d" % ready_count if ready_count > 1 else "")
-			building.production_icon.visible = storage_full or ready_count > 1
-			building.production_icon.modulate = Color("#FF765E") if storage_full else Color("#FFE06B")
-			building.production_icon.outline_size = 12
-			building.production_icon.outline_modulate = Color(0.12, 0.08, 0.02, 0.95)
+			building.production_icon.visible = false
+
+func _on_building_notification_collected(building_id: String, item_id: String, collected_count: int, blocked: bool) -> void:
+	var item_name := str(ProductionManager.get_item_definition(item_id).get("name", item_id.capitalize()))
+	if collected_count > 0:
+		status_label.text = "Collected %s ×%d from %s." % [item_name, collected_count, building_id]
+	elif blocked:
+		status_label.text = "City Storage is full. Free space before collecting %s." % item_name
+	else:
+		status_label.text = "No ready %s remains at this building." % item_name
+	if is_instance_valid(_building_notification_layer):
+		_building_notification_layer.refresh_now()
 
 func _on_level_up_effect_finished() -> void:
 	if is_instance_valid(_level_up_camera):
