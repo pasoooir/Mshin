@@ -196,7 +196,10 @@ export async function handleMarketRequest({
           profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
           marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
         });
-        return { status: 201, listing: { ...listing, total_price: cost }, revision: profile.revision };
+        return {
+          status: 201, listing: { ...listing, total_price: cost }, revision: profile.revision,
+          seller_balance: balance(state), seller_storage: structuredClone(state.storage)
+        };
       });
       send(response, result.status, result);
     } catch (error) {
@@ -256,7 +259,12 @@ export async function handleMarketRequest({
           ],
           marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
         });
-        return { status: 200, listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity, total_paid: total, buyer_balance: buyerState.economy.simoleons, seller_balance: sellerState.economy.simoleons };
+        return {
+          status: 200, listing_id: listingId, item_id: listing.item_id, quantity: listing.quantity, total_paid: total,
+          buyer_balance: buyerState.economy.simoleons, seller_balance: sellerState.economy.simoleons,
+          buyer_storage: structuredClone(buyerState.storage), buyer_revision: buyer.revision,
+          seller_revision: seller.revision
+        };
       });
       send(response, result.status, result);
     } catch (error) {
@@ -292,7 +300,11 @@ export async function handleMarketRequest({
           profiles: [{ playerId: session.playerId, original: originalProfile, next: profile }],
           marketFile: listingsFile, market, previousMarket: originalMarket, writeProfile
         });
-        return { status: 200, listing_id: listingId, returned_item_id: listing.item_id, returned_quantity: listing.quantity, revision: profile.revision };
+        return {
+          status: 200, listing_id: listingId, returned_item_id: listing.item_id,
+          returned_quantity: listing.quantity, revision: profile.revision,
+          seller_balance: balance(state), seller_storage: structuredClone(state.storage)
+        };
       });
       send(response, result.status, result);
     } catch (error) {
