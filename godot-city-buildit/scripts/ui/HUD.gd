@@ -2319,6 +2319,9 @@ func open_production_panel(building: Building) -> void:
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
 		# One tap submits the order to the first available production slot.
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
+		# Wire touch-down into the global touch lifecycle. Without this connection,
+		# _input never receives an active product gesture and mobile taps cannot submit.
+		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
 		_production_orbit_buttons.append(item_button)
@@ -2721,10 +2724,18 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
+	# This handler is connected to the actual product Button.gui_input signal.
+	# Only the first finger may own a product gesture; mouse clicks remain on
+	# Button.pressed and do not enter this touch-only path.
 	if not (event is InputEventScreenTouch) or not event.pressed:
 		return
-	# Ignore additional fingers while one product drag is active.
 	if _production_touch_drag_active:
+		return
+	if not is_instance_valid(building) or building != _production_building:
+		return
+	if not is_instance_valid(item_button) or item_button.disabled:
+		return
+	if not is_instance_valid(building.production_component) or not is_instance_valid(production_overlay):
 		return
 	_production_touch_drag_active = true
 	_production_touch_drag_index = event.index
