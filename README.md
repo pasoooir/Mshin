@@ -1402,3 +1402,16 @@ No recipe inputs, item durations, storage rules, queue capacity, or collection s
 
 **Scope:** No change to the legacy `Building.start_factory_production()` path. Factory orders continue through `ProductionComponent.start_factory()`.
 
+
+
+## PR #553 store input regression correction — 2026-11-16
+
+- [x] Investigated both failing CI workflows: Godot GameplaySmoke and Web GameplaySmoke reported the same 15 commercial-store assertions; project import/parse and Android Debug APK export/signature passed.
+- [x] Root cause was stale test input: the store regression still invoked `Button.pressed.emit_signal()`, but PR #553 intentionally removed that signal path so native mobile touch is handled only by `Button.gui_input`.
+- [x] Added a reusable GameplaySmoke helper that sends a viewport-routed `InputEventScreenTouch` down/up pair to the target Control using its canvas transform.
+- [x] Converted the blocked Nails details test and both sequential Nails order taps to the same native touch path; kept direct stale-card guard testing separate.
+- [ ] Re-run Godot GameplaySmoke and Web GameplaySmoke; confirm the 15 store assertions pass.
+- [ ] Confirm Android APK export and Web Chromium/Pages build on the corrected head.
+- [ ] Physical Android acceptance remains required; simulated viewport touch is not a device test.
+
+**Boundary:** production and inventory logic are unchanged. This correction makes the regression test exercise the same native input contract as the revised product cards instead of bypassing it through the removed `pressed` signal.
