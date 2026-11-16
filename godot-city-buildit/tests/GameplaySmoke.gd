@@ -3334,6 +3334,7 @@ func _test_tutorial_guide_contract() -> void:
 			guide.milestones["city_name"] = false
 			name_input.text = "Coach Touch Test"
 			guide._refresh_guide()
+			await get_tree().process_frame
 			await _tap_native_control(save_name_button)
 			_check(GameManager.city_name == "Coach Touch Test", "A real touch on SAVE CITY must submit the city name and advance the guide.")
 			GameManager.city_name = previous_name
@@ -3352,10 +3353,12 @@ func _test_tutorial_guide_contract() -> void:
 			if later_button != null:
 				guide._dismissed = false
 				guide._panel.show()
+				await get_tree().process_frame
 				await _tap_native_control(later_button)
 				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
 				_check(not guide._panel.visible and reopen_button != null and reopen_button.get_global_rect().intersects(get_viewport().get_visible_rect()), "A real touch on Later must hide the coach and expose an on-screen HELP button.")
 				if reopen_button != null:
+					await get_tree().process_frame
 					await _tap_native_control(reopen_button)
 					_check(guide._panel.visible, "A real touch on HELP must reopen the coach.")
 				guide._dismissed = previous_dismissed
@@ -3371,6 +3374,12 @@ func _test_tutorial_guide_contract() -> void:
 				if residential_button != null:
 					await _tap_native_control(residential_button)
 					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
+					var villa_button := hud.find_child("residential_villa", true, false) as Button
+					_check(villa_button != null and not villa_button.disabled, "The first residential catalog choice must be an enabled real button.")
+					if villa_button != null:
+						await _tap_native_control(villa_button)
+						_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on the Villa House catalog item must start placement mode.")
+					BuildManager.cancel_placement()
 					hud._on_cancel_pressed()
 
 				# Verify that the coach's translucent background does not eat taps
