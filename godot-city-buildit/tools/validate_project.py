@@ -648,7 +648,7 @@ toolbar_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
 if not all(f'"{name}"' in toolbar_smoke for name in smoke_order):
     errors.append("Gameplay smoke test is missing the canonical right-toolbar category order")
 
-# Side rails and catalog cards must remain transparent in every interaction state.
+# Scroll containers and catalog cards preserve swipe propagation; the full-screen tutorial shell ignores pointer input so it cannot block underlying HUD actions, while its actual form/buttons keep STOP.
 for contract in [
     'category_scroll.scroll_deadzone = 4',
     'category_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO',
@@ -656,6 +656,8 @@ for contract in [
     'submenu_scroll.scroll_deadzone = 4',
     'submenu_scroll.mouse_filter = Control.MOUSE_FILTER_PASS',
     'button.mouse_filter = Control.MOUSE_FILTER_PASS',
+    'land_button.mouse_filter = Control.MOUSE_FILTER_STOP',
+    'back.mouse_filter = Control.MOUSE_FILTER_PASS',
     'button.add_theme_stylebox_override(state, StyleBoxEmpty.new())'
 ]:
     if contract not in hud:
@@ -663,6 +665,32 @@ for contract in [
 if '_toolbar_style(Color(0.08, 0.16, 0.21, 0.97)' in hud:
     errors.append("Build selection must not apply dark backgrounds to submenu cards")
 
+
+# Native mobile touch must reach Godot Controls; tutorial and transient celebration overlays must not become full-screen touch shields.
+project_settings = (ROOT / "project.godot").read_text(encoding="utf-8")
+tutorial_source = (ROOT / "scripts/ui/TutorialGuide.gd").read_text(encoding="utf-8")
+level_up_source = (ROOT / "scripts/ui/LevelUpEffect.gd").read_text(encoding="utf-8")
+if 'emulate_mouse_from_touch=false' not in project_settings:
+    errors.append("Native mobile touch-to-GUI emulation must remain disabled; use the single native touch router.")
+if 'func _route_native_ui_touch(event: InputEvent) -> bool:' not in (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8"):
+    errors.append("HUD is missing the native touch router for Buttons, LineEdits and scroll containers.")
+for contract in [
+    '_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'layout.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'header.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    '_city_name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'scroll.mouse_filter = Control.MOUSE_FILTER_STOP',
+    '_city_name_input.mouse_filter = Control.MOUSE_FILTER_STOP',
+    '_city_name_button.mouse_filter = Control.MOUSE_FILTER_STOP',
+]:
+    if contract not in tutorial_source:
+        errors.append(f"City coach input contract is missing: {contract}")
+for contract in [
+    'mouse_filter = Control.MOUSE_FILTER_IGNORE',
+    'card.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+]:
+    if contract not in level_up_source:
+        errors.append(f"Level-up celebration must remain input-transparent: {contract}")
 
 # Visual-quality contracts: local Build SVGs, hidden roof labels, grounded trees and shared shadows.
 building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")

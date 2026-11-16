@@ -11,10 +11,17 @@ var experience: int = 0
 var population: int = 0
 var max_population: int = 100
 var happiness: float = 100.0
-var city_name: String = "Pasoo City"
+var city_name: String = ""
 
 func _ready() -> void:
 	print("[GameManager] ", city_name, " - Level ", level)
+
+func set_city_name(value: String) -> bool:
+	var cleaned := value.strip_edges()
+	if cleaned.is_empty():
+		return false
+	city_name = cleaned.substr(0, 28)
+	return true
 
 func add_experience(amount: int) -> void:
 	if amount <= 0:

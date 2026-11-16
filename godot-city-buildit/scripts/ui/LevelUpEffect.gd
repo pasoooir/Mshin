@@ -17,8 +17,10 @@ var _completed := false
 func _ready() -> void:
 	name = "LevelUpCelebration"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	focus_mode = Control.FOCUS_ALL
+	# This is a visual celebration, never a modal input shield.
+	# The city must remain playable while particles and rewards animate.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	focus_mode = Control.FOCUS_NONE
 	z_index = 100
 	_rng.randomize()
 	_create_particles()
@@ -71,7 +73,7 @@ func _create_message_card() -> void:
 	card.offset_top = -132.0
 	card.offset_bottom = 132.0
 	card.pivot_offset = Vector2(card_width * 0.5, 132.0)
-	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.035, 0.075, 0.12, 0.94)
@@ -89,11 +91,13 @@ func _create_message_card() -> void:
 
 	var layout := VBoxContainer.new()
 	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_theme_constant_override("separation", 8)
 	card.add_child(layout)
 
 	var title := Label.new()
 	title.name = "LevelUpTitle"
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.text = "LEVEL UP!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 48)
@@ -105,6 +109,7 @@ func _create_message_card() -> void:
 
 	var subtitle := Label.new()
 	subtitle.name = "MayorCongratulations"
+	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	subtitle.text = "Congratulations Mayor!"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 24)
@@ -112,15 +117,18 @@ func _create_message_card() -> void:
 	layout.add_child(subtitle)
 
 	var divider := HSeparator.new()
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(divider)
 
 	var rewards := HBoxContainer.new()
 	rewards.alignment = BoxContainer.ALIGNMENT_CENTER
+	rewards.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rewards.add_theme_constant_override("separation", 28)
 	layout.add_child(rewards)
 
 	_reward_simoleons = Label.new()
 	_reward_simoleons.name = "SimoleonReward"
+	_reward_simoleons.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reward_simoleons.text = "+0 Simoleons"
 	_reward_simoleons.add_theme_font_size_override("font_size", 20)
 	_reward_simoleons.add_theme_color_override("font_color", Color("#FFD34F"))
@@ -128,6 +136,7 @@ func _create_message_card() -> void:
 
 	_reward_keys = Label.new()
 	_reward_keys.name = "GoldenKeyReward"
+	_reward_keys.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reward_keys.text = "+0 Golden Keys"
 	_reward_keys.add_theme_font_size_override("font_size", 20)
 	_reward_keys.add_theme_color_override("font_color", Color("#FFE7A0"))
@@ -153,8 +162,8 @@ func _format_reward(value: int) -> String:
 	return formatted
 
 func _gui_input(_event: InputEvent) -> void:
-	# Consume taps during the short celebration so city tools cannot activate underneath it.
-	accept_event()
+	# Deliberately non-modal: all taps continue to reach the city HUD while this effect animates.
+	pass
 
 func _process(delta: float) -> void:
 	_elapsed += delta

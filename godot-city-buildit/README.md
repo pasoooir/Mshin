@@ -149,3 +149,17 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Set the guide layout containers to input-pass and the Later, Skip/Close and HELP buttons explicitly to input-stop.
 - [ ] Verify guide buttons and every primary HUD category/action button with automated browser pointer/touch interaction tests.
 - [ ] Verify on a physical Android device in landscape; CI/browser success is not a substitute for device acceptance.
+
+
+## Actionable first-session city coach — 2026-11-16
+
+- [x] Added a real **Name your city** first step with an editable field and SAVE CITY action; players are no longer told to enter a name without an actual input.
+- [x] Added a moving finger pointer that points at the city-name field and resolves named HUD targets for later guide steps when those controls are visible.
+- [x] Persisted the city name in the game save; legacy saves without a city name migrate to **Pasoo City**.
+- [x] Expanded GameplaySmoke to require the city-name step, validate blank-name rejection and the 28-character limit, and simulate real screen touches on SAVE CITY, Later, HELP, the Residential HUD action and an underlying HUD control beneath the coach background.
+- [x] GameplaySmoke native-touch regression passed: city-name LineEdit focus, SAVE CITY, Later, HELP, Residential category, Villa House details and BUILD all handled through `InputEventScreenTouch` without synthetic mouse emulation (commit `7ce8942`).
+- [x] Godot City BuildIt Validation and Mshin Playable Web Chromium desktop/mobile smoke both passed on commit `7ce8942`.
+- [ ] Verify the complete touch experience on a physical Android landscape device; CI does not replace device testing.
+- [ ] Merge and confirm the GitHub Pages deployment before calling the live-site fix complete.
+- [ ] Run Godot GameplaySmoke and playable-web Chromium interaction checks against this change.
+- [ ] Verify the pointer target alignment, keyboard behavior and touch interaction on a physical Android landscape device. Physical-device acceptance is not claimed.

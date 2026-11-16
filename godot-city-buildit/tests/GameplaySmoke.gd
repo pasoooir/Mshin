@@ -3287,8 +3287,17 @@ func _test_audio_manager_contract() -> void:
 
 
 func _test_tutorial_guide_contract() -> void:
-	_check(TutorialGuideScript.get_step_count() == 6, "First-session tutorial must cover the six core city-building milestones.")
-	var expected_ids := ["home", "factory", "raw", "store", "crafted", "upgrade"]
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var level_hud := get_node_or_null("HUD")
+	if is_instance_valid(level_hud):
+		var level_effect := level_hud.find_child("LevelUpCelebration", true, false) as Control
+		if is_instance_valid(level_effect):
+			var level_card := level_effect.find_child("CenterCard", true, false) as Control
+			_check(level_effect.mouse_filter == Control.MOUSE_FILTER_IGNORE and level_card != null and level_card.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The visual level-up celebration must never become a full-screen input shield.")
+	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile input must remain native-only; the centralized router must handle Controls without synthetic mouse duplication.")
+	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
+	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
 	for index in range(TutorialGuideScript.get_step_count()):
 		var step: Dictionary = TutorialGuideScript.get_step_definition(index)
@@ -3297,7 +3306,110 @@ func _test_tutorial_guide_contract() -> void:
 		_check(not str(step.get("title", "")).is_empty() and not str(step.get("description", "")).is_empty() and not str(step.get("hint", "")).is_empty(), "Every tutorial step must provide a title, actionable explanation and UI hint.")
 		_check(not seen_ids.has(step_id), "Tutorial milestone identifiers must be unique.")
 		seen_ids[step_id] = true
-	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(6).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+	_check(TutorialGuideScript.get_step_definition(-1).is_empty() and TutorialGuideScript.get_step_definition(7).is_empty(), "Tutorial step lookup must reject indexes outside the guide.")
+
+	var guide := get_node_or_null("TutorialGuide")
+	_check(is_instance_valid(guide), "The main scene must include the live city coach instance.")
+	if is_instance_valid(guide):
+		_check(guide._panel.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The full-screen coach shell must ignore input so it cannot intercept the underlying HUD.")
+	if is_instance_valid(guide):
+		var name_input := guide.find_child("CityNameInput", true, false) as LineEdit
+		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
+		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
+		_check(name_input != null and save_name_button != null, "The city-name instruction must have a real editable field and a real SAVE CITY button.")
+		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0, "The moving finger pointer must have a visible touch-sized rect and must never intercept touch input.")
+		if name_input != null and finger != null:
+			var previous_step := int(guide.current_step)
+			var previous_completed := bool(guide.completed)
+			guide.current_step = 0
+			guide.completed = false
+			guide._refresh_guide()
+			_check(name_input.is_visible_in_tree() and finger.is_visible_in_tree(), "The city-name field and its finger pointer must both be visible during the first step.")
+			guide.current_step = previous_step
+			guide.completed = previous_completed
+			if guide.completed:
+				guide._show_completion()
+			else:
+				guide._refresh_guide()
+
+			# Exercise the actual touch event path, not only pressed.emit().
+			var previous_name := GameManager.city_name
+			var previous_milestones: Dictionary = guide.milestones.duplicate(true)
+			var previous_dismissed := bool(guide._dismissed)
+			guide.current_step = 0
+			guide.completed = false
+			guide._dismissed = false
+			guide._panel.show()
+			guide.milestones["city_name"] = false
+			name_input.text = "Coach Touch Test"
+			guide._refresh_guide()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			await _tap_native_control(name_input)
+			_check(get_viewport().gui_get_focus_owner() == name_input, "A native touch on the city-name field must focus it so the mobile keyboard can open.")
+			await _tap_native_control(save_name_button)
+			_check(GameManager.city_name == "Coach Touch Test", "A real touch on SAVE CITY must submit the city name and advance the guide.")
+			GameManager.city_name = previous_name
+			guide.milestones = previous_milestones
+			guide.current_step = previous_step
+			guide.completed = previous_completed
+			guide._dismissed = previous_dismissed
+			guide._save_progress()
+			if guide.completed:
+				guide._show_completion()
+			else:
+				guide._refresh_guide()
+
+			var later_button := guide.find_child("TutorialLaterButton", true, false) as Button
+			_check(later_button != null, "The coach must expose its Later action as a real button.")
+			if later_button != null:
+				guide._dismissed = false
+				guide._panel.show()
+				await get_tree().process_frame
+				await get_tree().process_frame
+				await _tap_native_control(later_button)
+				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
+				_check(not guide._panel.visible and reopen_button != null and reopen_button.get_global_rect().intersects(get_viewport().get_visible_rect()), "A real touch on Later must hide the coach and expose an on-screen HELP button.")
+				if reopen_button != null:
+					await get_tree().process_frame
+					await _tap_native_control(reopen_button)
+					_check(guide._panel.visible, "A real touch on HELP must reopen the coach.")
+				guide._dismissed = previous_dismissed
+				if previous_dismissed:
+					guide._panel.hide()
+				else:
+					guide._panel.show()
+
+			var hud := get_node_or_null("HUD")
+			if is_instance_valid(hud):
+				var residential_button := hud.find_child("Tool_Residential", true, false) as Button
+				_check(residential_button != null and residential_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The primary Residential HUD action must exist and consume its own touch events.")
+				if residential_button != null:
+					await get_tree().process_frame
+					await get_tree().process_frame
+					await _tap_native_control(residential_button)
+					_check(str(hud.active_category) == "residential" and is_instance_valid(hud.submenu_scroll) and hud.submenu_scroll.visible, "A real touch on Residential must open its building submenu.")
+					var villa_button := hud.find_child("residential_villa", true, false) as Button
+					_check(villa_button != null and not villa_button.disabled and villa_button.mouse_filter == Control.MOUSE_FILTER_PASS, "The first residential catalog choice must be an enabled button that consumes its own touch events.")
+					if villa_button != null:
+						await _tap_native_control(villa_button)
+						_check(hud.catalog_info_panel.visible, "A real touch on the Villa House catalog item must open its information card.")
+						var catalog_build_button := hud.find_child("CatalogBuildButton", true, false) as Button
+						_check(catalog_build_button != null and not catalog_build_button.disabled, "The Villa House information card must expose an enabled BUILD action.")
+						if catalog_build_button != null:
+							await _tap_native_control(catalog_build_button)
+							_check(BuildManager.is_placing and BuildManager.selected_building_type == "residential_villa", "A real touch on BUILD must start Villa House placement mode.")
+				BuildManager.cancel_placement()
+				hud._on_cancel_pressed()
+
+
+func _test_city_name_contract() -> void:
+	var previous_name := GameManager.city_name
+	_check(not GameManager.set_city_name("   "), "City name must reject blank input.")
+	_check(GameManager.set_city_name("New Harbor"), "City name must accept a non-empty player-entered value.")
+	_check(GameManager.city_name == "New Harbor", "City name setter must retain the player's chosen name.")
+	_check(GameManager.set_city_name("A".repeat(40)) and GameManager.city_name.length() == 28, "City name must be limited to the same 28 characters as the onboarding input.")
+	GameManager.city_name = previous_name
 
 func _test_mayor_xp_progression() -> void:
 	var previous_level := GameManager.level
@@ -3348,7 +3460,8 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
-	_test_tutorial_guide_contract()
+	await _test_tutorial_guide_contract()
+	_test_city_name_contract()
 	_test_mobile_haptics_contract()
 	_test_performance_benchmark_contract()
 	_test_epic_project_core()
