@@ -292,12 +292,21 @@ export function createApp({
     send(response, 404, { error: "not_found" });
   });
 
+  server.verifyStorage = async () => {
+    if (typeof storage.verifyPrivateRepository === "function") {
+      return await storage.verifyPrivateRepository();
+    }
+    return { kind: storage.kind };
+  };
+
   return server;
 }
 
 if (import.meta.url === new URL(process.argv[1] || "", "file:").href) {
   const port = Number(process.env.PORT || 8788);
   const server = createApp();
+  await server.verifyStorage();
+  console.log("[Mshin JSON API] storage verification passed");
   server.listen(port, "0.0.0.0", () => {
     console.log("[Mshin JSON API] listening on " + port);
     console.log("[Mshin JSON API] storage: " + (process.env.GITHUB_JSON_REPOSITORY ? "private GitHub JSON repository " + process.env.GITHUB_JSON_REPOSITORY : "local JSON directory " + path.resolve(process.env.MSHIN_DATA_DIR || "./data")));
