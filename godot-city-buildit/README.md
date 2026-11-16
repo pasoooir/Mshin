@@ -120,3 +120,10 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Queue countdown labels display remaining whole seconds (for example, `295s`) and refresh from each slot's persisted finish timestamp.
 - [x] Product selection still submits directly to the first available slot through the existing production component; recipe checks, ingredient consumption, collection and storage capacity remain authoritative.
 - [ ] Verify the complete touch-to-queue-to-countdown-to-collection lifecycle in Godot CI and on a physical mobile device. The latter is not claimed by automated tests.
+
+
+### CI regression correction — 2026-11-16
+
+- [x] Restored the six visible production queue tiles required by the commercial production dock contract; smaller purchased capacity remains visibly locked rather than disappearing.
+- [x] Kept the redesigned blue queue styling while restoring the six-tile layout.
+- [ ] Re-run both Godot validation and playable-web workflows; confirm they pass before merge.
