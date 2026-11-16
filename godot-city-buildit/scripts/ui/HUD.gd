@@ -2420,9 +2420,13 @@ func open_production_panel(building: Building) -> void:
 			var queued_item_id := str(slot.get("item_id", ""))
 			var item_category := "raw" if component.is_factory else "crafted"
 			var queue_item_row := HBoxContainer.new()
+			queue_item_row.name = "QueueItemRow%d" % slot_index
 			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 			slot_content.add_child(queue_item_row)
-			queue_item_row.add_child(Icons.make_item_icon(item_category, queued_item_id, Vector2(28, 28) * _ui_scale))
+			var queue_item_icon := Icons.make_item_icon(item_category, queued_item_id, Vector2(42, 42) * _ui_scale)
+			queue_item_icon.name = "QueueItemIcon%d" % slot_index
+			queue_item_icon.custom_minimum_size = Vector2(42, 42) * _ui_scale
+			queue_item_row.add_child(queue_item_icon)
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
 			queue_item_name.add_theme_font_size_override("font_size", _popup_font_size(9))
@@ -2756,10 +2760,18 @@ func _input(event: InputEvent) -> void:
 				_production_touch_drag_source_button.set_meta("touch_drag_consumed", true)
 			get_viewport().set_input_as_handled()
 		else:
-			# Keep tap-to-select active until the next tap on a queue slot/building.
-			_touch_selected_production_item = _production_touch_drag_item_id
-			_touch_selected_production_building_id = _production_touch_drag_building.get_instance_id() if is_instance_valid(_production_touch_drag_building) else 0
-		_clear_production_touch_drag(was_dragged)
+			# A tap is a complete production action on touch devices. Submit on
+			# touch release instead of leaving a latent selection that requires
+			# a second tap on the queue/building. The Button.pressed signal may
+			# also fire for this gesture, so mark it consumed after submission.
+			var tapped_building := _production_touch_drag_building
+			var tapped_item_id := _production_touch_drag_item_id
+			var tapped_button := _production_touch_drag_source_button
+			if is_instance_valid(tapped_building) and is_instance_valid(tapped_button):
+				_on_production_item_pressed(tapped_building, tapped_item_id, -1, tapped_button)
+				if is_instance_valid(tapped_button):
+					tapped_button.set_meta("touch_drag_consumed", true)
+		_clear_production_touch_drag(true)
 
 
 func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
