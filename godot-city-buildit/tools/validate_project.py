@@ -257,6 +257,9 @@ for script in re.findall(r'="[*]res://([^"]+)"', project):
 
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
+if "const HIGHWAY_LENGTH := 700.0" not in world_presentation_source or "for segment in range(-55, 56):" not in world_presentation_source:
+    errors.append("Regional highway must remain visually continuous across both mountain tunnel exits")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
@@ -890,7 +893,7 @@ if lighting_body is None or "for side in [-1.0, 1.0]" not in lighting_body.group
 livestock_body = re.search(r"func _build_meadow_livestock\(\).*?(?=\nfunc |\Z)", world_source, re.S)
 if livestock_body is None or "SheepWoolBodies" not in livestock_body.group(0) or "CattleBodies" not in livestock_body.group(0):
     errors.append("Natural meadow must contain both sheep and cattle visual groups")
-if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-15, 16)" not in lane_body.group(0):
+if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-55, 56)" not in lane_body.group(0):
     errors.append("Highway lane markings must be batched and repeated along the full road")
 
 build_icon_paths = {
@@ -1102,7 +1105,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 170.0", "RIDGE_OUTER_RADIUS := 330.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 52.0 + rolling_peaks * 36.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D"]:
+for contract in ["RIDGE_INNER_RADIUS := 170.0", "RIDGE_OUTER_RADIUS := 330.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 52.0 + rolling_peaks * 36.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion("]:
     if contract not in mountain_backdrop_source:
         errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")

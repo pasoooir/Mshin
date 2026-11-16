@@ -1,10 +1,36 @@
 extends Node
 
 const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.gd")
+const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
 
 
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
+	add_child(presentation)
+	var backdrop := DistantMountainBackdropScript.new()
+	presentation.add_child(backdrop)
+	if backdrop.get_node_or_null("NorthMountainRidge") == null or backdrop.get_node_or_null("SouthMountainRidge") == null or backdrop.get_node_or_null("WestMountainRidge") == null or backdrop.get_node_or_null("EastMountainRidge") == null:
+		push_error("[VisualPresentationSmoke] Mountain perimeter must render all four overlapping ridge walls")
+		get_tree().quit(1)
+		return
+	if backdrop.get_node_or_null("NorthHighwayTunnel") == null or backdrop.get_node_or_null("SouthHighwayTunnel") == null:
+		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
+		get_tree().quit(1)
+		return
+	if not backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.05) or not backdrop._is_tunnel_portal_vegetation_exclusion(1, -55.0, 0.95) or backdrop._is_tunnel_portal_vegetation_exclusion(2, -55.0, 0.05) or backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.5):
+		push_error("[VisualPresentationSmoke] Only the actual north/south tunnel mouths must exclude obstructing vegetation; the mountain crown stays continuous")
+		get_tree().quit(1)
+		return
+	if not is_equal_approx(WorldPresentationScript.HIGHWAY_LENGTH, 700.0) or not is_equal_approx(WorldPresentationScript.HIGHWAY_CENTER_X, -55.0):
+		push_error("[VisualPresentationSmoke] The continuous regional road must span both tunnel portals on the existing highway axis")
+		get_tree().quit(1)
+		return
+	var north_tunnel := backdrop.get_node("NorthHighwayTunnel")
+	var south_tunnel := backdrop.get_node("SouthHighwayTunnel")
+	if north_tunnel.get_child_count() < 9 or south_tunnel.get_child_count() < 9:
+		push_error("[VisualPresentationSmoke] Both tunnels must include a roof, side walls and framed inner/outer portals")
+		get_tree().quit(1)
+		return
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
 	if canopy == null or canopy.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Canopy must be a single mesh surface")
