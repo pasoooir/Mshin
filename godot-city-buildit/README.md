@@ -110,3 +110,20 @@ The integration test builds a connected road, checks building footprints and roa
 ## Senior-friendly popup accessibility — 2026-11-16
 
 Popup/detail-window typography now has a 16 px minimum after UI scaling, rather than allowing dense labels to fall to 8–13 px. Factory/store product cards and residential material tokens are enlarged together with their icons and six-sided 3D platforms. This change is intended for mobile landscape and low-vision users; physical-device verification is tracked separately and is not inferred from automated tests.
+
+
+## Production queue panel rebuild — 2026-11-16
+
+- [x] Replaced the dark production dock styling with a blue, rounded queue panel inspired by the supplied reference image.
+- [x] Moved the panel to the top of the screen and kept the building title inside the panel.
+- [x] Empty queue slots now use bright, high-contrast plus markers; occupied slots use larger local product artwork.
+- [x] Queue countdown labels display remaining whole seconds (for example, `295s`) and refresh from each slot's persisted finish timestamp.
+- [x] Product selection still submits directly to the first available slot through the existing production component; recipe checks, ingredient consumption, collection and storage capacity remain authoritative.
+- [ ] Verify the complete touch-to-queue-to-countdown-to-collection lifecycle in Godot CI and on a physical mobile device. The latter is not claimed by automated tests.
+
+
+### CI regression correction — 2026-11-16
+
+- [x] Restored the six visible production queue tiles required by the commercial production dock contract; smaller purchased capacity remains visibly locked rather than disappearing.
+- [x] Kept the redesigned blue queue styling while restoring the six-tile layout.
+- [ ] Re-run both Godot validation and playable-web workflows; confirm they pass before merge.

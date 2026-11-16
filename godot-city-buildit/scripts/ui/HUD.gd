@@ -2042,27 +2042,27 @@ func open_production_panel(building: Building) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
 	var panel_width := minf(viewport_size.x * 0.92, 1240.0 * _ui_scale)
-	var panel_height := minf((270.0 if compact_layout else 290.0) * _ui_scale, viewport_size.y * 0.52)
+	var panel_height := minf((238.0 if compact_layout else 258.0) * _ui_scale, viewport_size.y * 0.48)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
-	production_panel.anchor_top = 1.0
-	production_panel.anchor_bottom = 1.0
+	production_panel.anchor_top = 0.0
+	production_panel.anchor_bottom = 0.0
 	production_panel.offset_left = -panel_width * 0.5
 	production_panel.offset_right = panel_width * 0.5
-	production_panel.offset_top = -panel_height - 8.0 * _ui_scale
-	production_panel.offset_bottom = -8.0 * _ui_scale
+	production_panel.offset_top = 10.0 * _ui_scale
+	production_panel.offset_bottom = panel_height + 10.0 * _ui_scale
 	var studio_style := StyleBoxFlat.new()
-	studio_style.bg_color = Color(0.018, 0.045, 0.065, 0.94)
-	studio_style.border_color = Color("#D8AD4A")
-	studio_style.set_border_width_all(1)
-	studio_style.set_corner_radius_all(18)
-	studio_style.shadow_color = Color(0.0, 0.015, 0.035, 0.48)
-	studio_style.shadow_size = 12
-	studio_style.shadow_offset = Vector2(0, 4)
-	studio_style.content_margin_left = 10
-	studio_style.content_margin_right = 10
-	studio_style.content_margin_top = 7
-	studio_style.content_margin_bottom = 7
+	studio_style.bg_color = Color(0.035, 0.20, 0.31, 0.94)
+	studio_style.border_color = Color("#8ED8F5")
+	studio_style.set_border_width_all(3)
+	studio_style.set_corner_radius_all(28)
+	studio_style.shadow_color = Color(0.0, 0.035, 0.10, 0.52)
+	studio_style.shadow_size = 16
+	studio_style.shadow_offset = Vector2(0, 5)
+	studio_style.content_margin_left = 16
+	studio_style.content_margin_right = 16
+	studio_style.content_margin_top = 9
+	studio_style.content_margin_bottom = 9
 	production_panel.add_theme_stylebox_override("panel", studio_style)
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
@@ -2091,7 +2091,7 @@ func open_production_panel(building: Building) -> void:
 	layout.add_child(header_center)
 	var header := PanelContainer.new()
 	header.name = "ProductionHeader"
-	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#173D56"), Color("#D8AD4A")))
+	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#12517A"), Color("#91DFFF")))
 	header_center.add_child(header)
 	var header_row := HBoxContainer.new()
 	header_row.add_theme_constant_override("separation", 9)
@@ -2137,17 +2137,7 @@ func open_production_panel(building: Building) -> void:
 			header_row.add_child(star_button)
 	header_row.add_child(close)
 
-	# The building nameplate floats at the top of the modal, never inside the queue dock.
-	header_center.reparent(production_overlay)
-	header_center.anchor_left = 0.5
-	header_center.anchor_right = 0.5
-	header_center.anchor_top = 0.0
-	header_center.anchor_bottom = 0.0
-	header_center.offset_left = -190.0 * _ui_scale
-	header_center.offset_right = 190.0 * _ui_scale
-	header_center.offset_top = 10.0 * _ui_scale
-	header_center.offset_bottom = 62.0 * _ui_scale
-	header_center.z_index = 8
+	# Keep the title inside the new queue panel instead of floating separately.
 	var hint := Label.new()
 	hint.text = "TAP A PRODUCT TO START PRODUCTION  ·  NO DRAGGING REQUIRED"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2319,6 +2309,9 @@ func open_production_panel(building: Building) -> void:
 		item_button.tooltip_text = lock_reason if not lock_reason.is_empty() else (("MISSING: " + missing_detail) if not missing_detail.is_empty() else inventory_status)
 		# One tap submits the order to the first available production slot.
 		item_button.pressed.connect(_on_production_item_pressed.bind(building, item_id, available_slot, item_button))
+		# Wire touch-down into the global touch lifecycle. Without this connection,
+		# _input never receives an active product gesture and mobile taps cannot submit.
+		item_button.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, available_slot, item_button))
 		product_grid.add_child(item_button)
 		item_button.set_meta("orbit_index", item_index)
 		_production_orbit_buttons.append(item_button)
@@ -2345,7 +2338,7 @@ func open_production_panel(building: Building) -> void:
 	queue_title.text = "PRODUCTION QUEUE"
 	queue_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	queue_title.add_theme_font_size_override("font_size", _popup_font_size(16))
-	queue_title.add_theme_color_override("font_color", Color("#E3EDF1"))
+	queue_title.add_theme_color_override("font_color", Color("#F4FBFF"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
@@ -2379,10 +2372,22 @@ func open_production_panel(building: Building) -> void:
 		var slot: Dictionary = component.get_slot(slot_index) if slot_index < component.get_slot_count() else {}
 		var slot_card := PanelContainer.new()
 		slot_card.name = "QueueSlot%d" % slot_index
-		slot_card.custom_minimum_size = Vector2(122 if viewport_size.x > 1100.0 else 114, 104 if compact_layout else 110) * _ui_scale
-		var slot_fill := Color("#173849") if not slot.is_empty() else Color("#0B1C27")
-		var slot_border := Color("#D8AD4A") if not slot.is_empty() else Color("#668392")
-		slot_card.add_theme_stylebox_override("panel", _toolbar_style(slot_fill, slot_border))
+		slot_card.custom_minimum_size = Vector2(132 if viewport_size.x > 1100.0 else 116, 112 if compact_layout else 120) * _ui_scale
+		var slot_style := StyleBoxFlat.new()
+		if slot.is_empty():
+			slot_style.bg_color = Color(0.025, 0.12, 0.19, 0.72)
+			slot_style.border_color = Color("#E7F7FF")
+			slot_style.set_border_width_all(3)
+		else:
+			slot_style.bg_color = Color("#CDEEFF")
+			slot_style.border_color = Color("#7DD2F5")
+			slot_style.set_border_width_all(3)
+		slot_style.set_corner_radius_all(22)
+		slot_style.content_margin_left = 5
+		slot_style.content_margin_right = 5
+		slot_style.content_margin_top = 4
+		slot_style.content_margin_bottom = 4
+		slot_card.add_theme_stylebox_override("panel", slot_style)
 		# Native drag/drop plus tap-product-then-tap-slot fallback for touchscreens.
 		slot_card.set_drag_forwarding(Callable(), _can_accept_production_drop.bind(building, slot_index), _accept_production_drop.bind(building, slot_index))
 		slot_card.gui_input.connect(_on_production_slot_gui_input.bind(building, slot_index))
@@ -2406,15 +2411,15 @@ func open_production_panel(building: Building) -> void:
 			empty_icon.name = "EmptyQueuePlus"
 			empty_icon.text = "+"
 			empty_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_icon.add_theme_color_override("font_color", Color("#D8AD4A"))
-			empty_icon.add_theme_font_size_override("font_size", _popup_font_size(25))
+			empty_icon.add_theme_color_override("font_color", Color("#DDF5FF"))
+			empty_icon.add_theme_font_size_override("font_size", _popup_font_size(46))
 			slot_content.add_child(empty_icon)
 			var empty_label := Label.new()
 			empty_label.name = "EmptyQueueLabel"
-			empty_label.text = "EMPTY"
+			empty_label.text = "EMPTY SLOT"
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			empty_label.add_theme_color_override("font_color", Color("#B4C9D2"))
-			empty_label.add_theme_font_size_override("font_size", _popup_font_size(15))
+			empty_label.add_theme_color_override("font_color", Color("#D6F0FC"))
+			empty_label.add_theme_font_size_override("font_size", _popup_font_size(10))
 			slot_content.add_child(empty_label)
 		else:
 			var queued_item_id := str(slot.get("item_id", ""))
@@ -2423,14 +2428,14 @@ func open_production_panel(building: Building) -> void:
 			queue_item_row.name = "QueueItemRow%d" % slot_index
 			queue_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 			slot_content.add_child(queue_item_row)
-			var queue_item_icon := Icons.make_item_icon(item_category, queued_item_id, Vector2(42, 42) * _ui_scale)
+			var queue_item_icon := Icons.make_item_icon(item_category, queued_item_id, Vector2(64, 64) * _ui_scale)
 			queue_item_icon.name = "QueueItemIcon%d" % slot_index
-			queue_item_icon.custom_minimum_size = Vector2(42, 42) * _ui_scale
+			queue_item_icon.custom_minimum_size = Vector2(64, 64) * _ui_scale
 			queue_item_row.add_child(queue_item_icon)
 			var queue_item_name := Label.new()
 			queue_item_name.text = str(ProductionManager.raw_materials.get(queued_item_id, ProductionManager.crafted_items.get(queued_item_id, {})).get("name", queued_item_id.capitalize()))
 			queue_item_name.add_theme_font_size_override("font_size", _popup_font_size(9))
-			queue_item_name.add_theme_color_override("font_color", Color("#23465A"))
+			queue_item_name.add_theme_color_override("font_color", Color("#153D55"))
 			queue_item_row.add_child(queue_item_name)
 			if bool(slot.get("ready", false)):
 				var collect_button := Button.new()
@@ -2473,7 +2478,7 @@ func open_production_panel(building: Building) -> void:
 					var timer_label := Label.new()
 					timer_label.name = "TimerSlot%d" % slot_index
 					timer_label.set_meta("slot_index", slot_index)
-					timer_label.text = _format_clock_duration(remaining)
+					timer_label.text = "%ds" % remaining
 					timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 					timer_label.add_theme_font_size_override("font_size", _popup_font_size(10))
 					timer_label.add_theme_color_override("font_color", Color("#A36B12"))
@@ -2721,10 +2726,18 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 
 
 func _on_production_item_gui_input(event: InputEvent, building: Building, item_id: String, _slot_index: int, item_button: Button) -> void:
+	# This handler is connected to the actual product Button.gui_input signal.
+	# Only the first finger may own a product gesture; mouse clicks remain on
+	# Button.pressed and do not enter this touch-only path.
 	if not (event is InputEventScreenTouch) or not event.pressed:
 		return
-	# Ignore additional fingers while one product drag is active.
 	if _production_touch_drag_active:
+		return
+	if not is_instance_valid(building) or building != _production_building:
+		return
+	if not is_instance_valid(item_button) or item_button.disabled:
+		return
+	if not is_instance_valid(building.production_component) or not is_instance_valid(production_overlay):
 		return
 	_production_touch_drag_active = true
 	_production_touch_drag_index = event.index
@@ -2820,9 +2833,12 @@ func _update_production_touch_drag_ghost(screen_position: Vector2) -> void:
 			slot_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#245D70"), Color("#F3C94E")))
 		else:
 			var slot_data: Dictionary = component.get_slot(slot_index)
-			var fill := Color("#173849") if not slot_data.is_empty() else Color("#0B1C27")
-			var border := Color("#D8AD4A") if not slot_data.is_empty() else Color("#668392")
-			slot_card.add_theme_stylebox_override("panel", _toolbar_style(fill, border))
+			var refreshed_style := StyleBoxFlat.new()
+			refreshed_style.bg_color = Color("#CDEEFF") if not slot_data.is_empty() else Color(0.025, 0.12, 0.19, 0.72)
+			refreshed_style.border_color = Color("#7DD2F5") if not slot_data.is_empty() else Color("#E7F7FF")
+			refreshed_style.set_border_width_all(3)
+			refreshed_style.set_corner_radius_all(22)
+			slot_card.add_theme_stylebox_override("panel", refreshed_style)
 
 
 func _finish_production_touch_drag(screen_position: Vector2) -> void:
@@ -3051,7 +3067,7 @@ func _update_production_timers() -> void:
 			break
 		var item_id := str(slot.get("item_id", ""))
 		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - now)
-		label.text = _format_clock_duration(remaining)
+		label.text = "%ds" % remaining
 		for progress in _production_progress_bars:
 			if is_instance_valid(progress) and int(progress.get_meta("slot_index", -1)) == slot_index:
 				var total_seconds := maxf(1.0, _production_building.production_component.get_item_production_time(item_id))
