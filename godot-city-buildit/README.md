@@ -132,13 +132,12 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Kept the redesigned blue queue styling while restoring the six-tile layout.
 - [ ] Re-run both Godot validation and playable-web workflows; confirm they pass before merge.
 
-## City guide redesign — 2026-11-16
+## Smart non-blocking city coach — 2026-11-16
 
-- [x] Reframed the side hint as a named **City Guide** with one active, numbered task at a time.
-- [x] Each task now explains the action, the exact tap path, and the visible result the player should expect.
-- [x] Production guidance explicitly explains tapping a product card, the first empty queue slot, the seconds countdown, and collecting into City Storage.
-- [x] Replaced the tall left-side strip with a centered, responsive, rounded high-contrast panel; the guide body scrolls when the available screen height is limited.
-- [x] Increased guide typography to 26 px title, 21 px main instructions, 19 px tap path and buttons, and 18 px expected result.
-- [x] Enlarged the persistent reopen control and labelled it **? GUIDE** so its purpose is visible.
-- [ ] Run Godot GameplaySmoke and playable-web CI against this commit; inspect the guide at common Android landscape resolutions.
-- [ ] Verify text wrapping, touch target sizes, and overlap with the live HUD on a physical Android device.
+- [x] Replaced the large centered tutorial modal with a compact, translucent floating coach near the top-left; it no longer covers the center of the city.
+- [x] Set the coach background to pass pointer/touch input through to the city; only its explicit action buttons handle interaction.
+- [x] Added an icon-first quick legend for roads, homes, factories, shops and City Storage, while keeping one contextual task, tap path and expected result visible.
+- [x] Reduced the reopen affordance to a small persistent **☁ HELP** button; players can dismiss the coach and reopen it at any time.
+- [x] Added periodic reconciliation against the live building registry and City Storage as a recovery path when a gameplay event occurs before the guide connects; milestone completion still depends on real city state and collected inventory.
+- [ ] Run Godot GameplaySmoke and playable-web CI against this commit; inspect the coach at common Android landscape resolutions.
+- [ ] Verify click-through behavior, text wrapping, touch targets and HUD overlap on a physical Android device.
