@@ -82,6 +82,29 @@ export default {
       "vary": "Origin"
     }});
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/healthz") {
+      return json({ ok: true, service: "mshin-cloudflare-json-api" }, 200, allowedOrigin);
+    }
+    if (url.pathname.startsWith("/v1/") && url.pathname !== "/v1/auth/google") {
+      if (!env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32 || !env.API_COORDINATOR) {
+        return json({ error: "api_service_not_configured" }, 503, allowedOrigin);
+      }
+      const authorization = request.headers.get("Authorization") || "";
+      const parts = authorization.trim().split(" ");
+      const token = parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1] : "";
+      const playerId = token ? await verifyGameToken(token, env.AUTH_TOKEN_SECRET) : null;
+      if (!playerId) return json({ error: "unauthorized" }, 401, allowedOrigin);
+      const id = env.API_COORDINATOR.idFromName("mshin-global-player-market-v1");
+      const stub = env.API_COORDINATOR.get(id);
+      const headers = new Headers(request.headers);
+      headers.set("x-mshin-player-id", String(playerId));
+      headers.delete("authorization");
+      const result = await stub.fetch(new Request(request, { headers }));
+      const responseHeaders = new Headers(result.headers);
+      responseHeaders.set("access-control-allow-origin", allowedOrigin);
+      responseHeaders.set("vary", "Origin");
+      return new Response(result.body, { status: result.status, headers: responseHeaders });
+    }
     if (request.method !== "POST" || url.pathname !== "/v1/auth/google") return json({ error: "not_found" }, 404);
     if (!env.IDENTITIES || !env.GOOGLE_CLIENT_ID || !env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32) {
       return json({ error: "auth_service_not_configured" }, 503, allowedOrigin);
