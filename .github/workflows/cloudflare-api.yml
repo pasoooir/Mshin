@@ -1,0 +1,32 @@
+name: Mshin Cloudflare API
+
+on:
+  pull_request:
+    paths:
+      - "cloudflare-auth/**"
+      - "server/src/market.mjs"
+      - ".github/workflows/cloudflare-api.yml"
+  push:
+    branches: [main]
+    paths:
+      - "cloudflare-auth/**"
+      - "server/src/market.mjs"
+      - ".github/workflows/cloudflare-api.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  worker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test Cloudflare API
+        working-directory: cloudflare-auth
+        run: npm test
+      - name: Validate Wrangler configuration
+        working-directory: cloudflare-auth
+        run: npx --yes wrangler@4 deploy --dry-run
