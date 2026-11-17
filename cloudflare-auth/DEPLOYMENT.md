@@ -1,6 +1,6 @@
 # Mshin Cloudflare API deployment
 
-The game remains hosted on GitHub Pages. Cloudflare Workers now runs the authenticated profile and player-market API; the private GitHub repository remains the only store for player and market JSON. D1 stores only the SHA-256 hash of Google's stable subject and the numeric player ID.
+The game remains hosted on GitHub Pages. Cloudflare Workers now runs the authenticated profile and player-market API; the private GitHub repository remains the only store for player and market JSON. D1 stores a SHA-256 hash of Google's stable subject mapped to a numeric player ID, plus short-lived hashes of one-time login nonces. It never stores Google email addresses.
 
 ## Provisioned resources
 
