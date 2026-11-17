@@ -6,7 +6,7 @@ function safePath(value) {
   return path;
 }
 function decodeBase64(value) {
-  const binary = atob(value.replace(/\\s/g, ""));
+  const binary = atob(value.replaceAll(String.fromCharCode(10), "").replaceAll(String.fromCharCode(13), "").replaceAll(" ", ""));
   const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
 }
@@ -20,7 +20,7 @@ function encodeBase64(value) {
 }
 export class GitHubJsonStore {
   constructor({ repository, token, branch = "main", fetchImpl = fetch }) {
-    if (!/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(repository || "")) throw new Error("invalid_github_json_repository");
+    if (String(repository || "").split("/").length !== 2 || String(repository).split("/").some(part => !part || part === "." || part === ".." || /[^A-Za-z0-9_.-]/.test(part))) throw new Error("invalid_github_json_repository");
     if (!token || token.length < 20) throw new Error("github_json_token_required");
     this.repository = repository;
     this.token = token;
