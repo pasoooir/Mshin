@@ -3,6 +3,7 @@ extends Node
 signal session_changed(player_id: int, authenticated: bool)
 signal profile_loaded(player_id: int, revision: int)
 signal profile_save_failed(reason: String)
+signal authentication_feedback(message: String, success: bool)
 
 var player_id: int = 0
 var access_token: String = ""
@@ -10,6 +11,8 @@ var profile_revision: int = 0
 var identity_label: String = ""
 var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
+var _google_nonce: String = ""
+var _google_callback: JavaScriptObject
 
 func is_authenticated() -> bool:
 	return player_id > 0 and not access_token.is_empty()
@@ -233,3 +236,87 @@ func logout() -> void:
 	_pending_game_state.clear()
 	_apply_player_scope()
 	session_changed.emit(0, false)
+
+
+func begin_google_sign_in() -> bool:
+	if not OS.has_feature("web"):
+		authentication_feedback.emit("Google sign-in is available in the web version.", false)
+		return false
+	var client_id := str(ProjectSettings.get_setting("mshin/account/google_client_id", "")).strip_edges()
+	if client_id.is_empty() or not client_id.ends_with(".apps.googleusercontent.com"):
+		authentication_feedback.emit("Google sign-in is not configured yet.", false)
+		return false
+	var crypto := Crypto.new()
+	var nonce_bytes := crypto.generate_random_bytes(32)
+	_google_nonce = Marshalls.raw_to_base64(nonce_bytes).replace("+", "-").replace("/", "_").replace("=", "")
+	_google_callback = JavaScriptBridge.create_callback(_on_google_credential)
+	var window := JavaScriptBridge.get_interface("window")
+	window.set("mshinGoogleCredentialCallback", _google_callback)
+	var client_id_js := JSON.stringify(client_id)
+	var nonce_js := JSON.stringify(_google_nonce)
+	var script := """
+	(function () {
+		const clientId = %s;
+		const nonce = %s;
+		const initialize = function () {
+			if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+				window.mshinGoogleCredentialCallback(null, nonce);
+				return;
+			}
+			window.google.accounts.id.initialize({
+				client_id: clientId,
+				nonce: nonce,
+				auto_select: false,
+				cancel_on_tap_outside: true,
+				callback: function (response) {
+					window.mshinGoogleCredentialCallback(response && response.credential ? response.credential : null, nonce);
+				}
+			});
+			window.google.accounts.id.prompt();
+		};
+		if (window.google && window.google.accounts && window.google.accounts.id) {
+			initialize();
+		} else {
+			let loader = document.getElementById("mshin-google-identity-script");
+			if (!loader) {
+				loader = document.createElement("script");
+				loader.id = "mshin-google-identity-script";
+				loader.src = "https://accounts.google.com/gsi/client";
+				loader.async = true;
+				loader.defer = true;
+				loader.onload = initialize;
+				loader.onerror = function () {
+					window.mshinGoogleCredentialCallback(null, nonce);
+				};
+				document.head.appendChild(loader);
+			} else {
+				loader.addEventListener("load", initialize, { once: true });
+			}
+		}
+	})();
+	""" % [client_id_js, nonce_js]
+	JavaScriptBridge.eval(script)
+	authentication_feedback.emit("Opening Google sign-in…", true)
+	return true
+
+func _on_google_credential(args: Array) -> void:
+	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
+	var returned_nonce := str(args[1]) if args.size() > 1 else ""
+	call_deferred("_complete_google_sign_in", credential, returned_nonce)
+
+func _complete_google_sign_in(id_token: String, nonce: String) -> void:
+	if nonce.is_empty() or nonce != _google_nonce:
+		_google_nonce = ""
+		authentication_feedback.emit("Google sign-in was cancelled or expired. Please try again.", false)
+		return
+	_google_nonce = ""
+	if id_token.is_empty():
+		authentication_feedback.emit("Google sign-in could not be opened. Check the browser and try again.", false)
+		return
+	var success := await sign_in_with_google_id_token(id_token, nonce)
+	if success:
+		authentication_feedback.emit("Signed in as Mayor #%d" % player_id, true)
+		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
+			SaveManager.save_game()
+	else:
+		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
