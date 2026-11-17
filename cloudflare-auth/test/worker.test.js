@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import worker from "../src/worker.js";
+import worker, { createLoginNonce, consumeLoginNonce } from "../src/worker.js";
 
 const secret = "mshin-worker-test-secret-at-least-32-characters";
 function tokenFor(playerId = 100001) {
@@ -59,4 +59,45 @@ test("rejects browser origins outside the configured GitHub Pages origin", async
   }), { AUTH_TOKEN_SECRET: secret });
   assert.equal(response.status, 403);
   assert.deepEqual(await response.json(), { error: "origin_not_allowed" });
+});
+
+
+test("issues cryptographically random login nonces and consumes each nonce only once", async () => {
+  const rows = new Map();
+  const database = {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async run() {
+              if (sql.startsWith("DELETE FROM auth_nonces WHERE expires_at")) {
+                let changes = 0;
+                for (const [hash, row] of rows) {
+                  if (row.expires_at <= values[0]) { rows.delete(hash); changes += 1; }
+                }
+                return { meta: { changes } };
+              }
+              if (sql.startsWith("INSERT INTO auth_nonces")) {
+                rows.set(values[0], { expires_at: values[1] });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.startsWith("DELETE FROM auth_nonces WHERE nonce_hash")) {
+                const row = rows.get(values[0]);
+                if (row && row.expires_at > values[1]) {
+                  rows.delete(values[0]);
+                  return { meta: { changes: 1 } };
+                }
+                return { meta: { changes: 0 } };
+              }
+              throw new Error("unexpected_sql");
+            }
+          };
+        }
+      };
+    }
+  };
+  const nonce = await createLoginNonce(database);
+  assert.match(nonce, /^[A-Za-z0-9_-]{40,60}$/);
+  assert.equal(await consumeLoginNonce(database, nonce), true);
+  assert.equal(await consumeLoginNonce(database, nonce), false);
 });
