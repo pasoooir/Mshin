@@ -30,3 +30,57 @@ jobs:
       - name: Validate Wrangler configuration
         working-directory: cloudflare-auth
         run: npx --yes wrangler@4 deploy --dry-run
+
+
+  deployed-smoke:
+    needs: worker-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify deployed Worker health, CORS and login nonce endpoint
+        run: |
+          node --input-type=module <<'NODE'
+          const base = 'https://mshin-player-auth.pasoooir-erp.workers.dev';
+          const origin = 'https://pasoooir.github.io';
+
+          const gameResponse = await fetch(origin + '/Mshin/');
+          if (!gameResponse.ok) throw new Error('GitHub Pages game is not reachable: HTTP ' + gameResponse.status);
+          const launcher = await gameResponse.text();
+          if (!/PLAY MSHIN/i.test(launcher)) throw new Error('GitHub Pages launcher is not the playable Mshin entrypoint');
+          const latestResponse = await fetch(origin + '/Mshin/game/latest/index.html');
+          if (!latestResponse.ok) throw new Error('Latest game build is not published: HTTP ' + latestResponse.status);
+          const latestBuild = await latestResponse.text();
+          if (!latestBuild.includes('location.replace') || !latestBuild.includes('../')) {
+            throw new Error('Latest immutable game build pointer is invalid');
+          }
+
+          const health = await fetch(base + '/healthz', { headers: { Origin: origin } });
+          if (!health.ok) throw new Error('Worker health failed: HTTP ' + health.status);
+          const healthBody = await health.json();
+          if (healthBody.ok !== true || healthBody.service !== 'mshin-cloudflare-json-api') {
+            throw new Error('Unexpected Worker health payload');
+          }
+          if (health.headers.get('access-control-allow-origin') !== origin) {
+            throw new Error('Worker health CORS origin mismatch');
+          }
+
+          const preflight = await fetch(base + '/v1/auth/nonce', {
+            method: 'OPTIONS',
+            headers: {
+              Origin: origin,
+              'Access-Control-Request-Method': 'GET',
+              'Access-Control-Request-Headers': 'content-type'
+            }
+          });
+          if (preflight.status !== 204 || preflight.headers.get('access-control-allow-origin') !== origin) {
+            throw new Error('Worker CORS preflight failed: HTTP ' + preflight.status);
+          }
+
+          const nonceResponse = await fetch(base + '/v1/auth/nonce', { headers: { Origin: origin } });
+          if (!nonceResponse.ok) throw new Error('Nonce endpoint failed: HTTP ' + nonceResponse.status);
+          const nonceBody = await nonceResponse.json();
+          if (typeof nonceBody.nonce !== 'string' || !/^[A-Za-z0-9_-]{40,60}$/.test(nonceBody.nonce) || nonceBody.expires_in !== 300) {
+            throw new Error('Nonce endpoint returned an invalid challenge');
+          }
+          console.log('PASS: deployed Worker health, CORS preflight and D1-backed login nonce endpoint');
+          NODE

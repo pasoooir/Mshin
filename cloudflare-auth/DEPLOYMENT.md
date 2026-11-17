@@ -56,6 +56,12 @@ Every profile and market API request is routed through one SQLite-backed Durable
 
 GitHub is versioned JSON storage, not a transactional database. Each write creates Git objects and a commit, and reads/writes consume GitHub API quota. Cloudflare Workers Free currently includes 100,000 requests/day and 50 external subrequests per invocation; Durable Objects are available on Free with separate daily request/compute quotas. Measure actual usage before expanding the market to many players. Sources: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) and [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 
-## Current readiness
+## Current readiness (2026-11-17)
 
-Code and D1 schema are prepared. The first two new Google identities are assigned 100001 and 100002 in login order; the first should be the intended admin test account and the second player2. The Worker is not considered production-ready until `AUTH_TOKEN_SECRET`, `GITHUB_JSON_TOKEN`, and the real Google Web Client ID are configured, deployment succeeds, and the two-account acceptance cycle passes against the deployed API. The old Node API remains in `server/` for local tests/reference; it is no longer the intended production host.
+- Worker `mshin-player-auth` is deployed at `https://mshin-player-auth.pasoooir-erp.workers.dev`; its `workers.dev` endpoint is enabled.
+- The D1 binding, SQLite Durable Object binding and `AUTH_TOKEN_SECRET` Worker Secret are configured.
+- The first two new Google identities are assigned 100001 and 100002 in login order; the first should be the intended admin test account and the second player2.
+- **Still required:** add `GITHUB_JSON_TOKEN` as a Worker Secret and replace the Google Web Client ID placeholder with the real client ID in both Worker configuration and `godot-city-buildit/project.godot`.
+- Until those two values are supplied, Google sign-in and authenticated profile/market storage cannot complete. The deployed Worker is not yet considered production-ready until the live smoke test and two-account buy/sell/cancel acceptance cycle pass.
+
+The old Node API remains in `server/` for local tests/reference; it is no longer the intended production host.
