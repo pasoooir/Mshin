@@ -69,7 +69,9 @@ async function hashHex(value) {
 async function createLoginNonce(database) {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const nonce = base64UrlBytes(bytes);
-  const expiresAt = Math.floor(Date.now() / 1000) + 300;
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = now + 300;
+  await database.prepare("DELETE FROM auth_nonces WHERE expires_at <= ?").bind(now).run();
   await database.prepare("INSERT INTO auth_nonces (nonce_hash, expires_at) VALUES (?, ?)").bind(await hashHex(nonce), expiresAt).run();
   return nonce;
 }
