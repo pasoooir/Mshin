@@ -1,3 +1,5 @@
+> **Superseded for production:** the current deployment target is Cloudflare Workers. Keep this document only as the historical Node.js-host alternative. Follow [`cloudflare-auth/DEPLOYMENT.md`](../cloudflare-auth/DEPLOYMENT.md) for the active architecture.
+
 # Independent Mshin JSON API deployment
 
 This deploys the game-data API as a single Node.js container on an independent host. It does not deploy to Cloudflare. GitHub Pages remains the static game host; the private GitHub repository remains the JSON file store; the Cloudflare Worker only authenticates Google identity and issues the numeric player ID/token.
