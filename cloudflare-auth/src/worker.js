@@ -146,6 +146,14 @@ export default {
       responseHeaders.set("vary", "Origin");
       return new Response(result.body, { status: result.status, headers: responseHeaders });
     }
+    if (request.method === "GET" && url.pathname === "/v1/auth/nonce") {
+      if (!env.IDENTITIES) return json({ error: "auth_service_not_configured" }, 503, allowedOrigin);
+      try {
+        return json({ nonce: await createLoginNonce(env.IDENTITIES), expires_in: 300 }, 200, allowedOrigin);
+      } catch {
+        return json({ error: "nonce_service_unavailable" }, 503, allowedOrigin);
+      }
+    }
     if (request.method !== "POST" || url.pathname !== "/v1/auth/google") return json({ error: "not_found" }, 404);
     if (!env.IDENTITIES || !env.GOOGLE_CLIENT_ID || !env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32) {
       return json({ error: "auth_service_not_configured" }, 503, allowedOrigin);
