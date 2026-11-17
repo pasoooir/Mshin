@@ -69,6 +69,26 @@ async function issueGameToken(playerId, secret) {
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(input));
   return input + "." + base64UrlBytes(new Uint8Array(signature));
 }
+async function verifyGameToken(token, secret) {
+  if (typeof token !== "string" || token.length > 4096) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", key, decodeBase64Url(parts[2]), encoder.encode(parts[0] + "." + parts[1]));
+    if (!valid) return null;
+    const header = decodeJsonPart(parts[0]);
+    const claims = decodeJsonPart(parts[1]);
+    const playerId = Number(claims.player_id);
+    const now = Math.floor(Date.now() / 1000);
+    if (header.alg !== "HS256" || claims.iss !== TOKEN_ISSUER || claims.aud !== TOKEN_AUDIENCE ||
+        !Number.isSafeInteger(playerId) || playerId < 1 || claims.sub !== String(playerId) ||
+        !Number.isInteger(claims.iat) || !Number.isInteger(claims.exp) ||
+        claims.iat > now + 30 || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > 86400) return null;
+    return playerId;
+  } catch { return null; }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
