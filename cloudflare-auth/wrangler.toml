@@ -8,6 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 binding = "IDENTITIES"
 database_name = "mshin-player-identities"
 database_id = "047b9ec7-5d1c-49d6-a1a9-20c10cebb502"
+migrations_dir = "migrations"
 
 # One Durable Object serializes all profile and marketplace mutations so
 # GitHub's branch ref cannot be concurrently advanced by competing requests.
