@@ -161,8 +161,8 @@ export default {
     try {
       const body = await request.json();
       const googleSub = await verifyGoogleIdToken(body.id_token, env.GOOGLE_CLIENT_ID, body.nonce);
-      const digest = await crypto.subtle.digest("SHA-256", encoder.encode(googleSub));
-      const subjectHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+      if (!await consumeLoginNonce(env.IDENTITIES, body.nonce)) throw new Error("invalid_nonce");
+      const subjectHash = await hashHex(googleSub);
       await env.IDENTITIES.prepare("INSERT INTO player_identities (google_subject_hash) VALUES (?) ON CONFLICT(google_subject_hash) DO NOTHING").bind(subjectHash).run();
       const identity = await env.IDENTITIES.prepare("SELECT player_id FROM player_identities WHERE google_subject_hash = ? LIMIT 1").bind(subjectHash).first();
       const playerId = Number(identity?.player_id);
