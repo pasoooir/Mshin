@@ -1,5 +1,5 @@
 function safePath(value) {
-  const path = String(value || "").replace(/\\\\/g, "/");
+  const path = String(value || "").replaceAll(String.fromCharCode(92), "/");
   if (!path || path.startsWith("/") || path.split("/").some(part => !part || part === "." || part === "..")) {
     throw new Error("invalid_json_storage_path");
   }
