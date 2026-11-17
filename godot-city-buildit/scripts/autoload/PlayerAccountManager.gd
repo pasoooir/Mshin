@@ -246,9 +246,19 @@ func begin_google_sign_in() -> bool:
 	if client_id.is_empty() or not client_id.ends_with(".apps.googleusercontent.com"):
 		authentication_feedback.emit("Google sign-in is not configured yet.", false)
 		return false
-	var crypto := Crypto.new()
-	var nonce_bytes := crypto.generate_random_bytes(32)
-	_google_nonce = Marshalls.raw_to_base64(nonce_bytes).replace("+", "-").replace("/", "_").replace("=", "")
+	call_deferred("_request_google_nonce_and_launch", client_id)
+	return true
+
+func _request_google_nonce_and_launch(client_id: String) -> void:
+	var nonce_response := await _request_json(_auth_url() + "/v1/auth/nonce", HTTPClient.METHOD_GET)
+	if not nonce_response.ok:
+		authentication_feedback.emit("Could not start secure Google sign-in. Please retry.", false)
+		return
+	_google_nonce = str(nonce_response.body.get("nonce", ""))
+	if _google_nonce.length() < 32:
+		_google_nonce = ""
+		authentication_feedback.emit("Secure sign-in challenge was invalid. Please retry.", false)
+		return
 	_google_callback = JavaScriptBridge.create_callback(_on_google_credential)
 	var window := JavaScriptBridge.get_interface("window")
 	window.set("mshinGoogleCredentialCallback", _google_callback)
@@ -297,7 +307,6 @@ func begin_google_sign_in() -> bool:
 	""" % [client_id_js, nonce_js]
 	JavaScriptBridge.eval(script)
 	authentication_feedback.emit("Opening Google sign-in…", true)
-	return true
 
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
