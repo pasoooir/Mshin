@@ -1,3 +1,5 @@
+import { MshinApiCoordinator } from "./api.js";
+
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 const TOKEN_ISSUER = "mshin-auth";
 const TOKEN_AUDIENCE = "mshin-json-api";
@@ -147,5 +149,6 @@ export default {
     }
   }
 };
+
 
 export { MshinApiCoordinator };
