@@ -62,6 +62,23 @@ function base64UrlBytes(bytes) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
+async function hashHex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+async function createLoginNonce(database) {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const nonce = base64UrlBytes(bytes);
+  const expiresAt = Math.floor(Date.now() / 1000) + 300;
+  await database.prepare("INSERT INTO auth_nonces (nonce_hash, expires_at) VALUES (?, ?)").bind(await hashHex(nonce), expiresAt).run();
+  return nonce;
+}
+async function consumeLoginNonce(database, nonce) {
+  if (typeof nonce !== "string" || nonce.length < 32 || nonce.length > 128) return false;
+  const result = await database.prepare("DELETE FROM auth_nonces WHERE nonce_hash = ? AND expires_at > ?").bind(await hashHex(nonce), Math.floor(Date.now() / 1000)).run();
+  return Number(result?.meta?.changes || 0) === 1;
+}
+
 async function issueGameToken(playerId, secret) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlBytes(encoder.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
@@ -107,7 +124,7 @@ export default {
     if (request.method === "GET" && url.pathname === "/healthz") {
       return json({ ok: true, service: "mshin-cloudflare-json-api" }, 200, allowedOrigin);
     }
-    if (url.pathname.startsWith("/v1/") && url.pathname !== "/v1/auth/google") {
+    if (url.pathname.startsWith("/v1/") && url.pathname !== "/v1/auth/google" && url.pathname !== "/v1/auth/nonce") {
       if (!env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32 || !env.API_COORDINATOR) {
         return json({ error: "api_service_not_configured" }, 503, allowedOrigin);
       }
@@ -151,4 +168,4 @@ export default {
 };
 
 
-export { MshinApiCoordinator };
+export { MshinApiCoordinator, createLoginNonce, consumeLoginNonce };
