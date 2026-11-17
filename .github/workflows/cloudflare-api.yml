@@ -43,6 +43,17 @@ jobs:
           const base = 'https://mshin-player-auth.pasoooir-erp.workers.dev';
           const origin = 'https://pasoooir.github.io';
 
+          const gameResponse = await fetch(origin + '/Mshin/');
+          if (!gameResponse.ok) throw new Error('GitHub Pages game is not reachable: HTTP ' + gameResponse.status);
+          const launcher = await gameResponse.text();
+          if (!/PLAY MSHIN/i.test(launcher)) throw new Error('GitHub Pages launcher is not the playable Mshin entrypoint');
+          const latestResponse = await fetch(origin + '/Mshin/game/latest/index.html');
+          if (!latestResponse.ok) throw new Error('Latest game build is not published: HTTP ' + latestResponse.status);
+          const latestBuild = await latestResponse.text();
+          if (!latestBuild.includes('location.replace') || !latestBuild.includes('../')) {
+            throw new Error('Latest immutable game build pointer is invalid');
+          }
+
           const health = await fetch(base + '/healthz', { headers: { Origin: origin } });
           if (!health.ok) throw new Error('Worker health failed: HTTP ' + health.status);
           const healthBody = await health.json();
