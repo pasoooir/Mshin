@@ -1,16 +1,30 @@
 name = "mshin-player-auth"
 main = "src/worker.js"
 compatibility_date = "2026-11-16"
+compatibility_flags = ["nodejs_compat"]
 
-# Bind only the identity mapping database. Game profiles, inventory, wallet,
-# production queues and marketplace state are stored by the independent JSON API.
+# Google identity mapping only. Player JSON stays in the private GitHub repo.
 [[d1_databases]]
 binding = "IDENTITIES"
 database_name = "mshin-player-identities"
 database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
 
+# One Durable Object serializes all profile and marketplace mutations so
+# GitHub's branch ref cannot be concurrently advanced by competing requests.
+[[durable_objects.bindings]]
+name = "API_COORDINATOR"
+class_name = "MshinApiCoordinator"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MshinApiCoordinator"]
+
 [vars]
 GOOGLE_CLIENT_ID = "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID"
 GAME_ORIGIN = "https://pasoooir.github.io"
+GITHUB_JSON_REPOSITORY = "pasoooir/mshin-player-data"
+GITHUB_JSON_BRANCH = "main"
 
-# Set AUTH_TOKEN_SECRET with: wrangler secret put AUTH_TOKEN_SECRET
+# Secrets (never commit their values):
+# wrangler secret put AUTH_TOKEN_SECRET
+# wrangler secret put GITHUB_JSON_TOKEN
