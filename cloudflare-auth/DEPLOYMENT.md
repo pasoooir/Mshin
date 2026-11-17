@@ -7,7 +7,9 @@ The game remains hosted on GitHub Pages. Cloudflare Workers now runs the authent
 - Worker name: `mshin-player-auth`
 - D1 database: `mshin-player-identities`
 - D1 location: EU jurisdiction (created in EEUR)
-- D1 schema: `player_identities(player_id, google_subject_hash, created_at)` and one-time `auth_nonces(nonce_hash, expires_at)`\n- Worker URL: `https://mshin-player-auth.pasoooir-erp.workers.dev`\n- Initial D1 sequence is set to `100000`; first and second distinct Google identities receive player IDs `100001` and `100002` respectively.
+- D1 schema: `player_identities(player_id, google_subject_hash, created_at)` and one-time `auth_nonces(nonce_hash, expires_at)`
+- Worker URL: `https://mshin-player-auth.pasoooir-erp.workers.dev`
+- Initial D1 sequence is set to `100000`; first and second distinct Google identities receive player IDs `100001` and `100002` respectively.
 - JSON repository: `pasoooir/mshin-player-data` (private, branch `main`)
 - Durable Object: `MshinApiCoordinator`, one global instance serializing all profile and market writes
 
@@ -38,7 +40,8 @@ npx wrangler deploy
 ## API endpoints
 
 - `GET /healthz` — Worker process health.
-- `GET /v1/auth/nonce` — issues a cryptographically random, single-use five-minute nonce stored only as a SHA-256 hash in D1.\n- `POST /v1/auth/google` — validates Google ID token, nonce, issuer, audience, signature and expiry; consumes the nonce exactly once; maps the SHA-256 Google subject hash to a numeric player ID in D1; returns a short-lived Mshin bearer token.
+- `GET /v1/auth/nonce` — issues a cryptographically random, single-use five-minute nonce stored only as a SHA-256 hash in D1.
+- `POST /v1/auth/google` — validates Google ID token, nonce, issuer, audience, signature and expiry; consumes the nonce exactly once; maps the SHA-256 Google subject hash to a numeric player ID in D1; returns a short-lived Mshin bearer token.
 - `GET /v1/profile` and `PUT /v1/profile` — read/write only the authenticated player's JSON.
 - `GET /v1/market` and `GET /v1/market/mine` — list active offers and the current player's offers.
 - `POST /v1/market/list` — reserve seller inventory and create an offer.
