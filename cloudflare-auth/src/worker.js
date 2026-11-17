@@ -1,3 +1,5 @@
+import { MshinApiCoordinator } from "./api.js";
+
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 const TOKEN_ISSUER = "mshin-auth";
 const TOKEN_AUDIENCE = "mshin-json-api";
@@ -60,6 +62,25 @@ function base64UrlBytes(bytes) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
+async function hashHex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+async function createLoginNonce(database) {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const nonce = base64UrlBytes(bytes);
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = now + 300;
+  await database.prepare("DELETE FROM auth_nonces WHERE expires_at <= ?").bind(now).run();
+  await database.prepare("INSERT INTO auth_nonces (nonce_hash, expires_at) VALUES (?, ?)").bind(await hashHex(nonce), expiresAt).run();
+  return nonce;
+}
+async function consumeLoginNonce(database, nonce) {
+  if (typeof nonce !== "string" || nonce.length < 32 || nonce.length > 128) return false;
+  const result = await database.prepare("DELETE FROM auth_nonces WHERE nonce_hash = ? AND expires_at > ?").bind(await hashHex(nonce), Math.floor(Date.now() / 1000)).run();
+  return Number(result?.meta?.changes || 0) === 1;
+}
+
 async function issueGameToken(playerId, secret) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64UrlBytes(encoder.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
@@ -69,6 +90,26 @@ async function issueGameToken(playerId, secret) {
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(input));
   return input + "." + base64UrlBytes(new Uint8Array(signature));
 }
+async function verifyGameToken(token, secret) {
+  if (typeof token !== "string" || token.length > 4096) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", key, decodeBase64Url(parts[2]), encoder.encode(parts[0] + "." + parts[1]));
+    if (!valid) return null;
+    const header = decodeJsonPart(parts[0]);
+    const claims = decodeJsonPart(parts[1]);
+    const playerId = Number(claims.player_id);
+    const now = Math.floor(Date.now() / 1000);
+    if (header.alg !== "HS256" || claims.iss !== TOKEN_ISSUER || claims.aud !== TOKEN_AUDIENCE ||
+        !Number.isSafeInteger(playerId) || playerId < 1 || claims.sub !== String(playerId) ||
+        !Number.isInteger(claims.iat) || !Number.isInteger(claims.exp) ||
+        claims.iat > now + 30 || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > 86400) return null;
+    return playerId;
+  } catch { return null; }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -76,12 +117,43 @@ export default {
     if (origin && origin !== allowedOrigin) return json({ error: "origin_not_allowed" }, 403);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
       "access-control-allow-origin": allowedOrigin,
-      "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-methods": "GET, PUT, POST, OPTIONS",
+      "access-control-allow-headers": "authorization, content-type, if-match",
       "access-control-max-age": "86400",
       "vary": "Origin"
     }});
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/healthz") {
+      return json({ ok: true, service: "mshin-cloudflare-json-api" }, 200, allowedOrigin);
+    }
+    if (url.pathname.startsWith("/v1/") && url.pathname !== "/v1/auth/google" && url.pathname !== "/v1/auth/nonce") {
+      if (!env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32 || !env.API_COORDINATOR) {
+        return json({ error: "api_service_not_configured" }, 503, allowedOrigin);
+      }
+      const authorization = request.headers.get("Authorization") || "";
+      const parts = authorization.trim().split(" ");
+      const token = parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1] : "";
+      const playerId = token ? await verifyGameToken(token, env.AUTH_TOKEN_SECRET) : null;
+      if (!playerId) return json({ error: "unauthorized" }, 401, allowedOrigin);
+      const id = env.API_COORDINATOR.idFromName("mshin-global-player-market-v1");
+      const stub = env.API_COORDINATOR.get(id);
+      const headers = new Headers(request.headers);
+      headers.set("x-mshin-player-id", String(playerId));
+      headers.delete("authorization");
+      const result = await stub.fetch(new Request(request, { headers }));
+      const responseHeaders = new Headers(result.headers);
+      responseHeaders.set("access-control-allow-origin", allowedOrigin);
+      responseHeaders.set("vary", "Origin");
+      return new Response(result.body, { status: result.status, headers: responseHeaders });
+    }
+    if (request.method === "GET" && url.pathname === "/v1/auth/nonce") {
+      if (!env.IDENTITIES) return json({ error: "auth_service_not_configured" }, 503, allowedOrigin);
+      try {
+        return json({ nonce: await createLoginNonce(env.IDENTITIES), expires_in: 300 }, 200, allowedOrigin);
+      } catch {
+        return json({ error: "nonce_service_unavailable" }, 503, allowedOrigin);
+      }
+    }
     if (request.method !== "POST" || url.pathname !== "/v1/auth/google") return json({ error: "not_found" }, 404);
     if (!env.IDENTITIES || !env.GOOGLE_CLIENT_ID || !env.AUTH_TOKEN_SECRET || env.AUTH_TOKEN_SECRET.length < 32) {
       return json({ error: "auth_service_not_configured" }, 503, allowedOrigin);
@@ -89,8 +161,8 @@ export default {
     try {
       const body = await request.json();
       const googleSub = await verifyGoogleIdToken(body.id_token, env.GOOGLE_CLIENT_ID, body.nonce);
-      const digest = await crypto.subtle.digest("SHA-256", encoder.encode(googleSub));
-      const subjectHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+      if (!await consumeLoginNonce(env.IDENTITIES, body.nonce)) throw new Error("invalid_nonce");
+      const subjectHash = await hashHex(googleSub);
       await env.IDENTITIES.prepare("INSERT INTO player_identities (google_subject_hash) VALUES (?) ON CONFLICT(google_subject_hash) DO NOTHING").bind(subjectHash).run();
       const identity = await env.IDENTITIES.prepare("SELECT player_id FROM player_identities WHERE google_subject_hash = ? LIMIT 1").bind(subjectHash).first();
       const playerId = Number(identity?.player_id);
@@ -104,3 +176,6 @@ export default {
     }
   }
 };
+
+
+export { MshinApiCoordinator, createLoginNonce, consumeLoginNonce };
