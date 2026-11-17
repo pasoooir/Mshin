@@ -12,7 +12,7 @@ var identity_label: String = ""
 var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
 var _google_nonce: String = ""
-var _google_callback: JavaScriptObject
+var _google_callback: Variant
 
 func is_authenticated() -> bool:
 	return player_id > 0 and not access_token.is_empty()
