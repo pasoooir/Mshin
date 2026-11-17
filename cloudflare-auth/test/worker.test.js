@@ -101,3 +101,31 @@ test("issues cryptographically random login nonces and consumes each nonce only 
   assert.equal(await consumeLoginNonce(database, nonce), true);
   assert.equal(await consumeLoginNonce(database, nonce), false);
 });
+
+
+test("serves a server-generated login nonce without requiring a player token", async () => {
+  const rows = new Map();
+  const database = {
+    prepare(sql) {
+      return { bind(...values) { return { async run() {
+        if (sql.startsWith("DELETE FROM auth_nonces WHERE expires_at")) {
+          for (const [key, value] of rows) if (value <= values[0]) rows.delete(key);
+          return { meta: { changes: 0 } };
+        }
+        if (sql.startsWith("INSERT INTO auth_nonces")) {
+          rows.set(values[0], values[1]);
+          return { meta: { changes: 1 } };
+        }
+        throw new Error("unexpected_sql");
+      } }; } };
+    }
+  };
+  const response = await worker.fetch(new Request("https://api.example/v1/auth/nonce", {
+    headers: { origin: "https://pasoooir.github.io" }
+  }), { IDENTITIES: database, GAME_ORIGIN: "https://pasoooir.github.io" });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.match(body.nonce, /^[A-Za-z0-9_-]{40,60}$/);
+  assert.equal(body.expires_in, 300);
+  assert.equal(rows.size, 1);
+});
