@@ -3310,7 +3310,6 @@ func _test_settings_panel_contract() -> void:
 		_check(GameManager.city_name == "Settings QA City", "Saving a valid city name must update the city model.")
 		GameManager.set_city_name(original_city_name)
 		SaveManager.save_game()
-		rename_dialog.queue_free()
 
 	# Help: ensure the action opens useful gameplay instructions.
 	(hud.find_child("SettingsHelpButton", true, false) as Button).pressed.emit()
