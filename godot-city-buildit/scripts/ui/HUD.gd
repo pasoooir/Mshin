@@ -4307,7 +4307,7 @@ func _show_storage_panel() -> void:
 	close.name = "StorageClose"
 	close.text = "×"
 	close.custom_minimum_size = Vector2(46, 46) * _ui_scale
-	close.add_theme_font_size_override("font_size", _popup_font_size(34))
+	close.add_theme_font_size_override("font_size", _popup_font_size(40))
 	close.add_theme_color_override("font_color", Color("#123B59"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#39A8E8"), Color("#8BD5FF")))
 	close.add_theme_stylebox_override("hover", _toolbar_style(Color("#65C3F3"), Color.WHITE))
@@ -5187,7 +5187,7 @@ func _close_settings_panel() -> void:
 func _show_settings_panel() -> void:
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.94)
+	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
 	var panel_height := minf(760.0 * _ui_scale, viewport_size.y * 0.92)
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
@@ -5216,8 +5216,8 @@ func _show_settings_panel() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#EAF7FF")
-	panel_style.border_color = Color("#D8B94F")
-	panel_style.set_border_width_all(3)
+	panel_style.border_color = Color("#D6EAF7")
+	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(22)
 	panel_style.shadow_color = Color(0, 0, 0, 0.38)
 	panel_style.shadow_size = 18
@@ -5256,13 +5256,26 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
+	var content_scroll := ScrollContainer.new()
+	content_scroll.name = "SettingsContentScroll"
+	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(content_scroll)
+	var content := VBoxContainer.new()
+	content.name = "SettingsContent"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 18)
+	content_scroll.add_child(content)
+
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
 	audio_row.columns = 2
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_row.add_theme_constant_override("h_separation", 24)
 	audio_row.add_theme_constant_override("v_separation", 8)
-	layout.add_child(audio_row)
+	content.add_child(audio_row)
 	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_settings_switch(audio_row, "SfxToggle", "Sounds", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
 
@@ -5273,7 +5286,7 @@ func _show_settings_panel() -> void:
 	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	actions.add_theme_constant_override("h_separation", 22)
 	actions.add_theme_constant_override("v_separation", 14)
-	layout.add_child(actions)
+	content.add_child(actions)
 	_add_settings_action(actions, "SettingsAboutButton", "About", _show_settings_about)
 	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
 	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
@@ -5285,9 +5298,9 @@ func _show_settings_panel() -> void:
 	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
 	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _popup_font_size(19))
+	account_note.add_theme_font_size_override("font_size", _popup_font_size(21))
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
-	layout.add_child(account_note)
+	content.add_child(account_note)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
@@ -5295,7 +5308,7 @@ func _show_settings_panel() -> void:
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
 	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
-	layout.add_child(_settings_account_status)
+	content.add_child(_settings_account_status)
 
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
@@ -5309,7 +5322,7 @@ func _show_settings_panel() -> void:
 	_settings_account_action.add_theme_stylebox_override("pressed", _settings_action_style(Color("#B9E1F5")))
 	_settings_account_action.focus_mode = Control.FOCUS_NONE
 	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
-	layout.add_child(_settings_account_action)
+	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
 
@@ -5336,7 +5349,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.custom_minimum_size = Vector2(0, 86) * _ui_scale
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", _popup_font_size(22))
+	button.add_theme_font_size_override("font_size", _popup_font_size(26))
 	button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
@@ -5373,9 +5386,18 @@ func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsAboutDialog"
 	dialog.title = "About Mshin · Advanced settings"
+	var viewport_size := get_viewport().get_visible_rect().size
+	var advanced_scroll := ScrollContainer.new()
+	advanced_scroll.name = "AdvancedSettingsScroll"
+	advanced_scroll.custom_minimum_size = Vector2(0, minf(480.0, viewport_size.y * 0.62))
+	advanced_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	advanced_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	dialog.add_child(advanced_scroll)
 	var content := VBoxContainer.new()
+	content.name = "AdvancedSettingsContent"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 10)
-	dialog.add_child(content)
+	advanced_scroll.add_child(content)
 	var about_text := Label.new()
 	about_text.text = "Mshin City Builder — build, grow and manage your own city. Your progress is saved locally and can be synchronized after signing in with Google."
 	about_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -5407,10 +5429,16 @@ func _show_settings_about() -> void:
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(720, 640))
+	dialog.popup_centered(Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
 
 
 func _show_settings_help() -> void:
+	_close_settings_panel()
+	var scene := get_tree().current_scene
+	var guide := scene.get_node_or_null("TutorialGuide") if scene != null else null
+	if is_instance_valid(guide) and guide.has_method("open_help"):
+		guide.open_help()
+		return
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsHelpDialog"
 	dialog.title = "How to play"
@@ -5454,11 +5482,12 @@ func _show_notification_settings() -> void:
 	dialog.name = "NotificationSettingsDialog"
 	dialog.title = "Notification Settings"
 	var content := VBoxContainer.new()
+	content.name = "NotificationSettingsContent"
 	content.add_theme_constant_override("separation", 12)
 	dialog.add_child(content)
-	for preference in [{"key":"building_alerts","label":"Building and production alerts"},{"key":"city_updates","label":"City progress updates"}]:
+	for preference in [{"key":"building_alerts","node_name":"BuildingAlertsToggle","label":"Building and production alerts"},{"key":"city_updates","node_name":"CityUpdatesToggle","label":"City progress updates"}]:
 		var toggle := CheckButton.new()
-		toggle.name = str(preference.key).capitalize()
+		toggle.name = str(preference.node_name)
 		toggle.text = str(preference.label)
 		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
 		toggle.toggled.connect(func(value: bool) -> void:
