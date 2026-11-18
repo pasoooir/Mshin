@@ -3032,8 +3032,6 @@ func _test_trade_depot_and_global_market() -> void:
 	var previous_trade: Dictionary = TradeManager.to_save_dict()
 	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
 	var previous_ledger_sequence := EconomyManager.transaction_sequence
-	var previous_persistence_ready := SaveManager.persistence_ready
-	var previous_is_loading := SaveManager.is_loading
 	EconomyManager.transaction_ledger.clear()
 	var depot := FireHazardTestBuilding.new()
 	depot.building_id = "smoke_trade_depot"
@@ -3188,8 +3186,11 @@ func _test_trade_depot_and_global_market() -> void:
 	port.queue_free()
 
 	# User-facing trade/storage/economy events must converge into one player JSON snapshot.
-	SaveManager.persistence_ready = true
-	SaveManager.is_loading = false
+	var persistence_wait_frames := 0
+	while (not SaveManager.persistence_ready or SaveManager.is_loading) and persistence_wait_frames < 240:
+		await get_tree().process_frame
+		persistence_wait_frames += 1
+	_check(SaveManager.persistence_ready and not SaveManager.is_loading, "Player JSON persistence must finish startup loading before trade transactions are snapshotted.")
 	SaveManager.schedule_save()
 	await get_tree().create_timer(1.0).timeout
 	var persisted_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
@@ -3216,8 +3217,6 @@ func _test_trade_depot_and_global_market() -> void:
 	SaveManager.is_loading = false
 	if not SaveManager.save_game():
 		failures.append("Gameplay smoke test could not restore the pre-test city JSON after trade persistence checks.")
-	SaveManager.persistence_ready = previous_persistence_ready
-	SaveManager.is_loading = previous_is_loading
 
 func _test_citizen_feedback_bubbles() -> void:
 	var feedback_manager = get_node_or_null("CitizenFeedback")
