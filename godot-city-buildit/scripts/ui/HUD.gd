@@ -5386,9 +5386,18 @@ func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsAboutDialog"
 	dialog.title = "About Mshin · Advanced settings"
+	var viewport_size := get_viewport().get_visible_rect().size
+	var advanced_scroll := ScrollContainer.new()
+	advanced_scroll.name = "AdvancedSettingsScroll"
+	advanced_scroll.custom_minimum_size = Vector2(0, minf(480.0, viewport_size.y * 0.62))
+	advanced_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	advanced_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	dialog.add_child(advanced_scroll)
 	var content := VBoxContainer.new()
+	content.name = "AdvancedSettingsContent"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 10)
-	dialog.add_child(content)
+	advanced_scroll.add_child(content)
 	var about_text := Label.new()
 	about_text.text = "Mshin City Builder — build, grow and manage your own city. Your progress is saved locally and can be synchronized after signing in with Google."
 	about_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -5420,7 +5429,7 @@ func _show_settings_about() -> void:
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(720, 640))
+	dialog.popup_centered(Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
 
 
 func _show_settings_help() -> void:
