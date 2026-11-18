@@ -3255,19 +3255,26 @@ func _test_settings_panel_contract() -> void:
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
 	_check(heading != null and content_scroll != null and content_scroll.get_parent() == heading.get_parent(), "Settings title and close button must remain fixed outside the scrolling content.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
+	var panel_surface: StyleBoxFlat = null
+	if panel != null:
+		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat
+	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#DDF0FF")), "Settings panel must use the approved Canva pale-blue surface.")
+	var music_label := hud.find_child("MusicToggleRow", true, false)
+	var sounds_label := hud.find_child("SfxToggleRow", true, false)
+	_check(music_label != null and sounds_label != null, "Music and Sounds must each have a large labeled On/Off control.")
 	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction", "SettingsClose"]:
 		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
 	for node_name in ["MusicToggle", "SfxToggle"]:
-		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must provide an independent sound switch." % node_name)
+		_check(hud.find_child(node_name, true, false) is Button, "%s must provide the Canva-style independent On/Off button." % node_name)
 	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
 	_check(get_tree().current_scene.find_child("PlayerAccountPanel", true, false) == null, "The duplicate floating guest/account panel must not compete with Settings.")
 	_check(get_tree().current_scene.find_child("ReopenTutorial", true, false) == null, "The redundant floating Help shortcut must be removed from the first screen.")
-	var music_toggle := hud.find_child("MusicToggle", true, false) as CheckButton
+	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
 	if music_toggle != null:
 		music_toggle.button_pressed = not original_music_enabled
 		_check(AudioManager.music_enabled == (not original_music_enabled), "Music switch must update the audio service.")
 		music_toggle.button_pressed = original_music_enabled
-	var sfx_toggle := hud.find_child("SfxToggle", true, false) as CheckButton
+	var sfx_toggle := hud.find_child("SfxToggle", true, false) as Button
 	if sfx_toggle != null:
 		sfx_toggle.button_pressed = not original_sfx_enabled
 		_check(AudioManager.sfx_enabled == (not original_sfx_enabled), "Sounds switch must update the audio service.")
