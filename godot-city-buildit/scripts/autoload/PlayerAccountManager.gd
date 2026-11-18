@@ -306,14 +306,12 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 	if not nonce_response.ok:
 		if not auto_select:
 			authentication_feedback.emit("Could not start secure Google sign-in. Please retry.", false)
-		else:
-					return
+		return
 	var request_nonce := str(nonce_response.body.get("nonce", ""))
 	if request_nonce.length() < 32:
 		if not auto_select:
 			authentication_feedback.emit("Secure sign-in challenge was invalid. Please retry.", false)
-		else:
-					return
+		return
 	_google_pending_nonces[request_nonce] = auto_select
 	_google_callback = JavaScriptBridge.create_callback(_on_google_credential)
 	var window := JavaScriptBridge.get_interface("window")
