@@ -99,7 +99,26 @@ func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
 	if not is_authenticated():
 		return false
 	await fetch_remote_profile()
+	await claim_login_rewards()
 	return true
+
+func claim_login_rewards() -> Dictionary:
+	if not is_authenticated() or _api_base().is_empty():
+		return {"ok": false, "error": "sign_in_required"}
+	var headers := PackedStringArray(["Authorization: Bearer " + access_token])
+	var response := await _request_json(_api_base() + "/v1/rewards/claim", HTTPClient.METHOD_POST, headers, {})
+	if not response.ok:
+		push_warning("Could not claim login rewards: " + response.error)
+		return {"ok": false, "error": response.error}
+	var balances: Dictionary = response.body.get("balances", {})
+	EconomyManager.simoleons = maxi(0, int(balances.get("simoleons", EconomyManager.simoleons)))
+	EconomyManager.sim_cash = maxi(0, int(balances.get("sim_cash", EconomyManager.sim_cash)))
+	EconomyManager.simoleons_changed.emit(EconomyManager.simoleons)
+	EconomyManager.sim_cash_changed.emit(EconomyManager.sim_cash)
+	var game_state: Variant = response.body.get("game_state")
+	if game_state is Dictionary:
+		_write_local_game_state(game_state)
+	return response.body
 
 func _activate_session(data: Dictionary, label: String) -> void:
 	var new_id := int(data.get("user_id", 0))
