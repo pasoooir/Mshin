@@ -5250,40 +5250,42 @@ func _show_settings_panel() -> void:
 	layout.add_child(tabs)
 
 	var audio_page := _make_settings_page("Audio")
+	var audio_content := audio_page.get_child(0) as VBoxContainer
 	audio_page.name = "AudioSettingsPage"
 	tabs.add_child(audio_page)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "Audio")
 	var audio_section := _make_settings_section("SOUND")
-	audio_page.add_child(audio_section)
+	audio_content.add_child(audio_section)
 	var toggles := GridContainer.new()
 	toggles.name = "AudioToggles"
 	toggles.columns = 2 if viewport_size.x < 900.0 else 4
 	toggles.add_theme_constant_override("h_separation", 18)
 	toggles.add_theme_constant_override("v_separation", 12)
-	audio_page.add_child(toggles)
+	audio_content.add_child(toggles)
 	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
 	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
 	_add_audio_setting_toggle(toggles, "HapticsToggle", "Vibration", HapticsManager.enabled, HapticsManager.set_enabled)
 	var volume_section := _make_settings_section("VOLUME")
-	audio_page.add_child(volume_section)
+	audio_content.add_child(volume_section)
 	_add_audio_setting_slider(audio_page, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
 	_add_audio_setting_slider(audio_page, "MusicVolumeSlider", "Music", AudioManager.music_volume, AudioManager.set_music_volume)
 	_add_audio_setting_slider(audio_page, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
 	_add_audio_setting_slider(audio_page, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
 
 	var graphics_page := _make_settings_page("Graphics")
+	var graphics_content := graphics_page.get_child(0) as VBoxContainer
 	graphics_page.name = "GraphicsSettingsPage"
-	graphics_page.add_child(_make_settings_section("VISUAL QUALITY"))
+	graphics_content.add_child(_make_settings_section("VISUAL QUALITY"))
 	var graphics_note := Label.new()
 	graphics_note.text = "Choose the best balance between visual detail and smooth performance on your device."
 	graphics_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	graphics_note.add_theme_color_override("font_color", Color("#526A78"))
 	graphics_note.add_theme_font_size_override("font_size", _popup_font_size(16))
-	graphics_page.add_child(graphics_note)
+	graphics_content.add_child(graphics_note)
 	var graphics_row := HBoxContainer.new()
 	graphics_row.name = "GraphicsQualityRow"
-	graphics_page.add_child(graphics_row)
+	graphics_content.add_child(graphics_row)
 	var graphics_label := Label.new()
 	graphics_label.text = "3D graphics quality"
 	graphics_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -5301,8 +5303,9 @@ func _show_settings_panel() -> void:
 	graphics_row.add_child(graphics_select)
 
 	var account_page := _make_settings_page("Account")
+	var account_content := account_page.get_child(0) as VBoxContainer
 	account_page.name = "AccountSettingsPage"
-	account_page.add_child(_make_settings_section("PLAYER ACCOUNT"))
+	account_content.add_child(_make_settings_section("PLAYER ACCOUNT"))
 	var account_card := PanelContainer.new()
 	account_card.name = "SettingsAccountCard"
 	var account_style := StyleBoxFlat.new()
@@ -5315,7 +5318,7 @@ func _show_settings_panel() -> void:
 	account_style.content_margin_top = 18
 	account_style.content_margin_bottom = 18
 	account_card.add_theme_stylebox_override("panel", account_style)
-	account_page.add_child(account_card)
+	account_content.add_child(account_card)
 	var account_layout := VBoxContainer.new()
 	account_layout.add_theme_constant_override("separation", 14)
 	account_card.add_child(account_layout)
@@ -5338,23 +5341,24 @@ func _show_settings_panel() -> void:
 	reward_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reward_note.add_theme_color_override("font_color", Color("#526A78"))
 	reward_note.add_theme_font_size_override("font_size", _popup_font_size(15))
-	account_page.add_child(reward_note)
+	account_content.add_child(reward_note)
 
 	var performance_page := _make_settings_page("Device")
+	var performance_content := performance_page.get_child(0) as VBoxContainer
 	performance_page.name = "DeviceSettingsPage"
-	performance_page.add_child(_make_settings_section("DEVICE PERFORMANCE"))
+	performance_content.add_child(_make_settings_section("DEVICE PERFORMANCE"))
 	var performance_note := Label.new()
 	performance_note.text = "Run a 30-second test while playing normally. The report is saved locally on this device."
 	performance_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	performance_note.add_theme_font_size_override("font_size", _popup_font_size(16))
 	performance_note.add_theme_color_override("font_color", Color("#526A78"))
-	performance_page.add_child(performance_note)
+	performance_content.add_child(performance_note)
 	var performance_button := Button.new()
 	performance_button.name = "RunDeviceBenchmarkButton"
 	performance_button.text = "Run 30-second device test"
 	performance_button.custom_minimum_size = Vector2(250, 48) * _ui_scale
 	performance_button.pressed.connect(_start_performance_benchmark)
-	performance_page.add_child(performance_button)
+	performance_content.add_child(performance_button)
 
 	var footer := HBoxContainer.new()
 	footer.name = "SettingsFooter"
@@ -5368,13 +5372,18 @@ func _show_settings_panel() -> void:
 	footer.add_child(reset)
 
 
-func _make_settings_page(tab_title: String) -> VBoxContainer:
+func _make_settings_page(tab_title: String) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = tab_title.replace(" ", "") + "SettingsScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var page := VBoxContainer.new()
 	page.name = tab_title.replace(" ", "") + "SettingsPage"
 	page.add_theme_constant_override("separation", 16)
 	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	return page
+	scroll.add_child(page)
+	return scroll
 
 
 func _make_settings_section(section_title: String) -> Label:
