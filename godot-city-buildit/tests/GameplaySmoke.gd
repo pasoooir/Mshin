@@ -3379,9 +3379,9 @@ func _test_settings_panel_contract() -> void:
 		var old_alerts := building_alerts.button_pressed
 		building_alerts.button_pressed = not old_alerts
 		building_alerts.toggled.emit(not old_alerts)
-		var notification_config := ConfigFile.new()
-		notification_config.load("user://notification_preferences.cfg")
-		_check(bool(notification_config.get_value("notifications", "building_alerts", old_alerts)) == not old_alerts, "Building notification preference must persist immediately.")
+		var notification_save: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+		var notification_data: Dictionary = notification_save.get("preferences", {}).get("notifications", {}) if notification_save is Dictionary else {}
+		_check(bool(notification_data.get("building_alerts", old_alerts)) == not old_alerts, "Building notification preference must persist immediately in the active player JSON.")
 		building_alerts.button_pressed = old_alerts
 		building_alerts.toggled.emit(old_alerts)
 	if is_instance_valid(notification_dialog):
@@ -3389,13 +3389,21 @@ func _test_settings_panel_contract() -> void:
 		notification_dialog.queue_free()
 		await get_tree().process_frame
 
-	# Wallet: show live balances and keep real-money checkout deliberately disabled.
+	# Wallet: balances are live; the purchase-info action explains the unavailable gateway without faking a payment.
 	(hud.find_child("SettingsWalletButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
-	var top_up_button := hud.find_child("WalletTopUpDisabled", true, false) as Button
+	var top_up_button := hud.find_child("WalletTopUpInfo", true, false) as Button
 	_check(wallet_dialog != null and wallet_dialog.dialog_text.contains("Simoleons") and wallet_dialog.dialog_text.contains("SimCash"), "Wallet must display the actual in-game currencies.")
-	_check(top_up_button != null and top_up_button.disabled, "Real-money top-up must remain disabled until payment integration is ready.")
+	_check(top_up_button != null and not top_up_button.disabled and top_up_button.is_connected("pressed", Callable(hud, "_show_wallet_purchase_info")), "Wallet purchase information must be a working, safe action.")
+	if top_up_button != null:
+		top_up_button.pressed.emit()
+		await get_tree().process_frame
+		var purchase_info := hud.find_child("WalletPurchaseInfoDialog", true, false) as AcceptDialog
+		_check(purchase_info != null and purchase_info.dialog_text.contains("No payment will be requested"), "Wallet must clearly explain that real-money checkout is not available and never initiate a payment.")
+		if is_instance_valid(purchase_info):
+			purchase_info.hide()
+			purchase_info.queue_free()
 	if is_instance_valid(wallet_dialog):
 		wallet_dialog.hide()
 		wallet_dialog.queue_free()
