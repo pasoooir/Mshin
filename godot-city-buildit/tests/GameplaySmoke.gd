@@ -3482,11 +3482,16 @@ func _test_tutorial_guide_contract() -> void:
 				await get_tree().process_frame
 				await _tap_native_control(later_button)
 				var reopen_button := guide.find_child("ReopenTutorial", true, false) as Button
-				_check(not guide._panel.visible and reopen_button != null and reopen_button.get_global_rect().intersects(get_viewport().get_visible_rect()), "A real touch on Later must hide the coach and expose an on-screen HELP button.")
-				if reopen_button != null:
-					await get_tree().process_frame
-					await _tap_native_control(reopen_button)
-					_check(guide._panel.visible, "A real touch on HELP must reopen the coach.")
+				_check(not guide._panel.visible and reopen_button == null, "A real touch on Later must dismiss the coach without adding a redundant first-screen HELP button.")
+				var help_hud := get_node_or_null("HUD")
+				if is_instance_valid(help_hud):
+					help_hud._show_settings_panel()
+					var settings_help := help_hud.find_child("SettingsHelpButton", true, false) as Button
+					_check(settings_help != null, "The Settings screen must provide the single Help entry point.")
+					if settings_help != null:
+						settings_help.pressed.emit()
+						_check(guide._panel.visible, "Settings > Help must reopen the interactive city coach.")
+						_check(help_hud.settings_overlay == null, "Opening the city coach from Settings must close the Settings modal.")
 				guide._dismissed = previous_dismissed
 				if previous_dismissed:
 					guide._panel.hide()
