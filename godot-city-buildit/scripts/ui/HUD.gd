@@ -5619,7 +5619,7 @@ func _show_change_city_name() -> void:
 		login_dialog.confirmed.connect(_on_settings_account_action_pressed)
 		login_dialog.canceled.connect(login_dialog.queue_free)
 		add_child(login_dialog)
-		login__style_settings_dialog(dialog, Vector2i(520, 220))
+		_style_settings_dialog(login_dialog, Vector2i(520, 220))
 		return
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "ChangeCityNameDialog"
@@ -5653,7 +5653,7 @@ func _show_change_city_name() -> void:
 	)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(520, 220))
+	_style_settings_dialog(dialog, Vector2i(520, 220))
 	input.grab_focus()
 
 
