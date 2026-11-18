@@ -3179,6 +3179,14 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(TradeManager.market_refresh_unix >= legacy_load_time + 25, "Legacy market saves must derive a refresh deadline from their remaining time.")
 	_check(TradeManager.ship_return_unix >= legacy_load_time + 50, "Legacy ship saves must derive a return deadline from their remaining time.")
 
+	# Remove the test-only building stubs before the save timer snapshots the real city scene.
+	BuildManager.buildings.erase(depot.building_id)
+	BuildManager.buildings.erase(hq.building_id)
+	BuildManager.buildings.erase(port.building_id)
+	depot.queue_free()
+	hq.queue_free()
+	port.queue_free()
+
 	# User-facing trade/storage/economy events must converge into one player JSON snapshot.
 	SaveManager.persistence_ready = true
 	SaveManager.is_loading = false
@@ -3197,12 +3205,6 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(persisted_trade.get("sell_slots", []).size() == 1 and bool(persisted_trade.get("ship_departed", false)), "Trade Depot and Cargo Ship state must be written to the active player JSON after transaction events.")
 	_check(has_saved_trade_sale and has_saved_cargo_delivery and persisted_storage.has("items"), "The player JSON must contain trade transactions, the economy ledger and the matching warehouse snapshot together.")
 
-	BuildManager.buildings.erase(depot.building_id)
-	BuildManager.buildings.erase(hq.building_id)
-	BuildManager.buildings.erase(port.building_id)
-	depot.queue_free()
-	hq.queue_free()
-	port.queue_free()
 	GameManager.population = previous_population
 	EconomyManager.simoleons = previous_simoleons
 	EconomyManager.golden_keys = previous_keys
