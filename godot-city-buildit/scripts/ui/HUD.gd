@@ -5289,6 +5289,14 @@ func _show_settings_panel() -> void:
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
 	layout.add_child(account_note)
 
+	_settings_account_status = Label.new()
+	_settings_account_status.name = "SettingsAccountStatus"
+	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
+	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
+	layout.add_child(_settings_account_status)
+
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
 	_settings_account_action.text = "Log in to Google"
