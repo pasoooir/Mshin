@@ -50,5 +50,33 @@ func _run() -> void:
 		quit(1)
 		return
 
+
+	# Guest players can change the city name and persist it locally without a Google login.
+	hud._show_change_city_name()
+	await process_frame
+	var city_dialog := current_scene.get_node_or_null("HUD/ChangeCityNameDialog")
+	if city_dialog == null:
+		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
+		quit(1)
+		return
+	var city_name_input := city_dialog.get_node_or_null("CityNameInput") as LineEdit
+	if city_name_input == null:
+		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
+		quit(1)
+		return
+	city_name_input.text = "Test Harbor"
+	city_dialog.confirmed.emit()
+	await process_frame
+	await process_frame
+	if GameManager.city_name != "Test Harbor":
+		push_error("[NotificationPreferencesSmoke] Guest city name was not applied.")
+		quit(1)
+		return
+	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
+		push_error("[NotificationPreferencesSmoke] Guest city name was not persisted locally.")
+		quit(1)
+		return
+
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)
