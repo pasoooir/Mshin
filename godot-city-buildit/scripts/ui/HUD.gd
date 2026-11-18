@@ -5316,7 +5316,7 @@ func _show_settings_panel() -> void:
 	_settings_account_action.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_settings_account_action.custom_minimum_size = Vector2(0, 48) * compact_scale
 	_settings_account_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_action.add_theme_font_size_override("font_size", _settings_font_size(20))
+	_settings_account_action.add_theme_font_size_override("font_size", _settings_font_size(21))
 	_settings_account_action.add_theme_color_override("font_color", Color("#142A3A"))
 	_settings_account_action.add_theme_stylebox_override("normal", _settings_action_style(Color("#E4F6FF")))
 	_settings_account_action.add_theme_stylebox_override("hover", _settings_action_style(Color("#D0EDFC")))
@@ -5380,7 +5380,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.custom_minimum_size = Vector2(0, 58 * compact_scale)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", _settings_font_size(20))
+	button.add_theme_font_size_override("font_size", _settings_font_size(21))
 	button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
