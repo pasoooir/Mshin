@@ -5782,7 +5782,7 @@ func _show_wallet_panel() -> void:
 		"Golden Keys: %s" % _format_compact_number(EconomyManager.golden_keys)
 	]
 	var recent_transactions := EconomyManager.get_recent_transactions(3)
-	wallet_lines.append("\\nRecent activity")
+	wallet_lines.append("\nRecent activity")
 	if recent_transactions.is_empty():
 		wallet_lines.append("No transactions recorded yet.")
 	else:
@@ -5791,7 +5791,7 @@ func _show_wallet_panel() -> void:
 			var sign := "+" if transaction_type.contains("gain") else "−"
 			var currency := str(transaction.get("currency", "currency")).replace("_", " ").capitalize()
 			wallet_lines.append("%s%s %s" % [sign, _format_compact_number(int(transaction.get("amount", 0))), currency])
-	dialog.dialog_text = "\\n".join(wallet_lines) + "\\n\\nYour balances and recent activity are saved with your city profile."
+	dialog.dialog_text = "\n".join(wallet_lines) + "\n\nYour balances and recent activity are saved with your city profile."
 	var purchase_info := Button.new()
 	purchase_info.name = "WalletTopUpInfo"
 	purchase_info.text = "About adding funds"
