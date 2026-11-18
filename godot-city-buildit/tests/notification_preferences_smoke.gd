@@ -38,17 +38,28 @@ func _run() -> void:
 		quit(1)
 		return
 
-	hud._apply_notification_preference("building_alerts", true)
-	hud._apply_notification_preference("city_updates", true)
+	save_manager.persistence_ready = true
+	if not save_manager.set_notification_preference("building_alerts", true) or not save_manager.set_notification_preference("city_updates", true):
+		push_error("[NotificationPreferencesSmoke] Could not persist notification preferences.")
+		quit(1)
+		return
 	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
 		push_error("[NotificationPreferencesSmoke] Enabling preferences did not update live systems.")
 		quit(1)
 		return
-
-	hud._apply_notification_preference("building_alerts", false)
-	hud._apply_notification_preference("city_updates", false)
-	if alert_layer.are_building_alerts_enabled() or citizen_feedback.are_city_updates_enabled():
-		push_error("[NotificationPreferencesSmoke] Disabling preferences did not update live systems.")
+	var saved_preferences: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_notification_data: Dictionary = saved_preferences.get("preferences", {}).get("notifications", {}) if saved_preferences is Dictionary else {}
+	if not bool(saved_notification_data.get("building_alerts", false)) or not bool(saved_notification_data.get("city_updates", false)):
+		push_error("[NotificationPreferencesSmoke] Notification preferences were not written to the player JSON save.")
+		quit(1)
+		return
+	save_manager._notification_preferences = {"building_alerts": false, "city_updates": false}
+	if not save_manager.load_game():
+		push_error("[NotificationPreferencesSmoke] Could not reload the saved notification preferences.")
+		quit(1)
+		return
+	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
+		push_error("[NotificationPreferencesSmoke] Notification preferences were not restored from JSON.")
 		quit(1)
 		return
 
