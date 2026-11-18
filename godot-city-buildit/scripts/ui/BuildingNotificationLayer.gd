@@ -13,8 +13,12 @@ const MAX_NOTIFICATIONS_PER_BUILDING := 2
 var _refresh_elapsed := 0.0
 var _entries: Dictionary = {}
 var _hud: Node
+var _building_alerts_enabled := true
 
 func _ready() -> void:
+	var preferences := ConfigFile.new()
+	if preferences.load("user://notification_preferences.cfg") == OK:
+		_building_alerts_enabled = bool(preferences.get_value("notifications", "building_alerts", true))
 	name = "BuildingNotificationLayer"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -33,6 +37,23 @@ func _on_production_slots_changed() -> void:
 func configure(hud: Node) -> void:
 	_hud = hud
 
+func set_building_alerts_enabled(enabled: bool) -> void:
+	_building_alerts_enabled = enabled
+	if not enabled:
+		_clear_notification_entries()
+	else:
+		refresh_now()
+
+func are_building_alerts_enabled() -> bool:
+	return _building_alerts_enabled
+
+func _clear_notification_entries() -> void:
+	for entry in _entries.values():
+		var button: Control = entry.get("button")
+		if is_instance_valid(button):
+			button.queue_free()
+	_entries.clear()
+
 func refresh_now() -> void:
 	_sync_notifications()
 	_update_positions()
@@ -45,6 +66,9 @@ func _process(delta: float) -> void:
 	_update_positions()
 
 func _sync_notifications() -> void:
+	if not _building_alerts_enabled:
+		_clear_notification_entries()
+		return
 	var candidates: Dictionary = {}
 	for building in BuildManager.buildings.values():
 		# BuildManager normally stores Building nodes, but integration tests and

@@ -26,8 +26,12 @@ var _showing := false
 var _elapsed := 0.0
 var _priority_offsets: Dictionary = {}
 var _dialogue_cycle := 0
+var _city_updates_enabled := true
 
 func _ready() -> void:
+	var preferences := ConfigFile.new()
+	if preferences.load("user://notification_preferences.cfg") == OK:
+		_city_updates_enabled = bool(preferences.get_value("notifications", "city_updates", true))
 	layer = 90
 	if DisplayServer.get_name() == "headless":
 		return
@@ -37,8 +41,23 @@ func _ready() -> void:
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay)
 
+func set_city_updates_enabled(enabled: bool) -> void:
+	_city_updates_enabled = enabled
+	if not enabled:
+		_clear_bubbles()
+		_showing = false
+		_elapsed = 0.0
+
+func are_city_updates_enabled() -> bool:
+	return _city_updates_enabled
+
 func _process(delta: float) -> void:
 	if not is_instance_valid(_overlay):
+		return
+	if not _city_updates_enabled:
+		_clear_bubbles()
+		_showing = false
+		_elapsed = 0.0
 		return
 	_elapsed += delta
 	if _showing:
@@ -117,6 +136,8 @@ func _select_feedback_candidates(candidates: Array[Dictionary]) -> Array[Diction
 
 func _spawn_feedback_bubbles() -> void:
 	_clear_bubbles()
+	if not _city_updates_enabled:
+		return
 	var candidates: Array[Dictionary] = []
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building):

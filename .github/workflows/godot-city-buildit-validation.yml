@@ -60,6 +60,13 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-player-account.log; then exit 1; fi
           grep -F "[PlayerAccountSmoke] PASS" /tmp/godot-player-account.log
 
+      - name: Notification settings persistence and live behavior smoke test
+        run: |
+          set -o pipefail
+          timeout 60s godot --headless --path godot-city-buildit --script res://tests/notification_preferences_smoke.gd 2>&1 | tee /tmp/godot-notification-preferences.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-notification-preferences.log; then exit 1; fi
+          grep -F "[NotificationPreferencesSmoke] PASS" /tmp/godot-notification-preferences.log
+
       - name: End-to-end gameplay integration test
         run: |
           set -o pipefail

@@ -5670,6 +5670,19 @@ func _show_change_city_name() -> void:
 	input.grab_focus()
 
 
+func _apply_notification_preference(key: String, enabled: bool) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	if key == "building_alerts":
+		var alert_layer := scene.get_node_or_null("HUD/BuildingNotificationLayer")
+		if is_instance_valid(alert_layer) and alert_layer.has_method("set_building_alerts_enabled"):
+			alert_layer.set_building_alerts_enabled(enabled)
+	elif key == "city_updates":
+		var citizen_feedback := scene.get_node_or_null("CitizenFeedback")
+		if is_instance_valid(citizen_feedback) and citizen_feedback.has_method("set_city_updates_enabled"):
+			citizen_feedback.set_city_updates_enabled(enabled)
+
 func _show_notification_settings() -> void:
 	var config := ConfigFile.new()
 	config.load("user://notification_preferences.cfg")
@@ -5686,8 +5699,13 @@ func _show_notification_settings() -> void:
 		toggle.text = str(preference.label)
 		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
 		toggle.toggled.connect(func(value: bool) -> void:
-			config.set_value("notifications", str(preference.key), value)
-			config.save("user://notification_preferences.cfg")
+			var key := str(preference.key)
+			config.set_value("notifications", key, value)
+			var save_error := config.save("user://notification_preferences.cfg")
+			if save_error == OK:
+				_apply_notification_preference(key, value)
+			else:
+				push_warning("Could not save notification preference '%s': %s" % [key, error_string(save_error)])
 		)
 		content.add_child(toggle)
 	dialog.confirmed.connect(dialog.queue_free)
