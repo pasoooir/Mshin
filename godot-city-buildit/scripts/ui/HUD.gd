@@ -438,7 +438,7 @@ func _build_top_hud() -> void:
 	var xp_panel_style := StyleBoxFlat.new()
 	xp_panel_style.bg_color = Color(0.055, 0.09, 0.14, 0.96)
 	xp_panel_style.border_color = Color("#79C9F2")
-	xp_panel_style.set_border_width_all(2)
+	xp_panel_style.set_border_width_all(3)
 	xp_panel_style.set_corner_radius_all(20)
 	xp_panel_style.content_margin_left = 22
 	xp_panel_style.content_margin_right = 22
@@ -3450,7 +3450,7 @@ func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callba
 	var close := Button.new()
 	close.name = "WindowCloseButton"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(58, 54) * _ui_scale
+	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(38))
 	close.add_theme_color_override("font_color", Color("#17364A"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#E8F0F5"), Color("#B6C9D6")))
@@ -4507,7 +4507,7 @@ func _show_trade_panel(tab: String = "depot") -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "TradeBackdrop"
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.025, 0.035, 0.72)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.42)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	trade_overlay.add_child(backdrop)
 
@@ -5215,12 +5215,12 @@ func _show_settings_panel() -> void:
 	panel.offset_bottom = panel_height * 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#EAF7FF")
-	panel_style.border_color = Color("#D6EAF7")
+	panel_style.bg_color = Color("#DDF0FF")
+	panel_style.border_color = Color("#FFFFFF")
 	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(22)
+	panel_style.set_corner_radius_all(30)
 	panel_style.shadow_color = Color(0, 0, 0, 0.38)
-	panel_style.shadow_size = 18
+	panel_style.shadow_size = 22
 	panel_style.content_margin_left = 34 * _ui_scale
 	panel_style.content_margin_right = 34 * _ui_scale
 	panel_style.content_margin_top = 22 * _ui_scale
@@ -5239,7 +5239,7 @@ func _show_settings_panel() -> void:
 	var title := Label.new()
 	title.text = "Settings"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _popup_font_size(34))
+	title.add_theme_font_size_override("font_size", _popup_font_size(42))
 	title.add_theme_color_override("font_color", Color("#142A3A"))
 	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
@@ -5250,9 +5250,9 @@ func _show_settings_panel() -> void:
 	close.text = "✖"
 	close.custom_minimum_size = Vector2(58, 54) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(28))
-	close.add_theme_stylebox_override("normal", _settings_action_style(Color("#2499D0")))
-	close.add_theme_stylebox_override("hover", _settings_action_style(Color("#35B4E8")))
-	close.add_theme_stylebox_override("pressed", _settings_action_style(Color("#176B9B")))
+	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#168ED1")))
+	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#36B7EE")))
+	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#086AAB")))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
@@ -5342,11 +5342,40 @@ func _settings_action_style(fill: Color) -> StyleBoxFlat:
 	return style
 
 
+func _settings_green_button_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = Color("#75A900")
+	style.set_border_width_all(2)
+	style.border_width_bottom = 7
+	style.set_corner_radius_all(17)
+	style.shadow_color = Color(0.08, 0.16, 0.02, 0.42)
+	style.shadow_size = 7
+	style.shadow_offset = Vector2(0, 5)
+	style.content_margin_left = 18
+	style.content_margin_right = 18
+	style.content_margin_top = 14
+	style.content_margin_bottom = 18
+	return style
+
+
+func _settings_close_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = Color("#0B5C99")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(36)
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 4)
+	return style
+
+
 func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
 	var button := Button.new()
 	button.name = node_name
 	button.text = caption
-	button.custom_minimum_size = Vector2(0, 86) * _ui_scale
+	button.custom_minimum_size = Vector2(0, 112) * _ui_scale
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", _popup_font_size(26))
@@ -5354,9 +5383,9 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
 	button.add_theme_constant_override("shadow_offset_y", 2)
-	button.add_theme_stylebox_override("normal", _settings_action_style(Color("#9ACD16")))
-	button.add_theme_stylebox_override("hover", _settings_action_style(Color("#B1E52A")))
-	button.add_theme_stylebox_override("pressed", _settings_action_style(Color("#679B08")))
+	button.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#A8D91B")))
+	button.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#BDEB32")))
+	button.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#7EAD0B")))
 	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(action)
 	parent.add_child(button)
@@ -5365,20 +5394,34 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 func _add_settings_switch(parent: GridContainer, node_name: String, caption: String, enabled: bool, setter: Callable) -> void:
 	var row := HBoxContainer.new()
 	row.name = node_name + "Row"
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 20)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	parent.add_child(row)
-	var toggle := CheckButton.new()
+	var toggle := Button.new()
 	toggle.name = node_name
+	toggle.toggle_mode = true
 	toggle.button_pressed = enabled
-	toggle.custom_minimum_size = Vector2(88, 58) * _ui_scale
-	toggle.add_theme_font_size_override("font_size", _popup_font_size(18))
-	toggle.toggled.connect(func(value: bool) -> void: setter.call(value))
+	toggle.text = "On" if enabled else "Off"
+	toggle.custom_minimum_size = Vector2(154, 108) * _ui_scale
+	toggle.add_theme_font_size_override("font_size", _popup_font_size(27))
+	toggle.add_theme_color_override("font_color", Color("#FFFFFF"))
+	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
+	toggle.add_theme_constant_override("shadow_offset_x", 1)
+	toggle.add_theme_constant_override("shadow_offset_y", 2)
+	toggle.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#A8D91B")))
+	toggle.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#BDEB32")))
+	toggle.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#7EAD0B")))
+	toggle.focus_mode = Control.FOCUS_NONE
+	toggle.toggled.connect(func(value: bool) -> void:
+		toggle.text = "On" if value else "Off"
+		setter.call(value)
+	)
 	row.add_child(toggle)
 	var label := Label.new()
 	label.text = caption
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", _popup_font_size(22))
-	label.add_theme_color_override("font_color", Color("#142A3A"))
+	label.add_theme_font_size_override("font_size", _popup_font_size(30))
+	label.add_theme_color_override("font_color", Color("#0B1F4B"))
 	row.add_child(label)
 
 
