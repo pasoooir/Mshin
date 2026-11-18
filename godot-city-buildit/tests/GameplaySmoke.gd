@@ -3267,7 +3267,7 @@ func _test_settings_panel_contract() -> void:
 	_check(music_control != null and music_control.get_theme_font_size("font_size") >= 20, "Music and Sounds switch text must be at least 20 px.")
 	_check(music_caption != null and music_caption.get_theme_font_size("font_size") >= 22, "Music and Sounds captions must be at least 22 px.")
 	_check(account_status != null and account_status.get_theme_font_size("font_size") >= 20, "Account status must remain readable on phone, tablet and web.")
-	_check(google_action != null and google_action.get_theme_font_size("font_size") >= 21, "Google sign-in text must remain readable on every platform.")
+	_check(google_action != null and hud.find_child("GmailButtonText", true, false) is RichTextLabel and (hud.find_child("GmailButtonText", true, false) as RichTextLabel).get_theme_font_size("normal_font_size") >= 23, "Google sign-in text must remain readable on every platform.")
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
 		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat
@@ -3293,8 +3293,11 @@ func _test_settings_panel_contract() -> void:
 		_check(AudioManager.sfx_enabled == (not original_sfx_enabled), "Sounds switch must update the audio service.")
 		sfx_toggle.button_pressed = original_sfx_enabled
 	var google_button := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	var gmail_icon := hud.find_child("GmailIcon", true, false) as TextureRect
+	var gmail_text := hud.find_child("GmailButtonText", true, false) as RichTextLabel
 	_check(google_button != null and google_button.is_connected("pressed", Callable(hud, "_on_settings_account_action_pressed")), "Google sign-in button must be wired to the real account flow.")
-	_check(google_button != null and google_button.icon != null, "Google sign-in action must visibly include the Gmail mark.")
+	_check(gmail_icon != null and gmail_icon.texture != null and gmail_icon.custom_minimum_size.x >= 40.0 and gmail_icon.custom_minimum_size.y >= 40.0, "Google sign-in must show a large, dedicated Gmail envelope icon.")
+	_check(gmail_text != null and gmail_text.get_theme_font_size("normal_font_size") >= 23 and gmail_text.text.contains("[color=#EA4335]") and gmail_text.text.contains("[color=#4285F4]") and gmail_text.text.contains("[color=#FBBC05]") and gmail_text.text.contains("[color=#34A853]"), "Google sign-in text must be large and use vivid Gmail/Google brand colors.")
 	var close_button := hud.find_child("SettingsClose", true, false) as Button
 	_check(close_button != null and close_button.is_connected("pressed", Callable(hud, "_close_settings_panel")), "Settings close button must close the modal.")
 
