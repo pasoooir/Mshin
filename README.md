@@ -38,9 +38,11 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 ## حساب چندبازیکنه و ذخیره‌سازی JSON مستقل
 
-- API احراز هویت، پروفایل و بازار در `cloudflare-auth/` روی Cloudflare Workers اجرا می‌شود؛ `server/` نسخه Node.js محلی/مرجع است.
-- SaveManager برای حساب واردشده از مسیر محلی مجزای هر شناسه استفاده می‌کند؛ پیشرفت Tutorial و تنظیمات صدا، لرزش و گرافیک نیز در JSON همان بازیکن ذخیره می‌شوند.
-- این کد هنوز به سرور production یا Google Cloud واقعی متصل نیست؛ جزئیات ممیزی و وضعیت اجرا در [مستند حساب بازیکن](godot-city-buildit/docs/PLAYER_ACCOUNT_AND_JSON_STORAGE.md) ثبت می‌شود.
+- جریان ورود Google در `cloudflare-auth/` با اعتبارسنجی OpenID Connect اجرا می‌شود؛ Cloudflare D1 فقط hash شناسه Google را به `player_id` عددی نگاشت می‌کند.
+- API پروفایل در Cloudflare Worker و هماهنگ‌کننده Durable Object اجرا می‌شود؛ فایل هر بازیکن با شناسه عددی مستقل در مخزن خصوصی GitHub و مسیر `players/<player_id>.json` ذخیره می‌شود. توکن Fine-grained فقط در Secret سمت Worker نگهداری می‌شود.
+- `server/` نسخه Node.js محلی/مرجع است و میزبان فایل‌های JSON بازیکنان نیست. GitHub Pages فقط فایل‌های عمومی بازی را میزبانی می‌کند.
+- SaveManager برای هر حساب مسیر محلی جداگانه `user://players/<player_id>/pasoo_city_buildit_save.json` دارد و snapshot بازی را از طریق API احراز هویت‌شده به JSON خصوصی همان بازیکن همگام می‌کند؛ مهمان فقط ذخیره محلی دارد.
+- جزئیات معماری، قرارداد API و مرزهای امنیتی در [مستند حساب بازیکن](godot-city-buildit/docs/PLAYER_ACCOUNT_AND_JSON_STORAGE.md) ثبت شده است.
 
 ## راهبرد بازار آنلاین بازیکن‌به‌بازیکن (Pasoo Market)
 

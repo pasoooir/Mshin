@@ -11,6 +11,7 @@ var profile_revision: int = 0
 var identity_label: String = ""
 var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
+var _last_profile_save_ok: bool = true
 var _google_nonce: String = ""
 var _google_callback: Variant
 var _last_login_rewards: Dictionary = {}
@@ -215,10 +216,22 @@ func queue_profile_save(game_state: Dictionary) -> void:
 	if not _save_in_flight:
 		call_deferred("_flush_pending_save")
 
+
+func save_profile_now(game_state: Dictionary) -> bool:
+	if not is_authenticated() or _api_base().is_empty():
+		return false
+	_pending_game_state = game_state.duplicate(true)
+	while _save_in_flight:
+		await get_tree().process_frame
+	if not _pending_game_state.is_empty():
+		await _flush_pending_save()
+	return _last_profile_save_ok and _pending_game_state.is_empty()
+
 func _flush_pending_save() -> void:
 	if _save_in_flight or not is_authenticated():
 		return
 	_save_in_flight = true
+	_last_profile_save_ok = true
 	var revision_conflict_retries := 0
 	while not _pending_game_state.is_empty() and is_authenticated():
 		var snapshot := _pending_game_state.duplicate(true)
@@ -258,6 +271,7 @@ func _flush_pending_save() -> void:
 			push_warning("Online save conflicted with a newer profile; latest wallet and inventory were preserved.")
 			break
 		else:
+			_last_profile_save_ok = false
 			if _pending_game_state.is_empty():
 				_pending_game_state = snapshot
 			profile_save_failed.emit(response.error)

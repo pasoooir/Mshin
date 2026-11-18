@@ -3450,7 +3450,7 @@ func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callba
 	var close := Button.new()
 	close.name = "WindowCloseButton"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
+	close.custom_minimum_size = Vector2(46, 46) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(38))
 	close.add_theme_color_override("font_color", Color("#17364A"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#E8F0F5"), Color("#B6C9D6")))
@@ -5188,7 +5188,8 @@ func _show_settings_panel() -> void:
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
-	var panel_height := minf(760.0 * _ui_scale, viewport_size.y * 0.92)
+	var compact_scale := minf(1.0, viewport_size.y / 520.0)
+	var panel_height := viewport_size.y * 0.94
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
 	settings_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5221,16 +5222,16 @@ func _show_settings_panel() -> void:
 	panel_style.set_corner_radius_all(30)
 	panel_style.shadow_color = Color(0, 0, 0, 0.38)
 	panel_style.shadow_size = 22
-	panel_style.content_margin_left = 34 * _ui_scale
-	panel_style.content_margin_right = 34 * _ui_scale
-	panel_style.content_margin_top = 22 * _ui_scale
-	panel_style.content_margin_bottom = 24 * _ui_scale
+	panel_style.content_margin_left = 18 * compact_scale
+	panel_style.content_margin_right = 18 * compact_scale
+	panel_style.content_margin_top = 10 * compact_scale
+	panel_style.content_margin_bottom = 10 * compact_scale
 	panel.add_theme_stylebox_override("panel", panel_style)
 	settings_overlay.add_child(panel)
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
-	layout.add_theme_constant_override("separation", 18)
+	layout.add_theme_constant_override("separation", 7 * compact_scale)
 	panel.add_child(layout)
 
 	var heading := HBoxContainer.new()
@@ -5239,7 +5240,7 @@ func _show_settings_panel() -> void:
 	var title := Label.new()
 	title.text = "Settings"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _popup_font_size(42))
+	title.add_theme_font_size_override("font_size", _popup_font_size(30 * compact_scale))
 	title.add_theme_color_override("font_color", Color("#142A3A"))
 	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
@@ -5256,24 +5257,18 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
-	var content_scroll := ScrollContainer.new()
-	content_scroll.name = "SettingsContentScroll"
-	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	layout.add_child(content_scroll)
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 18)
-	content_scroll.add_child(content)
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 7 * minf(1.0, viewport_size.y / 520.0))
+	layout.add_child(content)
 
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
 	audio_row.columns = 2
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	audio_row.add_theme_constant_override("h_separation", 24)
+	audio_row.add_theme_constant_override("h_separation", 12 * compact_scale)
 	audio_row.add_theme_constant_override("v_separation", 8)
 	content.add_child(audio_row)
 	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
@@ -5284,8 +5279,8 @@ func _show_settings_panel() -> void:
 	actions.columns = 2
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	actions.add_theme_constant_override("h_separation", 22)
-	actions.add_theme_constant_override("v_separation", 14)
+	actions.add_theme_constant_override("h_separation", 12 * compact_scale)
+	actions.add_theme_constant_override("v_separation", 7 * compact_scale)
 	content.add_child(actions)
 	_add_settings_action(actions, "SettingsAboutButton", "About", _show_settings_about)
 	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
@@ -5298,24 +5293,28 @@ func _show_settings_panel() -> void:
 	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
 	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _popup_font_size(21))
+	account_note.add_theme_font_size_override("font_size", _popup_font_size(13 * compact_scale))
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
+	account_note.visible = false
 	content.add_child(account_note)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
 	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
+	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(12 * compact_scale))
 	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
 	content.add_child(_settings_account_status)
 
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
-	_settings_account_action.text = "Log in to Google"
-	_settings_account_action.custom_minimum_size = Vector2(0, 76) * _ui_scale
+	_settings_account_action.text = "Continue with Google"
+	_settings_account_action.icon = load("res://assets/ui/google-g-mark.svg") as Texture2D
+	_settings_account_action.expand_icon = false
+	_settings_account_action.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_settings_account_action.custom_minimum_size = Vector2(0, 48) * compact_scale
 	_settings_account_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_action.add_theme_font_size_override("font_size", _popup_font_size(22))
+	_settings_account_action.add_theme_font_size_override("font_size", _popup_font_size(17 * compact_scale))
 	_settings_account_action.add_theme_color_override("font_color", Color("#142A3A"))
 	_settings_account_action.add_theme_stylebox_override("normal", _settings_action_style(Color("#E4F6FF")))
 	_settings_account_action.add_theme_stylebox_override("hover", _settings_action_style(Color("#D0EDFC")))
@@ -5372,13 +5371,14 @@ func _settings_close_style(fill: Color) -> StyleBoxFlat:
 
 
 func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
+	var compact_scale := minf(1.0, get_viewport().get_visible_rect().size.y / 520.0)
 	var button := Button.new()
 	button.name = node_name
 	button.text = caption
-	button.custom_minimum_size = Vector2(0, 112) * _ui_scale
+	button.custom_minimum_size = Vector2(0, 58 * compact_scale)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", _popup_font_size(26))
+	button.add_theme_font_size_override("font_size", _popup_font_size(17 * compact_scale))
 	button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
@@ -5392,6 +5392,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 
 
 func _add_settings_switch(parent: GridContainer, node_name: String, caption: String, enabled: bool, setter: Callable) -> void:
+	var compact_scale := minf(1.0, get_viewport().get_visible_rect().size.y / 520.0)
 	var row := HBoxContainer.new()
 	row.name = node_name + "Row"
 	row.add_theme_constant_override("separation", 20)
@@ -5402,8 +5403,8 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.toggle_mode = true
 	toggle.button_pressed = enabled
 	toggle.text = "On" if enabled else "Off"
-	toggle.custom_minimum_size = Vector2(154, 108) * _ui_scale
-	toggle.add_theme_font_size_override("font_size", _popup_font_size(27))
+	toggle.custom_minimum_size = Vector2(90, 52 * compact_scale)
+	toggle.add_theme_font_size_override("font_size", _popup_font_size(16))
 	toggle.add_theme_color_override("font_color", Color("#FFFFFF"))
 	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
 	toggle.add_theme_constant_override("shadow_offset_x", 1)
@@ -5420,7 +5421,7 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	var label := Label.new()
 	label.text = caption
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", _popup_font_size(30))
+	label.add_theme_font_size_override("font_size", _popup_font_size(18))
 	label.add_theme_color_override("font_color", Color("#0B1F4B"))
 	row.add_child(label)
 
@@ -5493,6 +5494,17 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
+	if not PlayerAccountManager.is_authenticated():
+		var login_dialog := ConfirmationDialog.new()
+		login_dialog.name = "CityNameLoginRequiredDialog"
+		login_dialog.title = "Sign in required"
+		login_dialog.dialog_text = "Sign in with Google before changing your city name. Your city profile will be saved to your private player JSON file."
+		login_dialog.ok_button_text = "Continue with Google"
+		login_dialog.confirmed.connect(_on_settings_account_action_pressed)
+		login_dialog.canceled.connect(login_dialog.queue_free)
+		add_child(login_dialog)
+		login_dialog.popup_centered(Vector2i(520, 220))
+		return
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "ChangeCityNameDialog"
 	dialog.title = "Change City Name"
@@ -5505,11 +5517,22 @@ func _show_change_city_name() -> void:
 	input.custom_minimum_size.x = 360 * _ui_scale
 	dialog.add_child(input)
 	dialog.confirmed.connect(func() -> void:
-		if GameManager.set_city_name(input.text):
-			SaveManager.save_game()
-			status_label.text = "City name updated."
-		else:
+		var previous_name := GameManager.city_name
+		if not GameManager.set_city_name(input.text):
 			status_label.text = "Enter a city name with at least one visible character."
+			dialog.queue_free()
+			return
+		SaveManager.save_game()
+		var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+		var synced := false
+		if saved_state is Dictionary:
+			synced = await PlayerAccountManager.save_profile_now(saved_state)
+		if synced:
+			status_label.text = "City name updated and securely saved to your player profile."
+		else:
+			GameManager.city_name = previous_name
+			SaveManager.save_game()
+			status_label.text = "Could not sync your city name. Please check your connection and try again."
 		dialog.queue_free()
 	)
 	dialog.canceled.connect(dialog.queue_free)

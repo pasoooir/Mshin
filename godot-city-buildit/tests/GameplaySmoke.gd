@@ -3251,9 +3251,10 @@ func _test_settings_panel_contract() -> void:
 	var panel := hud.find_child("SettingsPanel", true, false) as PanelContainer
 	_check(panel != null and panel.size.x > 0.0 and panel.size.y > 0.0, "Settings must render a measurable responsive panel.")
 	var content_scroll := hud.find_child("SettingsContentScroll", true, false) as ScrollContainer
-	_check(content_scroll != null and content_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and content_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Settings content must scroll vertically on short mobile landscape screens without horizontal overflow.")
+	var settings_content := hud.find_child("SettingsContent", true, false) as VBoxContainer
+	_check(content_scroll == null and settings_content != null, "The primary Settings screen must fit as a single non-scrolling page.")
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
-	_check(heading != null and content_scroll != null and content_scroll.get_parent() == heading.get_parent(), "Settings title and close button must remain fixed outside the scrolling content.")
+	_check(heading != null and settings_content != null and settings_content.get_parent() == heading.get_parent(), "Settings title, controls and actions must share one fixed page.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
@@ -3281,6 +3282,7 @@ func _test_settings_panel_contract() -> void:
 		sfx_toggle.button_pressed = original_sfx_enabled
 	var google_button := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	_check(google_button != null and google_button.is_connected("pressed", Callable(hud, "_on_settings_account_action_pressed")), "Google sign-in button must be wired to the real account flow.")
+	_check(google_button != null and google_button.icon != null, "Google sign-in action must visibly include the Gmail mark.")
 	var close_button := hud.find_child("SettingsClose", true, false) as Button
 	_check(close_button != null and close_button.is_connected("pressed", Callable(hud, "_close_settings_panel")), "Settings close button must close the modal.")
 
@@ -3312,19 +3314,23 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# Change City Name: exercise the actual save path and restore test state.
+	# City rename must be blocked until Google authentication is active.
 	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
-	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
-	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable city-name form.")
-	if rename_dialog != null and city_name_input != null:
-		city_name_input.text = "Settings QA City"
-		rename_dialog.confirmed.emit()
-		await get_tree().process_frame
-		_check(GameManager.city_name == "Settings QA City", "Saving a valid city name must update the city model.")
-		GameManager.set_city_name(original_city_name)
-		SaveManager.save_game()
+	if not PlayerAccountManager.is_authenticated():
+		var login_required := hud.find_child("CityNameLoginRequiredDialog", true, false) as ConfirmationDialog
+		_check(login_required != null and login_required.ok_button_text == "Continue with Google", "Guest city rename must require Google sign-in before opening the editor.")
+		if is_instance_valid(login_required):
+			login_required.hide()
+			login_required.queue_free()
+	else:
+		var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
+		var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
+		_check(rename_dialog != null and city_name_input != null, "Authenticated Change City Name must open an editable form.")
+		if rename_dialog != null and city_name_input != null:
+			city_name_input.text = original_city_name
+			rename_dialog.hide()
+			rename_dialog.queue_free()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
 	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
