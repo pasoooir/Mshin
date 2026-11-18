@@ -3325,16 +3325,25 @@ func _test_settings_panel_contract() -> void:
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
-	var building_alerts := hud.find_child("Building_alerts", true, false) as CheckButton
-	var city_updates := hud.find_child("City_updates", true, false) as CheckButton
+	var building_alerts: CheckButton
+	var city_updates: CheckButton
+	if notification_dialog != null:
+		for node in notification_dialog.find_children("*", "CheckButton", true, false):
+			var toggle := node as CheckButton
+			if toggle.text == "Building and production alerts":
+				building_alerts = toggle
+			elif toggle.text == "City progress updates":
+				city_updates = toggle
 	_check(notification_dialog != null and building_alerts != null and city_updates != null, "Notification Settings must expose building and city-update preferences.")
 	if building_alerts != null:
 		var old_alerts := building_alerts.button_pressed
 		building_alerts.button_pressed = not old_alerts
+		building_alerts.toggled.emit(not old_alerts)
 		var notification_config := ConfigFile.new()
 		notification_config.load("user://notification_preferences.cfg")
 		_check(bool(notification_config.get_value("notifications", "building_alerts", old_alerts)) == not old_alerts, "Building notification preference must persist immediately.")
 		building_alerts.button_pressed = old_alerts
+		building_alerts.toggled.emit(old_alerts)
 	if is_instance_valid(notification_dialog):
 		notification_dialog.hide()
 		notification_dialog.queue_free()
