@@ -3032,6 +3032,8 @@ func _test_trade_depot_and_global_market() -> void:
 	var previous_trade: Dictionary = TradeManager.to_save_dict()
 	var previous_ledger: Array[Dictionary] = EconomyManager.transaction_ledger.duplicate(true)
 	var previous_ledger_sequence := EconomyManager.transaction_sequence
+	var previous_persistence_ready := SaveManager.persistence_ready
+	var previous_is_loading := SaveManager.is_loading
 	EconomyManager.transaction_ledger.clear()
 	var depot := FireHazardTestBuilding.new()
 	depot.building_id = "smoke_trade_depot"
@@ -3176,6 +3178,26 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) >= legacy_load_time + 30, "Legacy sale saves must derive a deadline from their remaining time.")
 	_check(TradeManager.market_refresh_unix >= legacy_load_time + 25, "Legacy market saves must derive a refresh deadline from their remaining time.")
 	_check(TradeManager.ship_return_unix >= legacy_load_time + 50, "Legacy ship saves must derive a return deadline from their remaining time.")
+
+	# User-facing trade/storage/economy events must converge into one player JSON snapshot.
+	SaveManager.persistence_ready = true
+	SaveManager.is_loading = false
+	SaveManager.schedule_save()
+	await get_tree().create_timer(1.0).timeout
+	var persisted_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	var persisted_trade: Dictionary = persisted_city.get("trade", {}) if persisted_city is Dictionary else {}
+	var persisted_economy_ledger: Array = persisted_city.get("economy_ledger", {}).get("transaction_ledger", []) if persisted_city is Dictionary else []
+	var persisted_storage: Dictionary = persisted_city.get("storage", {}) if persisted_city is Dictionary else {}
+	var has_saved_trade_sale := false
+	var has_saved_cargo_delivery := false
+	for transaction in persisted_economy_ledger:
+		if transaction is Dictionary:
+			var transaction_type := str(transaction.get("type", ""))
+			has_saved_trade_sale = has_saved_trade_sale or transaction_type == "trade_sale_collected"
+			has_saved_cargo_delivery = has_saved_cargo_delivery or transaction_type == "cargo_ship_crate_delivered"
+	_check(persisted_trade.get("sell_slots", []).size() == 1 and bool(persisted_trade.get("ship_departed", false)), "Trade Depot and Cargo Ship state must be written to the active player JSON after transaction events.")
+	_check(has_saved_trade_sale and has_saved_cargo_delivery and persisted_storage.has("items"), "The player JSON must contain trade transactions, the economy ledger and the matching warehouse snapshot together.")
+
 	BuildManager.buildings.erase(depot.building_id)
 	BuildManager.buildings.erase(hq.building_id)
 	BuildManager.buildings.erase(port.building_id)
@@ -3189,6 +3211,11 @@ func _test_trade_depot_and_global_market() -> void:
 	EconomyManager.transaction_sequence = previous_ledger_sequence
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
+	SaveManager.is_loading = false
+	if not SaveManager.save_game():
+		failures.append("Gameplay smoke test could not restore the pre-test city JSON after trade persistence checks.")
+	SaveManager.persistence_ready = previous_persistence_ready
+	SaveManager.is_loading = previous_is_loading
 
 func _test_citizen_feedback_bubbles() -> void:
 	var feedback_manager = get_node_or_null("CitizenFeedback")
@@ -3676,7 +3703,7 @@ func _run_gameplay_test() -> void:
 	_test_construction_bom_contract()
 	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
-	_test_trade_depot_and_global_market()
+	await _test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
