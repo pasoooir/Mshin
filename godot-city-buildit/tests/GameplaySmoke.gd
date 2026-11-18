@@ -3394,7 +3394,7 @@ func _test_settings_panel_contract() -> void:
 	await get_tree().process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
 	var top_up_button := hud.find_child("WalletTopUpInfo", true, false) as Button
-	_check(wallet_dialog != null and wallet_dialog.dialog_text.contains("Simoleons") and wallet_dialog.dialog_text.contains("SimCash"), "Wallet must display the actual in-game currencies.")
+	_check(wallet_dialog != null and wallet_dialog.dialog_text.contains("Simoleons") and wallet_dialog.dialog_text.contains("SimCash") and wallet_dialog.dialog_text.contains("Recent activity"), "Wallet must display actual balances and recent transaction activity.")
 	_check(top_up_button != null and not top_up_button.disabled and top_up_button.is_connected("pressed", Callable(hud, "_show_wallet_purchase_info")), "Wallet purchase information must be a working, safe action.")
 	if top_up_button != null:
 		top_up_button.pressed.emit()
