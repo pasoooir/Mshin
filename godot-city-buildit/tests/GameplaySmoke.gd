@@ -3259,12 +3259,12 @@ func _test_settings_panel_contract() -> void:
 	var music_toggle := hud.find_child("MusicToggle", true, false) as CheckButton
 	if music_toggle != null:
 		music_toggle.button_pressed = not original_music_enabled
-		_check(AudioManager.music_enabled == not original_music_enabled, "Music switch must update the audio service.")
+		_check(AudioManager.music_enabled == (not original_music_enabled), "Music switch must update the audio service.")
 		music_toggle.button_pressed = original_music_enabled
 	var sfx_toggle := hud.find_child("SfxToggle", true, false) as CheckButton
 	if sfx_toggle != null:
 		sfx_toggle.button_pressed = not original_sfx_enabled
-		_check(AudioManager.sfx_enabled == not original_sfx_enabled, "Sounds switch must update the audio service.")
+		_check(AudioManager.sfx_enabled == (not original_sfx_enabled), "Sounds switch must update the audio service.")
 		sfx_toggle.button_pressed = original_sfx_enabled
 	var google_button := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	_check(google_button != null and google_button.is_connected("pressed", Callable(hud, "_on_settings_account_action_pressed")), "Google sign-in button must be wired to the real account flow.")
@@ -3272,7 +3272,7 @@ func _test_settings_panel_contract() -> void:
 	_check(close_button != null and close_button.is_connected("pressed", Callable(hud, "_close_settings_panel")), "Settings close button must close the modal.")
 
 	# About: verify its advanced controls remain accessible and functional.
-	hud._show_settings_about()
+	(hud.find_child("SettingsAboutButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
 	_check(graphics_select != null and graphics_select.item_count == 3, "Advanced settings must retain Low, Balanced and High 3D quality presets.")
@@ -3298,7 +3298,7 @@ func _test_settings_panel_contract() -> void:
 		await get_tree().process_frame
 
 	# Change City Name: exercise the actual save path and restore test state.
-	hud._show_change_city_name()
+	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
@@ -3313,7 +3313,7 @@ func _test_settings_panel_contract() -> void:
 		rename_dialog.queue_free()
 
 	# Help: ensure the action opens useful gameplay instructions.
-	hud._show_settings_help()
+	(hud.find_child("SettingsHelpButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var help_dialog := hud.find_child("SettingsHelpDialog", true, false) as AcceptDialog
 	_check(help_dialog != null and help_dialog.dialog_text.contains("Build roads first") and help_dialog.dialog_text.contains("production"), "Help must explain the real road and production gameplay loop.")
@@ -3323,7 +3323,7 @@ func _test_settings_panel_contract() -> void:
 		await get_tree().process_frame
 
 	# Notifications: verify both preferences exist and changes persist.
-	hud._show_notification_settings()
+	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	var building_alerts := hud.find_child("Building_alerts", true, false) as CheckButton
@@ -3342,7 +3342,7 @@ func _test_settings_panel_contract() -> void:
 		await get_tree().process_frame
 
 	# Wallet: show live balances and keep real-money checkout deliberately disabled.
-	hud._show_wallet_panel()
+	(hud.find_child("SettingsWalletButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
 	var top_up_button := hud.find_child("WalletTopUpDisabled", true, false) as Button
