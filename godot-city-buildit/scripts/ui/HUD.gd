@@ -5674,31 +5674,35 @@ func _show_change_city_name() -> void:
 		validation.text = "%d / 28 characters" % next_text.length()
 		validation.add_theme_color_override("font_color", Color("#A8D7EB"))
 	)
+	var save_in_progress := false
 	input.text_submitted.connect(func(_submitted_text: String) -> void:
 		dialog.confirmed.emit()
 	)
 	dialog.confirmed.connect(func() -> void:
+		if save_in_progress:
+			return
+		save_in_progress = true
 		var previous_name := GameManager.city_name
 		if not GameManager.set_city_name(input.text):
+			save_in_progress = false
 			validation.text = "Please enter a city name before saving."
 			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
 			input.grab_focus()
 			return
 		if not SaveManager.save_game():
 			GameManager.city_name = previous_name
+			save_in_progress = false
 			validation.text = "Could not save locally. Your previous city name is unchanged."
 			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
 			input.grab_focus()
 			return
 		if PlayerAccountManager.is_authenticated():
 			var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-			var synced := false
 			if saved_state is Dictionary:
-				synced = await PlayerAccountManager.save_profile_now(saved_state)
-			if synced:
-				status_label.text = "City name updated and securely synced to your player profile."
+				status_label.text = "City name saved locally. Syncing your player profile…"
+				call_deferred("_sync_city_name_profile", saved_state)
 			else:
-				status_label.text = "City name saved on this device. Online sync failed; please retry when connected."
+				status_label.text = "City name saved locally, but the profile snapshot could not be prepared."
 		else:
 			status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
 		dialog.queue_free()
@@ -5708,6 +5712,16 @@ func _show_change_city_name() -> void:
 	_style_settings_dialog(dialog, Vector2i(520, 250))
 	input.grab_focus()
 	input.select_all()
+
+
+func _sync_city_name_profile(saved_state: Dictionary) -> void:
+	var synced := await PlayerAccountManager.save_profile_now(saved_state)
+	if not is_instance_valid(status_label):
+		return
+	if synced:
+		status_label.text = "City name updated and securely synced to your player profile."
+	else:
+		status_label.text = "City name saved on this device. Online sync failed; please retry when connected."
 
 
 func _apply_notification_preference(key: String, enabled: bool) -> void:
@@ -5782,6 +5796,7 @@ func _show_wallet_panel() -> void:
 		"Golden Keys: %s" % _format_compact_number(EconomyManager.golden_keys)
 	]
 	var recent_transactions := EconomyManager.get_recent_transactions(3)
+	recent_transactions.reverse()
 	wallet_lines.append("\nRecent activity")
 	if recent_transactions.is_empty():
 		wallet_lines.append("No transactions recorded yet.")
