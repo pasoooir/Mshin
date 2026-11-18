@@ -41,6 +41,30 @@ func set_notification_preference(key: String, enabled: bool) -> bool:
 	return true
 
 
+func load_preferences_from_active_save() -> bool:
+	var active_save_path := get_active_save_path()
+	if not FileAccess.file_exists(active_save_path):
+		_load_legacy_notification_preferences()
+		_apply_notification_preferences_to_scene()
+		return false
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(active_save_path))
+	if not parsed is Dictionary:
+		push_warning("Player settings JSON is invalid; keeping current preferences.")
+		return false
+	var preferences: Dictionary = parsed.get("preferences", {})
+	var saved_notifications: Variant = preferences.get("notifications", {})
+	_notification_preferences = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
+	if saved_notifications is Dictionary:
+		for key in DEFAULT_NOTIFICATION_PREFERENCES.keys():
+			if saved_notifications.has(key):
+				_notification_preferences[key] = bool(saved_notifications[key])
+	AudioManager.from_save_dict(preferences.get("audio", {}))
+	HapticsManager.from_save_dict(preferences.get("haptics", {}))
+	GraphicsSettingsManager.from_save_dict(preferences.get("graphics", {}))
+	_apply_notification_preferences_to_scene()
+	return true
+
+
 func _load_legacy_notification_preferences() -> void:
 	_notification_preferences = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
 	# Never copy a guest device's notification choices into a newly signed-in account.
