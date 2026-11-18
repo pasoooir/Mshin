@@ -5467,11 +5467,12 @@ func _show_notification_settings() -> void:
 	dialog.name = "NotificationSettingsDialog"
 	dialog.title = "Notification Settings"
 	var content := VBoxContainer.new()
+	content.name = "NotificationSettingsContent"
 	content.add_theme_constant_override("separation", 12)
 	dialog.add_child(content)
-	for preference in [{"key":"building_alerts","label":"Building and production alerts"},{"key":"city_updates","label":"City progress updates"}]:
+	for preference in [{"key":"building_alerts","node_name":"BuildingAlertsToggle","label":"Building and production alerts"},{"key":"city_updates","node_name":"CityUpdatesToggle","label":"City progress updates"}]:
 		var toggle := CheckButton.new()
-		toggle.name = str(preference.key).capitalize()
+		toggle.name = str(preference.node_name)
 		toggle.text = str(preference.label)
 		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
 		toggle.toggled.connect(func(value: bool) -> void:
