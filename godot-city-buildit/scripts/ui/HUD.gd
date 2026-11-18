@@ -5623,17 +5623,6 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
-	if not PlayerAccountManager.is_authenticated():
-		var login_dialog := ConfirmationDialog.new()
-		login_dialog.name = "CityNameLoginRequiredDialog"
-		login_dialog.title = "Sign in required"
-		login_dialog.dialog_text = "Sign in with Google before changing your city name. Your city profile will be saved to your private player JSON file."
-		login_dialog.ok_button_text = "Continue with Google"
-		login_dialog.confirmed.connect(_on_settings_account_action_pressed)
-		login_dialog.canceled.connect(login_dialog.queue_free)
-		add_child(login_dialog)
-		_style_settings_dialog(login_dialog, Vector2i(520, 220))
-		return
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "ChangeCityNameDialog"
 	dialog.title = "Change City Name"
@@ -5651,17 +5640,22 @@ func _show_change_city_name() -> void:
 			status_label.text = "Enter a city name with at least one visible character."
 			dialog.queue_free()
 			return
-		SaveManager.save_game()
-		var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-		var synced := false
-		if saved_state is Dictionary:
-			synced = await PlayerAccountManager.save_profile_now(saved_state)
-		if synced:
-			status_label.text = "City name updated and securely saved to your player profile."
-		else:
+		if not SaveManager.save_game():
 			GameManager.city_name = previous_name
-			SaveManager.save_game()
-			status_label.text = "Could not sync your city name. Please check your connection and try again."
+			status_label.text = "Could not save your city name on this device. Please try again."
+			dialog.queue_free()
+			return
+		if PlayerAccountManager.is_authenticated():
+			var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+			var synced := false
+			if saved_state is Dictionary:
+				synced = await PlayerAccountManager.save_profile_now(saved_state)
+			if synced:
+				status_label.text = "City name updated and securely synced to your player profile."
+			else:
+				status_label.text = "City name saved on this device. Online sync failed; please retry when connected."
+		else:
+			status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
 		dialog.queue_free()
 	)
 	dialog.canceled.connect(dialog.queue_free)
