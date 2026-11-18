@@ -26,10 +26,11 @@ func _run() -> void:
 
 	var game_manager := root.get_node_or_null("GameManager")
 	var save_manager := root.get_node_or_null("SaveManager")
+	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if game_manager == null or save_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or graphics_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -99,8 +100,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] About form is missing its functional graphics/audio controls.")
 		quit(1)
 		return
-	var quality_names := GraphicsSettingsManager.get_quality_names()
-	var current_quality_index := quality_names.find(GraphicsSettingsManager.quality)
+	var quality_names: PackedStringArray = graphics_manager.get_quality_names()
+	var current_quality_index := quality_names.find(str(graphics_manager.quality))
 	var next_quality_index := (current_quality_index + 1) % quality_names.size()
 	graphics_select.item_selected.emit(next_quality_index)
 	master_slider.value_changed.emit(35.0)
