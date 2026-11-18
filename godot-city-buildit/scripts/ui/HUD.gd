@@ -5197,12 +5197,14 @@ func _show_settings_panel() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "SettingsBackdrop"
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.025, 0.035, 0.76)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.78)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_overlay.add_child(backdrop)
 
-	var panel_width := minf(900.0 * _ui_scale, viewport_size.x * 0.96)
-	var panel_height := minf(770.0 * _ui_scale, viewport_size.y * 0.94)
+	# Compact game-style dialog: category tabs keep unrelated controls out of
+	# the way and make the account/reward flow discoverable without dominating Audio.
+	var panel_width := minf(980.0 * _ui_scale, viewport_size.x * 0.94)
+	var panel_height := minf(690.0 * _ui_scale, viewport_size.y * 0.92)
 	var panel := PanelContainer.new()
 	panel.name = "SettingsPanel"
 	panel.anchor_left = 0.5
@@ -5219,109 +5221,76 @@ func _show_settings_panel() -> void:
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
-	layout.add_theme_constant_override("separation", 8)
+	layout.add_theme_constant_override("separation", 12)
 	panel.add_child(layout)
 
 	var heading := HBoxContainer.new()
+	heading.name = "SettingsHeading"
 	layout.add_child(heading)
 	var title := Label.new()
-	title.text = "Settings"
+	title.text = "CITY SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _popup_font_size(28))
-	title.add_theme_color_override("font_color", Color("#172330"))
+	title.add_theme_font_size_override("font_size", _popup_font_size(27))
+	title.add_theme_color_override("font_color", Color("#172F3E"))
 	heading.add_child(title)
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(46, 44) * _ui_scale
+	close.custom_minimum_size = Vector2(48, 44) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(32))
 	close.add_theme_color_override("font_color", Color("#123B59"))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
-	var section := Label.new()
-	section.text = "AUDIO"
-	section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	section.add_theme_color_override("font_color", Color("#28799C"))
-	layout.add_child(section)
+	var tabs := TabContainer.new()
+	tabs.name = "SettingsCategories"
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs.add_theme_font_size_override("font_size", _popup_font_size(17))
+	layout.add_child(tabs)
 
+	var audio_page := _make_settings_page("Audio")
+	audio_page.name = "AudioSettingsPage"
+	tabs.add_child(audio_page)
+	var audio_section := _make_settings_section("SOUND")
+	audio_page.add_child(audio_section)
 	var toggles := GridContainer.new()
 	toggles.name = "AudioToggles"
-	toggles.columns = 3
-	toggles.add_theme_constant_override("h_separation", 10)
-	toggles.add_theme_constant_override("v_separation", 4)
-	layout.add_child(toggles)
+	toggles.columns = 2 if viewport_size.x < 900.0 else 4
+	toggles.add_theme_constant_override("h_separation", 18)
+	toggles.add_theme_constant_override("v_separation", 12)
+	audio_page.add_child(toggles)
 	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
 	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
-	_add_audio_setting_toggle(toggles, "HapticsToggle", "Haptic feedback", HapticsManager.enabled, HapticsManager.set_enabled)
+	_add_audio_setting_toggle(toggles, "HapticsToggle", "Vibration", HapticsManager.enabled, HapticsManager.set_enabled)
+	var volume_section := _make_settings_section("VOLUME")
+	audio_page.add_child(volume_section)
+	_add_audio_setting_slider(audio_page, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(audio_page, "MusicVolumeSlider", "Music", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(audio_page, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(audio_page, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	layout.add_child(scroll)
-	var sliders := VBoxContainer.new()
-	sliders.add_theme_constant_override("separation", 10)
-	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(sliders)
-	var account_section := Label.new()
-	account_section.text = "PLAYER ACCOUNT"
-	account_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	account_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(account_section)
-	var account_card := PanelContainer.new()
-	account_card.name = "SettingsAccountCard"
-	var account_style := StyleBoxFlat.new()
-	account_style.bg_color = Color("#E6F2F8")
-	account_style.border_color = Color("#8AB9D0")
-	account_style.set_border_width_all(1)
-	account_style.set_corner_radius_all(12)
-	account_style.content_margin_left = 12
-	account_style.content_margin_right = 12
-	account_style.content_margin_top = 8
-	account_style.content_margin_bottom = 8
-	account_card.add_theme_stylebox_override("panel", account_style)
-	sliders.add_child(account_card)
-	var account_row := HBoxContainer.new()
-	account_row.add_theme_constant_override("separation", 10)
-	account_card.add_child(account_row)
-	_settings_account_status = Label.new()
-	_settings_account_status.name = "SettingsAccountStatus"
-	_settings_account_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_settings_account_status.add_theme_color_override("font_color", Color("#17394D"))
-	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
-	account_row.add_child(_settings_account_status)
-	_settings_account_action = Button.new()
-	_settings_account_action.name = "SettingsGoogleAccountAction"
-	_settings_account_action.custom_minimum_size = Vector2(190, 46) * _ui_scale
-	_settings_account_action.focus_mode = Control.FOCUS_NONE
-	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
-	account_row.add_child(_settings_account_action)
-	_refresh_settings_account_section()
-
-	_add_audio_setting_slider(sliders, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
-	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
-	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
-	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
-	var graphics_section := Label.new()
-	graphics_section.text = "3D GRAPHICS"
-	graphics_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	graphics_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(graphics_section)
+	var graphics_page := _make_settings_page("Graphics")
+	graphics_page.name = "GraphicsSettingsPage"
+	graphics_page.add_child(_make_settings_section("VISUAL QUALITY"))
+	var graphics_note := Label.new()
+	graphics_note.text = "Choose the best balance between visual detail and smooth performance on your device."
+	graphics_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	graphics_note.add_theme_color_override("font_color", Color("#526A78"))
+	graphics_note.add_theme_font_size_override("font_size", _popup_font_size(16))
+	graphics_page.add_child(graphics_note)
 	var graphics_row := HBoxContainer.new()
 	graphics_row.name = "GraphicsQualityRow"
-	sliders.add_child(graphics_row)
+	graphics_page.add_child(graphics_row)
 	var graphics_label := Label.new()
-	graphics_label.text = "3D render quality"
+	graphics_label.text = "3D graphics quality"
 	graphics_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	graphics_label.add_theme_color_override("font_color", Color("#243C4B"))
 	graphics_row.add_child(graphics_label)
 	var graphics_select := OptionButton.new()
 	graphics_select.name = "GraphicsQualitySelect"
-	graphics_select.custom_minimum_size = Vector2(150, 42) * _ui_scale
+	graphics_select.custom_minimum_size = Vector2(170, 44) * _ui_scale
 	var quality_names := GraphicsSettingsManager.get_quality_names()
 	for quality_name in quality_names:
 		var preset: Dictionary = GraphicsSettingsManager.get_quality_preset(quality_name)
@@ -5329,33 +5298,90 @@ func _show_settings_panel() -> void:
 	graphics_select.select(quality_names.find(GraphicsSettingsManager.quality))
 	graphics_select.item_selected.connect(_on_graphics_quality_selected)
 	graphics_row.add_child(graphics_select)
-	var performance_section := Label.new()
-	performance_section.text = "DEVICE PERFORMANCE"
-	performance_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	performance_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(performance_section)
+
+	var account_page := _make_settings_page("Account")
+	account_page.name = "AccountSettingsPage"
+	account_page.add_child(_make_settings_section("PLAYER ACCOUNT"))
+	var account_card := PanelContainer.new()
+	account_card.name = "SettingsAccountCard"
+	var account_style := StyleBoxFlat.new()
+	account_style.bg_color = Color("#E8F3F8")
+	account_style.border_color = Color("#8AB9D0")
+	account_style.set_border_width_all(1)
+	account_style.set_corner_radius_all(14)
+	account_style.content_margin_left = 18
+	account_style.content_margin_right = 18
+	account_style.content_margin_top = 18
+	account_style.content_margin_bottom = 18
+	account_card.add_theme_stylebox_override("panel", account_style)
+	account_page.add_child(account_card)
+	var account_layout := VBoxContainer.new()
+	account_layout.add_theme_constant_override("separation", 14)
+	account_card.add_child(account_layout)
+	_settings_account_status = Label.new()
+	_settings_account_status.name = "SettingsAccountStatus"
+	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_settings_account_status.add_theme_color_override("font_color", Color("#17394D"))
+	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(18))
+	account_layout.add_child(_settings_account_status)
+	_settings_account_action = Button.new()
+	_settings_account_action.name = "SettingsGoogleAccountAction"
+	_settings_account_action.custom_minimum_size = Vector2(230, 50) * _ui_scale
+	_settings_account_action.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_settings_account_action.focus_mode = Control.FOCUS_NONE
+	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
+	account_layout.add_child(_settings_account_action)
+	_refresh_settings_account_section()
+	var reward_note := Label.new()
+	reward_note.text = "Sign in to secure your city. Your welcome reward is claimed once, and daily rewards are available when you return each day."
+	reward_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reward_note.add_theme_color_override("font_color", Color("#526A78"))
+	reward_note.add_theme_font_size_override("font_size", _popup_font_size(15))
+	account_page.add_child(reward_note)
+
+	var performance_page := _make_settings_page("Device")
+	performance_page.name = "DeviceSettingsPage"
+	performance_page.add_child(_make_settings_section("DEVICE PERFORMANCE"))
 	var performance_note := Label.new()
-	performance_note.text = "Run a 30-second test during normal gameplay. The report is saved locally on this device."
+	performance_note.text = "Run a 30-second test while playing normally. The report is saved locally on this device."
 	performance_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	performance_note.add_theme_font_size_override("font_size", _popup_font_size(16))
 	performance_note.add_theme_color_override("font_color", Color("#526A78"))
-	sliders.add_child(performance_note)
+	performance_page.add_child(performance_note)
 	var performance_button := Button.new()
 	performance_button.name = "RunDeviceBenchmarkButton"
 	performance_button.text = "Run 30-second device test"
-	performance_button.custom_minimum_size = Vector2(240, 44) * _ui_scale
+	performance_button.custom_minimum_size = Vector2(250, 48) * _ui_scale
 	performance_button.pressed.connect(_start_performance_benchmark)
-	sliders.add_child(performance_button)
+	performance_page.add_child(performance_button)
 
 	var footer := HBoxContainer.new()
+	footer.name = "SettingsFooter"
 	footer.alignment = BoxContainer.ALIGNMENT_END
 	layout.add_child(footer)
 	var reset := Button.new()
 	reset.name = "ResetAudioSettings"
 	reset.text = "Restore defaults"
-	reset.custom_minimum_size = Vector2(150, 42) * _ui_scale
+	reset.custom_minimum_size = Vector2(160, 44) * _ui_scale
 	reset.pressed.connect(_reset_audio_settings)
 	footer.add_child(reset)
+
+
+func _make_settings_page(tab_title: String) -> VBoxContainer:
+	var page := VBoxContainer.new()
+	page.name = tab_title.replace(" ", "") + "SettingsPage"
+	page.add_theme_constant_override("separation", 16)
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return page
+
+
+func _make_settings_section(section_title: String) -> Label:
+	var section := Label.new()
+	section.text = section_title
+	section.add_theme_font_size_override("font_size", _popup_font_size(17))
+	section.add_theme_color_override("font_color", Color("#28799C"))
+	return section
 
 func _add_audio_setting_toggle(parent: GridContainer, node_name: String, label_text: String, initial_value: bool, setter: Callable) -> void:
 	var toggle := CheckButton.new()
