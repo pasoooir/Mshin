@@ -289,7 +289,7 @@ func logout() -> void:
 
 
 func begin_google_sign_in(auto_select: bool = false) -> bool:
-		if not OS.has_feature("web"):
+	if not OS.has_feature("web"):
 		if not auto_select:
 			authentication_feedback.emit("Google sign-in is available in the web version.", false)
 		return false
@@ -434,7 +434,7 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 	var success := await sign_in_with_google_id_token(id_token, nonce)
 	if success:
 		_set_google_auto_sign_in(true)
-				var reward_parts: PackedStringArray = []
+		var reward_parts: PackedStringArray = []
 		var welcome: Dictionary = _last_login_rewards.get("welcome", {})
 		var daily: Dictionary = _last_login_rewards.get("daily", {})
 		if bool(welcome.get("granted", false)):
@@ -445,6 +445,10 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		var reward_message := " · " + ", ".join(reward_parts) if not reward_parts.is_empty() else ""
 		authentication_feedback.emit("Signed in as Mayor #%d%s" % [player_id, reward_message], true)
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
+			SaveManager.save_game()
+	elif not silent_attempt:
+		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
+
 			SaveManager.save_game()
 	else:
 				if not silent_attempt:
