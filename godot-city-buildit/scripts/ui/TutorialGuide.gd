@@ -603,7 +603,6 @@ func _hide_for_later() -> void:
 		_panel.hide()
 	if is_instance_valid(_finger_pointer):
 		_finger_pointer.hide()
-	_build_reopen_button()
 
 func _close_guide() -> void:
 	_hide_for_later()
