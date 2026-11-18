@@ -3334,6 +3334,10 @@ func _test_settings_panel_contract() -> void:
 		else:
 			help_guide._panel.hide()
 
+	# Help intentionally closes Settings; reopen it before exercising the remaining actions.
+	hud._show_settings_panel()
+	await get_tree().process_frame
+
 	# Notifications: verify both preferences exist and changes persist.
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
