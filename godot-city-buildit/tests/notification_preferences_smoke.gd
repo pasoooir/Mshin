@@ -39,12 +39,31 @@ func _run() -> void:
 		return
 
 	save_manager.persistence_ready = true
-	if not save_manager.set_notification_preference("building_alerts", true) or not save_manager.set_notification_preference("city_updates", true):
-		push_error("[NotificationPreferencesSmoke] Could not persist notification preferences.")
+	save_manager.is_loading = false
+	hud._show_settings_panel()
+	await process_frame
+	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
+	if notification_button == null:
+		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
 		quit(1)
 		return
+	notification_button.pressed.emit()
+	await process_frame
+	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
+	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
+	var updates_toggle := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
+	if notification_dialog == null or building_toggle == null or updates_toggle == null:
+		push_error("[NotificationPreferencesSmoke] Notification form did not open with both controls.")
+		quit(1)
+		return
+	building_toggle.toggled.emit(true)
+	updates_toggle.toggled.emit(true)
 	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
-		push_error("[NotificationPreferencesSmoke] Enabling preferences did not update live systems.")
+		push_error("[NotificationPreferencesSmoke] Notification toggle events did not update live systems.")
+		quit(1)
+		return
+	if not save_manager.save_game():
+		push_error("[NotificationPreferencesSmoke] Could not write the city JSON after changing notification preferences.")
 		quit(1)
 		return
 	var saved_preferences: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
@@ -62,6 +81,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification preferences were not restored from JSON.")
 		quit(1)
 		return
+	notification_dialog.hide()
+	notification_dialog.queue_free()
 
 
 	# Guest players can change the city name and persist it locally without a Google login.
