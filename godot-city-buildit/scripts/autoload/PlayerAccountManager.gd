@@ -14,6 +14,21 @@ var _save_in_flight: bool = false
 var _google_nonce: String = ""
 var _google_callback: Variant
 var _last_login_rewards: Dictionary = {}
+var _silent_sign_in_attempt := false
+
+func _ready() -> void:
+	var preferences := ConfigFile.new()
+	if preferences.load("user://account_session.cfg") == OK and bool(preferences.get_value("account", "google_auto_sign_in", false)):
+		_silent_sign_in_attempt = true
+		call_deferred("begin_google_sign_in", true)
+
+func _set_google_auto_sign_in(enabled: bool) -> void:
+	var preferences := ConfigFile.new()
+	preferences.load("user://account_session.cfg")
+	preferences.set_value("account", "google_auto_sign_in", enabled)
+	var error := preferences.save("user://account_session.cfg")
+	if error != OK:
+		push_warning("Could not save Google sign-in preference: %s" % error)
 
 func is_authenticated() -> bool:
 	return player_id > 0 and not access_token.is_empty()
@@ -251,6 +266,8 @@ func _flush_pending_save() -> void:
 	_save_in_flight = false
 
 func logout() -> void:
+	_set_google_auto_sign_in(false)
+	_silent_sign_in_attempt = false
 	player_id = 0
 	access_token = ""
 	profile_revision = 0
@@ -260,26 +277,35 @@ func logout() -> void:
 	session_changed.emit(0, false)
 
 
-func begin_google_sign_in() -> bool:
+func begin_google_sign_in(auto_select: bool = false) -> bool:
+	_silent_sign_in_attempt = auto_select
 	if not OS.has_feature("web"):
-		authentication_feedback.emit("Google sign-in is available in the web version.", false)
+		if not auto_select:
+			authentication_feedback.emit("Google sign-in is available in the web version.", false)
 		return false
 	var client_id := str(ProjectSettings.get_setting("mshin/account/google_client_id", "")).strip_edges()
 	if client_id.is_empty() or not client_id.ends_with(".apps.googleusercontent.com"):
-		authentication_feedback.emit("Google sign-in is not configured yet.", false)
+		if not auto_select:
+			authentication_feedback.emit("Google sign-in is not configured yet.", false)
 		return false
-	call_deferred("_request_google_nonce_and_launch", client_id)
+	call_deferred("_request_google_nonce_and_launch", client_id, auto_select)
 	return true
 
-func _request_google_nonce_and_launch(client_id: String) -> void:
+func _request_google_nonce_and_launch(client_id: String, auto_select: bool = false) -> void:
 	var nonce_response := await _request_json(_auth_url() + "/v1/auth/nonce", HTTPClient.METHOD_GET)
 	if not nonce_response.ok:
-		authentication_feedback.emit("Could not start secure Google sign-in. Please retry.", false)
+		if not auto_select:
+			authentication_feedback.emit("Could not start secure Google sign-in. Please retry.", false)
+		else:
+			_silent_sign_in_attempt = false
 		return
 	_google_nonce = str(nonce_response.body.get("nonce", ""))
 	if _google_nonce.length() < 32:
 		_google_nonce = ""
-		authentication_feedback.emit("Secure sign-in challenge was invalid. Please retry.", false)
+		if not auto_select:
+			authentication_feedback.emit("Secure sign-in challenge was invalid. Please retry.", false)
+		else:
+			_silent_sign_in_attempt = false
 		return
 	_google_callback = JavaScriptBridge.create_callback(_on_google_credential)
 	var window := JavaScriptBridge.get_interface("window")
@@ -290,6 +316,7 @@ func _request_google_nonce_and_launch(client_id: String) -> void:
 	(function () {
 		const clientId = %s;
 		const nonce = %s;
+		const shouldAutoSelect = %s;
 		const initialize = function () {
 			if (!window.google || !window.google.accounts || !window.google.accounts.id) {
 				window.mshinGoogleCredentialCallback(null, nonce);
@@ -298,7 +325,7 @@ func _request_google_nonce_and_launch(client_id: String) -> void:
 			window.google.accounts.id.initialize({
 				client_id: clientId,
 				nonce: nonce,
-				auto_select: false,
+				auto_select: shouldAutoSelect,
 				cancel_on_tap_outside: true,
 				callback: function (response) {
 					window.mshinGoogleCredentialCallback(response && response.credential ? response.credential : null, nonce);
@@ -326,26 +353,33 @@ func _request_google_nonce_and_launch(client_id: String) -> void:
 			}
 		}
 	})();
-	""" % [client_id_js, nonce_js]
+	""" % [client_id_js, nonce_js, str(auto_select).to_lower()]
 	JavaScriptBridge.eval(script)
-	authentication_feedback.emit("Opening Google sign-in…", true)
+	if not auto_select:
+		authentication_feedback.emit("Opening Google sign-in…", true)
 
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
 	var returned_nonce := str(args[1]) if args.size() > 1 else ""
-	call_deferred("_complete_google_sign_in", credential, returned_nonce)
+	call_deferred("_complete_google_sign_in", credential, returned_nonce, _silent_sign_in_attempt)
 
-func _complete_google_sign_in(id_token: String, nonce: String) -> void:
+func _complete_google_sign_in(id_token: String, nonce: String, silent_attempt: bool = false) -> void:
 	if nonce.is_empty() or nonce != _google_nonce:
 		_google_nonce = ""
-		authentication_feedback.emit("Google sign-in was cancelled or expired. Please try again.", false)
+		_silent_sign_in_attempt = false
+		if not silent_attempt:
+			authentication_feedback.emit("Google sign-in was cancelled or expired. Please try again.", false)
 		return
 	_google_nonce = ""
 	if id_token.is_empty():
-		authentication_feedback.emit("Google sign-in could not be opened. Check the browser and try again.", false)
+		_silent_sign_in_attempt = false
+		if not silent_attempt:
+			authentication_feedback.emit("Google sign-in could not be opened. Check the browser and try again.", false)
 		return
 	var success := await sign_in_with_google_id_token(id_token, nonce)
 	if success:
+		_set_google_auto_sign_in(true)
+		_silent_sign_in_attempt = false
 		var reward_parts: PackedStringArray = []
 		var welcome: Dictionary = _last_login_rewards.get("welcome", {})
 		var daily: Dictionary = _last_login_rewards.get("daily", {})
@@ -359,4 +393,6 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
 			SaveManager.save_game()
 	else:
-		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
+		_silent_sign_in_attempt = false
+		if not silent_attempt:
+			authentication_feedback.emit("Google sign-in failed. Please try again.", false)
