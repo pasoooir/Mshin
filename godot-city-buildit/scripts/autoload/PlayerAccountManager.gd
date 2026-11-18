@@ -331,9 +331,16 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 		const clientId = %s;
 		const nonce = %s;
 		const shouldAutoSelect = %s;
+		const callback = function (credential) {
+			try { window.mshinGoogleCredentialCallback(credential || null, nonce); }
+			finally {
+				const overlay = document.getElementById("mshin-google-signin-overlay");
+				if (overlay) overlay.remove();
+			}
+		};
 		const initialize = function () {
 			if (!window.google || !window.google.accounts || !window.google.accounts.id) {
-				window.mshinGoogleCredentialCallback(null, nonce);
+				callback(null);
 				return;
 			}
 			window.google.accounts.id.initialize({
@@ -342,18 +349,57 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 				auto_select: shouldAutoSelect,
 				cancel_on_tap_outside: true,
 				callback: function (response) {
-					window.mshinGoogleCredentialCallback(response && response.credential ? response.credential : null, nonce);
+					callback(response && response.credential ? response.credential : null);
 				}
 			});
-			window.google.accounts.id.prompt(function (moment) {
-				if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment() || moment.isDismissedMoment())) {
-					window.mshinGoogleCredentialCallback(null, nonce);
-				}
+			if (shouldAutoSelect) {
+				window.google.accounts.id.prompt(function (moment) {
+					if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment())) {
+						window.mshinGoogleCredentialCallback(null, nonce);
+					}
+				});
+				return;
+			}
+			let overlay = document.getElementById("mshin-google-signin-overlay");
+			if (overlay) overlay.remove();
+			overlay = document.createElement("div");
+			overlay.id = "mshin-google-signin-overlay";
+			overlay.setAttribute("role", "dialog");
+			overlay.setAttribute("aria-label", "Sign in with Google");
+			overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.78);backdrop-filter:blur(9px);";
+			const card = document.createElement("div");
+			card.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);";
+			const heading = document.createElement("div");
+			heading.textContent = "Connect your city";
+			heading.style.cssText = "font:700 22px system-ui,sans-serif;color:#f5fbff;letter-spacing:.3px;";
+			const subtitle = document.createElement("div");
+			subtitle.textContent = "Sign in securely to save and sync your progress";
+			subtitle.style.cssText = "font:14px system-ui,sans-serif;color:#c8dced;text-align:center;max-width:290px;";
+			const button = document.createElement("div");
+			button.id = "mshin-google-render-button";
+			const close = document.createElement("button");
+			close.type = "button";
+			close.textContent = "Cancel";
+			close.style.cssText = "border:0;border-radius:12px;padding:9px 20px;background:rgba(255,255,255,.10);color:#d8ebf7;font:600 14px system-ui,sans-serif;cursor:pointer;";
+			close.addEventListener("click", function () { callback(null); });
+			card.append(heading, subtitle, button, close);
+			overlay.appendChild(card);
+			document.body.appendChild(overlay);
+			window.google.accounts.id.renderButton(button, {
+				type: "standard",
+				theme: "outline",
+				size: "large",
+				text: "continue_with",
+				shape: "pill",
+				logo_alignment: "left",
+				width: Math.min(300, Math.floor(window.innerWidth * .78))
 			});
 		};
-		if (window.google && window.google.accounts && window.google.accounts.id) {
-			initialize();
-		} else {
+		const loadIdentity = function () {
+			if (window.google && window.google.accounts && window.google.accounts.id) {
+				initialize();
+				return;
+			}
 			let loader = document.getElementById("mshin-google-identity-script");
 			if (!loader) {
 				loader = document.createElement("script");
@@ -362,19 +408,20 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 				loader.async = true;
 				loader.defer = true;
 				loader.onload = initialize;
-				loader.onerror = function () {
-					window.mshinGoogleCredentialCallback(null, nonce);
-				};
+				loader.onerror = function () { callback(null); };
 				document.head.appendChild(loader);
 			} else {
 				loader.addEventListener("load", initialize, { once: true });
 			}
-		}
+		};
+		loadIdentity();
 	})();
 	""" % [client_id_js, nonce_js, str(auto_select).to_lower()]
 	JavaScriptBridge.eval(script)
 	if not auto_select:
-		authentication_feedback.emit("Opening Google sign-in…", true)
+		authentication_feedback.emit("Choose your Google account to continue…", true)
+
+
 
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""

@@ -3281,6 +3281,9 @@ func _test_settings_panel_contract() -> void:
 	_check(music_label != null and sounds_label != null, "Music and Sounds must each have a large labeled On/Off control.")
 	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction", "SettingsClose"]:
 		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
+	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton"]:
+		var action_button := hud.find_child(node_name, true, false) as Button
+		_check(action_button != null and action_button.icon != null, "%s must have a meaningful local icon, not a text-only generic tile." % node_name)
 	for node_name in ["MusicToggle", "SfxToggle"]:
 		_check(hud.find_child(node_name, true, false) is Button, "%s must provide the Canva-style independent On/Off button." % node_name)
 	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
