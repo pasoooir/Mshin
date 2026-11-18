@@ -15,6 +15,12 @@ var owner_building: Node = null
 @export_range(0, 3, 1) var store_star_level: int = 0
 var slots: Array[Dictionary] = []
 
+func _emit_slots_changed() -> void:
+	slots_changed.emit()
+	if has_node("/root/SaveManager"):
+		SaveManager.schedule_save()
+
+
 func _ready() -> void:
 	if not is_factory:
 		slot_count = clampi(maxi(slot_count, MIN_STORE_QUEUE_SLOTS), MIN_STORE_QUEUE_SLOTS, MAX_STORE_QUEUE_SLOTS)
@@ -94,7 +100,7 @@ func upgrade_store_star() -> bool:
 	if not EconomyManager.spend_simoleons(cost):
 		return false
 	store_star_level = int(offer.get("star", store_star_level + 1))
-	slots_changed.emit()
+	_emit_slots_changed()
 	return true
 
 # Store queue expansion is deliberately price-driven by the caller. This keeps
@@ -107,7 +113,7 @@ func purchase_store_queue_slot(simcash_cost: int) -> bool:
 		return false
 	slot_count += 1
 	_ensure_slots()
-	slots_changed.emit()
+	_emit_slots_changed()
 	return true
 
 func _owner_has_road_access() -> bool:
@@ -133,7 +139,7 @@ func refresh_slots() -> void:
 				slots[index] = paused_slot
 				changed = true
 		if changed:
-			slots_changed.emit()
+			_emit_slots_changed()
 		return
 	# Preserve the remaining production time while a road connection is lost.
 	for index in range(slots.size()):
@@ -158,7 +164,7 @@ func refresh_slots() -> void:
 	if not is_factory and _start_next_store_order():
 		changed = true
 	if changed:
-		slots_changed.emit()
+		_emit_slots_changed()
 
 func _start_next_store_order() -> bool:
 	if is_factory or not _owner_has_road_access():
@@ -205,7 +211,7 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"cost_known": true,
 		"cost_total": 0
 	}
-	slots_changed.emit()
+	_emit_slots_changed()
 	return true
 
 func start_craft(recipe_id: String, slot_index: int) -> bool:
@@ -237,7 +243,7 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 		"cost_total": int(input_cost.get("total_cost", 0))
 	}
 	_start_next_store_order()
-	slots_changed.emit()
+	_emit_slots_changed()
 	return true
 
 func get_slot_speedup_quote(slot_index: int) -> Dictionary:
@@ -281,7 +287,7 @@ func collect(slot_index: int) -> bool:
 	HapticsManager.pulse_for("collect")
 	slots[slot_index] = {}
 	item_collected.emit(item_id)
-	slots_changed.emit()
+	_emit_slots_changed()
 	ProductionManager.item_produced.emit(item_id, 1)
 	GameManager.add_experience(2)
 	return true
@@ -303,4 +309,4 @@ func from_save_array(saved_slots: Array) -> void:
 			slots[index]["cost_known"] = false
 			slots[index]["cost_total"] = 0
 	refresh_slots()
-	slots_changed.emit()
+	_emit_slots_changed()
