@@ -84,6 +84,10 @@ export class MshinApiCoordinator {
           const current = await readProfile(playerId);
           const now = new Date();
           const todayUtc = now.toISOString().slice(0, 10);
+          const rewardLedgerPath = "rewards/claims.json";
+          const rewardLedger = await storage.readJson(rewardLedgerPath) || { schema_version: 1, players: {} };
+          rewardLedger.players ||= {};
+          const ledgerEntry = rewardLedger.players[String(playerId)] || {};
           const isNewAccount = !current.market_account || typeof current.market_account !== "object";
           const account = isNewAccount
             ? { simoleons: 0, sim_cash: 0, rewards: {} }
@@ -93,14 +97,17 @@ export class MshinApiCoordinator {
             ? account.sim_cash
             : Math.max(0, Number(current.game_state?.economy?.sim_cash) || 0);
           account.rewards = account.rewards && typeof account.rewards === "object" ? account.rewards : {};
-          const welcomeGranted = !account.rewards.welcome_claimed_at;
-          const dailyGranted = account.rewards.daily_last_claim_utc !== todayUtc;
+          const welcomeGranted = !ledgerEntry.welcome_claimed_at && !account.rewards.welcome_claimed_at && isNewAccount;
+          const dailyGranted = (ledgerEntry.daily_last_claim_utc || account.rewards.daily_last_claim_utc) !== todayUtc;
           const welcome = welcomeGranted ? { simoleons: 5000, sim_cash: 10 } : { simoleons: 0, sim_cash: 0 };
           const daily = dailyGranted ? { simoleons: 100, sim_cash: 0 } : { simoleons: 0, sim_cash: 0 };
           account.simoleons += welcome.simoleons + daily.simoleons;
           account.sim_cash += welcome.sim_cash + daily.sim_cash;
           if (welcomeGranted) account.rewards.welcome_claimed_at = now.toISOString();
           if (dailyGranted) account.rewards.daily_last_claim_utc = todayUtc;
+          ledgerEntry.welcome_claimed_at ||= account.rewards.welcome_claimed_at || null;
+          if (dailyGranted) ledgerEntry.daily_last_claim_utc = todayUtc;
+          rewardLedger.players[String(playerId)] = ledgerEntry;
           const gameState = current.game_state && typeof current.game_state === "object"
             ? structuredClone(current.game_state)
             : { economy: {}, storage: { capacity: 30, items: {} } };
@@ -112,7 +119,12 @@ export class MshinApiCoordinator {
             created_at: current.created_at || now.toISOString(), updated_at: now.toISOString(),
             market_account: account, game_state: gameState
           };
-          if (welcomeGranted || dailyGranted || isNewAccount) await writeProfile(playerId, next);
+          if (welcomeGranted || dailyGranted || isNewAccount) {
+            await storage.writeMany([
+              { path: "players/" + playerId + ".json", value: next },
+              { path: rewardLedgerPath, value: rewardLedger }
+            ]);
+          }
           return jsonResponse(200, {
             ok: true, welcome: { granted: welcomeGranted, ...welcome },
             daily: { granted: dailyGranted, ...daily },
