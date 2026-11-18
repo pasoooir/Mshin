@@ -12,15 +12,13 @@ var identity_label: String = ""
 var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
 var _last_profile_save_ok: bool = true
-var _google_nonce: String = ""
+var _google_pending_nonces: Dictionary = {}
 var _google_callback: Variant
 var _last_login_rewards: Dictionary = {}
-var _silent_sign_in_attempt := false
 
 func _ready() -> void:
 	var preferences := ConfigFile.new()
 	if preferences.load("user://account_session.cfg") == OK and bool(preferences.get_value("account", "google_auto_sign_in", false)):
-		_silent_sign_in_attempt = true
 		call_deferred("begin_google_sign_in", true)
 
 func _set_google_auto_sign_in(enabled: bool) -> void:
@@ -281,7 +279,7 @@ func _flush_pending_save() -> void:
 
 func logout() -> void:
 	_set_google_auto_sign_in(false)
-	_silent_sign_in_attempt = false
+	_google_pending_nonces.clear()
 	player_id = 0
 	access_token = ""
 	profile_revision = 0
@@ -292,7 +290,6 @@ func logout() -> void:
 
 
 func begin_google_sign_in(auto_select: bool = false) -> bool:
-	_silent_sign_in_attempt = auto_select
 	if not OS.has_feature("web"):
 		if not auto_select:
 			authentication_feedback.emit("Google sign-in is available in the web version.", false)
@@ -310,22 +307,18 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 	if not nonce_response.ok:
 		if not auto_select:
 			authentication_feedback.emit("Could not start secure Google sign-in. Please retry.", false)
-		else:
-			_silent_sign_in_attempt = false
 		return
-	_google_nonce = str(nonce_response.body.get("nonce", ""))
-	if _google_nonce.length() < 32:
-		_google_nonce = ""
+	var request_nonce := str(nonce_response.body.get("nonce", ""))
+	if request_nonce.length() < 32:
 		if not auto_select:
 			authentication_feedback.emit("Secure sign-in challenge was invalid. Please retry.", false)
-		else:
-			_silent_sign_in_attempt = false
 		return
+	_google_pending_nonces[request_nonce] = auto_select
 	_google_callback = JavaScriptBridge.create_callback(_on_google_credential)
 	var window := JavaScriptBridge.get_interface("window")
 	window.set("mshinGoogleCredentialCallback", _google_callback)
 	var client_id_js := JSON.stringify(client_id)
-	var nonce_js := JSON.stringify(_google_nonce)
+	var nonce_js := JSON.stringify(request_nonce)
 	var script := """
 	(function () {
 		const clientId = %s;
@@ -426,25 +419,20 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
 	var returned_nonce := str(args[1]) if args.size() > 1 else ""
-	call_deferred("_complete_google_sign_in", credential, returned_nonce, _silent_sign_in_attempt)
+	call_deferred("_complete_google_sign_in", credential, returned_nonce)
 
-func _complete_google_sign_in(id_token: String, nonce: String, silent_attempt: bool = false) -> void:
-	if nonce.is_empty() or nonce != _google_nonce:
-		_google_nonce = ""
-		_silent_sign_in_attempt = false
-		if not silent_attempt:
-			authentication_feedback.emit("Google sign-in was cancelled or expired. Please try again.", false)
+func _complete_google_sign_in(id_token: String, nonce: String) -> void:
+	if nonce.is_empty() or not _google_pending_nonces.has(nonce):
 		return
-	_google_nonce = ""
+	var silent_attempt := bool(_google_pending_nonces[nonce])
+	_google_pending_nonces.erase(nonce)
 	if id_token.is_empty():
-		_silent_sign_in_attempt = false
 		if not silent_attempt:
-			authentication_feedback.emit("Google sign-in could not be opened. Check the browser and try again.", false)
+			authentication_feedback.emit("Google sign-in was cancelled. You can try again whenever you're ready.", false)
 		return
 	var success := await sign_in_with_google_id_token(id_token, nonce)
 	if success:
 		_set_google_auto_sign_in(true)
-		_silent_sign_in_attempt = false
 		var reward_parts: PackedStringArray = []
 		var welcome: Dictionary = _last_login_rewards.get("welcome", {})
 		var daily: Dictionary = _last_login_rewards.get("daily", {})
@@ -457,7 +445,5 @@ func _complete_google_sign_in(id_token: String, nonce: String, silent_attempt: b
 		authentication_feedback.emit("Signed in as Mayor #%d%s" % [player_id, reward_message], true)
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
 			SaveManager.save_game()
-	else:
-		_silent_sign_in_attempt = false
-		if not silent_attempt:
-			authentication_feedback.emit("Google sign-in failed. Please try again.", false)
+	elif not silent_attempt:
+		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
