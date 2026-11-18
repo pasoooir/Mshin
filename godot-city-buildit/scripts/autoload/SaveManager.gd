@@ -34,7 +34,7 @@ func set_notification_preference(key: String, enabled: bool) -> bool:
 	var previous_value := bool(_notification_preferences.get(key, true))
 	_notification_preferences[key] = enabled
 	_apply_notification_preferences_to_scene()
-	if persistence_ready and not is_loading and not save_game():
+	if not is_loading and not save_game():
 		_notification_preferences[key] = previous_value
 		_apply_notification_preferences_to_scene()
 		return false
