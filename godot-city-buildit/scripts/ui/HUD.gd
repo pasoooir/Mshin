@@ -5217,7 +5217,7 @@ func _show_settings_panel() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#DDF0FF")
 	panel_style.border_color = Color("#FFFFFF")
-	panel_style.set_border_width_all(2)
+	panel_style.set_border_width_all(3)
 	panel_style.set_corner_radius_all(30)
 	panel_style.shadow_color = Color(0, 0, 0, 0.38)
 	panel_style.shadow_size = 22
@@ -5248,7 +5248,7 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(58, 54) * _ui_scale
+	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(28))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#168ED1")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#36B7EE")))
