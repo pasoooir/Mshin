@@ -21,7 +21,7 @@ tag = "v1"
 new_sqlite_classes = ["MshinApiCoordinator"]
 
 [vars]
-GOOGLE_CLIENT_ID = "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID"
+GOOGLE_CLIENT_ID = "437590540762-utd1hbi5pcgvhl7p5u36ivmj9il7q9sm.apps.googleusercontent.com"
 GAME_ORIGIN = "https://pasoooir.github.io"
 GITHUB_JSON_REPOSITORY = "pasoooir/mshin-player-data"
 GITHUB_JSON_BRANCH = "main"
