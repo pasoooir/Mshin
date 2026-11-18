@@ -100,3 +100,77 @@ test("profile writes reject email fields and enforce revision checks", async () 
   assert.equal(conflict.status, 409);
   assert.equal((await conflict.json()).error, "revision_conflict");
 });
+
+
+test("welcome reward is one-time and daily reward is idempotent per UTC day", async () => {
+  const { coordinator, files, writes } = setup();
+  const freshId = 100003;
+  const first = await call(coordinator, freshId, "/v1/rewards/claim", "POST", {});
+  assert.equal(first.status, 200);
+  const firstBody = await first.json();
+  assert.equal(firstBody.welcome.granted, true);
+  assert.equal(firstBody.welcome.simoleons, 5000);
+  assert.equal(firstBody.welcome.sim_cash, 10);
+  assert.equal(firstBody.daily.granted, true);
+  assert.equal(firstBody.daily.simoleons, 100);
+  assert.deepEqual(firstBody.balances, { simoleons: 5100, sim_cash: 10 });
+
+  const second = await call(coordinator, freshId, "/v1/rewards/claim", "POST", {});
+  assert.equal(second.status, 200);
+  const secondBody = await second.json();
+  assert.equal(secondBody.welcome.granted, false);
+  assert.equal(secondBody.daily.granted, false);
+  assert.deepEqual(secondBody.balances, { simoleons: 5100, sim_cash: 10 });
+  assert.equal(files.get("players/100003.json").market_account.rewards.daily_last_claim_utc, firstBody.claimed_day_utc);
+  assert.equal(writes.length, 1);
+});
+
+test("daily rewards work for existing accounts without granting the welcome bonus", async () => {
+  const { coordinator, files } = setup();
+  const response = await call(coordinator, 100001, "/v1/rewards/claim", "POST", {});
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.welcome.granted, false);
+  assert.equal(body.daily.granted, true);
+  assert.equal(body.balances.simoleons, 200);
+  assert.equal(body.balances.sim_cash, 0);
+  assert.equal(files.get("players/100001.json").game_state.economy.sim_cash, 0);
+});
+
+test("normal profile saves cannot overwrite either server-owned currency", async () => {
+  const { coordinator, files } = setup();
+  const claim = await call(coordinator, 100001, "/v1/rewards/claim", "POST", {});
+  assert.equal(claim.status, 200);
+  const saved = await call(coordinator, 100001, "/v1/profile", "PUT", {
+    expected_revision: files.get("players/100001.json").revision,
+    game_state: { economy: { simoleons: 999999, sim_cash: 999999 }, storage: { capacity: 10, items: {} } }
+  });
+  assert.equal(saved.status, 200);
+  const profile = files.get("players/100001.json");
+  assert.equal(profile.market_account.simoleons, 200);
+  assert.equal(profile.market_account.sim_cash, 0);
+  assert.equal(profile.game_state.economy.simoleons, 200);
+  assert.equal(profile.game_state.economy.sim_cash, 0);
+});
+
+
+test("first-login eligibility survives an initial profile save before reward claim", async () => {
+  const { coordinator, files } = setup();
+  const freshId = 100004;
+  const initial = await call(coordinator, freshId, "/v1/profile");
+  assert.equal(initial.status, 200);
+  const created = await call(coordinator, freshId, "/v1/profile", "PUT", {
+    expected_revision: 0,
+    game_state: { economy: { simoleons: 25000, sim_cash: 25 }, storage: { capacity: 30, items: {} } }
+  });
+  assert.equal(created.status, 200);
+  assert.equal(files.get("players/100004.json").market_account.rewards.welcome_eligible, true);
+
+  const claimed = await call(coordinator, freshId, "/v1/rewards/claim", "POST", {});
+  assert.equal(claimed.status, 200);
+  const body = await claimed.json();
+  assert.equal(body.welcome.granted, true);
+  assert.equal(body.balances.simoleons, 30100);
+  assert.equal(body.balances.sim_cash, 35);
+  assert.equal(files.get("players/100004.json").market_account.rewards.welcome_eligible, undefined);
+});

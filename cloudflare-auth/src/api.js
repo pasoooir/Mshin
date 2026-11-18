@@ -79,6 +79,65 @@ export class MshinApiCoordinator {
         return jsonResponse(200, { ok: true, service: "mshin-cloudflare-json-api", storage: "github-private-json" });
       }
 
+      if (url.pathname === "/v1/rewards/claim" && request.method === "POST") {
+        try {
+          const current = await readProfile(playerId);
+          const now = new Date();
+          const todayUtc = now.toISOString().slice(0, 10);
+          const rewardLedgerPath = "rewards/claims.json";
+          const rewardLedger = await storage.readJson(rewardLedgerPath) || { schema_version: 1, players: {} };
+          rewardLedger.players ||= {};
+          const ledgerEntry = rewardLedger.players[String(playerId)] || {};
+          const isNewAccount = !current.market_account || typeof current.market_account !== "object";
+          const account = isNewAccount
+            ? { simoleons: 0, sim_cash: 0, rewards: {} }
+            : structuredClone(current.market_account);
+          account.simoleons = Number.isSafeInteger(account.simoleons) && account.simoleons >= 0 ? account.simoleons : 0;
+          account.sim_cash = Number.isSafeInteger(account.sim_cash) && account.sim_cash >= 0
+            ? account.sim_cash
+            : Math.max(0, Number(current.game_state?.economy?.sim_cash) || 0);
+          account.rewards = account.rewards && typeof account.rewards === "object" ? account.rewards : {};
+          const welcomeEligible = isNewAccount || account.rewards.welcome_eligible === true;
+          const welcomeGranted = !ledgerEntry.welcome_claimed_at && !account.rewards.welcome_claimed_at && welcomeEligible;
+          const dailyGranted = (ledgerEntry.daily_last_claim_utc || account.rewards.daily_last_claim_utc) !== todayUtc;
+          const welcome = welcomeGranted ? { simoleons: 5000, sim_cash: 10 } : { simoleons: 0, sim_cash: 0 };
+          const daily = dailyGranted ? { simoleons: 100, sim_cash: 0 } : { simoleons: 0, sim_cash: 0 };
+          account.simoleons += welcome.simoleons + daily.simoleons;
+          account.sim_cash += welcome.sim_cash + daily.sim_cash;
+          if (welcomeGranted) account.rewards.welcome_claimed_at = now.toISOString();
+          if (welcomeGranted || account.rewards.welcome_eligible === true) delete account.rewards.welcome_eligible;
+          if (dailyGranted) account.rewards.daily_last_claim_utc = todayUtc;
+          ledgerEntry.welcome_claimed_at ||= account.rewards.welcome_claimed_at || null;
+          if (dailyGranted) ledgerEntry.daily_last_claim_utc = todayUtc;
+          rewardLedger.players[String(playerId)] = ledgerEntry;
+          const gameState = current.game_state && typeof current.game_state === "object"
+            ? structuredClone(current.game_state)
+            : { economy: {}, storage: { capacity: 30, items: {} } };
+          gameState.economy ??= {};
+          gameState.economy.simoleons = account.simoleons;
+          gameState.economy.sim_cash = account.sim_cash;
+          const next = {
+            schema_version: 1, user_id: playerId, revision: current.revision + 1,
+            created_at: current.created_at || now.toISOString(), updated_at: now.toISOString(),
+            market_account: account, game_state: gameState
+          };
+          if (welcomeGranted || dailyGranted || isNewAccount) {
+            await storage.writeMany([
+              { path: "players/" + playerId + ".json", value: next },
+              { path: rewardLedgerPath, value: rewardLedger }
+            ]);
+          }
+          return jsonResponse(200, {
+            ok: true, welcome: { granted: welcomeGranted, ...welcome },
+            daily: { granted: dailyGranted, ...daily },
+            balances: { simoleons: account.simoleons, sim_cash: account.sim_cash },
+            revision: next.revision, game_state: gameState, claimed_day_utc: todayUtc
+          });
+        } catch {
+          return jsonResponse(500, { error: "reward_claim_failed" });
+        }
+      }
+
       if (url.pathname === "/v1/profile" && (request.method === "GET" || request.method === "PUT")) {
         if (request.method === "GET") {
           try {
@@ -99,9 +158,17 @@ export class MshinApiCoordinator {
           if (marketAccount && typeof marketAccount === "object") {
             gameState.economy ??= {};
             gameState.economy.simoleons = marketAccount.simoleons;
+            marketAccount.sim_cash = Number.isSafeInteger(marketAccount.sim_cash) && marketAccount.sim_cash >= 0
+              ? marketAccount.sim_cash : Math.max(0, Number(gameState.economy.sim_cash) || 0);
+            gameState.economy.sim_cash = marketAccount.sim_cash;
           } else {
             const initial = Number(gameState.economy?.simoleons);
-            marketAccount = { simoleons: Number.isSafeInteger(initial) && initial >= 0 ? initial : 0 };
+            const initialCash = Number(gameState.economy?.sim_cash);
+            marketAccount = {
+              simoleons: Number.isSafeInteger(initial) && initial >= 0 ? initial : 0,
+              sim_cash: Number.isSafeInteger(initialCash) && initialCash >= 0 ? initialCash : 0,
+              rewards: { welcome_eligible: true }
+            };
           }
           const next = {
             schema_version: 1, user_id: playerId, revision: current.revision + 1,

@@ -170,6 +170,10 @@ var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
 var settings_overlay: Control
+var _settings_login_indicator: Label
+var _settings_login_blink_timer: Timer
+var _settings_account_status: Label
+var _settings_account_action: Button
 var placement_controls: PanelContainer
 var _trade_active_tab := "depot"
 var _regional_trade_source_id := ""
@@ -181,6 +185,14 @@ var _catalog_selected_type := ""
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
+	PlayerAccountManager.session_changed.connect(_on_settings_account_session_changed)
+	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
+	_settings_login_blink_timer = Timer.new()
+	_settings_login_blink_timer.wait_time = 0.55
+	_settings_login_blink_timer.one_shot = false
+	_settings_login_blink_timer.timeout.connect(_blink_settings_login_indicator)
+	add_child(_settings_login_blink_timer)
+	_settings_login_blink_timer.start()
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.population_changed.connect(_on_population_changed)
 	GameManager.happiness_changed.connect(_on_happiness_changed)
@@ -808,7 +820,22 @@ func _build_toolbars() -> void:
 	var settings_button := _make_icon_button("settings", "Settings", Vector2(70, 76) * _ui_scale)
 	settings_button.name = "SettingsAction"
 	settings_button.pressed.connect(_on_settings_pressed)
+	_settings_login_indicator = Label.new()
+	_settings_login_indicator.name = "LoginRequiredIndicator"
+	_settings_login_indicator.text = "●"
+	_settings_login_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_settings_login_indicator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_settings_login_indicator.add_theme_font_size_override("font_size", int(25 * _ui_scale))
+	_settings_login_indicator.add_theme_color_override("font_color", Color("#FF4D5E"))
+	_settings_login_indicator.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	_settings_login_indicator.add_theme_constant_override("shadow_offset_x", 1)
+	_settings_login_indicator.add_theme_constant_override("shadow_offset_y", 2)
+	_settings_login_indicator.position = Vector2(settings_button.custom_minimum_size.x - 28 * _ui_scale, 0)
+	_settings_login_indicator.size = Vector2(28, 28) * _ui_scale
+	_settings_login_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	settings_button.add_child(_settings_login_indicator)
 	bottom_actions.add_child(settings_button)
+	_update_settings_login_indicator()
 	_build_placement_controls()
 	catalog_base_bar = PanelContainer.new()
 	catalog_base_bar.name = "CatalogBaseBar"
@@ -5097,6 +5124,58 @@ func _on_trade_buy_offer(offer_index: int) -> void:
 	_show_trade_panel("market")
 
 
+
+func _update_settings_login_indicator() -> void:
+	if not is_instance_valid(_settings_login_indicator):
+		return
+	_settings_login_indicator.visible = not PlayerAccountManager.is_authenticated()
+	if is_instance_valid(_settings_login_blink_timer):
+		if PlayerAccountManager.is_authenticated():
+			_settings_login_blink_timer.stop()
+			_settings_login_indicator.visible = false
+		else:
+			if _settings_login_blink_timer.is_stopped():
+				_settings_login_blink_timer.start()
+			_settings_login_indicator.visible = true
+
+func _blink_settings_login_indicator() -> void:
+	if PlayerAccountManager.is_authenticated():
+		_update_settings_login_indicator()
+		return
+	if is_instance_valid(_settings_login_indicator):
+		_settings_login_indicator.visible = not _settings_login_indicator.visible
+
+func _refresh_settings_account_section() -> void:
+	if not is_instance_valid(_settings_account_status) or not is_instance_valid(_settings_account_action):
+		return
+	if PlayerAccountManager.is_authenticated():
+		_settings_account_status.text = "Connected securely · Mayor #%d\nWelcome and daily rewards are claimed automatically." % PlayerAccountManager.player_id
+		_settings_account_action.text = "Sign out"
+	else:
+		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
+		_settings_account_action.text = "Continue with Google"
+
+func _on_settings_account_action_pressed() -> void:
+	if PlayerAccountManager.is_authenticated():
+		PlayerAccountManager.logout()
+		_refresh_settings_account_section()
+		return
+	_settings_account_action.disabled = true
+	PlayerAccountManager.begin_google_sign_in()
+	if is_instance_valid(_settings_account_status):
+		_settings_account_status.text = "Connecting to Google securely…"
+
+func _on_settings_account_session_changed(_player_id: int, _authenticated: bool) -> void:
+	_update_settings_login_indicator()
+	_refresh_settings_account_section()
+
+func _on_settings_account_feedback(message: String, success: bool) -> void:
+	if is_instance_valid(_settings_account_status):
+		_settings_account_status.text = message
+	if is_instance_valid(_settings_account_action):
+		_settings_account_action.disabled = false
+		_settings_account_action.text = "Sign out" if success and PlayerAccountManager.is_authenticated() else ("Continue with Google" if not PlayerAccountManager.is_authenticated() else "Sign out")
+
 func _on_settings_pressed() -> void:
 	_show_settings_panel()
 
@@ -5186,6 +5265,43 @@ func _show_settings_panel() -> void:
 	sliders.add_theme_constant_override("separation", 10)
 	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(sliders)
+	var account_section := Label.new()
+	account_section.text = "PLAYER ACCOUNT"
+	account_section.add_theme_font_size_override("font_size", _popup_font_size(18))
+	account_section.add_theme_color_override("font_color", Color("#28799C"))
+	sliders.add_child(account_section)
+	var account_card := PanelContainer.new()
+	account_card.name = "SettingsAccountCard"
+	var account_style := StyleBoxFlat.new()
+	account_style.bg_color = Color("#E6F2F8")
+	account_style.border_color = Color("#8AB9D0")
+	account_style.set_border_width_all(1)
+	account_style.set_corner_radius_all(12)
+	account_style.content_margin_left = 12
+	account_style.content_margin_right = 12
+	account_style.content_margin_top = 8
+	account_style.content_margin_bottom = 8
+	account_card.add_theme_stylebox_override("panel", account_style)
+	sliders.add_child(account_card)
+	var account_row := HBoxContainer.new()
+	account_row.add_theme_constant_override("separation", 10)
+	account_card.add_child(account_row)
+	_settings_account_status = Label.new()
+	_settings_account_status.name = "SettingsAccountStatus"
+	_settings_account_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_settings_account_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_settings_account_status.add_theme_color_override("font_color", Color("#17394D"))
+	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
+	account_row.add_child(_settings_account_status)
+	_settings_account_action = Button.new()
+	_settings_account_action.name = "SettingsGoogleAccountAction"
+	_settings_account_action.custom_minimum_size = Vector2(190, 46) * _ui_scale
+	_settings_account_action.focus_mode = Control.FOCUS_NONE
+	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
+	account_row.add_child(_settings_account_action)
+	_refresh_settings_account_section()
+
 	_add_audio_setting_slider(sliders, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
 	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
 	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
