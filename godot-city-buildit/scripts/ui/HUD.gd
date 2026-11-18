@@ -5267,24 +5267,31 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
-	close.add_theme_font_size_override("font_size", _popup_font_size(28))
+	close.custom_minimum_size = Vector2(54, 54) * compact_scale
+	close.add_theme_font_size_override("font_size", _settings_font_size(25))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
 	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#143A57")))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
+	var content_scroll := ScrollContainer.new()
+	content_scroll.name = "SettingsContentScroll"
+	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(content_scroll)
+
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 7 * minf(1.0, viewport_size.y / 520.0))
-	layout.add_child(content)
+	content.add_theme_constant_override("separation", 7 * compact_scale)
+	content_scroll.add_child(content)
 
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
-	audio_row.columns = 2
+	audio_row.columns = 2 if viewport_size.x >= viewport_size.y else 1
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_row.add_theme_constant_override("h_separation", 12 * compact_scale)
 	audio_row.add_theme_constant_override("v_separation", 8)
@@ -5294,9 +5301,9 @@ func _show_settings_panel() -> void:
 
 	var actions := GridContainer.new()
 	actions.name = "SettingsMainActions"
-	actions.columns = 2
+	actions.columns = 2 if viewport_size.x >= viewport_size.y else 1
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	actions.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	actions.add_theme_constant_override("h_separation", 12 * compact_scale)
 	actions.add_theme_constant_override("v_separation", 7 * compact_scale)
 	content.add_child(actions)
@@ -5523,7 +5530,13 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 
 
 func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
-	var scale_factor := _ui_scale
+	var viewport_size := get_viewport().get_visible_rect().size
+	var safe_size := Vector2i(
+		mini(size.x, maxi(280, roundi(viewport_size.x * 0.92))),
+		mini(size.y, maxi(220, roundi(viewport_size.y * 0.86)))
+	)
+	var scale_factor := minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0))
+	scale_factor = maxf(0.62, scale_factor)
 	dialog.add_theme_color_override("font_color", Color("#EAF7FF"))
 	dialog.add_theme_color_override("title_color", Color("#F5FBFF"))
 	dialog.add_theme_color_override("font_shadow_color", Color("#082A42"))
@@ -5553,7 +5566,7 @@ func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
 	dialog.add_theme_color_override("check_button_color", Color("#54D8F5"))
 	dialog.add_theme_color_override("slider_color", Color("#53D6F4"))
 	dialog.close_requested.connect(dialog.queue_free)
-	dialog.popup_centered(size)
+	dialog.popup_centered(safe_size)
 
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
@@ -5677,35 +5690,53 @@ func _apply_notification_preference(key: String, enabled: bool) -> void:
 		if is_instance_valid(citizen_feedback) and citizen_feedback.has_method("set_city_updates_enabled"):
 			citizen_feedback.set_city_updates_enabled(enabled)
 
+
+func _on_notification_preference_toggled(key: String, enabled: bool, toggle: CheckButton, feedback: Label) -> void:
+	if not SaveManager.set_notification_preference(key, enabled):
+		toggle.set_pressed_no_signal(not enabled)
+		feedback.text = "Could not save this setting. Your previous choice has been restored."
+		feedback.add_theme_color_override("font_color", Color("#FFB8A8"))
+		return
+	_apply_notification_preference(key, enabled)
+	feedback.text = "Preferences saved to this city profile."
+	feedback.add_theme_color_override("font_color", Color("#A8F0D0"))
+
+
 func _show_notification_settings() -> void:
-	var config := ConfigFile.new()
-	config.load("user://notification_preferences.cfg")
+	var preferences := SaveManager.get_notification_preferences()
 	var dialog := AcceptDialog.new()
 	dialog.name = "NotificationSettingsDialog"
 	dialog.title = "Notification Settings"
 	var content := VBoxContainer.new()
 	content.name = "NotificationSettingsContent"
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", 14)
 	dialog.add_child(content)
+	var intro := Label.new()
+	intro.text = "Choose which city events can interrupt your building session. Changes apply immediately."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_color_override("font_color", Color("#D7EAF7"))
+	content.add_child(intro)
+	var feedback := Label.new()
+	feedback.name = "NotificationSettingsFeedback"
+	feedback.text = "Changes are saved automatically."
+	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	feedback.add_theme_color_override("font_color", Color("#A8D7EB"))
+	content.add_child(feedback)
 	for preference in [{"key":"building_alerts","node_name":"BuildingAlertsToggle","label":"Building and production alerts"},{"key":"city_updates","node_name":"CityUpdatesToggle","label":"City progress updates"}]:
+		var key := str(preference.key)
 		var toggle := CheckButton.new()
 		toggle.name = str(preference.node_name)
 		toggle.text = str(preference.label)
-		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
-		toggle.toggled.connect(func(value: bool) -> void:
-			var key := str(preference.key)
-			config.set_value("notifications", key, value)
-			var save_error := config.save("user://notification_preferences.cfg")
-			if save_error == OK:
-				_apply_notification_preference(key, value)
-			else:
-				push_warning("Could not save notification preference '%s': %s" % [key, error_string(save_error)])
-		)
+		toggle.button_pressed = bool(preferences.get(key, true))
+		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle.custom_minimum_size.y = 52 * _ui_scale
+		toggle.add_theme_font_size_override("font_size", _settings_font_size(19))
+		toggle.toggled.connect(_on_notification_preference_toggled.bind(key, toggle, feedback))
 		content.add_child(toggle)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	_style_settings_dialog(dialog, Vector2i(560, 260))
+	_style_settings_dialog(dialog, Vector2i(560, 300))
 
 
 func _show_wallet_panel() -> void:
@@ -5713,12 +5744,6 @@ func _show_wallet_panel() -> void:
 	dialog.name = "SettingsWalletDialog"
 	dialog.title = "City Wallet"
 	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nReal-money purchases and bank gateway are not enabled yet." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
-	var top_up := Button.new()
-	top_up.name = "WalletTopUpDisabled"
-	top_up.text = "Add funds — coming soon"
-	top_up.disabled = true
-	top_up.custom_minimum_size = Vector2(300, 48) * _ui_scale
-	dialog.add_child(top_up)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
