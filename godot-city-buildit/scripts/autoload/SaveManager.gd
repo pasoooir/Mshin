@@ -297,7 +297,13 @@ func save_game() -> bool:
 		save_failed.emit(file_error)
 		return false
 	file.store_string(JSON.stringify(payload))
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		var write_message := "Could not finish writing city save JSON: %s" % error_string(write_error)
+		push_error(write_message)
+		save_failed.emit(write_message)
+		return false
 	_save_pending = false
 	autosave_elapsed = 0.0
 	if is_instance_valid(_save_debounce_timer):
