@@ -3255,7 +3255,8 @@ func _test_settings_panel_contract() -> void:
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
 	_check(heading != null and content_scroll != null and content_scroll.get_parent() == heading.get_parent(), "Settings title and close button must remain fixed outside the scrolling content.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
-	_check(panel != null and panel.get_theme_stylebox("panel").bg_color.is_equal_approx(Color("#DDF0FF")), "Settings panel must use the approved Canva pale-blue surface.")
+	var panel_surface := panel.get_theme_stylebox("panel") as StyleBoxFlat if panel != null else null
+	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#DDF0FF")), "Settings panel must use the approved Canva pale-blue surface.")
 	var music_label := hud.find_child("MusicToggleRow", true, false)
 	var sounds_label := hud.find_child("SfxToggleRow", true, false)
 	_check(music_label != null and sounds_label != null, "Music and Sounds must each have a large labeled On/Off control.")
