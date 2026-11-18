@@ -13,6 +13,7 @@ var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
 var _google_nonce: String = ""
 var _google_callback: Variant
+var _last_login_rewards: Dictionary = {}
 
 func is_authenticated() -> bool:
 	return player_id > 0 and not access_token.is_empty()
@@ -111,6 +112,7 @@ func claim_login_rewards() -> Dictionary:
 		push_warning("Could not claim login rewards: " + response.error)
 		return {"ok": false, "error": response.error}
 	profile_revision = maxi(profile_revision, int(response.body.get("revision", profile_revision)))
+	_last_login_rewards = response.body.duplicate(true)
 	var balances: Dictionary = response.body.get("balances", {})
 	EconomyManager.simoleons = maxi(0, int(balances.get("simoleons", EconomyManager.simoleons)))
 	EconomyManager.sim_cash = maxi(0, int(balances.get("sim_cash", EconomyManager.sim_cash)))
@@ -344,7 +346,16 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		return
 	var success := await sign_in_with_google_id_token(id_token, nonce)
 	if success:
-		authentication_feedback.emit("Signed in as Mayor #%d" % player_id, true)
+		var reward_parts: PackedStringArray = []
+		var welcome: Dictionary = _last_login_rewards.get("welcome", {})
+		var daily: Dictionary = _last_login_rewards.get("daily", {})
+		if bool(welcome.get("granted", false)):
+			reward_parts.append("+%d Simoleons" % int(welcome.get("simoleons", 0)))
+			reward_parts.append("+%d SimCash" % int(welcome.get("sim_cash", 0)))
+		if bool(daily.get("granted", false)):
+			reward_parts.append("+%d daily Simoleons" % int(daily.get("simoleons", 0)))
+		var reward_message := " · " + ", ".join(reward_parts) if not reward_parts.is_empty() else ""
+		authentication_feedback.emit("Signed in as Mayor #%d%s" % [player_id, reward_message], true)
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
 			SaveManager.save_game()
 	else:
