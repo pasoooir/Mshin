@@ -3256,6 +3256,18 @@ func _test_settings_panel_contract() -> void:
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
 	_check(heading != null and settings_content != null and settings_content.get_parent() == heading.get_parent(), "Settings title, controls and actions must share one fixed page.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
+	var settings_title := hud.find_child("SettingsHeading", true, false).get_child(0) as Label
+	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
+	var music_control := hud.find_child("MusicToggle", true, false) as Button
+	var music_caption := hud.find_child("MusicToggleLabel", true, false) as Label
+	var account_status := hud.find_child("SettingsAccountStatus", true, false) as Label
+	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	_check(settings_title != null and settings_title.get_theme_font_size("font_size") >= 34, "Settings heading must use large readable typography.")
+	_check(about_button != null and about_button.get_theme_font_size("font_size") >= 21, "Settings action labels must be at least 21 px on every platform.")
+	_check(music_control != null and music_control.get_theme_font_size("font_size") >= 20, "Music and Sounds switch text must be at least 20 px.")
+	_check(music_caption != null and music_caption.get_theme_font_size("font_size") >= 22, "Music and Sounds captions must be at least 22 px.")
+	_check(account_status != null and account_status.get_theme_font_size("font_size") >= 20, "Account status must remain readable on phone, tablet and web.")
+	_check(google_action != null and google_action.get_theme_font_size("font_size") >= 21, "Google sign-in text must remain readable on every platform.")
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
 		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat

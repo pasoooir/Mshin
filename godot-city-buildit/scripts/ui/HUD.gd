@@ -2007,10 +2007,12 @@ func _start_non_residential_upgrade(building: Building) -> void:
 		open_production_panel(building)
 
 func _popup_font_size(base_size: float) -> int:
-	# Popup text must remain readable on a phone held in landscape, including
-	# for players with reduced visual acuity. Do not let UI scaling shrink it
-	# below a legible 16 px floor.
 	return maxi(16, roundi(base_size * _ui_scale))
+
+
+func _settings_font_size(base_size: float) -> int:
+	# Settings text remains comfortably readable on phone landscape, tablets and desktop.
+	return maxi(20, roundi(base_size * clampf(_ui_scale, 1.0, 1.2)))
 
 
 func open_production_panel(building: Building) -> void:
@@ -5240,7 +5242,7 @@ func _show_settings_panel() -> void:
 	var title := Label.new()
 	title.text = "Settings"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _popup_font_size(30 * compact_scale))
+	title.add_theme_font_size_override("font_size", _settings_font_size(34))
 	title.add_theme_color_override("font_color", Color("#142A3A"))
 	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
@@ -5293,7 +5295,7 @@ func _show_settings_panel() -> void:
 	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
 	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _popup_font_size(13 * compact_scale))
+	account_note.add_theme_font_size_override("font_size", _settings_font_size(18))
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
 	account_note.visible = false
 	content.add_child(account_note)
@@ -5302,7 +5304,7 @@ func _show_settings_panel() -> void:
 	_settings_account_status.name = "SettingsAccountStatus"
 	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(12 * compact_scale))
+	_settings_account_status.add_theme_font_size_override("font_size", _settings_font_size(18))
 	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
 	content.add_child(_settings_account_status)
 
@@ -5314,7 +5316,7 @@ func _show_settings_panel() -> void:
 	_settings_account_action.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_settings_account_action.custom_minimum_size = Vector2(0, 48) * compact_scale
 	_settings_account_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_action.add_theme_font_size_override("font_size", _popup_font_size(17 * compact_scale))
+	_settings_account_action.add_theme_font_size_override("font_size", _settings_font_size(21))
 	_settings_account_action.add_theme_color_override("font_color", Color("#142A3A"))
 	_settings_account_action.add_theme_stylebox_override("normal", _settings_action_style(Color("#E4F6FF")))
 	_settings_account_action.add_theme_stylebox_override("hover", _settings_action_style(Color("#D0EDFC")))
@@ -5378,7 +5380,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.custom_minimum_size = Vector2(0, 58 * compact_scale)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", _popup_font_size(17 * compact_scale))
+	button.add_theme_font_size_override("font_size", _settings_font_size(21))
 	button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
@@ -5404,7 +5406,7 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.button_pressed = enabled
 	toggle.text = "On" if enabled else "Off"
 	toggle.custom_minimum_size = Vector2(90, 52 * compact_scale)
-	toggle.add_theme_font_size_override("font_size", _popup_font_size(16))
+	toggle.add_theme_font_size_override("font_size", _settings_font_size(20))
 	toggle.add_theme_color_override("font_color", Color("#FFFFFF"))
 	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
 	toggle.add_theme_constant_override("shadow_offset_x", 1)
@@ -5419,9 +5421,10 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	)
 	row.add_child(toggle)
 	var label := Label.new()
+	label.name = node_name + "Label"
 	label.text = caption
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", _popup_font_size(18))
+	label.add_theme_font_size_override("font_size", _settings_font_size(22))
 	label.add_theme_color_override("font_color", Color("#0B1F4B"))
 	row.add_child(label)
 
