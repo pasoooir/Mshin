@@ -5153,9 +5153,13 @@ func _refresh_settings_account_section() -> void:
 	if PlayerAccountManager.is_authenticated():
 		_settings_account_status.text = "Connected securely · Mayor #%d\nWelcome and daily rewards are claimed automatically." % PlayerAccountManager.player_id
 		_settings_account_action.text = "Sign out"
+		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
+			_settings_account_action.get_node("GmailButtonContent").hide()
 	else:
 		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
-		_settings_account_action.text = "Continue with Google"
+		_settings_account_action.text = ""
+		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
+			_settings_account_action.get_node("GmailButtonContent").show()
 
 func _on_settings_account_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
@@ -5176,7 +5180,10 @@ func _on_settings_account_feedback(message: String, success: bool) -> void:
 		_settings_account_status.text = message
 	if is_instance_valid(_settings_account_action):
 		_settings_account_action.disabled = false
-		_settings_account_action.text = "Sign out" if success and PlayerAccountManager.is_authenticated() else ("Continue with Google" if not PlayerAccountManager.is_authenticated() else "Sign out")
+		_settings_account_action.text = "Sign out" if success and PlayerAccountManager.is_authenticated() else ("" if not PlayerAccountManager.is_authenticated() else "Sign out")
+		var gmail_content := _settings_account_action.get_node_or_null("GmailButtonContent")
+		if is_instance_valid(gmail_content):
+			gmail_content.visible = not PlayerAccountManager.is_authenticated()
 
 func _on_settings_pressed() -> void:
 	_show_settings_panel()
@@ -5202,9 +5209,11 @@ func _show_settings_panel() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "SettingsBackdrop"
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.025, 0.035, 0.72)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.0)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_overlay.add_child(backdrop)
+	var backdrop_tween := create_tween()
+	backdrop_tween.tween_property(backdrop, "color:a", 0.76, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	var panel := PanelContainer.new()
 	panel.name = "SettingsPanel"
@@ -5217,19 +5226,26 @@ func _show_settings_panel() -> void:
 	panel.offset_top = -panel_height * 0.5
 	panel.offset_bottom = panel_height * 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.pivot_offset = Vector2(panel_width, panel_height) * 0.5
+	panel.scale = Vector2(0.965, 0.965)
+	panel.modulate.a = 0.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#DDF0FF")
-	panel_style.border_color = Color("#FFFFFF")
-	panel_style.set_border_width_all(3)
-	panel_style.set_corner_radius_all(30)
-	panel_style.shadow_color = Color(0, 0, 0, 0.38)
-	panel_style.shadow_size = 22
-	panel_style.content_margin_left = 18 * compact_scale
-	panel_style.content_margin_right = 18 * compact_scale
-	panel_style.content_margin_top = 10 * compact_scale
-	panel_style.content_margin_bottom = 10 * compact_scale
+	panel_style.bg_color = Color("#152B45")
+	panel_style.border_color = Color("#5BD7F7")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(28)
+	panel_style.shadow_color = Color(0.01, 0.06, 0.14, 0.55)
+	panel_style.shadow_size = 26
+	panel_style.shadow_offset = Vector2(0, 9)
+	panel_style.content_margin_left = 22 * compact_scale
+	panel_style.content_margin_right = 22 * compact_scale
+	panel_style.content_margin_top = 14 * compact_scale
+	panel_style.content_margin_bottom = 14 * compact_scale
 	panel.add_theme_stylebox_override("panel", panel_style)
 	settings_overlay.add_child(panel)
+	var entrance := create_tween().set_parallel(true)
+	entrance.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	entrance.tween_property(panel, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
@@ -5240,11 +5256,11 @@ func _show_settings_panel() -> void:
 	heading.name = "SettingsHeading"
 	layout.add_child(heading)
 	var title := Label.new()
-	title.text = "Settings"
+	title.text = "SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", _settings_font_size(34))
-	title.add_theme_color_override("font_color", Color("#142A3A"))
-	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
+	title.add_theme_color_override("font_color", Color("#F5FBFF"))
+	title.add_theme_color_override("font_shadow_color", Color("#48CFF5"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
 	title.add_theme_constant_override("shadow_offset_y", 2)
 	heading.add_child(title)
@@ -5253,9 +5269,9 @@ func _show_settings_panel() -> void:
 	close.text = "✖"
 	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(28))
-	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#168ED1")))
-	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#36B7EE")))
-	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#086AAB")))
+	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
+	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
+	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#143A57")))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
@@ -5296,7 +5312,7 @@ func _show_settings_panel() -> void:
 	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	account_note.add_theme_font_size_override("font_size", _settings_font_size(18))
-	account_note.add_theme_color_override("font_color", Color("#542D32"))
+	account_note.add_theme_color_override("font_color", Color("#FFD9D3"))
 	account_note.visible = false
 	content.add_child(account_note)
 
@@ -5305,7 +5321,7 @@ func _show_settings_panel() -> void:
 	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_settings_account_status.add_theme_font_size_override("font_size", _settings_font_size(18))
-	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
+	_settings_account_status.add_theme_color_override("font_color", Color("#D3E9FA"))
 	content.add_child(_settings_account_status)
 
 	_settings_account_action = Button.new()
@@ -5342,6 +5358,10 @@ func _show_settings_panel() -> void:
 	gmail_text.add_theme_font_size_override("normal_font_size", _settings_font_size(23))
 	gmail_text.text = "[center][color=#EA4335]Continue with [/color][color=#4285F4]G[/color][color=#EA4335]o[/color][color=#FBBC05]o[/color][color=#4285F4]g[/color][color=#34A853]l[/color][color=#EA4335]e[/color][/center]"
 	gmail_content.add_child(gmail_text)
+	_settings_account_action.pivot_offset = Vector2(panel_width * 0.5 - 22 * compact_scale, 31 * compact_scale)
+	_settings_account_action.mouse_entered.connect(func() -> void: _settings_button_hover(_settings_account_action, true))
+	_settings_account_action.mouse_exited.connect(func() -> void: _settings_button_hover(_settings_account_action, false))
+	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
 	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
@@ -5365,11 +5385,11 @@ func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
 func _settings_action_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
-	style.border_color = fill.lightened(0.18)
+	style.border_color = Color("#D7F7FF", 0.48)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(14)
-	style.shadow_color = Color(0, 0, 0, 0.28)
-	style.shadow_size = 5
+	style.set_corner_radius_all(15)
+	style.shadow_color = Color(0.01, 0.04, 0.10, 0.38)
+	style.shadow_size = 7
 	style.shadow_offset = Vector2(0, 4)
 	style.content_margin_left = 14
 	style.content_margin_right = 14
@@ -5381,30 +5401,45 @@ func _settings_action_style(fill: Color) -> StyleBoxFlat:
 func _settings_green_button_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
-	style.border_color = Color("#75A900")
-	style.set_border_width_all(2)
-	style.border_width_bottom = 7
-	style.set_corner_radius_all(17)
-	style.shadow_color = Color(0.08, 0.16, 0.02, 0.42)
-	style.shadow_size = 7
-	style.shadow_offset = Vector2(0, 5)
-	style.content_margin_left = 18
-	style.content_margin_right = 18
-	style.content_margin_top = 14
-	style.content_margin_bottom = 18
+	style.border_color = Color("#B6F2FF")
+	style.set_border_width_all(1)
+	style.border_width_bottom = 4
+	style.set_corner_radius_all(16)
+	style.shadow_color = Color(0.01, 0.04, 0.10, 0.38)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 4)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 14
 	return style
 
 
 func _settings_close_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
-	style.border_color = Color("#0B5C99")
-	style.set_border_width_all(2)
+	style.border_color = Color("#67D7F6")
+	style.set_border_width_all(1)
 	style.set_corner_radius_all(36)
-	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_color = Color(0.01, 0.04, 0.10, 0.32)
 	style.shadow_size = 6
 	style.shadow_offset = Vector2(0, 4)
 	return style
+
+
+func _settings_button_hover(button: Control, hovered: bool) -> void:
+	if not is_instance_valid(button):
+		return
+	var tween := button.create_tween()
+	tween.tween_property(button, "scale", Vector2(1.025, 1.025) if hovered else Vector2.ONE, 0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _settings_button_press(button: Control) -> void:
+	if not is_instance_valid(button):
+		return
+	var tween := button.create_tween()
+	tween.tween_property(button, "scale", Vector2(0.97, 0.97), 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2.ONE, 0.11).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
@@ -5416,14 +5451,18 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", _settings_font_size(21))
-	button.add_theme_color_override("font_color", Color("#FFFFFF"))
-	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
+	button.add_theme_color_override("font_color", Color("#F5FBFF"))
+	button.add_theme_color_override("font_shadow_color", Color("#12334C"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
 	button.add_theme_constant_override("shadow_offset_y", 2)
-	button.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#A8D91B")))
-	button.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#BDEB32")))
-	button.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#7EAD0B")))
+	button.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#23658B")))
+	button.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#2C85AF")))
+	button.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#164A6D")))
 	button.focus_mode = Control.FOCUS_NONE
+	button.pivot_offset = button.custom_minimum_size * 0.5
+	button.mouse_entered.connect(func() -> void: _settings_button_hover(button, true))
+	button.mouse_exited.connect(func() -> void: _settings_button_hover(button, false))
+	button.pressed.connect(func() -> void: _settings_button_press(button))
 	button.pressed.connect(action)
 	parent.add_child(button)
 
@@ -5446,10 +5485,13 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
 	toggle.add_theme_constant_override("shadow_offset_x", 1)
 	toggle.add_theme_constant_override("shadow_offset_y", 2)
-	toggle.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#A8D91B")))
-	toggle.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#BDEB32")))
-	toggle.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#7EAD0B")))
+	toggle.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#286D91")))
+	toggle.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#3598BD")))
+	toggle.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#175273")))
 	toggle.focus_mode = Control.FOCUS_NONE
+	toggle.pivot_offset = toggle.custom_minimum_size * 0.5
+	toggle.mouse_entered.connect(func() -> void: _settings_button_hover(toggle, true))
+	toggle.mouse_exited.connect(func() -> void: _settings_button_hover(toggle, false))
 	toggle.toggled.connect(func(value: bool) -> void:
 		toggle.text = "On" if value else "Off"
 		setter.call(value)
@@ -5460,7 +5502,10 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	label.text = caption
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", _settings_font_size(22))
-	label.add_theme_color_override("font_color", Color("#0B1F4B"))
+	label.add_theme_color_override("font_color", Color("#F2FAFF"))
+	row.add_theme_color_override("font_shadow_color", Color("#0A2338"))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
 	row.add_child(label)
 
 

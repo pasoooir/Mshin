@@ -3271,7 +3271,10 @@ func _test_settings_panel_contract() -> void:
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
 		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat
-	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#DDF0FF")), "Settings panel must use the approved Canva pale-blue surface.")
+	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#152B45")) and panel_surface.border_color.is_equal_approx(Color("#5BD7F7")), "Settings panel must use the premium navy surface and cyan accent border.")
+	_check(panel != null and panel.scale.x < 1.0 and panel.modulate.a < 1.0, "Settings panel must enter with a subtle scale-and-fade transition.")
+	var gmail_content := hud.find_child("GmailButtonContent", true, false) as HBoxContainer
+	_check(gmail_content != null and google_action.text.is_empty() and gmail_content.visible, "Guest sign-in must show the custom Gmail-branded content without duplicate Button text.")
 	var music_label := hud.find_child("MusicToggleRow", true, false)
 	var sounds_label := hud.find_child("SfxToggleRow", true, false)
 	_check(music_label != null and sounds_label != null, "Music and Sounds must each have a large labeled On/Off control.")
