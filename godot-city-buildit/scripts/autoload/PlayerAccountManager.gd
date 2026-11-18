@@ -279,7 +279,8 @@ func _flush_pending_save() -> void:
 
 func logout() -> void:
 	_set_google_auto_sign_in(false)
-		player_id = 0
+	_google_pending_nonces.clear()
+	player_id = 0
 	access_token = ""
 	profile_revision = 0
 	identity_label = ""
