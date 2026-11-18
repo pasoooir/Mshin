@@ -97,13 +97,15 @@ export class MshinApiCoordinator {
             ? account.sim_cash
             : Math.max(0, Number(current.game_state?.economy?.sim_cash) || 0);
           account.rewards = account.rewards && typeof account.rewards === "object" ? account.rewards : {};
-          const welcomeGranted = !ledgerEntry.welcome_claimed_at && !account.rewards.welcome_claimed_at && isNewAccount;
+          const welcomeEligible = isNewAccount || account.rewards.welcome_eligible === true;
+          const welcomeGranted = !ledgerEntry.welcome_claimed_at && !account.rewards.welcome_claimed_at && welcomeEligible;
           const dailyGranted = (ledgerEntry.daily_last_claim_utc || account.rewards.daily_last_claim_utc) !== todayUtc;
           const welcome = welcomeGranted ? { simoleons: 5000, sim_cash: 10 } : { simoleons: 0, sim_cash: 0 };
           const daily = dailyGranted ? { simoleons: 100, sim_cash: 0 } : { simoleons: 0, sim_cash: 0 };
           account.simoleons += welcome.simoleons + daily.simoleons;
           account.sim_cash += welcome.sim_cash + daily.sim_cash;
           if (welcomeGranted) account.rewards.welcome_claimed_at = now.toISOString();
+          if (welcomeGranted || account.rewards.welcome_eligible === true) delete account.rewards.welcome_eligible;
           if (dailyGranted) account.rewards.daily_last_claim_utc = todayUtc;
           ledgerEntry.welcome_claimed_at ||= account.rewards.welcome_claimed_at || null;
           if (dailyGranted) ledgerEntry.daily_last_claim_utc = todayUtc;
@@ -165,7 +167,7 @@ export class MshinApiCoordinator {
             marketAccount = {
               simoleons: Number.isSafeInteger(initial) && initial >= 0 ? initial : 0,
               sim_cash: Number.isSafeInteger(initialCash) && initialCash >= 0 ? initialCash : 0,
-              rewards: {}
+              rewards: { welcome_eligible: true }
             };
           }
           const next = {
