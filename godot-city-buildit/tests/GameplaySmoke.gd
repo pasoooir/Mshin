@@ -3190,6 +3190,7 @@ func _test_trade_depot_and_global_market() -> void:
 	# User-facing trade/storage/economy events must converge into one player JSON snapshot.
 	SaveManager.persistence_ready = true
 	SaveManager.is_loading = false
+	SaveManager.schedule_save()
 	await get_tree().create_timer(1.0).timeout
 	var persisted_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
 	var persisted_trade: Dictionary = persisted_city.get("trade", {}) if persisted_city is Dictionary else {}
