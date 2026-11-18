@@ -5447,7 +5447,20 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	var button := Button.new()
 	button.name = node_name
 	button.text = caption
-	button.custom_minimum_size = Vector2(0, 58 * compact_scale)
+	var icon_by_action := {
+		"SettingsAboutButton": "info",
+		"SettingsChangeCityNameButton": "level",
+		"SettingsHelpButton": "info",
+		"SettingsNotificationsButton": "warning",
+		"SettingsWalletButton": "money"
+	}
+	var action_icon_id := str(icon_by_action.get(node_name, ""))
+	if not action_icon_id.is_empty():
+		button.icon = Icons.get_icon_tex(action_icon_id)
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.expand_icon = false
+		button.add_theme_constant_override("h_separation", 14 * compact_scale)
+	button.custom_minimum_size = Vector2(0, 66 * compact_scale)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", _settings_font_size(21))
