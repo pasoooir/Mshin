@@ -3231,11 +3231,11 @@ func _test_citizen_feedback_bubbles() -> void:
 
 
 func _test_settings_panel_contract() -> void:
-	_check(hud.has_method("_style_settings_dialog"), "Settings internal dialogs must share the premium visual style helper.")
 	var hud = get_node_or_null("HUD")
 	_check(hud != null, "Settings acceptance requires the main HUD.")
 	if hud == null:
 		return
+	_check(hud.has_method("_style_settings_dialog"), "Settings internal dialogs must share the premium visual style helper.")
 	var settings_action := hud.find_child("SettingsAction", true, false) as Button
 	_check(settings_action != null and settings_action.tooltip_text == "Settings", "The mobile action bar must expose an accessible Settings shortcut.")
 	var original_master := AudioManager.master_volume
