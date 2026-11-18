@@ -4307,7 +4307,7 @@ func _show_storage_panel() -> void:
 	close.name = "StorageClose"
 	close.text = "×"
 	close.custom_minimum_size = Vector2(46, 46) * _ui_scale
-	close.add_theme_font_size_override("font_size", _popup_font_size(34))
+	close.add_theme_font_size_override("font_size", _popup_font_size(40))
 	close.add_theme_color_override("font_color", Color("#123B59"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#39A8E8"), Color("#8BD5FF")))
 	close.add_theme_stylebox_override("hover", _toolbar_style(Color("#65C3F3"), Color.WHITE))
@@ -5187,7 +5187,7 @@ func _close_settings_panel() -> void:
 func _show_settings_panel() -> void:
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.94)
+	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
 	var panel_height := minf(760.0 * _ui_scale, viewport_size.y * 0.92)
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
@@ -5216,8 +5216,8 @@ func _show_settings_panel() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#EAF7FF")
-	panel_style.border_color = Color("#D8B94F")
-	panel_style.set_border_width_all(3)
+	panel_style.border_color = Color("#D6EAF7")
+	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(22)
 	panel_style.shadow_color = Color(0, 0, 0, 0.38)
 	panel_style.shadow_size = 18
@@ -5298,7 +5298,7 @@ func _show_settings_panel() -> void:
 	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
 	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _popup_font_size(19))
+	account_note.add_theme_font_size_override("font_size", _popup_font_size(21))
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
 	content.add_child(account_note)
 
@@ -5349,7 +5349,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.custom_minimum_size = Vector2(0, 86) * _ui_scale
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", _popup_font_size(22))
+	button.add_theme_font_size_override("font_size", _popup_font_size(26))
 	button.add_theme_color_override("font_color", Color("#FFFFFF"))
 	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
 	button.add_theme_constant_override("shadow_offset_x", 1)
