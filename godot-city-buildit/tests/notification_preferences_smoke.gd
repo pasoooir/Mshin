@@ -99,13 +99,21 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] About form is missing its functional graphics/audio controls.")
 		quit(1)
 		return
-	graphics_select.item_selected.emit(GraphicsSettingsManager.get_quality_names().find(GraphicsSettingsManager.quality))
+	var quality_names := GraphicsSettingsManager.get_quality_names()
+	var current_quality_index := quality_names.find(GraphicsSettingsManager.quality)
+	var next_quality_index := (current_quality_index + 1) % quality_names.size()
+	graphics_select.item_selected.emit(next_quality_index)
 	master_slider.value_changed.emit(35.0)
 	await create_timer(0.8).timeout
 	var audio_graphics_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	var saved_audio: Dictionary = audio_graphics_state.get("preferences", {}).get("audio", {}) if audio_graphics_state is Dictionary else {}
+	var saved_graphics: Dictionary = audio_graphics_state.get("preferences", {}).get("graphics", {}) if audio_graphics_state is Dictionary else {}
 	if absf(float(saved_audio.get("master_volume", -1.0)) - 0.35) > 0.01:
 		push_error("[NotificationPreferencesSmoke] Master volume slider did not persist to player JSON.")
+		quit(1)
+		return
+	if str(saved_graphics.get("quality", "")) != quality_names[next_quality_index]:
+		push_error("[NotificationPreferencesSmoke] Graphics quality selection did not persist to player JSON.")
 		quit(1)
 		return
 	about_dialog.hide()
@@ -158,6 +166,25 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Guest city name was not persisted locally.")
 		quit(1)
 		return
+
+	# Help must reopen the interactive tutorial instead of doing nothing.
+	var help_button := hud.find_child("SettingsHelpButton", true, false) as Button
+	var guide := current_scene.get_node_or_null("TutorialGuide")
+	if help_button == null or guide == null or not guide.has_method("open_help"):
+		push_error("[NotificationPreferencesSmoke] Help action or tutorial guide is missing.")
+		quit(1)
+		return
+	hud._show_settings_panel()
+	await process_frame
+	help_button = hud.find_child("SettingsHelpButton", true, false) as Button
+	help_button.pressed.emit()
+	await process_frame
+	var guide_panel := guide.get("_panel") as Control
+	if guide_panel == null or not guide_panel.visible:
+		push_error("[NotificationPreferencesSmoke] Help button did not reopen the tutorial guide.")
+		quit(1)
+		return
+	guide_panel.hide()
 
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)
