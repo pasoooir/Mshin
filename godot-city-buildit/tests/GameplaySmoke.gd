@@ -3325,15 +3325,8 @@ func _test_settings_panel_contract() -> void:
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
-	var building_alerts: CheckButton
-	var city_updates: CheckButton
-	if notification_dialog != null:
-		for node in notification_dialog.find_children("*", "CheckButton", true, false):
-			var toggle := node as CheckButton
-			if toggle.text == "Building and production alerts":
-				building_alerts = toggle
-			elif toggle.text == "City progress updates":
-				city_updates = toggle
+	var building_alerts := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
+	var city_updates := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
 	_check(notification_dialog != null and building_alerts != null and city_updates != null, "Notification Settings must expose building and city-update preferences.")
 	if building_alerts != null:
 		var old_alerts := building_alerts.button_pressed
