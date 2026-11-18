@@ -66,4 +66,4 @@ environment/defaults/default_clear_color=Color(0.42, 0.7, 0.95, 1)
 [mshin/account]
 api_base_url = "https://mshin-player-auth.pasoooir-erp.workers.dev"
 auth_url = "https://mshin-player-auth.pasoooir-erp.workers.dev"
-google_client_id = ""
+google_client_id = "437590540762-utd1hbi5pcgvhl7p5u36ivmj9il7q9sm.apps.googleusercontent.com"
