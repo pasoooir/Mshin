@@ -5239,6 +5239,32 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
+	var section := Label.new()
+	section.text = "AUDIO"
+	section.add_theme_font_size_override("font_size", _popup_font_size(18))
+	section.add_theme_color_override("font_color", Color("#28799C"))
+	layout.add_child(section)
+
+	var toggles := GridContainer.new()
+	toggles.name = "AudioToggles"
+	toggles.columns = 3
+	toggles.add_theme_constant_override("h_separation", 10)
+	toggles.add_theme_constant_override("v_separation", 4)
+	layout.add_child(toggles)
+	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
+	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
+	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
+	_add_audio_setting_toggle(toggles, "HapticsToggle", "Haptic feedback", HapticsManager.enabled, HapticsManager.set_enabled)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	layout.add_child(scroll)
+	var sliders := VBoxContainer.new()
+	sliders.add_theme_constant_override("separation", 10)
+	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(sliders)
 	var account_section := Label.new()
 	account_section.text = "PLAYER ACCOUNT"
 	account_section.add_theme_font_size_override("font_size", _popup_font_size(18))
@@ -5276,32 +5302,6 @@ func _show_settings_panel() -> void:
 	account_row.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
-	var section := Label.new()
-	section.text = "AUDIO"
-	section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	section.add_theme_color_override("font_color", Color("#28799C"))
-	layout.add_child(section)
-
-	var toggles := GridContainer.new()
-	toggles.name = "AudioToggles"
-	toggles.columns = 3
-	toggles.add_theme_constant_override("h_separation", 10)
-	toggles.add_theme_constant_override("v_separation", 4)
-	layout.add_child(toggles)
-	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
-	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
-	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
-	_add_audio_setting_toggle(toggles, "HapticsToggle", "Haptic feedback", HapticsManager.enabled, HapticsManager.set_enabled)
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	layout.add_child(scroll)
-	var sliders := VBoxContainer.new()
-	sliders.add_theme_constant_override("separation", 10)
-	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(sliders)
 	_add_audio_setting_slider(sliders, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
 	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
 	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
