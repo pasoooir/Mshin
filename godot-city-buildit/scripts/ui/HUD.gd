@@ -5509,6 +5509,39 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	row.add_child(label)
 
 
+func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
+	var scale_factor := _ui_scale
+	dialog.add_theme_color_override("font_color", Color("#EAF7FF"))
+	dialog.add_theme_color_override("title_color", Color("#F5FBFF"))
+	dialog.add_theme_color_override("font_shadow_color", Color("#082A42"))
+	dialog.add_theme_constant_override("shadow_offset_x", 1)
+	dialog.add_theme_constant_override("shadow_offset_y", 1)
+	dialog.add_theme_font_size_override("font_size", _popup_font_size(18))
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#142E49")
+	panel_style.border_color = Color("#51D4F3")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(22)
+	panel_style.shadow_color = Color(0.01, 0.04, 0.12, 0.58)
+	panel_style.shadow_size = 22
+	panel_style.shadow_offset = Vector2(0, 8)
+	panel_style.content_margin_left = 24 * scale_factor
+	panel_style.content_margin_right = 24 * scale_factor
+	panel_style.content_margin_top = 20 * scale_factor
+	panel_style.content_margin_bottom = 18 * scale_factor
+	dialog.add_theme_stylebox_override("panel", panel_style)
+	dialog.add_theme_stylebox_override("button", _settings_green_button_style(Color("#24678C")))
+	dialog.add_theme_stylebox_override("button_hover", _settings_green_button_style(Color("#318AB5")))
+	dialog.add_theme_stylebox_override("button_pressed", _settings_green_button_style(Color("#174B6D")))
+	dialog.add_theme_color_override("line_edit_font_color", Color("#142B45"))
+	dialog.add_theme_color_override("line_edit_font_selected_color", Color("#FFFFFF"))
+	dialog.add_theme_stylebox_override("line_edit", _settings_action_style(Color("#F0FAFF")))
+	dialog.add_theme_stylebox_override("line_edit_focus", _settings_action_style(Color("#FFFFFF")))
+	dialog.add_theme_color_override("check_button_color", Color("#54D8F5"))
+	dialog.add_theme_color_override("slider_color", Color("#53D6F4"))
+	dialog.close_requested.connect(dialog.queue_free)
+	dialog.popup_centered(size)
+
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsAboutDialog"
@@ -5556,7 +5589,7 @@ func _show_settings_about() -> void:
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
+	_style_settings_dialog(dialog, Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
 
 
 func _show_settings_help() -> void:
@@ -5573,7 +5606,7 @@ func _show_settings_help() -> void:
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(640, 360))
+	_style_settings_dialog(dialog, Vector2i(640, 360))
 
 
 func _show_change_city_name() -> void:
@@ -5586,7 +5619,7 @@ func _show_change_city_name() -> void:
 		login_dialog.confirmed.connect(_on_settings_account_action_pressed)
 		login_dialog.canceled.connect(login_dialog.queue_free)
 		add_child(login_dialog)
-		login_dialog.popup_centered(Vector2i(520, 220))
+		_style_settings_dialog(login_dialog, Vector2i(520, 220))
 		return
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "ChangeCityNameDialog"
@@ -5620,7 +5653,7 @@ func _show_change_city_name() -> void:
 	)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(520, 220))
+	_style_settings_dialog(dialog, Vector2i(520, 220))
 	input.grab_focus()
 
 
@@ -5647,7 +5680,7 @@ func _show_notification_settings() -> void:
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(560, 260))
+	_style_settings_dialog(dialog, Vector2i(560, 260))
 
 
 func _show_wallet_panel() -> void:
@@ -5664,7 +5697,7 @@ func _show_wallet_panel() -> void:
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	dialog.popup_centered(Vector2i(560, 320))
+	_style_settings_dialog(dialog, Vector2i(560, 320))
 
 
 func _format_compact_number(value: int) -> String:

@@ -3235,6 +3235,7 @@ func _test_settings_panel_contract() -> void:
 	_check(hud != null, "Settings acceptance requires the main HUD.")
 	if hud == null:
 		return
+	_check(hud.has_method("_style_settings_dialog"), "Settings internal dialogs must share the premium visual style helper.")
 	var settings_action := hud.find_child("SettingsAction", true, false) as Button
 	_check(settings_action != null and settings_action.tooltip_text == "Settings", "The mobile action bar must expose an accessible Settings shortcut.")
 	var original_master := AudioManager.master_volume
@@ -3327,6 +3328,7 @@ func _test_settings_panel_contract() -> void:
 		master_slider.value = 55.0
 		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
+	_check(about_dialog != null and about_dialog.has_theme_stylebox_override("panel"), "About dialog must use the unified premium modal surface.")
 	if is_instance_valid(about_dialog):
 		about_dialog.hide()
 		about_dialog.queue_free()
@@ -3373,6 +3375,7 @@ func _test_settings_panel_contract() -> void:
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
+	_check(notification_dialog != null and notification_dialog.has_theme_stylebox_override("panel"), "Notification Settings must use the unified premium modal surface.")
 	var building_alerts := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
 	var city_updates := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
 	_check(notification_dialog != null and building_alerts != null and city_updates != null, "Notification Settings must expose building and city-update preferences.")
