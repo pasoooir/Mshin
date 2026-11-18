@@ -5364,12 +5364,42 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsAboutDialog"
-	dialog.title = "About Mshin"
-	dialog.dialog_text = "Mshin City Builder\nBuild, grow and manage your own city.\n\nYour city progress is saved locally and can be synchronized after signing in with Google."
+	dialog.title = "About Mshin · Advanced settings"
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 10)
+	dialog.add_child(content)
+	var about_text := Label.new()
+	about_text.text = "Mshin City Builder — build, grow and manage your own city. Your progress is saved locally and can be synchronized after signing in with Google."
+	about_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(about_text)
+	var graphics_heading := Label.new()
+	graphics_heading.text = "3D GRAPHICS QUALITY"
+	content.add_child(graphics_heading)
+	var graphics_select := OptionButton.new()
+	graphics_select.name = "GraphicsQualitySelect"
+	var quality_names := GraphicsSettingsManager.get_quality_names()
+	for quality_name in quality_names:
+		var preset: Dictionary = GraphicsSettingsManager.get_quality_preset(quality_name)
+		graphics_select.add_item(str(preset.get("label", quality_name.capitalize())))
+	graphics_select.select(quality_names.find(GraphicsSettingsManager.quality))
+	graphics_select.item_selected.connect(_on_graphics_quality_selected)
+	content.add_child(graphics_select)
+	var audio_heading := Label.new()
+	audio_heading.text = "ADVANCED VOLUME"
+	content.add_child(audio_heading)
+	_add_audio_setting_slider(content, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(content, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(content, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(content, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+	var benchmark := Button.new()
+	benchmark.name = "RunDeviceBenchmarkButton"
+	benchmark.text = "Run 30-second device test"
+	benchmark.pressed.connect(_start_performance_benchmark)
+	content.add_child(benchmark)
 	add_child(dialog)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered(Vector2i(560, 300))
+	dialog.popup_centered(Vector2i(720, 640))
 
 
 func _show_settings_help() -> void:
