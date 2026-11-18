@@ -5256,13 +5256,26 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
+	var content_scroll := ScrollContainer.new()
+	content_scroll.name = "SettingsContentScroll"
+	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(content_scroll)
+	var content := VBoxContainer.new()
+	content.name = "SettingsContent"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 18)
+	content_scroll.add_child(content)
+
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
 	audio_row.columns = 2
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_row.add_theme_constant_override("h_separation", 24)
 	audio_row.add_theme_constant_override("v_separation", 8)
-	layout.add_child(audio_row)
+	content.add_child(audio_row)
 	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_settings_switch(audio_row, "SfxToggle", "Sounds", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
 
@@ -5273,7 +5286,7 @@ func _show_settings_panel() -> void:
 	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	actions.add_theme_constant_override("h_separation", 22)
 	actions.add_theme_constant_override("v_separation", 14)
-	layout.add_child(actions)
+	content.add_child(actions)
 	_add_settings_action(actions, "SettingsAboutButton", "About", _show_settings_about)
 	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
 	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
@@ -5287,7 +5300,7 @@ func _show_settings_panel() -> void:
 	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	account_note.add_theme_font_size_override("font_size", _popup_font_size(19))
 	account_note.add_theme_color_override("font_color", Color("#542D32"))
-	layout.add_child(account_note)
+	content.add_child(account_note)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
@@ -5295,7 +5308,7 @@ func _show_settings_panel() -> void:
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
 	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
-	layout.add_child(_settings_account_status)
+	content.add_child(_settings_account_status)
 
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
@@ -5309,7 +5322,7 @@ func _show_settings_panel() -> void:
 	_settings_account_action.add_theme_stylebox_override("pressed", _settings_action_style(Color("#B9E1F5")))
 	_settings_account_action.focus_mode = Control.FOCUS_NONE
 	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
-	layout.add_child(_settings_account_action)
+	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
 
