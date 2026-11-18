@@ -3270,6 +3270,13 @@ func _test_settings_panel_contract() -> void:
 	if master_slider != null:
 		master_slider.value = 55.0
 		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
+	# About is a modal dialog. Close it explicitly after inspecting its controls;
+	# otherwise it correctly blocks the gameplay tests that follow this contract.
+	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
+	if is_instance_valid(about_dialog):
+		about_dialog.hide()
+		about_dialog.queue_free()
+		await get_tree().process_frame
 	AudioManager.set_master_volume(original_master)
 	AudioManager.set_music_volume(original_music)
 	AudioManager.set_ambient_volume(original_ambient)
