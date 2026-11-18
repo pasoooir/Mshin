@@ -84,9 +84,56 @@ func _run() -> void:
 	notification_dialog.hide()
 	notification_dialog.queue_free()
 
+	# The About form exposes real graphics and audio controls, not decorative placeholders.
+	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
+	if about_button == null:
+		push_error("[NotificationPreferencesSmoke] About action button is missing.")
+		quit(1)
+		return
+	about_button.pressed.emit()
+	await process_frame
+	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
+	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
+	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
+	if about_dialog == null or graphics_select == null or master_slider == null:
+		push_error("[NotificationPreferencesSmoke] About form is missing its functional graphics/audio controls.")
+		quit(1)
+		return
+	graphics_select.item_selected.emit(GraphicsSettingsManager.get_quality_names().find(GraphicsSettingsManager.quality))
+	master_slider.value_changed.emit(35.0)
+	await create_timer(0.8).timeout
+	var audio_graphics_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_audio: Dictionary = audio_graphics_state.get("preferences", {}).get("audio", {}) if audio_graphics_state is Dictionary else {}
+	if absf(float(saved_audio.get("master_volume", -1.0)) - 0.35) > 0.01:
+		push_error("[NotificationPreferencesSmoke] Master volume slider did not persist to player JSON.")
+		quit(1)
+		return
+	about_dialog.hide()
+	about_dialog.queue_free()
+
+	# Wallet must display current balances without a dead, disabled purchase button.
+	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
+	if wallet_button == null:
+		push_error("[NotificationPreferencesSmoke] Wallet action button is missing.")
+		quit(1)
+		return
+	wallet_button.pressed.emit()
+	await process_frame
+	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
+	if wallet_dialog == null or hud.find_child("WalletTopUpDisabled", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet action did not open a useful, non-dead wallet view.")
+		quit(1)
+		return
+	wallet_dialog.hide()
+	wallet_dialog.queue_free()
 
 	# Guest players can change the city name and persist it locally without a Google login.
-	hud._show_change_city_name()
+	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	if rename_button == null:
+		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
+		quit(1)
+		return
+	rename_button.pressed.emit()
 	await process_frame
 	var city_dialog := current_scene.get_node_or_null("HUD/ChangeCityNameDialog")
 	if city_dialog == null:
