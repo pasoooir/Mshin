@@ -3319,8 +3319,8 @@ func _test_settings_panel_contract() -> void:
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
 	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
-	var guide_was_visible := is_instance_valid(help_guide) and help_guide._panel.visible
-	var guide_was_dismissed := is_instance_valid(help_guide) and help_guide._dismissed
+	var guide_was_visible: bool = is_instance_valid(help_guide) and help_guide._panel.visible
+	var guide_was_dismissed: bool = is_instance_valid(help_guide) and help_guide._dismissed
 	(hud.find_child("SettingsHelpButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	_check(is_instance_valid(help_guide) and help_guide._panel.visible, "Settings Help must reopen the interactive city coach.")
