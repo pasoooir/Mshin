@@ -3238,25 +3238,46 @@ func _test_settings_panel_contract() -> void:
 	var settings_action := hud.find_child("SettingsAction", true, false) as Button
 	_check(settings_action != null and settings_action.tooltip_text == "Settings", "The mobile action bar must expose an accessible Settings shortcut.")
 	var original_master := AudioManager.master_volume
+	var original_music_enabled := AudioManager.music_enabled
+	var original_sfx_enabled := AudioManager.sfx_enabled
 	var original_music := AudioManager.music_volume
 	var original_ambient := AudioManager.ambient_volume
 	var original_sfx := AudioManager.sfx_volume
+	var original_city_name := GameManager.city_name
 	hud._show_settings_panel()
 	await get_tree().process_frame
 	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
+	var panel := hud.find_child("SettingsPanel", true, false) as PanelContainer
+	_check(panel != null and panel.size.x > 0.0 and panel.size.y > 0.0, "Settings must render a measurable responsive panel.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
-	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction"]:
+	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction", "SettingsClose"]:
 		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
 	for node_name in ["MusicToggle", "SfxToggle"]:
 		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must provide an independent sound switch." % node_name)
 	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
+	var music_toggle := hud.find_child("MusicToggle", true, false) as CheckButton
+	if music_toggle != null:
+		music_toggle.button_pressed = not original_music_enabled
+		_check(AudioManager.music_enabled == not original_music_enabled, "Music switch must update the audio service.")
+		music_toggle.button_pressed = original_music_enabled
+	var sfx_toggle := hud.find_child("SfxToggle", true, false) as CheckButton
+	if sfx_toggle != null:
+		sfx_toggle.button_pressed = not original_sfx_enabled
+		_check(AudioManager.sfx_enabled == not original_sfx_enabled, "Sounds switch must update the audio service.")
+		sfx_toggle.button_pressed = original_sfx_enabled
+	var google_button := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	_check(google_button != null and google_button.is_connected("pressed", Callable(hud, "_on_settings_account_action_pressed")), "Google sign-in button must be wired to the real account flow.")
+	var close_button := hud.find_child("SettingsClose", true, false) as Button
+	_check(close_button != null and close_button.is_connected("pressed", Callable(hud, "_close_settings_panel")), "Settings close button must close the modal.")
+
+	# About: verify its advanced controls remain accessible and functional.
 	hud._show_settings_about()
 	await get_tree().process_frame
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
 	_check(graphics_select != null and graphics_select.item_count == 3, "Advanced settings must retain Low, Balanced and High 3D quality presets.")
 	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
-	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Advanced settings must retain the on-device 30-second performance test.")
+	_check(benchmark_button != null and benchmark_button.is_connected("pressed", Callable(hud, "_start_performance_benchmark")), "The device benchmark button must start the real performance benchmark.")
 	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
 		var slider := hud.find_child(node_name, true, false) as HSlider
 		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must remain available as an advanced volume control." % node_name)
@@ -3270,14 +3291,71 @@ func _test_settings_panel_contract() -> void:
 	if master_slider != null:
 		master_slider.value = 55.0
 		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
-	# About is a modal dialog. Close it explicitly after inspecting its controls;
-	# otherwise it correctly blocks the gameplay tests that follow this contract.
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
 	if is_instance_valid(about_dialog):
 		about_dialog.hide()
 		about_dialog.queue_free()
 		await get_tree().process_frame
+
+	# Change City Name: exercise the actual save path and restore test state.
+	hud._show_change_city_name()
+	await get_tree().process_frame
+	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
+	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
+	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable city-name form.")
+	if rename_dialog != null and city_name_input != null:
+		city_name_input.text = "Settings QA City"
+		rename_dialog.confirmed.emit()
+		await get_tree().process_frame
+		_check(GameManager.city_name == "Settings QA City", "Saving a valid city name must update the city model.")
+		GameManager.set_city_name(original_city_name)
+		SaveManager.save_game()
+		rename_dialog.queue_free()
+
+	# Help: ensure the action opens useful gameplay instructions.
+	hud._show_settings_help()
+	await get_tree().process_frame
+	var help_dialog := hud.find_child("SettingsHelpDialog", true, false) as AcceptDialog
+	_check(help_dialog != null and help_dialog.dialog_text.contains("Build roads first") and help_dialog.dialog_text.contains("production"), "Help must explain the real road and production gameplay loop.")
+	if is_instance_valid(help_dialog):
+		help_dialog.hide()
+		help_dialog.queue_free()
+		await get_tree().process_frame
+
+	# Notifications: verify both preferences exist and changes persist.
+	hud._show_notification_settings()
+	await get_tree().process_frame
+	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
+	var building_alerts := hud.find_child("Building_alerts", true, false) as CheckButton
+	var city_updates := hud.find_child("City_updates", true, false) as CheckButton
+	_check(notification_dialog != null and building_alerts != null and city_updates != null, "Notification Settings must expose building and city-update preferences.")
+	if building_alerts != null:
+		var old_alerts := building_alerts.button_pressed
+		building_alerts.button_pressed = not old_alerts
+		var notification_config := ConfigFile.new()
+		notification_config.load("user://notification_preferences.cfg")
+		_check(bool(notification_config.get_value("notifications", "building_alerts", old_alerts)) == not old_alerts, "Building notification preference must persist immediately.")
+		building_alerts.button_pressed = old_alerts
+	if is_instance_valid(notification_dialog):
+		notification_dialog.hide()
+		notification_dialog.queue_free()
+		await get_tree().process_frame
+
+	# Wallet: show live balances and keep real-money checkout deliberately disabled.
+	hud._show_wallet_panel()
+	await get_tree().process_frame
+	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
+	var top_up_button := hud.find_child("WalletTopUpDisabled", true, false) as Button
+	_check(wallet_dialog != null and wallet_dialog.dialog_text.contains("Simoleons") and wallet_dialog.dialog_text.contains("SimCash"), "Wallet must display the actual in-game currencies.")
+	_check(top_up_button != null and top_up_button.disabled, "Real-money top-up must remain disabled until payment integration is ready.")
+	if is_instance_valid(wallet_dialog):
+		wallet_dialog.hide()
+		wallet_dialog.queue_free()
+		await get_tree().process_frame
+
 	AudioManager.set_master_volume(original_master)
+	AudioManager.set_music_enabled(original_music_enabled)
+	AudioManager.set_sfx_enabled(original_sfx_enabled)
 	AudioManager.set_music_volume(original_music)
 	AudioManager.set_ambient_volume(original_ambient)
 	AudioManager.set_sfx_volume(original_sfx)
