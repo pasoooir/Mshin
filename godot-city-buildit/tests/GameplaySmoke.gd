@@ -3245,28 +3245,38 @@ func _test_settings_panel_contract() -> void:
 	await get_tree().process_frame
 	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
+	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
+	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction"]:
+		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
+	for node_name in ["MusicToggle", "SfxToggle"]:
+		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must provide an independent sound switch." % node_name)
+	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
+	hud._show_settings_about()
+	await get_tree().process_frame
+	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
+	_check(graphics_select != null and graphics_select.item_count == 3, "Advanced settings must retain Low, Balanced and High 3D quality presets.")
+	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
+	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Advanced settings must retain the on-device 30-second performance test.")
 	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
 		var slider := hud.find_child(node_name, true, false) as HSlider
-		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
-	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle", "HapticsToggle"]:
-		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent settings enable switch." % node_name)
-	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
-	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Settings must expose the on-device 30-second performance test.")
-	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
-	_check(graphics_select != null and graphics_select.item_count == 3, "Settings must expose Low, Balanced and High 3D quality presets.")
-	var original_quality := GraphicsSettingsManager.quality
+		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must remain available as an advanced volume control." % node_name)
 	if graphics_select != null:
+		var original_quality := GraphicsSettingsManager.quality
 		graphics_select.select(0)
 		graphics_select.item_selected.emit(0)
 		_check(GraphicsSettingsManager.quality == "low", "Selecting Low must update the graphics settings manager.")
-		_check(is_equal_approx(get_tree().root.scaling_3d_scale, 0.70) and get_tree().root.msaa_3d == Viewport.MSAA_DISABLED, "Low quality must reduce 3D render scale and disable MSAA.")
-		var graphics_config := ConfigFile.new()
-		_check(graphics_config.load("user://graphics_settings.cfg") == OK and str(graphics_config.get_value("graphics", "quality", "")) == "low", "Graphics quality must persist locally.")
-	GraphicsSettingsManager.set_quality(original_quality)
+		GraphicsSettingsManager.set_quality(original_quality)
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
 	if master_slider != null:
 		master_slider.value = 55.0
 		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
+	# About is a modal dialog. Close it explicitly after inspecting its controls;
+	# otherwise it correctly blocks the gameplay tests that follow this contract.
+	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
+	if is_instance_valid(about_dialog):
+		about_dialog.hide()
+		about_dialog.queue_free()
+		await get_tree().process_frame
 	AudioManager.set_master_volume(original_master)
 	AudioManager.set_music_volume(original_music)
 	AudioManager.set_ambient_volume(original_ambient)

@@ -5187,6 +5187,8 @@ func _close_settings_panel() -> void:
 func _show_settings_panel() -> void:
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
+	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.94)
+	var panel_height := minf(760.0 * _ui_scale, viewport_size.y * 0.92)
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
 	settings_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5197,12 +5199,10 @@ func _show_settings_panel() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "SettingsBackdrop"
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.025, 0.035, 0.76)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.72)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_overlay.add_child(backdrop)
 
-	var panel_width := minf(900.0 * _ui_scale, viewport_size.x * 0.96)
-	var panel_height := minf(770.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "SettingsPanel"
 	panel.anchor_left = 0.5
@@ -5214,148 +5214,288 @@ func _show_settings_panel() -> void:
 	panel.offset_top = -panel_height * 0.5
 	panel.offset_bottom = panel_height * 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.add_theme_stylebox_override("panel", _city_panel_style())
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#EAF7FF")
+	panel_style.border_color = Color("#D8B94F")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(22)
+	panel_style.shadow_color = Color(0, 0, 0, 0.38)
+	panel_style.shadow_size = 18
+	panel_style.content_margin_left = 34 * _ui_scale
+	panel_style.content_margin_right = 34 * _ui_scale
+	panel_style.content_margin_top = 22 * _ui_scale
+	panel_style.content_margin_bottom = 24 * _ui_scale
+	panel.add_theme_stylebox_override("panel", panel_style)
 	settings_overlay.add_child(panel)
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
-	layout.add_theme_constant_override("separation", 8)
+	layout.add_theme_constant_override("separation", 18)
 	panel.add_child(layout)
 
 	var heading := HBoxContainer.new()
+	heading.name = "SettingsHeading"
 	layout.add_child(heading)
 	var title := Label.new()
 	title.text = "Settings"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _popup_font_size(28))
-	title.add_theme_color_override("font_color", Color("#172330"))
+	title.add_theme_font_size_override("font_size", _popup_font_size(34))
+	title.add_theme_color_override("font_color", Color("#142A3A"))
+	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
+	title.add_theme_constant_override("shadow_offset_x", 1)
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	heading.add_child(title)
 	var close := Button.new()
 	close.name = "SettingsClose"
-	close.text = "×"
-	close.custom_minimum_size = Vector2(46, 44) * _ui_scale
-	close.add_theme_font_size_override("font_size", _popup_font_size(32))
-	close.add_theme_color_override("font_color", Color("#123B59"))
+	close.text = "✖"
+	close.custom_minimum_size = Vector2(58, 54) * _ui_scale
+	close.add_theme_font_size_override("font_size", _popup_font_size(28))
+	close.add_theme_stylebox_override("normal", _settings_action_style(Color("#2499D0")))
+	close.add_theme_stylebox_override("hover", _settings_action_style(Color("#35B4E8")))
+	close.add_theme_stylebox_override("pressed", _settings_action_style(Color("#176B9B")))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
-	var section := Label.new()
-	section.text = "AUDIO"
-	section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	section.add_theme_color_override("font_color", Color("#28799C"))
-	layout.add_child(section)
+	var audio_row := GridContainer.new()
+	audio_row.name = "SettingsAudioToggles"
+	audio_row.columns = 2
+	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	audio_row.add_theme_constant_override("h_separation", 24)
+	audio_row.add_theme_constant_override("v_separation", 8)
+	layout.add_child(audio_row)
+	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
+	_add_settings_switch(audio_row, "SfxToggle", "Sounds", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
 
-	var toggles := GridContainer.new()
-	toggles.name = "AudioToggles"
-	toggles.columns = 3
-	toggles.add_theme_constant_override("h_separation", 10)
-	toggles.add_theme_constant_override("v_separation", 4)
-	layout.add_child(toggles)
-	_add_audio_setting_toggle(toggles, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
-	_add_audio_setting_toggle(toggles, "AmbientToggle", "City ambience", AudioManager.ambient_enabled, AudioManager.set_ambient_enabled)
-	_add_audio_setting_toggle(toggles, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
-	_add_audio_setting_toggle(toggles, "HapticsToggle", "Haptic feedback", HapticsManager.enabled, HapticsManager.set_enabled)
+	var actions := GridContainer.new()
+	actions.name = "SettingsMainActions"
+	actions.columns = 2
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	actions.add_theme_constant_override("h_separation", 22)
+	actions.add_theme_constant_override("v_separation", 14)
+	layout.add_child(actions)
+	_add_settings_action(actions, "SettingsAboutButton", "About", _show_settings_about)
+	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
+	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
+	_add_settings_action(actions, "SettingsNotificationsButton", "Notification Settings", _show_notification_settings)
+	_add_settings_action(actions, "SettingsWalletButton", "Wallet", _show_wallet_panel)
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	layout.add_child(scroll)
-	var sliders := VBoxContainer.new()
-	sliders.add_theme_constant_override("separation", 10)
-	sliders.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(sliders)
-	var account_section := Label.new()
-	account_section.text = "PLAYER ACCOUNT"
-	account_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	account_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(account_section)
-	var account_card := PanelContainer.new()
-	account_card.name = "SettingsAccountCard"
-	var account_style := StyleBoxFlat.new()
-	account_style.bg_color = Color("#E6F2F8")
-	account_style.border_color = Color("#8AB9D0")
-	account_style.set_border_width_all(1)
-	account_style.set_corner_radius_all(12)
-	account_style.content_margin_left = 12
-	account_style.content_margin_right = 12
-	account_style.content_margin_top = 8
-	account_style.content_margin_bottom = 8
-	account_card.add_theme_stylebox_override("panel", account_style)
-	sliders.add_child(account_card)
-	var account_row := HBoxContainer.new()
-	account_row.add_theme_constant_override("separation", 10)
-	account_card.add_child(account_row)
+	var account_note := Label.new()
+	account_note.name = "SettingsAccountPrompt"
+	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
+	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	account_note.add_theme_font_size_override("font_size", _popup_font_size(19))
+	account_note.add_theme_color_override("font_color", Color("#542D32"))
+	layout.add_child(account_note)
+
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
-	_settings_account_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_settings_account_status.add_theme_color_override("font_color", Color("#17394D"))
 	_settings_account_status.add_theme_font_size_override("font_size", _popup_font_size(16))
-	account_row.add_child(_settings_account_status)
+	_settings_account_status.add_theme_color_override("font_color", Color("#29485A"))
+	layout.add_child(_settings_account_status)
+
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
-	_settings_account_action.custom_minimum_size = Vector2(190, 46) * _ui_scale
+	_settings_account_action.text = "Log in to Google"
+	_settings_account_action.custom_minimum_size = Vector2(0, 76) * _ui_scale
+	_settings_account_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_settings_account_action.add_theme_font_size_override("font_size", _popup_font_size(22))
+	_settings_account_action.add_theme_color_override("font_color", Color("#142A3A"))
+	_settings_account_action.add_theme_stylebox_override("normal", _settings_action_style(Color("#E4F6FF")))
+	_settings_account_action.add_theme_stylebox_override("hover", _settings_action_style(Color("#D0EDFC")))
+	_settings_account_action.add_theme_stylebox_override("pressed", _settings_action_style(Color("#B9E1F5")))
 	_settings_account_action.focus_mode = Control.FOCUS_NONE
 	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
-	account_row.add_child(_settings_account_action)
+	layout.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
-	_add_audio_setting_slider(sliders, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
-	_add_audio_setting_slider(sliders, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
-	_add_audio_setting_slider(sliders, "AmbientVolumeSlider", "City ambience volume", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
-	_add_audio_setting_slider(sliders, "SfxVolumeSlider", "Sound effects volume", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
-	var graphics_section := Label.new()
-	graphics_section.text = "3D GRAPHICS"
-	graphics_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	graphics_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(graphics_section)
-	var graphics_row := HBoxContainer.new()
-	graphics_row.name = "GraphicsQualityRow"
-	sliders.add_child(graphics_row)
-	var graphics_label := Label.new()
-	graphics_label.text = "3D render quality"
-	graphics_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	graphics_label.add_theme_color_override("font_color", Color("#243C4B"))
-	graphics_row.add_child(graphics_label)
+
+func _settings_action_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = fill.lightened(0.18)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(14)
+	style.shadow_color = Color(0, 0, 0, 0.28)
+	style.shadow_size = 5
+	style.shadow_offset = Vector2(0, 4)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	return style
+
+
+func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
+	var button := Button.new()
+	button.name = node_name
+	button.text = caption
+	button.custom_minimum_size = Vector2(0, 86) * _ui_scale
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_size_override("font_size", _popup_font_size(22))
+	button.add_theme_color_override("font_color", Color("#FFFFFF"))
+	button.add_theme_color_override("font_shadow_color", Color("#17310B"))
+	button.add_theme_constant_override("shadow_offset_x", 1)
+	button.add_theme_constant_override("shadow_offset_y", 2)
+	button.add_theme_stylebox_override("normal", _settings_action_style(Color("#9ACD16")))
+	button.add_theme_stylebox_override("hover", _settings_action_style(Color("#B1E52A")))
+	button.add_theme_stylebox_override("pressed", _settings_action_style(Color("#679B08")))
+	button.focus_mode = Control.FOCUS_NONE
+	button.pressed.connect(action)
+	parent.add_child(button)
+
+
+func _add_settings_switch(parent: GridContainer, node_name: String, caption: String, enabled: bool, setter: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.name = node_name + "Row"
+	row.add_theme_constant_override("separation", 12)
+	parent.add_child(row)
+	var toggle := CheckButton.new()
+	toggle.name = node_name
+	toggle.button_pressed = enabled
+	toggle.custom_minimum_size = Vector2(88, 58) * _ui_scale
+	toggle.add_theme_font_size_override("font_size", _popup_font_size(18))
+	toggle.toggled.connect(func(value: bool) -> void: setter.call(value))
+	row.add_child(toggle)
+	var label := Label.new()
+	label.text = caption
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", _popup_font_size(22))
+	label.add_theme_color_override("font_color", Color("#142A3A"))
+	row.add_child(label)
+
+
+func _show_settings_about() -> void:
+	var dialog := AcceptDialog.new()
+	dialog.name = "SettingsAboutDialog"
+	dialog.title = "About Mshin · Advanced settings"
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 10)
+	dialog.add_child(content)
+	var about_text := Label.new()
+	about_text.text = "Mshin City Builder — build, grow and manage your own city. Your progress is saved locally and can be synchronized after signing in with Google."
+	about_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(about_text)
+	var graphics_heading := Label.new()
+	graphics_heading.text = "3D GRAPHICS QUALITY"
+	content.add_child(graphics_heading)
 	var graphics_select := OptionButton.new()
 	graphics_select.name = "GraphicsQualitySelect"
-	graphics_select.custom_minimum_size = Vector2(150, 42) * _ui_scale
 	var quality_names := GraphicsSettingsManager.get_quality_names()
 	for quality_name in quality_names:
 		var preset: Dictionary = GraphicsSettingsManager.get_quality_preset(quality_name)
 		graphics_select.add_item(str(preset.get("label", quality_name.capitalize())))
 	graphics_select.select(quality_names.find(GraphicsSettingsManager.quality))
 	graphics_select.item_selected.connect(_on_graphics_quality_selected)
-	graphics_row.add_child(graphics_select)
-	var performance_section := Label.new()
-	performance_section.text = "DEVICE PERFORMANCE"
-	performance_section.add_theme_font_size_override("font_size", _popup_font_size(18))
-	performance_section.add_theme_color_override("font_color", Color("#28799C"))
-	sliders.add_child(performance_section)
-	var performance_note := Label.new()
-	performance_note.text = "Run a 30-second test during normal gameplay. The report is saved locally on this device."
-	performance_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	performance_note.add_theme_font_size_override("font_size", _popup_font_size(16))
-	performance_note.add_theme_color_override("font_color", Color("#526A78"))
-	sliders.add_child(performance_note)
-	var performance_button := Button.new()
-	performance_button.name = "RunDeviceBenchmarkButton"
-	performance_button.text = "Run 30-second device test"
-	performance_button.custom_minimum_size = Vector2(240, 44) * _ui_scale
-	performance_button.pressed.connect(_start_performance_benchmark)
-	sliders.add_child(performance_button)
+	content.add_child(graphics_select)
+	var audio_heading := Label.new()
+	audio_heading.text = "ADVANCED VOLUME"
+	content.add_child(audio_heading)
+	_add_audio_setting_slider(content, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(content, "MusicVolumeSlider", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(content, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(content, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+	var benchmark := Button.new()
+	benchmark.name = "RunDeviceBenchmarkButton"
+	benchmark.text = "Run 30-second device test"
+	benchmark.pressed.connect(_start_performance_benchmark)
+	content.add_child(benchmark)
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered(Vector2i(720, 640))
 
-	var footer := HBoxContainer.new()
-	footer.alignment = BoxContainer.ALIGNMENT_END
-	layout.add_child(footer)
-	var reset := Button.new()
-	reset.name = "ResetAudioSettings"
-	reset.text = "Restore defaults"
-	reset.custom_minimum_size = Vector2(150, 42) * _ui_scale
-	reset.pressed.connect(_reset_audio_settings)
-	footer.add_child(reset)
+
+func _show_settings_help() -> void:
+	var dialog := AcceptDialog.new()
+	dialog.name = "SettingsHelpDialog"
+	dialog.title = "How to play"
+	dialog.dialog_text = "Build roads first, then place buildings beside connected roads.\n\nTap a building to manage it. Drag production items into an empty queue slot. Use the bottom action bar for storage, city needs, trade, regions and saving."
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered(Vector2i(640, 360))
+
+
+func _show_change_city_name() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.name = "ChangeCityNameDialog"
+	dialog.title = "Change City Name"
+	dialog.ok_button_text = "Save city name"
+	var input := LineEdit.new()
+	input.name = "CityNameInput"
+	input.text = GameManager.city_name
+	input.max_length = 28
+	input.placeholder_text = "Enter your city name"
+	input.custom_minimum_size.x = 360 * _ui_scale
+	dialog.add_child(input)
+	dialog.confirmed.connect(func() -> void:
+		if GameManager.set_city_name(input.text):
+			SaveManager.save_game()
+			status_label.text = "City name updated."
+		else:
+			status_label.text = "Enter a city name with at least one visible character."
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(520, 220))
+	input.grab_focus()
+
+
+func _show_notification_settings() -> void:
+	var config := ConfigFile.new()
+	config.load("user://notification_preferences.cfg")
+	var dialog := AcceptDialog.new()
+	dialog.name = "NotificationSettingsDialog"
+	dialog.title = "Notification Settings"
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	dialog.add_child(content)
+	for preference in [{"key":"building_alerts","label":"Building and production alerts"},{"key":"city_updates","label":"City progress updates"}]:
+		var toggle := CheckButton.new()
+		toggle.name = str(preference.key).capitalize()
+		toggle.text = str(preference.label)
+		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
+		toggle.toggled.connect(func(value: bool) -> void:
+			config.set_value("notifications", str(preference.key), value)
+			config.save("user://notification_preferences.cfg")
+		)
+		content.add_child(toggle)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(560, 260))
+
+
+func _show_wallet_panel() -> void:
+	var dialog := AcceptDialog.new()
+	dialog.name = "SettingsWalletDialog"
+	dialog.title = "City Wallet"
+	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nReal-money purchases and bank gateway are not enabled yet." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
+	var top_up := Button.new()
+	top_up.name = "WalletTopUpDisabled"
+	top_up.text = "Add funds — coming soon"
+	top_up.disabled = true
+	top_up.custom_minimum_size = Vector2(300, 48) * _ui_scale
+	dialog.add_child(top_up)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(560, 320))
+
+
+func _format_compact_number(value: int) -> String:
+	if value >= 1000000:
+		return "%.1fM" % (float(value) / 1000000.0)
+	if value >= 1000:
+		return "%.1fK" % (float(value) / 1000.0)
+	return str(value)
+
 
 func _add_audio_setting_toggle(parent: GridContainer, node_name: String, label_text: String, initial_value: bool, setter: Callable) -> void:
 	var toggle := CheckButton.new()

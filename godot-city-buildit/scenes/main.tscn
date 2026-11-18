@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://scripts/world/WorldPresentation.gd" id="7_world"]
 [ext_resource type="Script" path="res://scripts/ui/CitizenFeedbackBubbles.gd" id="8_citizen_feedback"]
 [ext_resource type="Script" path="res://scripts/ui/TutorialGuide.gd" id="9_tutorial"]
-[ext_resource type="Script" path="res://scripts/ui/PlayerAccountPanel.gd" id="10_player_account"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("6_bootstrap")
@@ -197,5 +196,3 @@ horizontal_alignment = 1
 [node name="TutorialGuide" type="CanvasLayer" parent="."]
 script = ExtResource("9_tutorial")
 
-[node name="PlayerAccountPanel" type="CanvasLayer" parent="."]
-script = ExtResource("10_player_account")
