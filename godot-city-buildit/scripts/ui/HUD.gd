@@ -2790,7 +2790,14 @@ func _input(event: InputEvent) -> void:
 				var target_building := _production_building
 				var target_item_id := str(button.get_meta("production_item_id", ""))
 				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
-					_on_production_item_pressed(target_building, target_item_id, -1, button)
+					_production_touch_drag_active = true
+					_production_touch_dragged = false
+					_production_touch_drag_index = event.index
+					_production_touch_drag_origin = event.position
+					_production_touch_drag_item_id = target_item_id
+					_production_touch_drag_building = target_building
+					_production_touch_drag_source_button = button
+					button.set_meta("touch_drag_consumed", false)
 					_native_ui_touch_excluded[event.index] = true
 					get_viewport().set_input_as_handled()
 					return
@@ -2958,7 +2965,8 @@ func _update_production_touch_drag_ghost(screen_position: Vector2) -> void:
 		var slot_card := production_panel.find_child("QueueSlot%d" % slot_index, true, false) as PanelContainer
 		if not is_instance_valid(slot_card):
 			continue
-		var hovered := slot_card.get_global_rect().has_point(screen_position)
+		var slot_local_position: Vector2 = slot_card.get_global_transform_with_canvas().affine_inverse() * screen_position
+		var hovered := Rect2(Vector2.ZERO, slot_card.size).has_point(slot_local_position)
 		var slot_available := component.get_slot(slot_index).is_empty()
 		if hovered and slot_available:
 			slot_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#245D70"), Color("#F3C94E")))
@@ -3001,7 +3009,11 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 		var slot_card: Control = null
 		if is_instance_valid(production_panel):
 			slot_card = production_panel.find_child("QueueSlot%d" % slot_index, true, false) as Control
-		if is_instance_valid(slot_card) and slot_card.get_global_rect().has_point(screen_position):
+		if is_instance_valid(slot_card):
+			var slot_local_position: Vector2 = slot_card.get_global_transform_with_canvas().affine_inverse() * screen_position
+			var inside_slot := Rect2(Vector2.ZERO, slot_card.size).has_point(slot_local_position)
+			if not inside_slot:
+				continue
 			if _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
 				_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
 			elif is_instance_valid(status_label):
