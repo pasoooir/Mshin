@@ -345,7 +345,11 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 					window.mshinGoogleCredentialCallback(response && response.credential ? response.credential : null, nonce);
 				}
 			});
-			window.google.accounts.id.prompt();
+			window.google.accounts.id.prompt(function (moment) {
+				if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment() || moment.isDismissedMoment())) {
+					window.mshinGoogleCredentialCallback(null, nonce);
+				}
+			});
 		};
 		if (window.google && window.google.accounts && window.google.accounts.id) {
 			initialize();
