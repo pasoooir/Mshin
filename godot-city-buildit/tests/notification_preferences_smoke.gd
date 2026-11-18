@@ -24,10 +24,12 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	var game_manager := root.get_node_or_null("GameManager")
+	var save_manager := root.get_node_or_null("SaveManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -68,11 +70,11 @@ func _run() -> void:
 	city_dialog.confirmed.emit()
 	await process_frame
 	await process_frame
-	if GameManager.city_name != "Test Harbor":
+	if str(game_manager.city_name) != "Test Harbor":
 		push_error("[NotificationPreferencesSmoke] Guest city name was not applied.")
 		quit(1)
 		return
-	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
 		push_error("[NotificationPreferencesSmoke] Guest city name was not persisted locally.")
 		quit(1)
