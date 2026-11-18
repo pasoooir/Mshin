@@ -5358,7 +5358,7 @@ func _show_settings_panel() -> void:
 	gmail_text.add_theme_font_size_override("normal_font_size", _settings_font_size(23))
 	gmail_text.text = "[center][color=#EA4335]Continue with [/color][color=#4285F4]G[/color][color=#EA4335]o[/color][color=#FBBC05]o[/color][color=#4285F4]g[/color][color=#34A853]l[/color][color=#EA4335]e[/color][/center]"
 	gmail_content.add_child(gmail_text)
-	_settings_account_action.pivot_offset = _settings_account_action.custom_minimum_size * 0.5
+	_settings_account_action.pivot_offset = Vector2(panel_width * 0.5 - 22 * compact_scale, 31 * compact_scale)
 	_settings_account_action.mouse_entered.connect(func() -> void: _settings_button_hover(_settings_account_action, true))
 	_settings_account_action.mouse_exited.connect(func() -> void: _settings_button_hover(_settings_account_action, false))
 	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
