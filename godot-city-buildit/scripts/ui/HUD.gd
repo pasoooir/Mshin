@@ -5268,10 +5268,10 @@ func _show_settings_panel() -> void:
 	_add_audio_setting_toggle(toggles, "HapticsToggle", "Vibration", HapticsManager.enabled, HapticsManager.set_enabled)
 	var volume_section := _make_settings_section("VOLUME")
 	audio_content.add_child(volume_section)
-	_add_audio_setting_slider(audio_page, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
-	_add_audio_setting_slider(audio_page, "MusicVolumeSlider", "Music", AudioManager.music_volume, AudioManager.set_music_volume)
-	_add_audio_setting_slider(audio_page, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
-	_add_audio_setting_slider(audio_page, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
+	_add_audio_setting_slider(audio_content, "MasterVolumeSlider", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(audio_content, "MusicVolumeSlider", "Music", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(audio_content, "AmbientVolumeSlider", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(audio_content, "SfxVolumeSlider", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
 
 	var graphics_page := _make_settings_page("Graphics")
 	var graphics_content := graphics_page.get_child(0) as VBoxContainer
