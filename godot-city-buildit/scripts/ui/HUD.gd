@@ -186,6 +186,7 @@ var _catalog_selected_type := ""
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
 	PlayerAccountManager.session_changed.connect(_on_settings_account_session_changed)
+	PlayerAccountManager.profile_loaded.connect(_on_settings_profile_loaded)
 	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
 	_settings_login_blink_timer = Timer.new()
 	_settings_login_blink_timer.wait_time = 0.55
@@ -5167,13 +5168,23 @@ func _on_settings_account_action_pressed() -> void:
 		_refresh_settings_account_section()
 		return
 	_settings_account_action.disabled = true
-	PlayerAccountManager.begin_google_sign_in()
+	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
+	if not sign_in_started:
+		_settings_account_action.disabled = false
+		_refresh_settings_account_section()
+		return
 	if is_instance_valid(_settings_account_status):
 		_settings_account_status.text = "Connecting to Google securely…"
 
-func _on_settings_account_session_changed(_player_id: int, _authenticated: bool) -> void:
+func _on_settings_account_session_changed(_player_id: int, authenticated: bool) -> void:
 	_update_settings_login_indicator()
 	_refresh_settings_account_section()
+	if not authenticated:
+		SaveManager.load_preferences_from_active_save()
+
+
+func _on_settings_profile_loaded(_player_id: int, _revision: int) -> void:
+	SaveManager.load_preferences_from_active_save()
 
 func _on_settings_account_feedback(message: String, success: bool) -> void:
 	if is_instance_valid(_settings_account_status):
@@ -5691,7 +5702,7 @@ func _apply_notification_preference(key: String, enabled: bool) -> void:
 			citizen_feedback.set_city_updates_enabled(enabled)
 
 
-func _on_notification_preference_toggled(key: String, enabled: bool, toggle: CheckButton, feedback: Label) -> void:
+func _on_notification_preference_toggled(enabled: bool, key: String, toggle: CheckButton, feedback: Label) -> void:
 	if not SaveManager.set_notification_preference(key, enabled):
 		toggle.set_pressed_no_signal(not enabled)
 		feedback.text = "Could not save this setting. Your previous choice has been restored."
