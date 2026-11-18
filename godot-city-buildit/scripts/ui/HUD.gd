@@ -3450,7 +3450,7 @@ func _city_panel_heading(parent: VBoxContainer, title_text: String, close_callba
 	var close := Button.new()
 	close.name = "WindowCloseButton"
 	close.text = "×"
-	close.custom_minimum_size = Vector2(46, 46) * compact_scale
+	close.custom_minimum_size = Vector2(46, 46) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(38))
 	close.add_theme_color_override("font_color", Color("#17364A"))
 	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#E8F0F5"), Color("#B6C9D6")))
@@ -5371,6 +5371,7 @@ func _settings_close_style(fill: Color) -> StyleBoxFlat:
 
 
 func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
+	var compact_scale := minf(1.0, get_viewport().get_visible_rect().size.y / 520.0)
 	var button := Button.new()
 	button.name = node_name
 	button.text = caption
@@ -5391,6 +5392,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 
 
 func _add_settings_switch(parent: GridContainer, node_name: String, caption: String, enabled: bool, setter: Callable) -> void:
+	var compact_scale := minf(1.0, get_viewport().get_visible_rect().size.y / 520.0)
 	var row := HBoxContainer.new()
 	row.name = node_name + "Row"
 	row.add_theme_constant_override("separation", 20)
@@ -5401,7 +5403,7 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.toggle_mode = true
 	toggle.button_pressed = enabled
 	toggle.text = "On" if enabled else "Off"
-	toggle.custom_minimum_size = Vector2(90, 52 * minf(1.0, get_viewport_rect().size.y / 520.0))
+	toggle.custom_minimum_size = Vector2(90, 52 * compact_scale)
 	toggle.add_theme_font_size_override("font_size", _popup_font_size(16))
 	toggle.add_theme_color_override("font_color", Color("#FFFFFF"))
 	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
