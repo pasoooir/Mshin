@@ -5293,23 +5293,16 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
-	var content_scroll := ScrollContainer.new()
-	content_scroll.name = "SettingsContentScroll"
-	content_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	layout.add_child(content_scroll)
-
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 7 * compact_scale)
-	content_scroll.add_child(content)
+	layout.add_child(content)
 
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
-	audio_row.columns = 2 if viewport_size.x >= viewport_size.y else 1
+	audio_row.columns = 2
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_row.add_theme_constant_override("h_separation", 12 * compact_scale)
 	audio_row.add_theme_constant_override("v_separation", 8)
@@ -5319,7 +5312,7 @@ func _show_settings_panel() -> void:
 
 	var actions := GridContainer.new()
 	actions.name = "SettingsMainActions"
-	actions.columns = 2 if viewport_size.x >= viewport_size.y else 1
+	actions.columns = 2
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	actions.add_theme_constant_override("h_separation", 12 * compact_scale)
@@ -5761,11 +5754,28 @@ func _show_wallet_panel() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsWalletDialog"
 	dialog.title = "City Wallet"
-	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nReal-money purchases and bank gateway are not enabled yet." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
+	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nYour city currencies are available for in-game rewards and purchases." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
+	var purchase_info := Button.new()
+	purchase_info.name = "WalletTopUpInfo"
+	purchase_info.text = "About adding funds"
+	purchase_info.custom_minimum_size = Vector2(300, 48) * _ui_scale
+	purchase_info.pressed.connect(_show_wallet_purchase_info)
+	dialog.add_child(purchase_info)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
 	_style_settings_dialog(dialog, Vector2i(560, 320))
+
+
+func _show_wallet_purchase_info() -> void:
+	var info := AcceptDialog.new()
+	info.name = "WalletPurchaseInfoDialog"
+	info.title = "Purchases are not available yet"
+	info.dialog_text = "Real-money purchases and bank payments are not enabled in this version. No payment will be requested or processed. You can continue earning and using in-game currencies through city gameplay."
+	info.confirmed.connect(info.queue_free)
+	info.canceled.connect(info.queue_free)
+	add_child(info)
+	_style_settings_dialog(info, Vector2i(520, 260))
 
 
 func _format_compact_number(value: int) -> String:
