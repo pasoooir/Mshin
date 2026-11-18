@@ -3192,7 +3192,8 @@ func _test_trade_depot_and_global_market() -> void:
 		persistence_wait_frames += 1
 	_check(SaveManager.persistence_ready and not SaveManager.is_loading, "Player JSON persistence must finish startup loading before trade transactions are snapshotted.")
 	SaveManager.schedule_save()
-	await get_tree().create_timer(1.0).timeout
+	SaveManager._flush_scheduled_save()
+	_check(not SaveManager._save_pending, "The debounced player JSON save must flush successfully after the city is ready.")
 	var persisted_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
 	var persisted_trade: Dictionary = persisted_city.get("trade", {}) if persisted_city is Dictionary else {}
 	var persisted_economy_ledger: Array = persisted_city.get("economy_ledger", {}).get("transaction_ledger", []) if persisted_city is Dictionary else []
