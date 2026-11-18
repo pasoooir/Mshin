@@ -3311,15 +3311,20 @@ func _test_settings_panel_contract() -> void:
 		GameManager.set_city_name(original_city_name)
 		SaveManager.save_game()
 
-	# Help: ensure the action opens useful gameplay instructions.
+	# Help: route to the interactive city coach rather than duplicating a static help panel.
+	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
+	var guide_was_visible := is_instance_valid(help_guide) and help_guide._panel.visible
+	var guide_was_dismissed := is_instance_valid(help_guide) and help_guide._dismissed
 	(hud.find_child("SettingsHelpButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	var help_dialog := hud.find_child("SettingsHelpDialog", true, false) as AcceptDialog
-	_check(help_dialog != null and help_dialog.dialog_text.contains("Build roads first") and help_dialog.dialog_text.contains("production"), "Help must explain the real road and production gameplay loop.")
-	if is_instance_valid(help_dialog):
-		help_dialog.hide()
-		help_dialog.queue_free()
-		await get_tree().process_frame
+	_check(is_instance_valid(help_guide) and help_guide._panel.visible, "Settings Help must reopen the interactive city coach.")
+	_check(hud.settings_overlay == null, "Settings Help must close the Settings modal before opening the coach.")
+	if is_instance_valid(help_guide):
+		help_guide._dismissed = guide_was_dismissed
+		if guide_was_visible:
+			help_guide._panel.show()
+		else:
+			help_guide._panel.hide()
 
 	# Notifications: verify both preferences exist and changes persist.
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
