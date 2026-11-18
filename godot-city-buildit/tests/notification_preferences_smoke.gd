@@ -24,10 +24,13 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	var game_manager := root.get_node_or_null("GameManager")
+	var save_manager := root.get_node_or_null("SaveManager")
+	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or graphics_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -36,19 +39,161 @@ func _run() -> void:
 		quit(1)
 		return
 
-	hud._apply_notification_preference("building_alerts", true)
-	hud._apply_notification_preference("city_updates", true)
+	save_manager.persistence_ready = true
+	save_manager.is_loading = false
+	hud._show_settings_panel()
+	await process_frame
+	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
+	if notification_button == null:
+		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
+		quit(1)
+		return
+	notification_button.pressed.emit()
+	await process_frame
+	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
+	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
+	var updates_toggle := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
+	if notification_dialog == null or building_toggle == null or updates_toggle == null:
+		push_error("[NotificationPreferencesSmoke] Notification form did not open with both controls.")
+		quit(1)
+		return
+	building_toggle.toggled.emit(true)
+	updates_toggle.toggled.emit(true)
 	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
-		push_error("[NotificationPreferencesSmoke] Enabling preferences did not update live systems.")
+		push_error("[NotificationPreferencesSmoke] Notification toggle events did not update live systems.")
+		quit(1)
+		return
+	if not save_manager.save_game():
+		push_error("[NotificationPreferencesSmoke] Could not write the city JSON after changing notification preferences.")
+		quit(1)
+		return
+	var saved_preferences: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_notification_data: Dictionary = saved_preferences.get("preferences", {}).get("notifications", {}) if saved_preferences is Dictionary else {}
+	if not bool(saved_notification_data.get("building_alerts", false)) or not bool(saved_notification_data.get("city_updates", false)):
+		push_error("[NotificationPreferencesSmoke] Notification preferences were not written to the player JSON save.")
+		quit(1)
+		return
+	save_manager._notification_preferences = {"building_alerts": false, "city_updates": false}
+	if not save_manager.load_game():
+		push_error("[NotificationPreferencesSmoke] Could not reload the saved notification preferences.")
+		quit(1)
+		return
+	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
+		push_error("[NotificationPreferencesSmoke] Notification preferences were not restored from JSON.")
+		quit(1)
+		return
+	notification_dialog.hide()
+	notification_dialog.queue_free()
+
+	# The About form exposes real graphics and audio controls, not decorative placeholders.
+	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
+	if about_button == null:
+		push_error("[NotificationPreferencesSmoke] About action button is missing.")
+		quit(1)
+		return
+	about_button.pressed.emit()
+	await process_frame
+	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
+	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
+	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
+	if about_dialog == null or graphics_select == null or master_slider == null:
+		push_error("[NotificationPreferencesSmoke] About form is missing its functional graphics/audio controls.")
+		quit(1)
+		return
+	var quality_names: PackedStringArray = graphics_manager.get_quality_names()
+	var current_quality_index := quality_names.find(str(graphics_manager.quality))
+	var next_quality_index := (current_quality_index + 1) % quality_names.size()
+	graphics_select.item_selected.emit(next_quality_index)
+	master_slider.value_changed.emit(35.0)
+	await create_timer(0.8).timeout
+	var audio_graphics_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_audio: Dictionary = audio_graphics_state.get("preferences", {}).get("audio", {}) if audio_graphics_state is Dictionary else {}
+	var saved_graphics: Dictionary = audio_graphics_state.get("preferences", {}).get("graphics", {}) if audio_graphics_state is Dictionary else {}
+	if absf(float(saved_audio.get("master_volume", -1.0)) - 0.35) > 0.01:
+		push_error("[NotificationPreferencesSmoke] Master volume slider did not persist to player JSON.")
+		quit(1)
+		return
+	if str(saved_graphics.get("quality", "")) != quality_names[next_quality_index]:
+		push_error("[NotificationPreferencesSmoke] Graphics quality selection did not persist to player JSON.")
+		quit(1)
+		return
+	about_dialog.hide()
+	about_dialog.queue_free()
+
+	# Wallet must display current balances without a dead, disabled purchase button.
+	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
+	if wallet_button == null:
+		push_error("[NotificationPreferencesSmoke] Wallet action button is missing.")
+		quit(1)
+		return
+	wallet_button.pressed.emit()
+	await process_frame
+	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
+	if wallet_dialog == null or hud.find_child("WalletTopUpDisabled", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet action did not open a useful, non-dead wallet view.")
+		quit(1)
+		return
+	wallet_dialog.hide()
+	wallet_dialog.queue_free()
+
+	# Guest players can change the city name and persist it locally without a Google login.
+	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	if rename_button == null:
+		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
+		quit(1)
+		return
+	rename_button.pressed.emit()
+	await process_frame
+	var city_dialog := current_scene.get_node_or_null("HUD/ChangeCityNameDialog")
+	if city_dialog == null:
+		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
+		quit(1)
+		return
+	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
+	if city_name_input == null:
+		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
+		quit(1)
+		return
+	city_name_input.text = ""
+	city_dialog.confirmed.emit()
+	await process_frame
+	var city_validation := city_dialog.find_child("CityNameValidation", true, false) as Label
+	if not is_instance_valid(city_dialog) or city_validation == null or not city_validation.text.contains("Please enter"):
+		push_error("[NotificationPreferencesSmoke] Empty city name must show inline validation and keep the form open.")
+		quit(1)
+		return
+	city_name_input.text = "Test Harbor"
+	city_dialog.confirmed.emit()
+	await process_frame
+	await process_frame
+	if str(game_manager.city_name) != "Test Harbor":
+		push_error("[NotificationPreferencesSmoke] Guest city name was not applied.")
+		quit(1)
+		return
+	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
+		push_error("[NotificationPreferencesSmoke] Guest city name was not persisted locally.")
 		quit(1)
 		return
 
-	hud._apply_notification_preference("building_alerts", false)
-	hud._apply_notification_preference("city_updates", false)
-	if alert_layer.are_building_alerts_enabled() or citizen_feedback.are_city_updates_enabled():
-		push_error("[NotificationPreferencesSmoke] Disabling preferences did not update live systems.")
+	# Help must reopen the interactive tutorial instead of doing nothing.
+	var help_button := hud.find_child("SettingsHelpButton", true, false) as Button
+	var guide := current_scene.get_node_or_null("TutorialGuide")
+	if help_button == null or guide == null or not guide.has_method("open_help"):
+		push_error("[NotificationPreferencesSmoke] Help action or tutorial guide is missing.")
 		quit(1)
 		return
+	hud._show_settings_panel()
+	await process_frame
+	help_button = hud.find_child("SettingsHelpButton", true, false) as Button
+	help_button.pressed.emit()
+	await process_frame
+	var guide_panel := guide.get("_panel") as Control
+	if guide_panel == null or not guide_panel.visible:
+		push_error("[NotificationPreferencesSmoke] Help button did not reopen the tutorial guide.")
+		quit(1)
+		return
+	guide_panel.hide()
 
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)

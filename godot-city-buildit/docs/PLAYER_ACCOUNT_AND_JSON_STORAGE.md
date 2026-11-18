@@ -17,7 +17,8 @@
 - `SaveManager.gd` از schema نسخه 5 استفاده می‌کند و سطح، XP، جمعیت، رضایت، نام شهر، ارزها، دفتر تراکنش، پرداخت‌ها، انبار، معاملات، دستاوردها، مناطق، جاده‌ها و ساختمان‌ها را ذخیره می‌کند.
 - snapshot هر منطقه شامل انبار همان منطقه، جاده‌ها، ساختمان‌ها، پروژه‌های ویژه، گسترش زمین و رضایت است. وضعیت ساختمان شامل مرحله، موقعیت، چرخش، جمعیت، ساخت، ارتقا، تایمرها و صف slotهای تولید است.
 - پیش از این تغییر، همه پیشرفت اصلی در مسیر ثابت `user://pasoo_city_buildit_save.json` ذخیره می‌شد؛ شناسه حساب به فایل متصل نبود. در این شاخه، SaveManager هم برای خواندن و هم نوشتن از مسیر حساب‌محور استفاده می‌کند.
-- تنظیمات صدا، لرزش، گرافیک و پیشرفت Tutorial در پروفایل JSON هر بازیکن ذخیره می‌شوند؛ فایل‌های محلی تنظیمات نیز با شناسه همان بازیکن scope می‌شوند.
+- تنظیمات صدا، لرزش، گرافیک، اعلان‌های ساختمان/تولید و اعلان‌های پیشرفت شهر، به‌همراه پیشرفت Tutorial در پروفایل JSON هر بازیکن ذخیره می‌شوند؛ فایل‌های cache محلی تنظیمات نیز با شناسه همان بازیکن scope می‌شوند.
+- تنظیمات اعلان در مسیر `preferences.notifications` داخل JSON شهر قرار دارند. فایل قدیمی `notification_preferences.cfg` فقط برای مهاجرت بازیکن مهمان خوانده می‌شود؛ انتخاب‌های مهمان به حساب تازه‌وارد منتقل نمی‌شوند. تغییر هر toggle فوراً روی سیستم زنده اعمال و در ذخیره محلی ثبت می‌شود؛ در حالت ورودشده همان snapshot از صف پروفایل خصوصی GitHub عبور می‌کند.
 - TradeManager شامل Trade Depot و معاملات NPC/بین مناطق است؛ بازار واقعی بازیکن‌به‌بازیکن نیست.
 - پیش از این شاخه، سرور JSON مستقل، احراز هویت Google و اتصال آنلاین حساب در مخزن وجود نداشت.
 
@@ -58,6 +59,26 @@
 - Godot: جداسازی مسیر SaveManager بین شناسه‌های 100001 و 100002.
 - CI: Godot Validation، GameplaySmoke، Android export، Web/Chromium و Node tests.
 - تا استقرار واقعی سرور و پیکربندی Google/D1، ورود واقعی Google یا multiplayer production تأییدشده نیست.
+
+## ممیزی زنجیره رویداد تنظیمات (Settings Event → State → JSON)
+
+| کنترل / فرم | رویداد و مسیر اجرا | اثر واقعی | محل ذخیره |
+|---|---|---|---|
+| Music / Sounds | `Button.toggled → AudioManager.set_*_enabled` | پخش/توقف موسیقی و افکت‌ها | `preferences.audio.*` در JSON؛ فایل CFG فقط cache محلی حساب‌محور |
+| Advanced volume | `HSlider.value_changed → AudioManager.set_*_volume` | تغییر فوری صدای خروجی | `preferences.audio.*`؛ نوشتن دیسک و JSON با debounce |
+| Graphics quality | `OptionButton.item_selected → GraphicsSettingsManager.set_quality` | اعمال Low / Balanced / High روی 3D viewport | `preferences.graphics.quality` |
+| Device benchmark | `Button.pressed → PerformanceMonitor.start_benchmark` | اجرای سنجش ۳۰ ثانیه‌ای و گزارش نتیجه در HUD | گزارش runtime؛ داده حسابی/مالی تولید نمی‌کند |
+| Change City Name | `Button.pressed → GameManager.set_city_name → SaveManager.save_game` | اعتبارسنجی و تغییر نام شهر | `game.city_name`؛ برای حساب واردشده sync فوری پروفایل |
+| Building alerts / City updates | `CheckButton.toggled → SaveManager.set_notification_preference` | اعمال فوری روی NotificationLayer و CitizenFeedback | `preferences.notifications.*`؛ sync صف‌شده برای پروفایل خصوصی |
+| Wallet | `Button.pressed → EconomyManager balances` | نمایش موجودی واقعی Simoleons / SimCash / Golden Keys | داده از JSON اقتصاد بازی خوانده می‌شود؛ این پنل خرید بانکی انجام نمی‌دهد |
+| Wallet purchase info | `Button.pressed → _show_wallet_purchase_info` | توضیح صریح عدم فعال‌بودن پرداخت واقعی؛ بدون درخواست پرداخت | هیچ تراکنش یا تغییری در موجودی ایجاد نمی‌کند |
+| Help | `Button.pressed → TutorialGuide.open_help` | بازکردن راهنمای تعاملی شهر | وضعیت مراحل Tutorial در `tutorial` و فایل cache مستقل |
+| Google account | `Button.pressed → PlayerAccountManager.begin_google_sign_in / logout` | شروع ورود امن یا خروج؛ خطای شروع ورود دکمه را قفل نمی‌کند | هویت/توکن در JSON ذخیره نمی‌شود؛ فقط پروفایل بازیکن در JSON خصوصی سرور |
+| Close | `Button.pressed → _close_settings_panel` | بستن Overlay و آزادسازی پنل | نیازی به ذخیره ندارد |
+
+**قواعد ذخیره‌سازی:** تغییرات مهم ابتدا در فایل محلی فعال نوشته می‌شوند. وقتی نشست معتبر وجود دارد، همان snapshot از مسیر `PlayerAccountManager.queue_profile_save` به API پروفایل و JSON خصوصی `players/<player_id>.json` ارسال می‌شود. خطای sync ابری از ذخیره محلی جدا گزارش می‌شود؛ شکست شبکه نباید انتخاب کاربر را بی‌صدا حذف کند. تنظیمات بازیکن مهمان نیز در save محلی خودش می‌ماند و به حساب تازه‌وارد نشت نمی‌کند.
+
+**قواعد Responsive:** پنل اصلی Settings در صفحه اصلی بدون اسکرول و با grid دو ستونه باقی می‌ماند؛ فرم پیشرفته About اسکرول عمودی مستقل دارد. اندازه پنجره‌های modal و عرض ورودی نام شهر بر اساس viewport محدود می‌شوند تا در موبایل افقی از صفحه بیرون نزنند.
 
 ## نمونه قرارداد JSON
 ```json

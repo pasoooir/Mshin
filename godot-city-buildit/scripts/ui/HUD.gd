@@ -186,6 +186,8 @@ var _catalog_selected_type := ""
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
 	PlayerAccountManager.session_changed.connect(_on_settings_account_session_changed)
+	PlayerAccountManager.profile_loaded.connect(_on_settings_profile_loaded)
+	PlayerAccountManager.profile_save_failed.connect(_on_settings_profile_save_failed)
 	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
 	_settings_login_blink_timer = Timer.new()
 	_settings_login_blink_timer.wait_time = 0.55
@@ -5167,13 +5169,29 @@ func _on_settings_account_action_pressed() -> void:
 		_refresh_settings_account_section()
 		return
 	_settings_account_action.disabled = true
-	PlayerAccountManager.begin_google_sign_in()
+	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
+	if not sign_in_started:
+		_settings_account_action.disabled = false
+		_refresh_settings_account_section()
+		return
 	if is_instance_valid(_settings_account_status):
 		_settings_account_status.text = "Connecting to Google securely…"
 
-func _on_settings_account_session_changed(_player_id: int, _authenticated: bool) -> void:
+func _on_settings_account_session_changed(_player_id: int, authenticated: bool) -> void:
 	_update_settings_login_indicator()
 	_refresh_settings_account_section()
+	if not authenticated:
+		SaveManager.load_preferences_from_active_save()
+
+
+func _on_settings_profile_loaded(_player_id: int, _revision: int) -> void:
+	SaveManager.load_preferences_from_active_save()
+
+
+func _on_settings_profile_save_failed(reason: String) -> void:
+	if is_instance_valid(status_label):
+		status_label.text = "Settings are saved on this device, but cloud sync failed. They will retry when the connection is restored."
+	push_warning("Player profile settings sync failed: " + reason)
 
 func _on_settings_account_feedback(message: String, success: bool) -> void:
 	if is_instance_valid(_settings_account_status):
@@ -5267,8 +5285,8 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
-	close.add_theme_font_size_override("font_size", _popup_font_size(28))
+	close.custom_minimum_size = Vector2(54, 54) * compact_scale
+	close.add_theme_font_size_override("font_size", _settings_font_size(25))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
 	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#143A57")))
@@ -5279,7 +5297,7 @@ func _show_settings_panel() -> void:
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 7 * minf(1.0, viewport_size.y / 520.0))
+	content.add_theme_constant_override("separation", 7 * compact_scale)
 	layout.add_child(content)
 
 	var audio_row := GridContainer.new()
@@ -5296,7 +5314,7 @@ func _show_settings_panel() -> void:
 	actions.name = "SettingsMainActions"
 	actions.columns = 2
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	actions.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	actions.add_theme_constant_override("h_separation", 12 * compact_scale)
 	actions.add_theme_constant_override("v_separation", 7 * compact_scale)
 	content.add_child(actions)
@@ -5523,7 +5541,13 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 
 
 func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
-	var scale_factor := _ui_scale
+	var viewport_size := get_viewport().get_visible_rect().size
+	var safe_size := Vector2i(
+		mini(size.x, maxi(280, roundi(viewport_size.x * 0.92))),
+		mini(size.y, maxi(220, roundi(viewport_size.y * 0.86)))
+	)
+	var scale_factor := minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0))
+	scale_factor = maxf(0.62, scale_factor)
 	dialog.add_theme_color_override("font_color", Color("#EAF7FF"))
 	dialog.add_theme_color_override("title_color", Color("#F5FBFF"))
 	dialog.add_theme_color_override("font_shadow_color", Color("#082A42"))
@@ -5553,7 +5577,7 @@ func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
 	dialog.add_theme_color_override("check_button_color", Color("#54D8F5"))
 	dialog.add_theme_color_override("slider_color", Color("#53D6F4"))
 	dialog.close_requested.connect(dialog.queue_free)
-	dialog.popup_centered(size)
+	dialog.popup_centered(safe_size)
 
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
@@ -5623,51 +5647,81 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
-	if not PlayerAccountManager.is_authenticated():
-		var login_dialog := ConfirmationDialog.new()
-		login_dialog.name = "CityNameLoginRequiredDialog"
-		login_dialog.title = "Sign in required"
-		login_dialog.dialog_text = "Sign in with Google before changing your city name. Your city profile will be saved to your private player JSON file."
-		login_dialog.ok_button_text = "Continue with Google"
-		login_dialog.confirmed.connect(_on_settings_account_action_pressed)
-		login_dialog.canceled.connect(login_dialog.queue_free)
-		add_child(login_dialog)
-		_style_settings_dialog(login_dialog, Vector2i(520, 220))
-		return
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "ChangeCityNameDialog"
 	dialog.title = "Change City Name"
 	dialog.ok_button_text = "Save city name"
+	var form := VBoxContainer.new()
+	form.name = "CityNameForm"
+	form.add_theme_constant_override("separation", 8)
+	dialog.add_child(form)
 	var input := LineEdit.new()
 	input.name = "CityNameInput"
 	input.text = GameManager.city_name
 	input.max_length = 28
 	input.placeholder_text = "Enter your city name"
-	input.custom_minimum_size.x = 360 * _ui_scale
-	dialog.add_child(input)
+	input.custom_minimum_size = Vector2(minf(360.0 * _ui_scale, get_viewport().get_visible_rect().size.x * 0.72), 48 * _ui_scale)
+	input.add_theme_font_size_override("font_size", _settings_font_size(19))
+	form.add_child(input)
+	var validation := Label.new()
+	validation.name = "CityNameValidation"
+	validation.text = "%d / 28 characters" % input.text.length()
+	validation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	validation.add_theme_font_size_override("font_size", _settings_font_size(14))
+	validation.add_theme_color_override("font_color", Color("#A8D7EB"))
+	form.add_child(validation)
+	input.text_changed.connect(func(next_text: String) -> void:
+		validation.text = "%d / 28 characters" % next_text.length()
+		validation.add_theme_color_override("font_color", Color("#A8D7EB"))
+	)
+	var save_in_progress := false
+	input.text_submitted.connect(func(_submitted_text: String) -> void:
+		dialog.confirmed.emit()
+	)
 	dialog.confirmed.connect(func() -> void:
+		if save_in_progress:
+			return
+		save_in_progress = true
 		var previous_name := GameManager.city_name
 		if not GameManager.set_city_name(input.text):
-			status_label.text = "Enter a city name with at least one visible character."
-			dialog.queue_free()
+			save_in_progress = false
+			validation.text = "Please enter a city name before saving."
+			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+			input.grab_focus()
 			return
-		SaveManager.save_game()
-		var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-		var synced := false
-		if saved_state is Dictionary:
-			synced = await PlayerAccountManager.save_profile_now(saved_state)
-		if synced:
-			status_label.text = "City name updated and securely saved to your player profile."
-		else:
+		if not SaveManager.save_game():
 			GameManager.city_name = previous_name
-			SaveManager.save_game()
-			status_label.text = "Could not sync your city name. Please check your connection and try again."
+			save_in_progress = false
+			validation.text = "Could not save locally. Your previous city name is unchanged."
+			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+			input.grab_focus()
+			return
+		if PlayerAccountManager.is_authenticated():
+			var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+			if saved_state is Dictionary:
+				status_label.text = "City name saved locally. Syncing your player profile…"
+				call_deferred("_sync_city_name_profile", saved_state)
+			else:
+				status_label.text = "City name saved locally, but the profile snapshot could not be prepared."
+		else:
+			status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
 		dialog.queue_free()
 	)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	_style_settings_dialog(dialog, Vector2i(520, 220))
+	_style_settings_dialog(dialog, Vector2i(520, 250))
 	input.grab_focus()
+	input.select_all()
+
+
+func _sync_city_name_profile(saved_state: Dictionary) -> void:
+	var synced := await PlayerAccountManager.save_profile_now(saved_state)
+	if not is_instance_valid(status_label):
+		return
+	if synced:
+		status_label.text = "City name updated and securely synced to your player profile."
+	else:
+		status_label.text = "City name saved on this device. Online sync failed; please retry when connected."
 
 
 func _apply_notification_preference(key: String, enabled: bool) -> void:
@@ -5683,52 +5737,97 @@ func _apply_notification_preference(key: String, enabled: bool) -> void:
 		if is_instance_valid(citizen_feedback) and citizen_feedback.has_method("set_city_updates_enabled"):
 			citizen_feedback.set_city_updates_enabled(enabled)
 
+
+func _on_notification_preference_toggled(enabled: bool, key: String, toggle: CheckButton, feedback: Label) -> void:
+	if not SaveManager.set_notification_preference(key, enabled):
+		toggle.set_pressed_no_signal(not enabled)
+		feedback.text = "Could not save this setting. Your previous choice has been restored."
+		feedback.add_theme_color_override("font_color", Color("#FFB8A8"))
+		return
+	_apply_notification_preference(key, enabled)
+	feedback.text = "Preferences saved to this city profile."
+	feedback.add_theme_color_override("font_color", Color("#A8F0D0"))
+
+
 func _show_notification_settings() -> void:
-	var config := ConfigFile.new()
-	config.load("user://notification_preferences.cfg")
+	var preferences := SaveManager.get_notification_preferences()
 	var dialog := AcceptDialog.new()
 	dialog.name = "NotificationSettingsDialog"
 	dialog.title = "Notification Settings"
 	var content := VBoxContainer.new()
 	content.name = "NotificationSettingsContent"
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", 14)
 	dialog.add_child(content)
+	var intro := Label.new()
+	intro.text = "Choose which city events can interrupt your building session. Changes apply immediately."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_color_override("font_color", Color("#D7EAF7"))
+	content.add_child(intro)
+	var feedback := Label.new()
+	feedback.name = "NotificationSettingsFeedback"
+	feedback.text = "Changes are saved automatically."
+	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	feedback.add_theme_color_override("font_color", Color("#A8D7EB"))
+	content.add_child(feedback)
 	for preference in [{"key":"building_alerts","node_name":"BuildingAlertsToggle","label":"Building and production alerts"},{"key":"city_updates","node_name":"CityUpdatesToggle","label":"City progress updates"}]:
+		var key := str(preference.key)
 		var toggle := CheckButton.new()
 		toggle.name = str(preference.node_name)
 		toggle.text = str(preference.label)
-		toggle.button_pressed = bool(config.get_value("notifications", str(preference.key), true))
-		toggle.toggled.connect(func(value: bool) -> void:
-			var key := str(preference.key)
-			config.set_value("notifications", key, value)
-			var save_error := config.save("user://notification_preferences.cfg")
-			if save_error == OK:
-				_apply_notification_preference(key, value)
-			else:
-				push_warning("Could not save notification preference '%s': %s" % [key, error_string(save_error)])
-		)
+		toggle.button_pressed = bool(preferences.get(key, true))
+		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle.custom_minimum_size.y = 52 * _ui_scale
+		toggle.add_theme_font_size_override("font_size", _settings_font_size(19))
+		toggle.toggled.connect(_on_notification_preference_toggled.bind(key, toggle, feedback))
 		content.add_child(toggle)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	_style_settings_dialog(dialog, Vector2i(560, 260))
+	_style_settings_dialog(dialog, Vector2i(560, 300))
 
 
 func _show_wallet_panel() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsWalletDialog"
 	dialog.title = "City Wallet"
-	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nReal-money purchases and bank gateway are not enabled yet." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
-	var top_up := Button.new()
-	top_up.name = "WalletTopUpDisabled"
-	top_up.text = "Add funds — coming soon"
-	top_up.disabled = true
-	top_up.custom_minimum_size = Vector2(300, 48) * _ui_scale
-	dialog.add_child(top_up)
+	var wallet_lines := [
+		"Simoleons: %s" % _format_compact_number(EconomyManager.simoleons),
+		"SimCash: %s" % _format_compact_number(EconomyManager.sim_cash),
+		"Golden Keys: %s" % _format_compact_number(EconomyManager.golden_keys)
+	]
+	var recent_transactions := EconomyManager.get_recent_transactions(3)
+	recent_transactions.reverse()
+	wallet_lines.append("\nRecent activity")
+	if recent_transactions.is_empty():
+		wallet_lines.append("No transactions recorded yet.")
+	else:
+		for transaction in recent_transactions:
+			var transaction_type := str(transaction.get("type", "transaction"))
+			var sign := "+" if transaction_type.contains("gain") else "−"
+			var currency := str(transaction.get("currency", "currency")).replace("_", " ").capitalize()
+			wallet_lines.append("%s%s %s" % [sign, _format_compact_number(int(transaction.get("amount", 0))), currency])
+	dialog.dialog_text = "\n".join(wallet_lines) + "\n\nYour balances and recent activity are saved with your city profile."
+	var purchase_info := Button.new()
+	purchase_info.name = "WalletTopUpInfo"
+	purchase_info.text = "About adding funds"
+	purchase_info.custom_minimum_size = Vector2(300, 48) * _ui_scale
+	purchase_info.pressed.connect(_show_wallet_purchase_info)
+	dialog.add_child(purchase_info)
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
 	_style_settings_dialog(dialog, Vector2i(560, 320))
+
+
+func _show_wallet_purchase_info() -> void:
+	var info := AcceptDialog.new()
+	info.name = "WalletPurchaseInfoDialog"
+	info.title = "Purchases are not available yet"
+	info.dialog_text = "Real-money purchases and bank payments are not enabled in this version. No payment will be requested or processed. You can continue earning and using in-game currencies through city gameplay."
+	info.confirmed.connect(info.queue_free)
+	info.canceled.connect(info.queue_free)
+	add_child(info)
+	_style_settings_dialog(info, Vector2i(520, 260))
 
 
 func _format_compact_number(value: int) -> String:
