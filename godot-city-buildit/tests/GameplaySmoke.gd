@@ -3245,6 +3245,10 @@ func _test_settings_panel_contract() -> void:
 	await get_tree().process_frame
 	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
+	var content_scroll := hud.find_child("SettingsContentScroll", true, false) as ScrollContainer
+	_check(content_scroll != null and content_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and content_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Settings content must scroll vertically on short mobile landscape screens without horizontal overflow.")
+	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
+	_check(heading != null and content_scroll != null and content_scroll.get_parent() == heading.get_parent(), "Settings title and close button must remain fixed outside the scrolling content.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
 	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction"]:
 		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
