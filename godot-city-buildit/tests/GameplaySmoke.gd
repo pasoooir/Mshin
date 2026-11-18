@@ -3245,6 +3245,16 @@ func _test_settings_panel_contract() -> void:
 	await get_tree().process_frame
 	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
+	var categories := hud.find_child("SettingsCategories", true, false) as TabContainer
+	_check(categories != null and categories.get_tab_count() == 4, "Settings must separate Audio, Graphics, Account and Device into clear game-style categories.")
+	if categories != null and categories.get_tab_count() == 4:
+		_check(categories.get_tab_title(0) == "Audio" and categories.get_tab_title(1) == "Graphics" and categories.get_tab_title(2) == "Account" and categories.get_tab_title(3) == "Device", "Settings category tabs must use concise, recognizable labels.")
+		var account_page := categories.get_tab_control(2)
+		var graphics_page := categories.get_tab_control(1)
+		var device_page := categories.get_tab_control(3)
+		_check(account_page != null and account_page.find_child("SettingsAccountCard", true, false) != null, "Google account and reward information must live on its own Account page.")
+		_check(graphics_page != null and graphics_page.find_child("GraphicsQualitySelect", true, false) != null, "Graphics controls must be isolated on the Graphics page.")
+		_check(device_page != null and device_page.find_child("RunDeviceBenchmarkButton", true, false) != null, "Device benchmark must be isolated on the Device page.")
 	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
 		var slider := hud.find_child(node_name, true, false) as HSlider
 		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
