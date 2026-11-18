@@ -3267,7 +3267,7 @@ func _test_settings_panel_contract() -> void:
 	_check(music_control != null and music_control.get_theme_font_size("font_size") >= 20, "Music and Sounds switch text must be at least 20 px.")
 	_check(music_caption != null and music_caption.get_theme_font_size("font_size") >= 22, "Music and Sounds captions must be at least 22 px.")
 	_check(account_status != null and account_status.get_theme_font_size("font_size") >= 20, "Account status must remain readable on phone, tablet and web.")
-	_check(google_action != null and google_action.get_theme_font_size("font_size") >= 21, "Google sign-in text must remain readable on every platform.")
+	_check(google_action != null and hud.find_child("GmailButtonText", true, false) is RichTextLabel and (hud.find_child("GmailButtonText", true, false) as RichTextLabel).get_theme_font_size("normal_font_size") >= 23, "Google sign-in text must remain readable on every platform.")
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
 		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat
