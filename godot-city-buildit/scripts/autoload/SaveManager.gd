@@ -13,10 +13,58 @@ var autosave_elapsed: float = 0.0
 var is_loading: bool = false
 var persistence_ready: bool = false
 
+const DEFAULT_NOTIFICATION_PREFERENCES := {
+	"building_alerts": true,
+	"city_updates": true
+}
+var _notification_preferences: Dictionary = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
+
 func get_active_save_path() -> String:
 	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
 		return PlayerAccountManager.get_local_save_path()
 	return SAVE_PATH
+
+func get_notification_preferences() -> Dictionary:
+	return _notification_preferences.duplicate(true)
+
+
+func set_notification_preference(key: String, enabled: bool) -> bool:
+	if not DEFAULT_NOTIFICATION_PREFERENCES.has(key):
+		return false
+	var previous_value := bool(_notification_preferences.get(key, true))
+	_notification_preferences[key] = enabled
+	_apply_notification_preferences_to_scene()
+	if persistence_ready and not is_loading and not save_game():
+		_notification_preferences[key] = previous_value
+		_apply_notification_preferences_to_scene()
+		return false
+	return true
+
+
+func _load_legacy_notification_preferences() -> void:
+	_notification_preferences = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
+	# Never copy a guest device's notification choices into a newly signed-in account.
+	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
+		return
+	var config := ConfigFile.new()
+	if config.load("user://notification_preferences.cfg") != OK:
+		return
+	for key in DEFAULT_NOTIFICATION_PREFERENCES.keys():
+		_notification_preferences[key] = bool(config.get_value("notifications", key, DEFAULT_NOTIFICATION_PREFERENCES[key]))
+
+
+func _apply_notification_preferences_to_scene() -> void:
+	var scene = get_tree().current_scene
+	if scene == null:
+		return
+	var hud = scene.get_node_or_null("HUD")
+	var alert_layer = hud.get_node_or_null("BuildingNotificationLayer") if hud != null else null
+	var citizen_feedback = scene.get_node_or_null("CitizenFeedback")
+	if is_instance_valid(alert_layer) and alert_layer.has_method("set_building_alerts_enabled"):
+		alert_layer.set_building_alerts_enabled(bool(_notification_preferences.get("building_alerts", true)))
+	if is_instance_valid(citizen_feedback) and citizen_feedback.has_method("set_city_updates_enabled"):
+		citizen_feedback.set_city_updates_enabled(bool(_notification_preferences.get("city_updates", true)))
+
 
 func _process(delta: float) -> void:
 	if is_loading:
@@ -124,6 +172,7 @@ func save_game() -> bool:
 		"buildings": building_data,
 		"tutorial": _capture_tutorial_state(),
 		"preferences": {
+			"notifications": get_notification_preferences(),
 			"audio": AudioManager.to_save_dict(),
 			"haptics": HapticsManager.to_save_dict(),
 			"graphics": GraphicsSettingsManager.to_save_dict()
@@ -155,6 +204,8 @@ func _apply_saved_region_storage(region_snapshot: Dictionary, legacy_storage: Di
 func load_game() -> bool:
 	var active_save_path := get_active_save_path()
 	if not FileAccess.file_exists(active_save_path):
+		_load_legacy_notification_preferences()
+		_apply_notification_preferences_to_scene()
 		load_completed.emit(false)
 		return false
 
@@ -238,6 +289,15 @@ func load_game() -> bool:
 	if tutorial != null and tutorial.has_method("from_save_dict") and parsed.get("tutorial", {}) is Dictionary:
 		tutorial.from_save_dict(parsed.get("tutorial", {}))
 	var preferences: Dictionary = parsed.get("preferences", {})
+	var saved_notifications: Variant = preferences.get("notifications", {})
+	if saved_notifications is Dictionary and not saved_notifications.is_empty():
+		_notification_preferences = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
+		for key in DEFAULT_NOTIFICATION_PREFERENCES.keys():
+			if saved_notifications.has(key):
+				_notification_preferences[key] = bool(saved_notifications[key])
+	else:
+		_load_legacy_notification_preferences()
+	_apply_notification_preferences_to_scene()
 	AudioManager.from_save_dict(preferences.get("audio", {}))
 	HapticsManager.from_save_dict(preferences.get("haptics", {}))
 	GraphicsSettingsManager.from_save_dict(preferences.get("graphics", {}))
