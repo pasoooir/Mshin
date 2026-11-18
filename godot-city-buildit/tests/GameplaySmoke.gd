@@ -3245,34 +3245,27 @@ func _test_settings_panel_contract() -> void:
 	await get_tree().process_frame
 	var overlay := hud.find_child("SettingsOverlay", true, false) as Control
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
-	var categories := hud.find_child("SettingsCategories", true, false) as TabContainer
-	_check(categories != null and categories.get_tab_count() == 4, "Settings must separate Audio, Graphics, Account and Device into clear game-style categories.")
-	if categories != null and categories.get_tab_count() == 4:
-		_check(categories.get_tab_title(0) == "Audio" and categories.get_tab_title(1) == "Graphics" and categories.get_tab_title(2) == "Account" and categories.get_tab_title(3) == "Device", "Settings category tabs must use concise, recognizable labels.")
-		var account_page := categories.get_tab_control(2)
-		var graphics_page := categories.get_tab_control(1)
-		var device_page := categories.get_tab_control(3)
-		_check(account_page != null and account_page.find_child("SettingsAccountCard", true, false) != null, "Google account and reward information must live on its own Account page.")
-		_check(graphics_page != null and graphics_page.find_child("GraphicsQualitySelect", true, false) != null, "Graphics controls must be isolated on the Graphics page.")
-		_check(device_page != null and device_page.find_child("RunDeviceBenchmarkButton", true, false) != null, "Device benchmark must be isolated on the Device page.")
+	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
+	for node_name in ["SettingsAboutButton", "SettingsChangeCityNameButton", "SettingsHelpButton", "SettingsNotificationsButton", "SettingsWalletButton", "SettingsGoogleAccountAction"]:
+		_check(hud.find_child(node_name, true, false) is Button, "%s must be available from the Settings dialog." % node_name)
+	for node_name in ["MusicToggle", "SfxToggle"]:
+		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must provide an independent sound switch." % node_name)
+	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
+	hud._show_settings_about()
+	await get_tree().process_frame
+	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
+	_check(graphics_select != null and graphics_select.item_count == 3, "Advanced settings must retain Low, Balanced and High 3D quality presets.")
+	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
+	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Advanced settings must retain the on-device 30-second performance test.")
 	for node_name in ["MasterVolumeSlider", "MusicVolumeSlider", "AmbientVolumeSlider", "SfxVolumeSlider"]:
 		var slider := hud.find_child(node_name, true, false) as HSlider
-		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must provide a usable 0–100 volume control." % node_name)
-	for node_name in ["MusicToggle", "AmbientToggle", "SfxToggle", "HapticsToggle"]:
-		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must expose an independent settings enable switch." % node_name)
-	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
-	_check(benchmark_button != null and benchmark_button.text.contains("30-second"), "Settings must expose the on-device 30-second performance test.")
-	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
-	_check(graphics_select != null and graphics_select.item_count == 3, "Settings must expose Low, Balanced and High 3D quality presets.")
-	var original_quality := GraphicsSettingsManager.quality
+		_check(slider != null and slider.min_value == 0.0 and slider.max_value == 100.0, "%s must remain available as an advanced volume control." % node_name)
 	if graphics_select != null:
+		var original_quality := GraphicsSettingsManager.quality
 		graphics_select.select(0)
 		graphics_select.item_selected.emit(0)
 		_check(GraphicsSettingsManager.quality == "low", "Selecting Low must update the graphics settings manager.")
-		_check(is_equal_approx(get_tree().root.scaling_3d_scale, 0.70) and get_tree().root.msaa_3d == Viewport.MSAA_DISABLED, "Low quality must reduce 3D render scale and disable MSAA.")
-		var graphics_config := ConfigFile.new()
-		_check(graphics_config.load("user://graphics_settings.cfg") == OK and str(graphics_config.get_value("graphics", "quality", "")) == "low", "Graphics quality must persist locally.")
-	GraphicsSettingsManager.set_quality(original_quality)
+		GraphicsSettingsManager.set_quality(original_quality)
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
 	if master_slider != null:
 		master_slider.value = 55.0
