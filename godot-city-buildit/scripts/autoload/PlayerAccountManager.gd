@@ -110,6 +110,7 @@ func claim_login_rewards() -> Dictionary:
 	if not response.ok:
 		push_warning("Could not claim login rewards: " + response.error)
 		return {"ok": false, "error": response.error}
+	profile_revision = maxi(profile_revision, int(response.body.get("revision", profile_revision)))
 	var balances: Dictionary = response.body.get("balances", {})
 	EconomyManager.simoleons = maxi(0, int(balances.get("simoleons", EconomyManager.simoleons)))
 	EconomyManager.sim_cash = maxi(0, int(balances.get("sim_cash", EconomyManager.sim_cash)))
