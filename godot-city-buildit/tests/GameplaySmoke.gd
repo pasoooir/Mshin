@@ -3256,6 +3256,8 @@ func _test_settings_panel_contract() -> void:
 	for node_name in ["MusicToggle", "SfxToggle"]:
 		_check(hud.find_child(node_name, true, false) is CheckButton, "%s must provide an independent sound switch." % node_name)
 	_check(hud.find_child("Facebook", true, false) == null, "Settings must not show an unrequested Facebook login action.")
+	_check(get_tree().current_scene.find_child("PlayerAccountPanel", true, false) == null, "The duplicate floating guest/account panel must not compete with Settings.")
+	_check(get_tree().current_scene.find_child("ReopenTutorial", true, false) == null, "The redundant floating Help shortcut must be removed from the first screen.")
 	var music_toggle := hud.find_child("MusicToggle", true, false) as CheckButton
 	if music_toggle != null:
 		music_toggle.button_pressed = not original_music_enabled
