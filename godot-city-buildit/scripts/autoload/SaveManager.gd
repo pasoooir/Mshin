@@ -1,6 +1,7 @@
 extends Node
 
 signal save_completed(path: String)
+signal save_failed(reason: String)
 signal load_completed(success: bool)
 
 const RoadSystemScript = preload("res://scripts/systems/RoadSystem.gd")
@@ -12,12 +13,87 @@ const AUTOSAVE_INTERVAL: float = 30.0
 var autosave_elapsed: float = 0.0
 var is_loading: bool = false
 var persistence_ready: bool = false
+var _save_debounce_timer: Timer
+var _save_pending := false
 
 const DEFAULT_NOTIFICATION_PREFERENCES := {
 	"building_alerts": true,
 	"city_updates": true
 }
 var _notification_preferences: Dictionary = DEFAULT_NOTIFICATION_PREFERENCES.duplicate(true)
+
+func _ready() -> void:
+	_save_debounce_timer = Timer.new()
+	_save_debounce_timer.name = "PlayerJsonSaveDebounce"
+	_save_debounce_timer.one_shot = true
+	_save_debounce_timer.wait_time = 0.75
+	_save_debounce_timer.timeout.connect(_flush_scheduled_save)
+	add_child(_save_debounce_timer)
+	call_deferred("_connect_persistence_signals")
+
+
+func _connect_persistence_signals() -> void:
+	if StorageManager.has_signal("storage_changed") and not StorageManager.storage_changed.is_connected(schedule_save):
+		StorageManager.storage_changed.connect(schedule_save)
+	if EconomyManager.has_signal("simoleons_changed"):
+		EconomyManager.simoleons_changed.connect(_on_economy_balance_changed)
+		EconomyManager.sim_cash_changed.connect(_on_economy_balance_changed)
+		EconomyManager.keys_changed.connect(_on_economy_balance_changed)
+		EconomyManager.transaction_completed.connect(_on_economy_transaction_completed)
+		EconomyManager.ledger_changed.connect(schedule_save)
+	if AchievementManager.has_signal("state_changed"):
+		AchievementManager.state_changed.connect(schedule_save)
+	if RegionManager.has_signal("region_state_changed"):
+		RegionManager.region_state_changed.connect(schedule_save)
+		RegionManager.region_changed.connect(_on_region_changed_for_save)
+	if BuildManager.has_signal("building_placed"):
+		BuildManager.building_placed.connect(_on_building_placed_for_save)
+		BuildManager.building_removed.connect(_on_building_removed_for_save)
+		BuildManager.construction_started.connect(_on_building_id_changed_for_save)
+		BuildManager.construction_finished.connect(_on_building_id_changed_for_save)
+
+
+func schedule_save() -> void:
+	if is_loading:
+		return
+	_save_pending = true
+	if persistence_ready and is_instance_valid(_save_debounce_timer):
+		_save_debounce_timer.start(0.75)
+
+
+func _flush_scheduled_save() -> void:
+	if not _save_pending or is_loading or not persistence_ready:
+		return
+	_save_pending = false
+	if not save_game():
+		_save_pending = true
+		if is_instance_valid(_save_debounce_timer):
+			_save_debounce_timer.start(5.0)
+
+
+func _on_economy_balance_changed(_amount: int) -> void:
+	schedule_save()
+
+
+func _on_economy_transaction_completed(_transaction_type: String, _amount: int) -> void:
+	schedule_save()
+
+
+func _on_region_changed_for_save(_region_id: String) -> void:
+	schedule_save()
+
+
+func _on_building_placed_for_save(_building_data: Dictionary) -> void:
+	schedule_save()
+
+
+func _on_building_removed_for_save(_building_id: String) -> void:
+	schedule_save()
+
+
+func _on_building_id_changed_for_save(_building_id: String) -> void:
+	schedule_save()
+
 
 func get_active_save_path() -> String:
 	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
@@ -93,6 +169,10 @@ func _apply_notification_preferences_to_scene() -> void:
 func _process(delta: float) -> void:
 	if is_loading:
 		return
+	if _save_pending and persistence_ready and is_instance_valid(_save_debounce_timer) and _save_debounce_timer.is_stopped():
+		_save_debounce_timer.start(0.75)
+	if not persistence_ready:
+		return
 	autosave_elapsed += delta
 	if autosave_elapsed >= AUTOSAVE_INTERVAL:
 		autosave_elapsed = 0.0
@@ -167,6 +247,7 @@ func _capture_tutorial_state() -> Dictionary:
 func save_game() -> bool:
 	var region_snapshot := capture_region_snapshot()
 	if region_snapshot.is_empty():
+		save_failed.emit("The active city scene is not ready for a JSON snapshot.")
 		return false
 	RegionManager.store_active_region_snapshot(region_snapshot)
 	var road_data: Array = region_snapshot.get("roads", [])
@@ -205,14 +286,22 @@ func save_game() -> bool:
 	var active_save_path := get_active_save_path()
 	var absolute_save_directory := ProjectSettings.globalize_path(active_save_path.get_base_dir())
 	if DirAccess.make_dir_recursive_absolute(absolute_save_directory) != OK and not DirAccess.dir_exists_absolute(absolute_save_directory):
-		push_error("Could not create player save directory: " + active_save_path.get_base_dir())
+		var directory_error := "Could not create player save directory: " + active_save_path.get_base_dir()
+		push_error(directory_error)
+		save_failed.emit(directory_error)
 		return false
 	var file := FileAccess.open(active_save_path, FileAccess.WRITE)
 	if file == null:
-		push_error("Could not write city save file: %s" % FileAccess.get_open_error())
+		var file_error := "Could not write city save file: %s" % FileAccess.get_open_error()
+		push_error(file_error)
+		save_failed.emit(file_error)
 		return false
 	file.store_string(JSON.stringify(payload))
 	file.close()
+	_save_pending = false
+	autosave_elapsed = 0.0
+	if is_instance_valid(_save_debounce_timer):
+		_save_debounce_timer.stop()
 	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
 		PlayerAccountManager.queue_profile_save(payload)
 	save_completed.emit(active_save_path)
