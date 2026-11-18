@@ -19,7 +19,7 @@ var _last_login_rewards: Dictionary = {}
 func _ready() -> void:
 	var preferences := ConfigFile.new()
 	if preferences.load("user://account_session.cfg") == OK and bool(preferences.get_value("account", "google_auto_sign_in", false)):
-				call_deferred("begin_google_sign_in", true)
+		call_deferred("begin_google_sign_in", true)
 
 func _set_google_auto_sign_in(enabled: bool) -> void:
 	var preferences := ConfigFile.new()
@@ -446,8 +446,3 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 			SaveManager.save_game()
 	elif not silent_attempt:
 		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
-
-			SaveManager.save_game()
-	else:
-				if not silent_attempt:
-			authentication_feedback.emit("Google sign-in failed. Please try again.", false)
