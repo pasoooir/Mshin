@@ -152,3 +152,25 @@ test("normal profile saves cannot overwrite either server-owned currency", async
   assert.equal(profile.game_state.economy.simoleons, 200);
   assert.equal(profile.game_state.economy.sim_cash, 0);
 });
+
+
+test("first-login eligibility survives an initial profile save before reward claim", async () => {
+  const { coordinator, files } = setup();
+  const freshId = 100004;
+  const initial = await call(coordinator, freshId, "/v1/profile");
+  assert.equal(initial.status, 200);
+  const created = await call(coordinator, freshId, "/v1/profile", "PUT", {
+    expected_revision: 0,
+    game_state: { economy: { simoleons: 25000, sim_cash: 25 }, storage: { capacity: 30, items: {} } }
+  });
+  assert.equal(created.status, 200);
+  assert.equal(files.get("players/100004.json").market_account.rewards.welcome_eligible, true);
+
+  const claimed = await call(coordinator, freshId, "/v1/rewards/claim", "POST", {});
+  assert.equal(claimed.status, 200);
+  const body = await claimed.json();
+  assert.equal(body.welcome.granted, true);
+  assert.equal(body.balances.simoleons, 30100);
+  assert.equal(body.balances.sim_cash, 35);
+  assert.equal(files.get("players/100004.json").market_account.rewards.welcome_eligible, undefined);
+});
