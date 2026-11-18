@@ -573,7 +573,6 @@ func _show_completion() -> void:
 		_skip_button.pressed.disconnect(_skip_tutorial)
 	if not _skip_button.pressed.is_connected(_close_guide):
 		_skip_button.pressed.connect(_close_guide)
-	_build_reopen_button()
 
 func _advance_completed_steps() -> void:
 	var old_step := current_step
@@ -609,30 +608,8 @@ func _hide_for_later() -> void:
 func _close_guide() -> void:
 	_hide_for_later()
 
-func _build_reopen_button() -> void:
-	if get_node_or_null("ReopenTutorial") != null:
-		return
-	var reopen := Button.new()
-	reopen.name = "ReopenTutorial"
-	reopen.text = "☁  HELP"
-	reopen.tooltip_text = "Open the city coach"
-	reopen.custom_minimum_size = Vector2(104, 48)
-	reopen.add_theme_font_size_override("font_size", 19)
-	reopen.add_theme_color_override("font_color", Color("#123348"))
-	reopen.add_theme_stylebox_override("normal", _make_button_style(Color("#D9F2FF")))
-	reopen.add_theme_stylebox_override("hover", _make_button_style(Color("#FFFFFF")))
-	reopen.anchor_left = 0.0
-	reopen.anchor_right = 0.0
-	reopen.anchor_top = 1.0
-	reopen.anchor_bottom = 1.0
-	reopen.offset_left = 14
-	reopen.offset_right = 118
-	reopen.offset_top = -62
-	reopen.offset_bottom = -14
-	reopen.z_index = 111
-	reopen.mouse_filter = Control.MOUSE_FILTER_STOP
-	reopen.pressed.connect(_reopen_guide)
-	add_child(reopen)
+func open_help() -> void:
+	_reopen_guide()
 
 func _reopen_guide() -> void:
 	_dismissed = false
