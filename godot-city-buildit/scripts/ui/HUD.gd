@@ -5424,6 +5424,12 @@ func _show_settings_about() -> void:
 
 
 func _show_settings_help() -> void:
+	_close_settings_panel()
+	var scene := get_tree().current_scene
+	var guide := scene.get_node_or_null("TutorialGuide") if scene != null else null
+	if is_instance_valid(guide) and guide.has_method("open_help"):
+		guide.open_help()
+		return
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsHelpDialog"
 	dialog.title = "How to play"
