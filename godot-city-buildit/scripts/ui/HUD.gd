@@ -5252,6 +5252,7 @@ func _show_settings_panel() -> void:
 	var audio_page := _make_settings_page("Audio")
 	audio_page.name = "AudioSettingsPage"
 	tabs.add_child(audio_page)
+	tabs.set_tab_title(tabs.get_tab_count() - 1, "Audio")
 	var audio_section := _make_settings_section("SOUND")
 	audio_page.add_child(audio_section)
 	var toggles := GridContainer.new()
