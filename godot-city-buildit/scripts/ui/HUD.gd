@@ -5651,23 +5651,44 @@ func _show_change_city_name() -> void:
 	dialog.name = "ChangeCityNameDialog"
 	dialog.title = "Change City Name"
 	dialog.ok_button_text = "Save city name"
+	var form := VBoxContainer.new()
+	form.name = "CityNameForm"
+	form.add_theme_constant_override("separation", 8)
+	dialog.add_child(form)
 	var input := LineEdit.new()
 	input.name = "CityNameInput"
 	input.text = GameManager.city_name
 	input.max_length = 28
 	input.placeholder_text = "Enter your city name"
-	input.custom_minimum_size.x = minf(360.0 * _ui_scale, get_viewport().get_visible_rect().size.x * 0.72)
-	dialog.add_child(input)
+	input.custom_minimum_size = Vector2(minf(360.0 * _ui_scale, get_viewport().get_visible_rect().size.x * 0.72), 48 * _ui_scale)
+	input.add_theme_font_size_override("font_size", _settings_font_size(19))
+	form.add_child(input)
+	var validation := Label.new()
+	validation.name = "CityNameValidation"
+	validation.text = "%d / 28 characters" % input.text.length()
+	validation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	validation.add_theme_font_size_override("font_size", _settings_font_size(14))
+	validation.add_theme_color_override("font_color", Color("#A8D7EB"))
+	form.add_child(validation)
+	input.text_changed.connect(func(next_text: String) -> void:
+		validation.text = "%d / 28 characters" % next_text.length()
+		validation.add_theme_color_override("font_color", Color("#A8D7EB"))
+	)
+	input.text_submitted.connect(func(_submitted_text: String) -> void:
+		dialog.confirmed.emit()
+	)
 	dialog.confirmed.connect(func() -> void:
 		var previous_name := GameManager.city_name
 		if not GameManager.set_city_name(input.text):
-			status_label.text = "Enter a city name with at least one visible character."
-			dialog.queue_free()
+			validation.text = "Please enter a city name before saving."
+			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+			input.grab_focus()
 			return
 		if not SaveManager.save_game():
 			GameManager.city_name = previous_name
-			status_label.text = "Could not save your city name on this device. Please try again."
-			dialog.queue_free()
+			validation.text = "Could not save locally. Your previous city name is unchanged."
+			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+			input.grab_focus()
 			return
 		if PlayerAccountManager.is_authenticated():
 			var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
@@ -5684,8 +5705,9 @@ func _show_change_city_name() -> void:
 	)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
-	_style_settings_dialog(dialog, Vector2i(520, 220))
+	_style_settings_dialog(dialog, Vector2i(520, 250))
 	input.grab_focus()
+	input.select_all()
 
 
 func _apply_notification_preference(key: String, enabled: bool) -> void:
@@ -5754,7 +5776,22 @@ func _show_wallet_panel() -> void:
 	var dialog := AcceptDialog.new()
 	dialog.name = "SettingsWalletDialog"
 	dialog.title = "City Wallet"
-	dialog.dialog_text = "Simoleons: %s\nSimCash: %s\nGolden Keys: %s\n\nYour city currencies are available for in-game rewards and purchases." % [ _format_compact_number(EconomyManager.simoleons), _format_compact_number(EconomyManager.sim_cash), _format_compact_number(EconomyManager.golden_keys)]
+	var wallet_lines := [
+		"Simoleons: %s" % _format_compact_number(EconomyManager.simoleons),
+		"SimCash: %s" % _format_compact_number(EconomyManager.sim_cash),
+		"Golden Keys: %s" % _format_compact_number(EconomyManager.golden_keys)
+	]
+	var recent_transactions := EconomyManager.get_recent_transactions(3)
+	wallet_lines.append("\\nRecent activity")
+	if recent_transactions.is_empty():
+		wallet_lines.append("No transactions recorded yet.")
+	else:
+		for transaction in recent_transactions:
+			var transaction_type := str(transaction.get("type", "transaction"))
+			var sign := "+" if transaction_type.contains("gain") else "−"
+			var currency := str(transaction.get("currency", "currency")).replace("_", " ").capitalize()
+			wallet_lines.append("%s%s %s" % [sign, _format_compact_number(int(transaction.get("amount", 0))), currency])
+	dialog.dialog_text = "\\n".join(wallet_lines) + "\\n\\nYour balances and recent activity are saved with your city profile."
 	var purchase_info := Button.new()
 	purchase_info.name = "WalletTopUpInfo"
 	purchase_info.text = "About adding funds"
