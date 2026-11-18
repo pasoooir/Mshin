@@ -154,6 +154,14 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
 		quit(1)
 		return
+	city_name_input.text = ""
+	city_dialog.confirmed.emit()
+	await process_frame
+	var city_validation := city_dialog.find_child("CityNameValidation", true, false) as Label
+	if not is_instance_valid(city_dialog) or city_validation == null or not city_validation.text.contains("Please enter"):
+		push_error("[NotificationPreferencesSmoke] Empty city name must show inline validation and keep the form open.")
+		quit(1)
+		return
 	city_name_input.text = "Test Harbor"
 	city_dialog.confirmed.emit()
 	await process_frame
