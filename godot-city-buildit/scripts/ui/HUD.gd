@@ -5310,21 +5310,56 @@ func _show_settings_panel() -> void:
 
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
-	_settings_account_action.text = "Continue with Google"
-	_settings_account_action.icon = load("res://assets/ui/google-g-mark.svg") as Texture2D
-	_settings_account_action.expand_icon = false
-	_settings_account_action.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_settings_account_action.custom_minimum_size = Vector2(0, 48) * compact_scale
+	_settings_account_action.custom_minimum_size = Vector2(0, 62 * compact_scale)
 	_settings_account_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_settings_account_action.add_theme_font_size_override("font_size", _settings_font_size(21))
-	_settings_account_action.add_theme_color_override("font_color", Color("#142A3A"))
-	_settings_account_action.add_theme_stylebox_override("normal", _settings_action_style(Color("#E4F6FF")))
-	_settings_account_action.add_theme_stylebox_override("hover", _settings_action_style(Color("#D0EDFC")))
-	_settings_account_action.add_theme_stylebox_override("pressed", _settings_action_style(Color("#B9E1F5")))
+	_settings_account_action.add_theme_stylebox_override("normal", _settings_google_button_style(Color("#FFFFFF")))
+	_settings_account_action.add_theme_stylebox_override("hover", _settings_google_button_style(Color("#FFF1F0")))
+	_settings_account_action.add_theme_stylebox_override("pressed", _settings_google_button_style(Color("#FFE0DD")))
 	_settings_account_action.focus_mode = Control.FOCUS_NONE
 	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
+	var gmail_content := HBoxContainer.new()
+	gmail_content.name = "GmailButtonContent"
+	gmail_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	gmail_content.add_theme_constant_override("separation", 14)
+	gmail_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_settings_account_action.add_child(gmail_content)
+	var gmail_icon := TextureRect.new()
+	gmail_icon.name = "GmailIcon"
+	gmail_icon.texture = load("res://assets/ui/gmail-mark.svg") as Texture2D
+	gmail_icon.custom_minimum_size = Vector2(44, 44)
+	gmail_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gmail_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	gmail_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gmail_content.add_child(gmail_icon)
+	var gmail_text := RichTextLabel.new()
+	gmail_text.name = "GmailButtonText"
+	gmail_text.bbcode_enabled = true
+	gmail_text.fit_content = true
+	gmail_text.scroll_active = false
+	gmail_text.autowrap_mode = TextServer.AUTOWRAP_OFF
+	gmail_text.selection_enabled = false
+	gmail_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gmail_text.add_theme_font_size_override("normal_font_size", _settings_font_size(23))
+	gmail_text.text = "[center][color=#EA4335]Continue with [/color][color=#4285F4]G[/color][color=#EA4335]o[/color][color=#FBBC05]o[/color][color=#4285F4]g[/color][color=#34A853]l[/color][color=#EA4335]e[/color][/center]"
+	gmail_content.add_child(gmail_text)
 	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
+
+
+func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = Color("#EA4335")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(16)
+	style.shadow_color = Color(0.55, 0.12, 0.10, 0.24)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 4)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
 
 
 func _settings_action_style(fill: Color) -> StyleBoxFlat:
