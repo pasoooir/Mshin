@@ -5202,9 +5202,11 @@ func _show_settings_panel() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.name = "SettingsBackdrop"
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.025, 0.035, 0.72)
+	backdrop.color = Color(0.015, 0.025, 0.035, 0.0)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_overlay.add_child(backdrop)
+	var backdrop_tween := create_tween()
+	backdrop_tween.tween_property(backdrop, "color:a", 0.76, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	var panel := PanelContainer.new()
 	panel.name = "SettingsPanel"
@@ -5217,19 +5219,26 @@ func _show_settings_panel() -> void:
 	panel.offset_top = -panel_height * 0.5
 	panel.offset_bottom = panel_height * 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.pivot_offset = Vector2(panel_width, panel_height) * 0.5
+	panel.scale = Vector2(0.965, 0.965)
+	panel.modulate.a = 0.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#DDF0FF")
-	panel_style.border_color = Color("#FFFFFF")
-	panel_style.set_border_width_all(3)
-	panel_style.set_corner_radius_all(30)
-	panel_style.shadow_color = Color(0, 0, 0, 0.38)
-	panel_style.shadow_size = 22
-	panel_style.content_margin_left = 18 * compact_scale
-	panel_style.content_margin_right = 18 * compact_scale
-	panel_style.content_margin_top = 10 * compact_scale
-	panel_style.content_margin_bottom = 10 * compact_scale
+	panel_style.bg_color = Color("#152B45")
+	panel_style.border_color = Color("#5BD7F7")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(28)
+	panel_style.shadow_color = Color(0.01, 0.06, 0.14, 0.55)
+	panel_style.shadow_size = 26
+	panel_style.shadow_offset = Vector2(0, 9)
+	panel_style.content_margin_left = 22 * compact_scale
+	panel_style.content_margin_right = 22 * compact_scale
+	panel_style.content_margin_top = 14 * compact_scale
+	panel_style.content_margin_bottom = 14 * compact_scale
 	panel.add_theme_stylebox_override("panel", panel_style)
 	settings_overlay.add_child(panel)
+	var entrance := create_tween().set_parallel(true)
+	entrance.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	entrance.tween_property(panel, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
@@ -5240,11 +5249,11 @@ func _show_settings_panel() -> void:
 	heading.name = "SettingsHeading"
 	layout.add_child(heading)
 	var title := Label.new()
-	title.text = "Settings"
+	title.text = "SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", _settings_font_size(34))
-	title.add_theme_color_override("font_color", Color("#142A3A"))
-	title.add_theme_color_override("font_shadow_color", Color("#FFFFFF"))
+	title.add_theme_color_override("font_color", Color("#F5FBFF"))
+	title.add_theme_color_override("font_shadow_color", Color("#48CFF5"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
 	title.add_theme_constant_override("shadow_offset_y", 2)
 	heading.add_child(title)
@@ -5253,9 +5262,9 @@ func _show_settings_panel() -> void:
 	close.text = "✖"
 	close.custom_minimum_size = Vector2(72, 72) * _ui_scale
 	close.add_theme_font_size_override("font_size", _popup_font_size(28))
-	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#168ED1")))
-	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#36B7EE")))
-	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#086AAB")))
+	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
+	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
+	close.add_theme_stylebox_override("pressed", _settings_close_style(Color("#143A57")))
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
