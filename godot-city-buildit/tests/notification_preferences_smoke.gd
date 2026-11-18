@@ -149,7 +149,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
 		quit(1)
 		return
-	var city_name_input := city_dialog.get_node_or_null("CityNameInput") as LineEdit
+	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
 	if city_name_input == null:
 		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
 		quit(1)
