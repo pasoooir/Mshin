@@ -5153,9 +5153,13 @@ func _refresh_settings_account_section() -> void:
 	if PlayerAccountManager.is_authenticated():
 		_settings_account_status.text = "Connected securely · Mayor #%d\nWelcome and daily rewards are claimed automatically." % PlayerAccountManager.player_id
 		_settings_account_action.text = "Sign out"
+		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
+			_settings_account_action.get_node("GmailButtonContent").hide()
 	else:
 		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
-		_settings_account_action.text = "Continue with Google"
+		_settings_account_action.text = ""
+		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
+			_settings_account_action.get_node("GmailButtonContent").show()
 
 func _on_settings_account_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
@@ -5176,7 +5180,10 @@ func _on_settings_account_feedback(message: String, success: bool) -> void:
 		_settings_account_status.text = message
 	if is_instance_valid(_settings_account_action):
 		_settings_account_action.disabled = false
-		_settings_account_action.text = "Sign out" if success and PlayerAccountManager.is_authenticated() else ("Continue with Google" if not PlayerAccountManager.is_authenticated() else "Sign out")
+		_settings_account_action.text = "Sign out" if success and PlayerAccountManager.is_authenticated() else ("" if not PlayerAccountManager.is_authenticated() else "Sign out")
+		var gmail_content := _settings_account_action.get_node_or_null("GmailButtonContent")
+		if is_instance_valid(gmail_content):
+			gmail_content.visible = not PlayerAccountManager.is_authenticated()
 
 func _on_settings_pressed() -> void:
 	_show_settings_panel()
@@ -5351,6 +5358,10 @@ func _show_settings_panel() -> void:
 	gmail_text.add_theme_font_size_override("normal_font_size", _settings_font_size(23))
 	gmail_text.text = "[center][color=#EA4335]Continue with [/color][color=#4285F4]G[/color][color=#EA4335]o[/color][color=#FBBC05]o[/color][color=#4285F4]g[/color][color=#34A853]l[/color][color=#EA4335]e[/color][/center]"
 	gmail_content.add_child(gmail_text)
+	_settings_account_action.pivot_offset = _settings_account_action.custom_minimum_size * 0.5
+	_settings_account_action.mouse_entered.connect(func() -> void: _settings_button_hover(_settings_account_action, true))
+	_settings_account_action.mouse_exited.connect(func() -> void: _settings_button_hover(_settings_account_action, false))
+	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
 	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
@@ -5491,7 +5502,10 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	label.text = caption
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", _settings_font_size(22))
-	label.add_theme_color_override("font_color", Color("#0B1F4B"))
+	label.add_theme_color_override("font_color", Color("#F2FAFF"))
+	row.add_theme_color_override("font_shadow_color", Color("#0A2338"))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
 	row.add_child(label)
 
 
