@@ -3337,23 +3337,16 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# City rename must be blocked until Google authentication is active.
+	# City rename is available in guest and authenticated modes; guests save locally.
 	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	if not PlayerAccountManager.is_authenticated():
-		var login_required := hud.find_child("CityNameLoginRequiredDialog", true, false) as ConfirmationDialog
-		_check(login_required != null and login_required.ok_button_text == "Continue with Google", "Guest city rename must require Google sign-in before opening the editor.")
-		if is_instance_valid(login_required):
-			login_required.hide()
-			login_required.queue_free()
-	else:
-		var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
-		var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
-		_check(rename_dialog != null and city_name_input != null, "Authenticated Change City Name must open an editable form.")
-		if rename_dialog != null and city_name_input != null:
-			city_name_input.text = original_city_name
-			rename_dialog.hide()
-			rename_dialog.queue_free()
+	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
+	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
+	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable form for both guest and authenticated players.")
+	if rename_dialog != null and city_name_input != null:
+		city_name_input.text = original_city_name
+		rename_dialog.hide()
+		rename_dialog.queue_free()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
 	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
