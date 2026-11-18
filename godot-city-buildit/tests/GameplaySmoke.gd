@@ -3280,6 +3280,8 @@ func _test_settings_panel_contract() -> void:
 	# About: verify its advanced controls remain accessible and functional.
 	(hud.find_child("SettingsAboutButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
+	var advanced_scroll := hud.find_child("AdvancedSettingsScroll", true, false) as ScrollContainer
+	_check(advanced_scroll != null and advanced_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and advanced_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Advanced About settings must remain vertically scrollable on short mobile screens.")
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
 	_check(graphics_select != null and graphics_select.item_count == 3, "Advanced settings must retain Low, Balanced and High 3D quality presets.")
 	var benchmark_button := hud.find_child("RunDeviceBenchmarkButton", true, false) as Button
