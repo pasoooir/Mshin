@@ -14,6 +14,7 @@ var music_volume := 0.42
 var ambient_volume := 0.24
 var sfx_volume := 0.72
 var audio_ready := false
+var _settings_save_timer: Timer
 
 var _music_player: AudioStreamPlayer
 var _ambient_player: AudioStreamPlayer
@@ -23,6 +24,12 @@ var _next_effect_player := 0
 
 
 func _ready() -> void:
+	_settings_save_timer = Timer.new()
+	_settings_save_timer.name = "SettingsSaveDebounce"
+	_settings_save_timer.one_shot = true
+	_settings_save_timer.wait_time = 0.55
+	_settings_save_timer.timeout.connect(_flush_settings_to_disk)
+	add_child(_settings_save_timer)
 	_load_settings()
 	_build_players()
 	_build_local_audio_library()
@@ -337,6 +344,15 @@ func _load_settings() -> void:
 
 
 func _save_settings() -> void:
+	# Volume sliders emit value_changed every frame while dragging. Debounce disk
+	# and profile writes so a gesture produces one durable JSON update, not dozens.
+	if is_instance_valid(_settings_save_timer):
+		_settings_save_timer.start(0.55)
+	else:
+		_flush_settings_to_disk()
+
+
+func _flush_settings_to_disk() -> void:
 	var config := ConfigFile.new()
 	config.set_value("audio", "music_enabled", music_enabled)
 	config.set_value("audio", "ambient_enabled", ambient_enabled)
@@ -350,5 +366,5 @@ func _save_settings() -> void:
 	var error := config.save(settings_path)
 	if error != OK:
 		push_warning("Audio settings could not be saved: %s" % error)
-	elif SaveManager.persistence_ready:
-		SaveManager.save_game()
+	elif SaveManager.persistence_ready and not SaveManager.save_game():
+		push_warning("Audio settings were updated in memory but the city JSON could not be saved.")
