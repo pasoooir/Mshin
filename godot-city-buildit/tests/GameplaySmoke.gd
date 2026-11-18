@@ -3293,8 +3293,11 @@ func _test_settings_panel_contract() -> void:
 		_check(AudioManager.sfx_enabled == (not original_sfx_enabled), "Sounds switch must update the audio service.")
 		sfx_toggle.button_pressed = original_sfx_enabled
 	var google_button := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	var gmail_icon := hud.find_child("GmailIcon", true, false) as TextureRect
+	var gmail_text := hud.find_child("GmailButtonText", true, false) as RichTextLabel
 	_check(google_button != null and google_button.is_connected("pressed", Callable(hud, "_on_settings_account_action_pressed")), "Google sign-in button must be wired to the real account flow.")
-	_check(google_button != null and google_button.icon != null, "Google sign-in action must visibly include the Gmail mark.")
+	_check(gmail_icon != null and gmail_icon.texture != null and gmail_icon.custom_minimum_size.x >= 40.0 and gmail_icon.custom_minimum_size.y >= 40.0, "Google sign-in must show a large, dedicated Gmail envelope icon.")
+	_check(gmail_text != null and gmail_text.get_theme_font_size("normal_font_size") >= 23 and gmail_text.text.contains("[color=#EA4335]") and gmail_text.text.contains("[color=#4285F4]") and gmail_text.text.contains("[color=#FBBC05]") and gmail_text.text.contains("[color=#34A853]"), "Google sign-in text must be large and use vivid Gmail/Google brand colors.")
 	var close_button := hud.find_child("SettingsClose", true, false) as Button
 	_check(close_button != null and close_button.is_connected("pressed", Callable(hud, "_close_settings_panel")), "Settings close button must close the modal.")
 
