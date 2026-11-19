@@ -4,6 +4,7 @@ signal session_changed(player_id: int, authenticated: bool)
 signal profile_loaded(player_id: int, revision: int)
 signal profile_save_failed(reason: String)
 signal authentication_feedback(message: String, success: bool)
+signal profile_identity_changed
 
 var player_id: int = 0
 var access_token: String = ""
@@ -438,6 +439,7 @@ func _update_google_identity_from_token(id_token: String) -> void:
 	if google_display_name.is_empty():
 		google_display_name = "Google player"
 	identity_label = google_display_name
+	profile_identity_changed.emit()
 
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
