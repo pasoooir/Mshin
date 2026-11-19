@@ -51,6 +51,14 @@ func _connect_persistence_signals() -> void:
 		BuildManager.building_removed.connect(_on_building_removed_for_save)
 		BuildManager.construction_started.connect(_on_building_id_changed_for_save)
 		BuildManager.construction_finished.connect(_on_building_id_changed_for_save)
+	if TradeManager.has_signal("trade_state_changed") and not TradeManager.trade_state_changed.is_connected(schedule_save):
+		TradeManager.trade_state_changed.connect(schedule_save)
+	if PaymentManager.has_signal("order_updated"):
+		PaymentManager.order_updated.connect(_on_payment_order_updated)
+	if LandExpansionManager.has_signal("land_changed") and not LandExpansionManager.land_changed.is_connected(schedule_save):
+		LandExpansionManager.land_changed.connect(schedule_save)
+	if PlayerMarketManager.has_signal("market_transaction_completed"):
+		PlayerMarketManager.market_transaction_completed.connect(_on_player_market_transaction_completed)
 
 
 func schedule_save() -> void:
@@ -76,6 +84,14 @@ func _on_economy_balance_changed(_amount: int) -> void:
 
 
 func _on_economy_transaction_completed(_transaction_type: String, _amount: int) -> void:
+	schedule_save()
+
+
+func _on_payment_order_updated(_order: Dictionary) -> void:
+	schedule_save()
+
+
+func _on_player_market_transaction_completed(_result: Dictionary) -> void:
 	schedule_save()
 
 
