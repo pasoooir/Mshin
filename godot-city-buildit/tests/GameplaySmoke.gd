@@ -3691,8 +3691,38 @@ func _test_mayor_xp_progression() -> void:
 	if reward_handler_connected:
 		GameManager.level_up_rewarded.connect(hud._on_level_up_rewarded)
 
+func _test_persistence_event_signal_coverage() -> void:
+	var previous_ready := SaveManager.persistence_ready
+	var previous_loading := SaveManager.is_loading
+	var previous_pending := SaveManager._save_pending
+	if is_instance_valid(SaveManager._save_debounce_timer):
+		SaveManager._save_debounce_timer.stop()
+	SaveManager.persistence_ready = false
+	SaveManager.is_loading = false
+	SaveManager._save_pending = false
+
+	TradeManager.trade_state_changed.emit()
+	_check(SaveManager._save_pending, "Cargo ship, depot and trade order events must schedule player JSON persistence.")
+	SaveManager._save_pending = false
+	PaymentManager.order_updated.emit({})
+	_check(SaveManager._save_pending, "Payment order updates must schedule player JSON persistence.")
+	SaveManager._save_pending = false
+	LandExpansionManager.land_changed.emit()
+	_check(SaveManager._save_pending, "Land expansion changes must schedule player JSON persistence.")
+	SaveManager._save_pending = false
+	PlayerMarketManager.market_transaction_completed.emit({})
+	_check(SaveManager._save_pending, "Player market transactions must schedule player JSON persistence.")
+
+	SaveManager._save_pending = previous_pending
+	SaveManager.persistence_ready = previous_ready
+	SaveManager.is_loading = previous_loading
+	if previous_pending and previous_ready and is_instance_valid(SaveManager._save_debounce_timer):
+		SaveManager._save_debounce_timer.start(0.75)
+
+
 func _run_gameplay_test() -> void:
 	await get_tree().process_frame
+	_test_persistence_event_signal_coverage()
 	_test_mayor_xp_progression()
 	_test_audio_manager_contract()
 	await _test_tutorial_guide_contract()
