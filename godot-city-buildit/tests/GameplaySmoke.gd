@@ -3285,7 +3285,7 @@ func _test_settings_panel_contract() -> void:
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
 	_check(heading != null and settings_content != null and settings_content.get_parent() == heading.get_parent(), "Settings title, controls and actions must share one fixed page.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
-	var settings_title := hud.find_child("SettingsHeading", true, false).get_child(0) as Label
+	var settings_title := hud.find_child("SettingsTitle", true, false) as Label
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
 	var music_control := hud.find_child("MusicToggle", true, false) as Button
 	var music_caption := hud.find_child("MusicToggleLabel", true, false) as Label
@@ -3359,7 +3359,9 @@ func _test_settings_panel_contract() -> void:
 		master_slider.value = 55.0
 		_check(is_equal_approx(AudioManager.master_volume, 0.55), "Master volume slider must update the AudioManager immediately.")
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
-	_check(about_dialog != null and about_dialog.has_theme_stylebox_override("panel"), "About dialog must use the unified premium modal surface.")
+	var about_overlay := hud.find_child("SettingsAboutDialogOverlay", true, false) as Control
+	var about_surface := about_overlay.find_child("SettingsDialogPanel", true, false) as PanelContainer if about_overlay != null else null
+	_check(about_dialog != null and about_overlay != null and about_surface != null and about_surface.has_theme_stylebox_override("panel"), "About dialog must use the unified in-HUD premium modal surface.")
 	if is_instance_valid(about_dialog):
 		about_dialog.hide()
 		about_dialog.queue_free()
@@ -3400,7 +3402,9 @@ func _test_settings_panel_contract() -> void:
 	(hud.find_child("SettingsNotificationsButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
-	_check(notification_dialog != null and notification_dialog.has_theme_stylebox_override("panel"), "Notification Settings must use the unified premium modal surface.")
+	var notification_overlay := hud.find_child("NotificationSettingsDialogOverlay", true, false) as Control
+	var notification_surface := notification_overlay.find_child("SettingsDialogPanel", true, false) as PanelContainer if notification_overlay != null else null
+	_check(notification_dialog != null and notification_overlay != null and notification_surface != null and notification_surface.has_theme_stylebox_override("panel"), "Notification Settings must use the unified in-HUD premium modal surface.")
 	var building_alerts := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
 	var city_updates := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
 	_check(notification_dialog != null and building_alerts != null and city_updates != null, "Notification Settings must expose building and city-update preferences.")
@@ -3422,14 +3426,18 @@ func _test_settings_panel_contract() -> void:
 	(hud.find_child("SettingsWalletButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
+	var wallet_overlay := hud.find_child("SettingsWalletDialogOverlay", true, false) as Control
+	var wallet_message := wallet_overlay.find_child("SettingsDialogMessage", true, false) as Label if wallet_overlay != null else null
 	var top_up_button := hud.find_child("WalletTopUpInfo", true, false) as Button
-	_check(wallet_dialog != null and wallet_dialog.dialog_text.contains("Simoleons") and wallet_dialog.dialog_text.contains("SimCash") and wallet_dialog.dialog_text.contains("Recent activity"), "Wallet must display actual balances and recent transaction activity.")
+	_check(wallet_dialog != null and wallet_overlay != null and wallet_message != null and wallet_message.text.contains("Simoleons") and wallet_message.text.contains("SimCash") and wallet_message.text.contains("Recent activity"), "Wallet must display actual balances and recent transaction activity.")
 	_check(top_up_button != null and not top_up_button.disabled and top_up_button.is_connected("pressed", Callable(hud, "_show_wallet_purchase_info")), "Wallet purchase information must be a working, safe action.")
 	if top_up_button != null:
 		top_up_button.pressed.emit()
 		await get_tree().process_frame
 		var purchase_info := hud.find_child("WalletPurchaseInfoDialog", true, false) as AcceptDialog
-		_check(purchase_info != null and purchase_info.dialog_text.contains("No payment will be requested"), "Wallet must clearly explain that real-money checkout is not available and never initiate a payment.")
+		var purchase_info_overlay := hud.find_child("WalletPurchaseInfoDialogOverlay", true, false) as Control
+		var purchase_info_message := purchase_info_overlay.find_child("SettingsDialogMessage", true, false) as Label if purchase_info_overlay != null else null
+		_check(purchase_info != null and purchase_info_message != null and purchase_info_message.text.contains("No payment will be requested"), "Wallet must clearly explain that real-money checkout is not available and never initiate a payment.")
 		if is_instance_valid(purchase_info):
 			purchase_info.hide()
 			purchase_info.queue_free()
