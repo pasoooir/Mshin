@@ -9,6 +9,8 @@ var player_id: int = 0
 var access_token: String = ""
 var profile_revision: int = 0
 var identity_label: String = ""
+var google_avatar_url: String = ""
+var google_display_name: String = ""
 var _pending_game_state: Dictionary = {}
 var _save_in_flight: bool = false
 var _last_profile_save_ok: bool = true
@@ -279,6 +281,8 @@ func _flush_pending_save() -> void:
 
 func logout() -> void:
 	_set_google_auto_sign_in(false)
+	google_avatar_url = ""
+	google_display_name = ""
 	_google_pending_nonces.clear()
 	player_id = 0
 	access_token = ""
@@ -416,6 +420,25 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 
 
 
+func _update_google_identity_from_token(id_token: String) -> void:
+	google_avatar_url = ""
+	google_display_name = ""
+	var token_parts := id_token.split(".")
+	if token_parts.size() < 2:
+		return
+	var payload_segment := str(token_parts[1]).replace("-", "+").replace("_", "/")
+	while payload_segment.length() % 4 != 0:
+		payload_segment += "="
+	var payload_text := Marshalls.base64_to_utf8(payload_segment)
+	var claims: Variant = JSON.parse_string(payload_text)
+	if not claims is Dictionary:
+		return
+	google_avatar_url = str(claims.get("picture", "")).strip_edges()
+	google_display_name = str(claims.get("name", claims.get("email", "Google player"))).strip_edges()
+	if google_display_name.is_empty():
+		google_display_name = "Google player"
+	identity_label = google_display_name
+
 func _on_google_credential(args: Array) -> void:
 	var credential := str(args[0]) if args.size() > 0 and args[0] != null else ""
 	var returned_nonce := str(args[1]) if args.size() > 1 else ""
@@ -432,6 +455,7 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		return
 	var success := await sign_in_with_google_id_token(id_token, nonce)
 	if success:
+		_update_google_identity_from_token(id_token)
 		_set_google_auto_sign_in(true)
 		var reward_parts: PackedStringArray = []
 		var welcome: Dictionary = _last_login_rewards.get("welcome", {})
