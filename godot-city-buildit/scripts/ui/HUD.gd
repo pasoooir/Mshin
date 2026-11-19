@@ -5241,6 +5241,7 @@ func _close_settings_panel() -> void:
 	settings_overlay = null
 
 func _show_settings_panel() -> void:
+	_close_settings_dialogs()
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
@@ -5385,16 +5386,6 @@ func _show_settings_panel() -> void:
 	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
 	_add_settings_action(actions, "SettingsNotificationsButton", "Notification Settings", _show_notification_settings)
 	_add_settings_action(actions, "SettingsWalletButton", "Wallet", _show_wallet_panel)
-
-	var account_note := Label.new()
-	account_note.name = "SettingsAccountPrompt"
-	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
-	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _settings_font_size(18))
-	account_note.add_theme_color_override("font_color", Color("#FFD9D3"))
-	account_note.visible = false
-	content.add_child(account_note)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
@@ -5643,6 +5634,12 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	row.add_child(label)
+
+
+func _close_settings_dialogs() -> void:
+	for child in get_children():
+		if child is Window and (str(child.name).begins_with("Settings") or str(child.name) == "WalletPurchaseInfoDialog"):
+			child.queue_free()
 
 
 func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
@@ -6213,6 +6210,7 @@ func _on_graphics_quality_selected(index: int) -> void:
 	status_label.text = "3D graphics quality set to %s." % str(GraphicsSettingsManager.get_quality_preset(quality_names[index]).get("label", quality_names[index]))
 
 func _start_performance_benchmark() -> void:
+	_close_settings_dialogs()
 	_close_settings_panel()
 	if PerformanceMonitor.start_benchmark(30.0):
 		status_label.text = "Device benchmark running — keep playing normally for 30 seconds."
