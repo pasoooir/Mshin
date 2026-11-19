@@ -5172,7 +5172,9 @@ func _refresh_settings_account_section() -> void:
 	else:
 		if is_instance_valid(_settings_profile_avatar):
 			_settings_profile_avatar.texture = null
-			_settings_profile_avatar.get_parent().visible = false
+			var avatar_frame := _settings_profile_avatar.get_parent() as Control
+			if is_instance_valid(avatar_frame):
+				avatar_frame.visible = false
 		if is_instance_valid(_settings_avatar_placeholder):
 			_settings_avatar_placeholder.text = "👤"
 			_settings_avatar_placeholder.show()
@@ -5743,7 +5745,7 @@ func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
 			overlay.queue_free()
 	)
 	dialog.close_requested.connect(dialog.queue_free)
-	close.grab_focus.call_deferred()
+	close.call_deferred("grab_focus")
 
 
 func _show_settings_about() -> void:
