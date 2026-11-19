@@ -27,11 +27,12 @@ func _run() -> void:
 	var game_manager := root.get_node_or_null("GameManager")
 	var save_manager := root.get_node_or_null("SaveManager")
 	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
+	var audio_manager := root.get_node_or_null("AudioManager")
 	var account_manager := root.get_node_or_null("PlayerAccountManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if game_manager == null or save_manager == null or graphics_manager == null or account_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or graphics_manager == null or audio_manager == null or account_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -44,6 +45,40 @@ func _run() -> void:
 	save_manager.is_loading = false
 	hud._show_settings_panel()
 	await process_frame
+	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	if google_action == null:
+		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
+		quit(1)
+		return
+	google_action.pressed.emit()
+	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
+		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
+		quit(1)
+		return
+	var original_music_enabled := bool(audio_manager.music_enabled)
+	var original_sfx_enabled := bool(audio_manager.sfx_enabled)
+	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
+	var sfx_toggle := hud.find_child("SfxToggle", true, false) as Button
+	if music_toggle == null or sfx_toggle == null:
+		push_error("[NotificationPreferencesSmoke] Music and sound switches are missing.")
+		quit(1)
+		return
+	music_toggle.button_pressed = not original_music_enabled
+	music_toggle.toggled.emit(not original_music_enabled)
+	sfx_toggle.button_pressed = not original_sfx_enabled
+	sfx_toggle.toggled.emit(not original_sfx_enabled)
+	await create_timer(0.8).timeout
+	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
+	if bool(saved_toggle_audio.get("music_enabled", original_music_enabled)) != not original_music_enabled or bool(saved_toggle_audio.get("sfx_enabled", original_sfx_enabled)) != not original_sfx_enabled:
+		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
+		quit(1)
+		return
+	music_toggle.button_pressed = original_music_enabled
+	music_toggle.toggled.emit(original_music_enabled)
+	sfx_toggle.button_pressed = original_sfx_enabled
+	sfx_toggle.toggled.emit(original_sfx_enabled)
+	await create_timer(0.8).timeout
 	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
 	if notification_button == null:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
@@ -178,9 +213,17 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Closing purchase information did not release input.")
 		quit(1)
 		return
-	wallet_dialog.hide()
-	wallet_dialog.queue_free()
+	var wallet_close := wallet_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if wallet_close == null:
+		push_error("[NotificationPreferencesSmoke] Wallet sub-form has no close action.")
+		quit(1)
+		return
+	wallet_close.pressed.emit()
 	await process_frame
+	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet close action did not release modal input.")
+		quit(1)
+		return
 
 	# Guest city registration must be a real, responsive HUD modal with working actions.
 	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
@@ -336,11 +379,23 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the circular Gmail profile avatar in its header.")
 		quit(1)
 		return
-	account_manager.player_id = 0
-	account_manager.access_token = ""
-	account_manager.google_avatar_url = ""
-	account_manager.google_display_name = ""
-	hud._close_settings_panel()
+	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	google_action.pressed.emit()
+	if account_manager.is_authenticated() or avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
+		quit(1)
+		return
+	var settings_close := hud.find_child("SettingsClose", true, false) as Button
+	if settings_close == null:
+		push_error("[NotificationPreferencesSmoke] Settings panel has no close action.")
+		quit(1)
+		return
+	settings_close.pressed.emit()
+	await process_frame
+	if hud.settings_overlay != null:
+		push_error("[NotificationPreferencesSmoke] Settings close action did not close the panel.")
+		quit(1)
+		return
 
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)
