@@ -193,6 +193,7 @@ func _ready() -> void:
 	PlayerAccountManager.profile_save_failed.connect(_on_settings_profile_save_failed)
 	SaveManager.save_failed.connect(_on_local_save_failed)
 	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
+	PlayerAccountManager.profile_identity_changed.connect(_refresh_settings_account_section)
 	_settings_login_blink_timer = Timer.new()
 	_settings_login_blink_timer.wait_time = 0.55
 	_settings_login_blink_timer.one_shot = false
