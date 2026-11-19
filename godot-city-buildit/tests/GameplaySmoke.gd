@@ -3337,15 +3337,33 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# City rename is available in guest and authenticated modes; guests save locally.
+	# City registration must use an in-canvas responsive modal so mobile browsers
+	# cannot hide a native Window behind the game canvas.
 	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
+	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as Control
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
-	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable form for both guest and authenticated players.")
-	if rename_dialog != null and city_name_input != null:
-		city_name_input.text = original_city_name
-		rename_dialog.hide()
+	var city_name_save := hud.find_child("CityNameSave", true, false) as Button
+	var city_name_cancel := hud.find_child("CityNameCancel", true, false) as Button
+	_check(rename_dialog != null and city_name_input != null and city_name_save != null and city_name_cancel != null, "Register City must open an in-canvas editable form with working Save and Cancel actions for guest and authenticated players.")
+	_check(rename_dialog != null and rename_dialog.z_index >= 200 and hud.find_child("CityNameModalPanel", true, false) is PanelContainer, "The city registration form must render above Settings as a responsive premium modal.")
+	if rename_dialog != null and city_name_input != null and city_name_save != null:
+		city_name_input.text = "   "
+		city_name_input.text_changed.emit("   ")
+		_check(city_name_save.disabled, "City registration must disable Save for blank or whitespace-only names.")
+		city_name_input.text = "Settings Test Harbor"
+		city_name_input.text_changed.emit(city_name_input.text)
+		_check(not city_name_save.disabled, "City registration must enable Save for a valid city name.")
+		city_name_save.pressed.emit()
+		await get_tree().process_frame
+		_check(GameManager.city_name == "Settings Test Harbor", "Tapping Save City must commit the entered city name.")
+		var city_save: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+		_check(city_save is Dictionary and str(city_save.get("game", {}).get("city_name", "")) == "Settings Test Harbor", "Registering a city must persist the chosen name in the active player JSON file.")
+		GameManager.city_name = original_city_name
+		_check(SaveManager.save_game(), "Gameplay smoke must restore the original city name in the active JSON after the registration test.")
+		await get_tree().process_frame
+		_check(hud.find_child("ChangeCityNameDialog", true, false) == null, "Saving a city name must close the registration modal.")
+	elif is_instance_valid(rename_dialog):
 		rename_dialog.queue_free()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.

@@ -144,7 +144,7 @@ func _run() -> void:
 		return
 	rename_button.pressed.emit()
 	await process_frame
-	var city_dialog := current_scene.get_node_or_null("HUD/ChangeCityNameDialog")
+	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
 		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
 		quit(1)
@@ -154,16 +154,25 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
 		quit(1)
 		return
-	city_name_input.text = ""
-	city_dialog.confirmed.emit()
-	await process_frame
+	var city_name_save := city_dialog.find_child("CityNameSave", true, false) as Button
 	var city_validation := city_dialog.find_child("CityNameValidation", true, false) as Label
-	if not is_instance_valid(city_dialog) or city_validation == null or not city_validation.text.contains("Please enter"):
-		push_error("[NotificationPreferencesSmoke] Empty city name must show inline validation and keep the form open.")
+	if city_name_save == null or city_validation == null:
+		push_error("[NotificationPreferencesSmoke] City registration must expose Save and inline validation controls.")
+		quit(1)
+		return
+	city_name_input.text = ""
+	city_name_input.text_changed.emit("")
+	if not city_name_save.disabled:
+		push_error("[NotificationPreferencesSmoke] Empty city name must disable the Save action.")
 		quit(1)
 		return
 	city_name_input.text = "Test Harbor"
-	city_dialog.confirmed.emit()
+	city_name_input.text_changed.emit("Test Harbor")
+	if city_name_save.disabled:
+		push_error("[NotificationPreferencesSmoke] A valid city name must enable the Save action.")
+		quit(1)
+		return
+	city_name_save.pressed.emit()
 	await process_frame
 	await process_frame
 	if str(game_manager.city_name) != "Test Harbor":
