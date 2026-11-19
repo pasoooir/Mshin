@@ -248,6 +248,12 @@ func _on_land_expansion_pressed() -> void:
 
 func _on_viewport_size_changed() -> void:
 	_apply_responsive_layout()
+	var city_modal := get_node_or_null("ChangeCityNameDialog") as Control
+	if is_instance_valid(city_modal):
+		var form_scroll := city_modal.find_child("CityNameFormScroll", true, false) as ScrollContainer
+		if is_instance_valid(form_scroll):
+			var viewport_height := get_viewport().get_visible_rect().size.y
+			form_scroll.custom_minimum_size.y = minf(320.0, maxf(160.0, viewport_height * 0.72))
 	if is_instance_valid(production_panel) and is_instance_valid(_production_building):
 		open_production_panel(_production_building)
 
@@ -5207,6 +5213,9 @@ func _on_settings_pressed() -> void:
 	_show_settings_panel()
 
 func _close_settings_panel() -> void:
+	var city_modal := get_node_or_null("ChangeCityNameDialog")
+	if is_instance_valid(city_modal):
+		city_modal.queue_free()
 	if is_instance_valid(settings_overlay):
 		settings_overlay.queue_free()
 	settings_overlay = null
@@ -5647,18 +5656,22 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
-	# Use an in-canvas modal instead of a native Window. Embedded Window dialogs
-	# can be hidden behind the game canvas in mobile browsers and WebViews.
+	# Keep one registration modal at the HUD CanvasLayer root. A nested modal
+	# inherits the Settings overlay's input/lifetime stack and can become
+	# inaccessible when the overlay is rebuilt or the mobile viewport changes.
+	var existing_modal := get_node_or_null("ChangeCityNameDialog") as Control
+	if is_instance_valid(existing_modal):
+		var existing_input := existing_modal.find_child("CityNameInput", true, false) as LineEdit
+		if is_instance_valid(existing_input):
+			existing_input.grab_focus()
+		return
 	var viewport_size := get_viewport().get_visible_rect().size
 	var modal_layer := Control.new()
 	modal_layer.name = "ChangeCityNameDialog"
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal_layer.z_index = 200
 	modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
-	if is_instance_valid(settings_overlay):
-		settings_overlay.add_child(modal_layer)
-	else:
-		add_child(modal_layer)
+	add_child(modal_layer)
 
 	var backdrop := ColorRect.new()
 	backdrop.name = "CityNameModalBackdrop"
@@ -5692,10 +5705,21 @@ func _show_change_city_name() -> void:
 	panel.add_theme_stylebox_override("panel", panel_style)
 	center.add_child(panel)
 
+	# A bounded scroll viewport keeps every field and action reachable when
+	# Android's landscape keyboard reduces the available game viewport height.
+	var form_scroll := ScrollContainer.new()
+	form_scroll.name = "CityNameFormScroll"
+	form_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	form_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	form_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	form_scroll.custom_minimum_size = Vector2(0, minf(320.0, maxf(160.0, viewport_size.y * 0.72)))
+	panel.add_child(form_scroll)
+
 	var content := VBoxContainer.new()
 	content.name = "CityNameForm"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 12)
-	panel.add_child(content)
+	form_scroll.add_child(content)
 
 	var heading := Label.new()
 	heading.name = "CityNameHeading"
@@ -5778,8 +5802,10 @@ func _show_change_city_name() -> void:
 	modal_layer.modulate.a = 0.0
 	var entrance := create_tween()
 	entrance.tween_property(modal_layer, "modulate:a", 1.0, 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	input.call_deferred("grab_focus")
-	input.call_deferred("select_all")
+	# Focus synchronously inside the button's user-gesture event. Deferring
+	# focus can lose the browser's mobile virtual-keyboard activation context.
+	input.grab_focus()
+	input.select_all()
 
 
 func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
