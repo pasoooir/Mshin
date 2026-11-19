@@ -149,6 +149,34 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
 		quit(1)
 		return
+	if city_dialog.get_parent() != hud:
+		push_error("[NotificationPreferencesSmoke] City registration modal must be attached to the HUD root, above the Settings overlay.")
+		quit(1)
+		return
+	var city_form_scroll := city_dialog.find_child("CityNameFormScroll", true, false) as ScrollContainer
+	if city_form_scroll == null:
+		push_error("[NotificationPreferencesSmoke] City registration must provide a scrollable form viewport for short landscape screens and the mobile keyboard.")
+		quit(1)
+		return
+	var original_city_name := str(game_manager.city_name)
+	var city_cancel := city_dialog.find_child("CityNameCancel", true, false) as Button
+	if city_cancel == null:
+		push_error("[NotificationPreferencesSmoke] City registration Cancel action is missing.")
+		quit(1)
+		return
+	city_cancel.pressed.emit()
+	await process_frame
+	if current_scene.find_child("ChangeCityNameDialog", true, false) != null or str(game_manager.city_name) != original_city_name:
+		push_error("[NotificationPreferencesSmoke] Cancel must close the registration modal without changing the city name.")
+		quit(1)
+		return
+	rename_button.pressed.emit()
+	await process_frame
+	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
+	if city_dialog == null:
+		push_error("[NotificationPreferencesSmoke] City registration did not reopen after Cancel.")
+		quit(1)
+		return
 	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
 	if city_name_input == null:
 		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
