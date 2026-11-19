@@ -27,10 +27,11 @@ func _run() -> void:
 	var game_manager := root.get_node_or_null("GameManager")
 	var save_manager := root.get_node_or_null("SaveManager")
 	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
+	var account_manager := root.get_node_or_null("PlayerAccountManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if game_manager == null or save_manager == null or graphics_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or graphics_manager == null or account_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -319,14 +320,14 @@ func _run() -> void:
 	# large circular frame at the upper-left of Settings after authentication.
 	var fake_claims := {"name": "Mshin Mayor", "email": "mayor@example.test", "picture": "https://images.example.test/mshin-avatar.jpg"}
 	var encoded_claims := Marshalls.utf8_to_base64(JSON.stringify(fake_claims)).replace("+", "-").replace("/", "_").trim_suffix("=")
-	PlayerAccountManager._update_google_identity_from_token("header." + encoded_claims + ".signature")
-	if PlayerAccountManager.google_display_name != "Mshin Mayor" or PlayerAccountManager.google_avatar_url != "https://images.example.test/mshin-avatar.jpg":
+	account_manager._update_google_identity_from_token("header." + encoded_claims + ".signature")
+	if account_manager.google_display_name != "Mshin Mayor" or account_manager.google_avatar_url != "https://images.example.test/mshin-avatar.jpg":
 		push_error("[NotificationPreferencesSmoke] Google ID token profile claims were not decoded for display.")
 		quit(1)
 		return
 	PlayerAccountManager.google_avatar_url = ""
-	PlayerAccountManager.player_id = 987654
-	PlayerAccountManager.access_token = "smoke-test-token"
+	account_manager.player_id = 987654
+	account_manager.access_token = "smoke-test-token"
 	hud._show_settings_panel()
 	await process_frame
 	var avatar_frame := hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
