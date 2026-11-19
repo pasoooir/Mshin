@@ -3368,9 +3368,10 @@ func _test_settings_panel_contract() -> void:
 	# City rename is available in guest and authenticated modes; guests save locally.
 	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
+	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as Control
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
-	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable form for both guest and authenticated players.")
+	var city_form_scroll := hud.find_child("CityNameFormScroll", true, false) as ScrollContainer
+	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Change City Name must open a scrollable HUD-root editable form for both guest and authenticated players.")
 	if rename_dialog != null and city_name_input != null:
 		city_name_input.text = original_city_name
 		rename_dialog.hide()
