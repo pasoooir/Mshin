@@ -105,7 +105,10 @@ jobs:
       - name: Verify desktop and mobile Web launches in Chromium
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          # GitHub-hosted runners already include Chromium's shared system libraries.
+          # Avoid apt-based --with-deps: transient Ubuntu mirror outages must not
+          # block the browser smoke test after the game has already exported.
+          npx playwright install chromium
           python3 -m http.server 4173 --directory site >/tmp/mshin-web-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
