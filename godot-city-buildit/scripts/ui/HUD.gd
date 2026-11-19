@@ -5679,6 +5679,10 @@ func _show_change_city_name() -> void:
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal_layer.z_index = 200
 	modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Do not leave an interactive Settings surface underneath the registration
+	# modal. Some mobile/browser input stacks can still route taps to it.
+	if is_instance_valid(settings_overlay):
+		settings_overlay.hide()
 	add_child(modal_layer)
 
 	var backdrop := ColorRect.new()
@@ -5788,7 +5792,7 @@ func _show_change_city_name() -> void:
 	cancel_button.add_theme_font_size_override("font_size", _settings_font_size(18))
 	cancel_button.add_theme_stylebox_override("normal", _settings_action_style(Color("#31516B")))
 	cancel_button.add_theme_stylebox_override("hover", _settings_action_style(Color("#426B88")))
-	cancel_button.pressed.connect(modal_layer.queue_free)
+	cancel_button.pressed.connect(_close_city_registration_modal.bind(modal_layer))
 	actions.add_child(cancel_button)
 
 	var save_button := Button.new()
@@ -5823,6 +5827,15 @@ func _show_change_city_name() -> void:
 	input.select_all()
 
 
+func _close_city_registration_modal(modal_layer: Control) -> void:
+	if is_instance_valid(modal_layer):
+		modal_layer.queue_free()
+	# The Settings panel is intentionally suspended while the registration
+	# layer is active, so it cannot intercept touch or pointer input.
+	if is_instance_valid(settings_overlay):
+		settings_overlay.show()
+
+
 func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
 	if not is_instance_valid(input) or not is_instance_valid(validation) or not is_instance_valid(save_button) or not is_instance_valid(modal_layer):
 		return
@@ -5854,6 +5867,8 @@ func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: 
 	else:
 		status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
 	modal_layer.queue_free()
+	if is_instance_valid(settings_overlay):
+		settings_overlay.show()
 
 
 func _sync_city_name_profile(saved_state: Dictionary) -> void:
