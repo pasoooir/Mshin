@@ -5744,8 +5744,6 @@ func _show_change_city_name() -> void:
 	input.add_theme_stylebox_override("focus", _settings_action_style(Color("#FFFFFF")))
 	input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	content.add_child(input)
-	if compact_mobile_form:
-		content.move_child(actions, 2)
 
 	var validation := Label.new()
 	validation.name = "CityNameValidation"
@@ -5760,6 +5758,8 @@ func _show_change_city_name() -> void:
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 12)
 	content.add_child(actions)
+	if compact_mobile_form:
+		content.move_child(actions, 2)
 
 	var cancel_button := Button.new()
 	cancel_button.name = "CityNameCancel"
