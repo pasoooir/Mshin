@@ -5819,8 +5819,8 @@ func _update_city_name_modal_layout(modal_layer: Control, panel: PanelContainer,
 	if not is_instance_valid(modal_layer) or not is_instance_valid(panel) or not is_instance_valid(scroll):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	panel.custom_minimum_size.x = minf(520.0, viewport_size.x * 0.90)
-	scroll.custom_minimum_size.y = minf(420.0, maxf(150.0, viewport_size.y * 0.72))
+	panel.custom_minimum_size = Vector2(minf(520.0, viewport_size.x * 0.90), panel.custom_minimum_size.y)
+	scroll.custom_minimum_size.y = minf(420.0, maxf(100.0, viewport_size.y * 0.72))
 
 
 func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
