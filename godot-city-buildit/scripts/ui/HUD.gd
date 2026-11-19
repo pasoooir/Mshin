@@ -174,6 +174,9 @@ var _settings_login_indicator: Label
 var _settings_login_blink_timer: Timer
 var _settings_account_status: Label
 var _settings_account_action: Button
+var _settings_profile_avatar: TextureRect
+var _settings_avatar_placeholder: Label
+var _settings_avatar_request_url := ""
 var placement_controls: PanelContainer
 var _trade_active_tab := "depot"
 var _regional_trade_source_id := ""
@@ -190,6 +193,7 @@ func _ready() -> void:
 	PlayerAccountManager.profile_save_failed.connect(_on_settings_profile_save_failed)
 	SaveManager.save_failed.connect(_on_local_save_failed)
 	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
+	PlayerAccountManager.profile_identity_changed.connect(_refresh_settings_account_section)
 	_settings_login_blink_timer = Timer.new()
 	_settings_login_blink_timer.wait_time = 0.55
 	_settings_login_blink_timer.one_shot = false
@@ -5160,11 +5164,22 @@ func _refresh_settings_account_section() -> void:
 	if not is_instance_valid(_settings_account_status) or not is_instance_valid(_settings_account_action):
 		return
 	if PlayerAccountManager.is_authenticated():
-		_settings_account_status.text = "Connected securely · Mayor #%d\nWelcome and daily rewards are claimed automatically." % PlayerAccountManager.player_id
+		var google_name := PlayerAccountManager.google_display_name if not PlayerAccountManager.google_display_name.is_empty() else "Google player"
+		_settings_account_status.text = "Connected securely · %s · Mayor #%d\nWelcome and daily rewards are claimed automatically." % [google_name, PlayerAccountManager.player_id]
+		_refresh_settings_profile_avatar()
 		_settings_account_action.text = "Sign out"
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
 			_settings_account_action.get_node("GmailButtonContent").hide()
 	else:
+		if is_instance_valid(_settings_profile_avatar):
+			_settings_profile_avatar.texture = null
+			var avatar_frame := _settings_profile_avatar.get_parent() as Control
+			if is_instance_valid(avatar_frame):
+				avatar_frame.visible = false
+		if is_instance_valid(_settings_avatar_placeholder):
+			_settings_avatar_placeholder.text = "👤"
+			_settings_avatar_placeholder.show()
+		_settings_avatar_request_url = ""
 		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
 		_settings_account_action.text = ""
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
@@ -5178,8 +5193,10 @@ func _on_settings_account_action_pressed() -> void:
 	_settings_account_action.disabled = true
 	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
 	if not sign_in_started:
+		# begin_google_sign_in emits a specific failure message (for example,
+		# web-only availability or missing client configuration). Do not
+		# overwrite that feedback with the generic Guest-mode status.
 		_settings_account_action.disabled = false
-		_refresh_settings_account_section()
 		return
 	if is_instance_valid(_settings_account_status):
 		_settings_account_status.text = "Connecting to Google securely…"
@@ -5228,6 +5245,7 @@ func _close_settings_panel() -> void:
 	settings_overlay = null
 
 func _show_settings_panel() -> void:
+	_close_settings_dialogs()
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
@@ -5289,7 +5307,41 @@ func _show_settings_panel() -> void:
 	var heading := HBoxContainer.new()
 	heading.name = "SettingsHeading"
 	layout.add_child(heading)
+	var avatar_frame := PanelContainer.new()
+	avatar_frame.name = "SettingsProfileAvatarFrame"
+	avatar_frame.custom_minimum_size = Vector2(78, 78) * compact_scale
+	avatar_frame.visible = PlayerAccountManager.is_authenticated()
+	avatar_frame.clip_contents = true
+	var avatar_frame_style := StyleBoxFlat.new()
+	avatar_frame_style.bg_color = Color("#244D6B")
+	avatar_frame_style.border_color = Color("#63D8F4")
+	avatar_frame_style.set_border_width_all(2)
+	avatar_frame_style.set_corner_radius_all(40)
+	avatar_frame.add_theme_stylebox_override("panel", avatar_frame_style)
+	_settings_profile_avatar = TextureRect.new()
+	_settings_profile_avatar.name = "SettingsProfileAvatar"
+	_settings_profile_avatar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_settings_profile_avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_settings_profile_avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_settings_profile_avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var avatar_shader := Shader.new()
+	avatar_shader.code = "shader_type canvas_item; void fragment() { vec2 p = UV - vec2(0.5); if (length(p) > 0.49) discard; COLOR = texture(TEXTURE, UV) * COLOR; }"
+	var avatar_material := ShaderMaterial.new()
+	avatar_material.shader = avatar_shader
+	_settings_profile_avatar.material = avatar_material
+	avatar_frame.add_child(_settings_profile_avatar)
+	_settings_avatar_placeholder = Label.new()
+	_settings_avatar_placeholder.name = "SettingsProfileAvatarFallback"
+	_settings_avatar_placeholder.text = "👤"
+	_settings_avatar_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_settings_avatar_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_settings_avatar_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_settings_avatar_placeholder.add_theme_font_size_override("font_size", _settings_font_size(34))
+	_settings_avatar_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	avatar_frame.add_child(_settings_avatar_placeholder)
+	heading.add_child(avatar_frame)
 	var title := Label.new()
+	title.name = "SettingsTitle"
 	title.text = "SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", _settings_font_size(34))
@@ -5340,16 +5392,6 @@ func _show_settings_panel() -> void:
 	_add_settings_action(actions, "SettingsNotificationsButton", "Notification Settings", _show_notification_settings)
 	_add_settings_action(actions, "SettingsWalletButton", "Wallet", _show_wallet_panel)
 
-	var account_note := Label.new()
-	account_note.name = "SettingsAccountPrompt"
-	account_note.text = "Sign in to save your progress and continue playing on multiple devices."
-	account_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	account_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	account_note.add_theme_font_size_override("font_size", _settings_font_size(18))
-	account_note.add_theme_color_override("font_color", Color("#FFD9D3"))
-	account_note.visible = false
-	content.add_child(account_note)
-
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
 	_settings_account_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -5398,6 +5440,54 @@ func _show_settings_panel() -> void:
 	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
 	content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
+
+
+func _refresh_settings_profile_avatar() -> void:
+	if not is_instance_valid(_settings_profile_avatar) or not PlayerAccountManager.is_authenticated():
+		return
+	var frame := _settings_profile_avatar.get_parent() as Control
+	if is_instance_valid(frame):
+		frame.visible = true
+	var display_name := PlayerAccountManager.google_display_name
+	if is_instance_valid(_settings_avatar_placeholder):
+		_settings_avatar_placeholder.text = display_name.substr(0, 1).to_upper() if not display_name.is_empty() else "G"
+	var avatar_url := PlayerAccountManager.google_avatar_url
+	if avatar_url.is_empty() or avatar_url == _settings_avatar_request_url:
+		return
+	_settings_profile_avatar.texture = null
+	if is_instance_valid(_settings_avatar_placeholder):
+		_settings_avatar_placeholder.show()
+	_settings_avatar_request_url = avatar_url
+	var request := HTTPRequest.new()
+	request.name = "SettingsProfileAvatarRequest"
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(_on_settings_profile_avatar_downloaded.bind(request, avatar_url), CONNECT_ONE_SHOT)
+	var request_error := request.request(avatar_url)
+	if request_error != OK:
+		request.queue_free()
+		_settings_avatar_request_url = ""
+
+
+func _on_settings_profile_avatar_downloaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, request: HTTPRequest, avatar_url: String) -> void:
+	if is_instance_valid(request):
+		request.queue_free()
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or avatar_url != PlayerAccountManager.google_avatar_url:
+		if _settings_avatar_request_url == avatar_url:
+			_settings_avatar_request_url = ""
+		return
+	var avatar_image := Image.new()
+	var image_error := avatar_image.load_jpg_from_buffer(body)
+	if image_error != OK:
+		image_error = avatar_image.load_png_from_buffer(body)
+	if image_error != OK:
+		image_error = avatar_image.load_webp_from_buffer(body)
+	if image_error != OK:
+		return
+	if is_instance_valid(_settings_profile_avatar):
+		_settings_profile_avatar.texture = ImageTexture.create_from_image(avatar_image)
+		if is_instance_valid(_settings_avatar_placeholder):
+			_settings_avatar_placeholder.hide()
 
 
 func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
@@ -5556,20 +5646,43 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	row.add_child(label)
 
 
-func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
+func _close_settings_dialogs() -> void:
+	for child in get_children():
+		if child is Window and (str(child.name).begins_with("Settings") or str(child.name) == "WalletPurchaseInfoDialog"):
+			child.queue_free()
+
+
+func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
+	# Render settings sub-forms inside the game's CanvasLayer. Native Window
+	# popups can capture the HTML5/mobile input stream and make the city appear
+	# frozen after a tap. The hidden Window remains only as a compatibility
+	# handle for existing settings state and automated tests.
 	var viewport_size := get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(size.x, maxi(280, roundi(viewport_size.x * 0.92))),
-		mini(size.y, maxi(220, roundi(viewport_size.y * 0.86)))
-	)
-	var scale_factor := minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0))
-	scale_factor = maxf(0.62, scale_factor)
-	dialog.add_theme_color_override("font_color", Color("#EAF7FF"))
-	dialog.add_theme_color_override("title_color", Color("#F5FBFF"))
-	dialog.add_theme_color_override("font_shadow_color", Color("#082A42"))
-	dialog.add_theme_constant_override("shadow_offset_x", 1)
-	dialog.add_theme_constant_override("shadow_offset_y", 1)
-	dialog.add_theme_font_size_override("font_size", _popup_font_size(18))
+	var scale_factor := maxf(0.62, minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0)))
+	dialog.visible = false
+	var overlay := Control.new()
+	overlay.name = str(dialog.name) + "Overlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 230 + get_child_count()
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	var backdrop := ColorRect.new()
+	backdrop.name = "SettingsDialogBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.005, 0.015, 0.03, 0.82)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center := CenterContainer.new()
+	center.name = "SettingsDialogCenter"
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.name = "SettingsDialogPanel"
+	panel.custom_minimum_size = Vector2(minf(float(size.x), viewport_size.x * 0.92), minf(float(size.y), viewport_size.y * 0.84))
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#142E49")
 	panel_style.border_color = Color("#51D4F3")
@@ -5578,22 +5691,85 @@ func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
 	panel_style.shadow_color = Color(0.01, 0.04, 0.12, 0.58)
 	panel_style.shadow_size = 22
 	panel_style.shadow_offset = Vector2(0, 8)
-	panel_style.content_margin_left = 24 * scale_factor
-	panel_style.content_margin_right = 24 * scale_factor
-	panel_style.content_margin_top = 20 * scale_factor
-	panel_style.content_margin_bottom = 18 * scale_factor
-	dialog.add_theme_stylebox_override("panel", panel_style)
-	dialog.add_theme_stylebox_override("button", _settings_green_button_style(Color("#24678C")))
-	dialog.add_theme_stylebox_override("button_hover", _settings_green_button_style(Color("#318AB5")))
-	dialog.add_theme_stylebox_override("button_pressed", _settings_green_button_style(Color("#174B6D")))
-	dialog.add_theme_color_override("line_edit_font_color", Color("#142B45"))
-	dialog.add_theme_color_override("line_edit_font_selected_color", Color("#FFFFFF"))
-	dialog.add_theme_stylebox_override("line_edit", _settings_action_style(Color("#F0FAFF")))
-	dialog.add_theme_stylebox_override("line_edit_focus", _settings_action_style(Color("#FFFFFF")))
-	dialog.add_theme_color_override("check_button_color", Color("#54D8F5"))
-	dialog.add_theme_color_override("slider_color", Color("#53D6F4"))
+	panel_style.content_margin_left = 20 * scale_factor
+	panel_style.content_margin_right = 20 * scale_factor
+	panel_style.content_margin_top = 16 * scale_factor
+	panel_style.content_margin_bottom = 16 * scale_factor
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.name = "SettingsDialogLayout"
+	layout.add_theme_constant_override("separation", 12 * scale_factor)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(layout)
+	var heading := HBoxContainer.new()
+	heading.name = "SettingsDialogHeading"
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = dialog.title
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", _settings_font_size(22))
+	title.add_theme_color_override("font_color", Color("#F5FBFF"))
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "SettingsDialogClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(46, 46) * scale_factor
+	close.add_theme_font_size_override("font_size", _settings_font_size(22))
+	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
+	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
+	close.pressed.connect(func() -> void:
+		# Detach both layers synchronously so no queued Window/Control can
+		# continue to own input during the same frame on mobile browsers.
+		if is_instance_valid(overlay):
+			overlay.hide()
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			if overlay.get_parent() == self:
+				remove_child(overlay)
+			if not overlay.is_queued_for_deletion():
+				overlay.queue_free()
+		if is_instance_valid(dialog):
+			dialog.hide()
+			if dialog.get_parent() == self:
+				remove_child(dialog)
+			if not dialog.is_queued_for_deletion():
+				dialog.queue_free()
+	)
+	heading.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsDialogScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(0, minf(float(size.y) * 0.66, viewport_size.y * 0.66))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.name = "SettingsDialogBody"
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 10 * scale_factor)
+	scroll.add_child(body)
+	if not dialog.dialog_text.strip_edges().is_empty():
+		var message := Label.new()
+		message.name = "SettingsDialogMessage"
+		message.text = dialog.dialog_text
+		message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		message.add_theme_color_override("font_color", Color("#D7EAF7"))
+		message.add_theme_font_size_override("font_size", _popup_font_size(17))
+		body.add_child(message)
+		dialog.dialog_text = ""
+	for child in dialog.get_children():
+		if child is Control:
+			dialog.remove_child(child)
+			body.add_child(child)
+	dialog.tree_exiting.connect(func() -> void:
+		if is_instance_valid(overlay) and not overlay.is_queued_for_deletion():
+			overlay.queue_free()
+	)
 	dialog.close_requested.connect(dialog.queue_free)
-	dialog.popup_centered(safe_size)
+	close.call_deferred("grab_focus")
+
 
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
@@ -6060,6 +6236,7 @@ func _on_graphics_quality_selected(index: int) -> void:
 	status_label.text = "3D graphics quality set to %s." % str(GraphicsSettingsManager.get_quality_preset(quality_names[index]).get("label", quality_names[index]))
 
 func _start_performance_benchmark() -> void:
+	_close_settings_dialogs()
 	_close_settings_panel()
 	if PerformanceMonitor.start_benchmark(30.0):
 		status_label.text = "Device benchmark running — keep playing normally for 30 seconds."

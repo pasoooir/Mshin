@@ -27,10 +27,12 @@ func _run() -> void:
 	var game_manager := root.get_node_or_null("GameManager")
 	var save_manager := root.get_node_or_null("SaveManager")
 	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
+	var audio_manager := root.get_node_or_null("AudioManager")
+	var account_manager := root.get_node_or_null("PlayerAccountManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
-	if game_manager == null or save_manager == null or graphics_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
+	if game_manager == null or save_manager == null or graphics_manager == null or audio_manager == null or account_manager == null or hud == null or alert_layer == null or citizen_feedback == null:
 		push_error("[NotificationPreferencesSmoke] Settings notification components are missing.")
 		quit(1)
 		return
@@ -43,6 +45,40 @@ func _run() -> void:
 	save_manager.is_loading = false
 	hud._show_settings_panel()
 	await process_frame
+	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	if google_action == null:
+		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
+		quit(1)
+		return
+	google_action.pressed.emit()
+	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
+		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
+		quit(1)
+		return
+	var original_music_enabled := bool(audio_manager.music_enabled)
+	var original_sfx_enabled := bool(audio_manager.sfx_enabled)
+	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
+	var sfx_toggle := hud.find_child("SfxToggle", true, false) as Button
+	if music_toggle == null or sfx_toggle == null:
+		push_error("[NotificationPreferencesSmoke] Music and sound switches are missing.")
+		quit(1)
+		return
+	music_toggle.button_pressed = not original_music_enabled
+	music_toggle.toggled.emit(not original_music_enabled)
+	sfx_toggle.button_pressed = not original_sfx_enabled
+	sfx_toggle.toggled.emit(not original_sfx_enabled)
+	await create_timer(0.8).timeout
+	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
+	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
+	if bool(saved_toggle_audio.get("music_enabled", original_music_enabled)) != (not original_music_enabled) or bool(saved_toggle_audio.get("sfx_enabled", original_sfx_enabled)) != (not original_sfx_enabled):
+		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
+		quit(1)
+		return
+	music_toggle.button_pressed = original_music_enabled
+	music_toggle.toggled.emit(original_music_enabled)
+	sfx_toggle.button_pressed = original_sfx_enabled
+	sfx_toggle.toggled.emit(original_sfx_enabled)
+	await create_timer(0.8).timeout
 	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
 	if notification_button == null:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
@@ -53,8 +89,9 @@ func _run() -> void:
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
 	var updates_toggle := hud.find_child("CityUpdatesToggle", true, false) as CheckButton
-	if notification_dialog == null or building_toggle == null or updates_toggle == null:
-		push_error("[NotificationPreferencesSmoke] Notification form did not open with both controls.")
+	var notification_overlay := hud.find_child("NotificationSettingsDialogOverlay", true, false) as Control
+	if notification_dialog == null or notification_overlay == null or not notification_overlay.visible or notification_overlay.mouse_filter != Control.MOUSE_FILTER_STOP or building_toggle == null or updates_toggle == null:
+		push_error("[NotificationPreferencesSmoke] Notification form did not open as an input-owning HUD modal with both controls.")
 		quit(1)
 		return
 	building_toggle.toggled.emit(true)
@@ -82,8 +119,17 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification preferences were not restored from JSON.")
 		quit(1)
 		return
-	notification_dialog.hide()
-	notification_dialog.queue_free()
+	var notification_close := notification_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if notification_close == null:
+		push_error("[NotificationPreferencesSmoke] Notification sub-form has no close action.")
+		quit(1)
+		return
+	notification_close.pressed.emit()
+	await process_frame
+	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Notification close action did not release modal input.")
+		quit(1)
+		return
 
 	# The About form exposes real graphics and audio controls, not decorative placeholders.
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
@@ -96,8 +142,9 @@ func _run() -> void:
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
 	var master_slider := hud.find_child("MasterVolumeSlider", true, false) as HSlider
-	if about_dialog == null or graphics_select == null or master_slider == null:
-		push_error("[NotificationPreferencesSmoke] About form is missing its functional graphics/audio controls.")
+	var about_overlay := hud.find_child("SettingsAboutDialogOverlay", true, false) as Control
+	if about_dialog == null or about_overlay == null or not about_overlay.visible or graphics_select == null or master_slider == null:
+		push_error("[NotificationPreferencesSmoke] About form is missing its functional controls or HUD-owned modal.")
 		quit(1)
 		return
 	var quality_names: PackedStringArray = graphics_manager.get_quality_names()
@@ -117,8 +164,17 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Graphics quality selection did not persist to player JSON.")
 		quit(1)
 		return
-	about_dialog.hide()
-	about_dialog.queue_free()
+	var about_close := about_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if about_close == null:
+		push_error("[NotificationPreferencesSmoke] About sub-form has no close action.")
+		quit(1)
+		return
+	about_close.pressed.emit()
+	await process_frame
+	if hud.find_child("SettingsAboutDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] About close action did not release modal input.")
+		quit(1)
+		return
 
 	# Wallet must display current balances without a dead, disabled purchase button.
 	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
@@ -129,12 +185,45 @@ func _run() -> void:
 	wallet_button.pressed.emit()
 	await process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
-	if wallet_dialog == null or hud.find_child("WalletTopUpDisabled", true, false) != null:
-		push_error("[NotificationPreferencesSmoke] Wallet action did not open a useful, non-dead wallet view.")
+	var wallet_overlay := hud.find_child("SettingsWalletDialogOverlay", true, false) as Control
+	if wallet_dialog == null or wallet_overlay == null or not wallet_overlay.visible or hud.find_child("WalletTopUpDisabled", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet action did not open a useful, non-dead HUD modal.")
 		quit(1)
 		return
-	wallet_dialog.hide()
-	wallet_dialog.queue_free()
+	var purchase_info_button := hud.find_child("WalletTopUpInfo", true, false) as Button
+	if purchase_info_button == null:
+		push_error("[NotificationPreferencesSmoke] Wallet must explain the current purchase availability.")
+		quit(1)
+		return
+	purchase_info_button.pressed.emit()
+	await process_frame
+	var purchase_info_overlay := hud.find_child("WalletPurchaseInfoDialogOverlay", true, false) as Control
+	if purchase_info_overlay == null or not purchase_info_overlay.visible:
+		push_error("[NotificationPreferencesSmoke] Wallet purchase information did not open as a usable sub-form.")
+		quit(1)
+		return
+	var purchase_close := purchase_info_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if purchase_close == null:
+		push_error("[NotificationPreferencesSmoke] Wallet purchase information has no close action.")
+		quit(1)
+		return
+	purchase_close.pressed.emit()
+	await process_frame
+	if hud.find_child("WalletPurchaseInfoDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Closing purchase information did not release input.")
+		quit(1)
+		return
+	var wallet_close := wallet_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if wallet_close == null:
+		push_error("[NotificationPreferencesSmoke] Wallet sub-form has no close action.")
+		quit(1)
+		return
+	wallet_close.pressed.emit()
+	await process_frame
+	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet close action did not release modal input.")
+		quit(1)
+		return
 
 	# Guest city registration must be a real, responsive HUD modal with working actions.
 	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
@@ -269,6 +358,44 @@ func _run() -> void:
 		quit(1)
 		return
 	guide_panel.hide()
+
+	# Google profile claims are display-only metadata. The avatar is shown in a
+	# large circular frame at the upper-left of Settings after authentication.
+	var fake_claims := {"name": "Mshin Mayor", "email": "mayor@example.test", "picture": "https://images.example.test/mshin-avatar.jpg"}
+	var encoded_claims := Marshalls.utf8_to_base64(JSON.stringify(fake_claims)).replace("+", "-").replace("/", "_").trim_suffix("=")
+	account_manager._update_google_identity_from_token("header." + encoded_claims + ".signature")
+	if account_manager.google_display_name != "Mshin Mayor" or account_manager.google_avatar_url != "https://images.example.test/mshin-avatar.jpg":
+		push_error("[NotificationPreferencesSmoke] Google ID token profile claims were not decoded for display.")
+		quit(1)
+		return
+	account_manager.google_avatar_url = ""
+	account_manager.player_id = 987654
+	account_manager.access_token = "smoke-test-token"
+	hud._show_settings_panel()
+	await process_frame
+	var avatar_frame := hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
+	var avatar_texture := hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
+	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null:
+		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the circular Gmail profile avatar in its header.")
+		quit(1)
+		return
+	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	google_action.pressed.emit()
+	if account_manager.is_authenticated() or avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
+		quit(1)
+		return
+	var settings_close := hud.find_child("SettingsClose", true, false) as Button
+	if settings_close == null:
+		push_error("[NotificationPreferencesSmoke] Settings panel has no close action.")
+		quit(1)
+		return
+	settings_close.pressed.emit()
+	await process_frame
+	if hud.settings_overlay != null:
+		push_error("[NotificationPreferencesSmoke] Settings close action did not close the panel.")
+		quit(1)
+		return
 
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)
