@@ -5341,6 +5341,7 @@ func _show_settings_panel() -> void:
 	avatar_frame.add_child(_settings_avatar_placeholder)
 	heading.add_child(avatar_frame)
 	var title := Label.new()
+	title.name = "SettingsTitle"
 	title.text = "SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", _settings_font_size(34))
