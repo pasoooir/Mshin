@@ -70,7 +70,7 @@ func _run() -> void:
 	await create_timer(0.8).timeout
 	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
-	if bool(saved_toggle_audio.get("music_enabled", original_music_enabled)) != not original_music_enabled or bool(saved_toggle_audio.get("sfx_enabled", original_sfx_enabled)) != not original_sfx_enabled:
+	if bool(saved_toggle_audio.get("music_enabled", original_music_enabled)) != (not original_music_enabled) or bool(saved_toggle_audio.get("sfx_enabled", original_sfx_enabled)) != (not original_sfx_enabled):
 		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
 		quit(1)
 		return
