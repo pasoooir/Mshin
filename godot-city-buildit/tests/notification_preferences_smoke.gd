@@ -27,7 +27,7 @@ func _run() -> void:
 	var game_manager := root.get_node_or_null("GameManager")
 	var save_manager := root.get_node_or_null("SaveManager")
 	var graphics_manager := root.get_node_or_null("GraphicsSettingsManager")
-	var account_manager := root.get_node_or_null("account_manager")
+	var account_manager := root.get_node_or_null("PlayerAccountManager")
 	var hud := current_scene.get_node_or_null("HUD")
 	var alert_layer := current_scene.get_node_or_null("HUD/BuildingNotificationLayer")
 	var citizen_feedback := current_scene.get_node_or_null("CitizenFeedback")
