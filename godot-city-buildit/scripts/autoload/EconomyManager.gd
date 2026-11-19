@@ -3,6 +3,7 @@ signal simoleons_changed(new_amount: int)
 signal sim_cash_changed(new_amount: int)
 signal keys_changed(new_amount: int)
 signal transaction_completed(type: String, amount: int)
+signal ledger_changed
 const SIMCASH_TO_SIMOLEONS_RATE := 1000
 const MAX_TRANSACTION_LEDGER_ENTRIES := 300
 var transaction_ledger: Array[Dictionary] = []
@@ -130,6 +131,7 @@ func record_transaction(
 	transaction_ledger.append(entry)
 	if transaction_ledger.size() > MAX_TRANSACTION_LEDGER_ENTRIES:
 		transaction_ledger.pop_front()
+	ledger_changed.emit()
 
 func get_recent_transactions(limit: int = 50) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
