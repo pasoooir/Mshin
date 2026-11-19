@@ -83,8 +83,17 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification preferences were not restored from JSON.")
 		quit(1)
 		return
-	notification_dialog.hide()
-	notification_dialog.queue_free()
+	var notification_close := notification_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if notification_close == null:
+		push_error("[NotificationPreferencesSmoke] Notification sub-form has no close action.")
+		quit(1)
+		return
+	notification_close.pressed.emit()
+	await process_frame
+	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Notification close action did not release modal input.")
+		quit(1)
+		return
 
 	# The About form exposes real graphics and audio controls, not decorative placeholders.
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
@@ -119,8 +128,17 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Graphics quality selection did not persist to player JSON.")
 		quit(1)
 		return
-	about_dialog.hide()
-	about_dialog.queue_free()
+	var about_close := about_overlay.find_child("SettingsDialogClose", true, false) as Button
+	if about_close == null:
+		push_error("[NotificationPreferencesSmoke] About sub-form has no close action.")
+		quit(1)
+		return
+	about_close.pressed.emit()
+	await process_frame
+	if hud.find_child("SettingsAboutDialogOverlay", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] About close action did not release modal input.")
+		quit(1)
+		return
 
 	# Wallet must display current balances without a dead, disabled purchase button.
 	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
