@@ -144,7 +144,7 @@ func _run() -> void:
 		return
 	rename_button.pressed.emit()
 	await process_frame
-	var city_dialog := current_scene.get_node_or_null("HUD/ChangeCityNameDialog")
+	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
 		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
 		quit(1)
