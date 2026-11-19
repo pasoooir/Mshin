@@ -5164,7 +5164,8 @@ func _refresh_settings_account_section() -> void:
 	if not is_instance_valid(_settings_account_status) or not is_instance_valid(_settings_account_action):
 		return
 	if PlayerAccountManager.is_authenticated():
-		_settings_account_status.text = "Connected securely · %s · Mayor #%d\nWelcome and daily rewards are claimed automatically." % [PlayerAccountManager.google_display_name, PlayerAccountManager.player_id]
+		var google_name := PlayerAccountManager.google_display_name if not PlayerAccountManager.google_display_name.is_empty() else "Google player"
+		_settings_account_status.text = "Connected securely · %s · Mayor #%d\nWelcome and daily rewards are claimed automatically." % [google_name, PlayerAccountManager.player_id]
 		_refresh_settings_profile_avatar()
 		_settings_account_action.text = "Sign out"
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
@@ -5178,6 +5179,7 @@ func _refresh_settings_account_section() -> void:
 		if is_instance_valid(_settings_avatar_placeholder):
 			_settings_avatar_placeholder.text = "👤"
 			_settings_avatar_placeholder.show()
+		_settings_avatar_request_url = ""
 		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
 		_settings_account_action.text = ""
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
@@ -5447,8 +5449,11 @@ func _refresh_settings_profile_avatar() -> void:
 	if is_instance_valid(_settings_avatar_placeholder):
 		_settings_avatar_placeholder.text = display_name.substr(0, 1).to_upper() if not display_name.is_empty() else "G"
 	var avatar_url := PlayerAccountManager.google_avatar_url
-	if avatar_url.is_empty() or avatar_url == _settings_avatar_request_url or _settings_profile_avatar.texture != null:
+	if avatar_url.is_empty() or avatar_url == _settings_avatar_request_url:
 		return
+	_settings_profile_avatar.texture = null
+	if is_instance_valid(_settings_avatar_placeholder):
+		_settings_avatar_placeholder.show()
 	_settings_avatar_request_url = avatar_url
 	var request := HTTPRequest.new()
 	request.name = "SettingsProfileAvatarRequest"
@@ -5465,6 +5470,8 @@ func _on_settings_profile_avatar_downloaded(result: int, response_code: int, _he
 	if is_instance_valid(request):
 		request.queue_free()
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or avatar_url != PlayerAccountManager.google_avatar_url:
+		if _settings_avatar_request_url == avatar_url:
+			_settings_avatar_request_url = ""
 		return
 	var avatar_image := Image.new()
 	var image_error := avatar_image.load_jpg_from_buffer(body)
