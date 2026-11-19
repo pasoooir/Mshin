@@ -5719,7 +5719,12 @@ func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 	close.add_theme_font_size_override("font_size", _settings_font_size(22))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
-	close.pressed.connect(dialog.queue_free)
+	close.pressed.connect(func() -> void:
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
 	heading.add_child(close)
 	var scroll := ScrollContainer.new()
 	scroll.name = "SettingsDialogScroll"
