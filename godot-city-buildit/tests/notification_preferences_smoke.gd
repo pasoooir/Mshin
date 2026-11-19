@@ -136,7 +136,7 @@ func _run() -> void:
 	wallet_dialog.hide()
 	wallet_dialog.queue_free()
 
-	# Guest players can change the city name and persist it locally without a Google login.
+	# Guest city registration must be a real, responsive HUD modal with working actions.
 	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
 	if rename_button == null:
 		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
@@ -145,73 +145,99 @@ func _run() -> void:
 	rename_button.pressed.emit()
 	await process_frame
 	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
-	if city_dialog == null:
-		push_error("[NotificationPreferencesSmoke] Guest city-name dialog did not open.")
-		quit(1)
-		return
-	if city_dialog.get_parent() != hud:
-		push_error("[NotificationPreferencesSmoke] City registration modal must be attached to the HUD root, above the Settings overlay.")
+	if city_dialog == null or city_dialog.get_parent() != hud:
+		push_error("[NotificationPreferencesSmoke] City registration modal must open as a HUD-root layer above Settings.")
 		quit(1)
 		return
 	var city_form_scroll := city_dialog.find_child("CityNameFormScroll", true, false) as ScrollContainer
-	if city_form_scroll == null:
-		push_error("[NotificationPreferencesSmoke] City registration must provide a scrollable form viewport for short landscape screens and the mobile keyboard.")
+	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
+	var city_name_save := city_dialog.find_child("CityNameSave", true, false) as Button
+	var city_name_cancel := city_dialog.find_child("CityNameCancel", true, false) as Button
+	var city_validation := city_dialog.find_child("CityNameValidation", true, false) as Label
+	if city_form_scroll == null or city_name_input == null or city_name_save == null or city_name_cancel == null or city_validation == null:
+		push_error("[NotificationPreferencesSmoke] City registration must expose a scrollable form, input, validation and working Save/Cancel actions.")
 		quit(1)
 		return
+	if city_form_scroll.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED or city_form_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED:
+		push_error("[NotificationPreferencesSmoke] City registration must scroll vertically without horizontal overflow.")
+		quit(1)
+		return
+	if city_name_input.max_length != 28:
+		push_error("[NotificationPreferencesSmoke] City name must enforce its 28-character limit.")
+		quit(1)
+		return
+
 	var original_city_name := str(game_manager.city_name)
-	var city_cancel := city_dialog.find_child("CityNameCancel", true, false) as Button
-	if city_cancel == null:
-		push_error("[NotificationPreferencesSmoke] City registration Cancel action is missing.")
-		quit(1)
-		return
-	city_cancel.pressed.emit()
+	city_name_input.text = "Discard This Name"
+	city_name_cancel.pressed.emit()
 	await process_frame
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null or str(game_manager.city_name) != original_city_name:
-		push_error("[NotificationPreferencesSmoke] Cancel must close the registration modal without changing the city name.")
+		push_error("[NotificationPreferencesSmoke] Cancel must close registration without changing the active city.")
 		quit(1)
 		return
+
 	rename_button.pressed.emit()
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
-		push_error("[NotificationPreferencesSmoke] City registration did not reopen after Cancel.")
+		push_error("[NotificationPreferencesSmoke] City registration must reopen after Cancel.")
 		quit(1)
 		return
-	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
-	if city_name_input == null:
-		push_error("[NotificationPreferencesSmoke] City-name input is missing.")
-		quit(1)
-		return
-	var city_name_save := city_dialog.find_child("CityNameSave", true, false) as Button
-	var city_validation := city_dialog.find_child("CityNameValidation", true, false) as Label
-	if city_name_save == null or city_validation == null:
-		push_error("[NotificationPreferencesSmoke] City registration must expose Save and inline validation controls.")
-		quit(1)
-		return
+	city_name_input = city_dialog.find_child("CityNameInput", true, false) as LineEdit
+	city_name_save = city_dialog.find_child("CityNameSave", true, false) as Button
+	city_validation = city_dialog.find_child("CityNameValidation", true, false) as Label
 	city_name_input.text = ""
 	city_name_input.text_changed.emit("")
 	if not city_name_save.disabled:
-		push_error("[NotificationPreferencesSmoke] Empty city name must disable the Save action.")
+		push_error("[NotificationPreferencesSmoke] Empty city name must disable Save.")
 		quit(1)
 		return
-	city_name_input.text = "Test Harbor"
-	city_name_input.text_changed.emit("Test Harbor")
+	city_name_input.text = "   "
+	city_name_input.text_changed.emit("   ")
+	if not city_name_save.disabled:
+		push_error("[NotificationPreferencesSmoke] Whitespace-only city name must disable Save.")
+		quit(1)
+		return
+	city_name_input.text = " Test Harbor "
+	city_name_input.text_changed.emit(" Test Harbor ")
 	if city_name_save.disabled:
-		push_error("[NotificationPreferencesSmoke] A valid city name must enable the Save action.")
+		push_error("[NotificationPreferencesSmoke] Valid city name must enable Save.")
 		quit(1)
 		return
+
+	var save_events := [0]
+	save_manager.save_completed.connect(func(_path: String) -> void: save_events[0] += 1, CONNECT_ONE_SHOT)
 	city_name_save.pressed.emit()
 	await process_frame
 	await process_frame
 	if str(game_manager.city_name) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] Guest city name was not applied.")
+		push_error("[NotificationPreferencesSmoke] Guest city name was not applied and trimmed.")
+		quit(1)
+		return
+	if save_events[0] != 1:
+		push_error("[NotificationPreferencesSmoke] Save City must trigger one successful local JSON save event.")
 		quit(1)
 		return
 	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] Guest city name was not persisted locally.")
+		push_error("[NotificationPreferencesSmoke] City name was not persisted in the active player JSON.")
 		quit(1)
 		return
+	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Successful city registration must close the modal.")
+		quit(1)
+		return
+
+	rename_button.pressed.emit()
+	await process_frame
+	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
+	city_name_input = city_dialog.find_child("CityNameInput", true, false) as LineEdit
+	if city_name_input.text != "Test Harbor":
+		push_error("[NotificationPreferencesSmoke] Reopening city registration must load the saved city name.")
+		quit(1)
+		return
+	city_dialog.find_child("CityNameCancel", true, false).pressed.emit()
+	await process_frame
 
 	# Help must reopen the interactive tutorial instead of doing nothing.
 	var help_button := hud.find_child("SettingsHelpButton", true, false) as Button
