@@ -5720,10 +5720,21 @@ func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
 	close.pressed.connect(func() -> void:
+		# Detach both layers synchronously so no queued Window/Control can
+		# continue to own input during the same frame on mobile browsers.
 		if is_instance_valid(overlay):
-			overlay.queue_free()
+			overlay.hide()
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			if overlay.get_parent() == self:
+				remove_child(overlay)
+			if not overlay.is_queued_for_deletion():
+				overlay.queue_free()
 		if is_instance_valid(dialog):
-			dialog.queue_free()
+			dialog.hide()
+			if dialog.get_parent() == self:
+				remove_child(dialog)
+			if not dialog.is_queued_for_deletion():
+				dialog.queue_free()
 	)
 	heading.add_child(close)
 	var scroll := ScrollContainer.new()
