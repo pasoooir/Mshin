@@ -5193,8 +5193,10 @@ func _on_settings_account_action_pressed() -> void:
 	_settings_account_action.disabled = true
 	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
 	if not sign_in_started:
+		# begin_google_sign_in emits a specific failure message (for example,
+		# web-only availability or missing client configuration). Do not
+		# overwrite that feedback with the generic Guest-mode status.
 		_settings_account_action.disabled = false
-		_refresh_settings_account_section()
 		return
 	if is_instance_valid(_settings_account_status):
 		_settings_account_status.text = "Connecting to Google securely…"
