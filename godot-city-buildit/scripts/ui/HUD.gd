@@ -5753,7 +5753,7 @@ func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 			dialog.remove_child(child)
 			body.add_child(child)
 	dialog.tree_exiting.connect(func() -> void:
-		if is_instance_valid(overlay):
+		if is_instance_valid(overlay) and not overlay.is_queued_for_deletion():
 			overlay.queue_free()
 	)
 	dialog.close_requested.connect(dialog.queue_free)
