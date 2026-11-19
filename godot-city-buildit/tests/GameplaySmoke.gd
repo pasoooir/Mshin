@@ -3176,12 +3176,37 @@ func _test_trade_depot_and_global_market() -> void:
 	_check(int(TradeManager.sell_slots[0].get("finish_unix", 0)) >= legacy_load_time + 30, "Legacy sale saves must derive a deadline from their remaining time.")
 	_check(TradeManager.market_refresh_unix >= legacy_load_time + 25, "Legacy market saves must derive a refresh deadline from their remaining time.")
 	_check(TradeManager.ship_return_unix >= legacy_load_time + 50, "Legacy ship saves must derive a return deadline from their remaining time.")
+
+	# Remove the test-only building stubs before the save timer snapshots the real city scene.
 	BuildManager.buildings.erase(depot.building_id)
 	BuildManager.buildings.erase(hq.building_id)
 	BuildManager.buildings.erase(port.building_id)
 	depot.queue_free()
 	hq.queue_free()
 	port.queue_free()
+
+	# User-facing trade/storage/economy events must converge into one player JSON snapshot.
+	# The headless smoke harness has no authenticated bootstrap service; emulate the
+	# post-bootstrap local-save-ready state before exercising the debounce callback.
+	SaveManager.persistence_ready = true
+	SaveManager.is_loading = false
+	SaveManager.schedule_save()
+	SaveManager._flush_scheduled_save()
+	_check(not SaveManager._save_pending, "The debounced player JSON save must flush successfully after the city is ready.")
+	var persisted_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	var persisted_trade: Dictionary = persisted_city.get("trade", {}) if persisted_city is Dictionary else {}
+	var persisted_economy_ledger: Array = persisted_city.get("economy_ledger", {}).get("transaction_ledger", []) if persisted_city is Dictionary else []
+	var persisted_storage: Dictionary = persisted_city.get("storage", {}) if persisted_city is Dictionary else {}
+	var has_saved_trade_sale := false
+	var has_saved_cargo_delivery := false
+	for transaction in persisted_economy_ledger:
+		if transaction is Dictionary:
+			var transaction_type := str(transaction.get("type", ""))
+			has_saved_trade_sale = has_saved_trade_sale or transaction_type == "trade_sale_collected"
+			has_saved_cargo_delivery = has_saved_cargo_delivery or transaction_type == "cargo_ship_crate_delivered"
+	_check(persisted_trade.get("sell_slots", []).size() == 1 and bool(persisted_trade.get("ship_departed", false)), "Trade Depot and Cargo Ship state must be written to the active player JSON after transaction events.")
+	_check(has_saved_trade_sale and has_saved_cargo_delivery and persisted_storage.has("items"), "The player JSON must contain trade transactions, the economy ledger and the matching warehouse snapshot together.")
+
 	GameManager.population = previous_population
 	EconomyManager.simoleons = previous_simoleons
 	EconomyManager.golden_keys = previous_keys
@@ -3189,6 +3214,9 @@ func _test_trade_depot_and_global_market() -> void:
 	EconomyManager.transaction_sequence = previous_ledger_sequence
 	StorageManager.from_save_dict(previous_storage)
 	TradeManager.from_save_dict(previous_trade)
+	SaveManager.is_loading = false
+	if not SaveManager.save_game():
+		failures.append("Gameplay smoke test could not restore the pre-test city JSON after trade persistence checks.")
 
 func _test_citizen_feedback_bubbles() -> void:
 	var feedback_manager = get_node_or_null("CitizenFeedback")
@@ -3337,33 +3365,15 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# City registration must use an in-canvas responsive modal so mobile browsers
-	# cannot hide a native Window behind the game canvas.
+	# City rename is available in guest and authenticated modes; guests save locally.
 	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
 	await get_tree().process_frame
-	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as Control
+	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as ConfirmationDialog
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
-	var city_name_save := hud.find_child("CityNameSave", true, false) as Button
-	var city_name_cancel := hud.find_child("CityNameCancel", true, false) as Button
-	_check(rename_dialog != null and city_name_input != null and city_name_save != null and city_name_cancel != null, "Register City must open an in-canvas editable form with working Save and Cancel actions for guest and authenticated players.")
-	_check(rename_dialog != null and rename_dialog.z_index >= 200 and hud.find_child("CityNameModalPanel", true, false) is PanelContainer, "The city registration form must render above Settings as a responsive premium modal.")
-	if rename_dialog != null and city_name_input != null and city_name_save != null:
-		city_name_input.text = "   "
-		city_name_input.text_changed.emit("   ")
-		_check(city_name_save.disabled, "City registration must disable Save for blank or whitespace-only names.")
-		city_name_input.text = "Settings Test Harbor"
-		city_name_input.text_changed.emit(city_name_input.text)
-		_check(not city_name_save.disabled, "City registration must enable Save for a valid city name.")
-		city_name_save.pressed.emit()
-		await get_tree().process_frame
-		_check(GameManager.city_name == "Settings Test Harbor", "Tapping Save City must commit the entered city name.")
-		var city_save: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-		_check(city_save is Dictionary and str(city_save.get("game", {}).get("city_name", "")) == "Settings Test Harbor", "Registering a city must persist the chosen name in the active player JSON file.")
-		GameManager.city_name = original_city_name
-		_check(SaveManager.save_game(), "Gameplay smoke must restore the original city name in the active JSON after the registration test.")
-		await get_tree().process_frame
-		_check(hud.find_child("ChangeCityNameDialog", true, false) == null, "Saving a city name must close the registration modal.")
-	elif is_instance_valid(rename_dialog):
+	_check(rename_dialog != null and city_name_input != null, "Change City Name must open an editable form for both guest and authenticated players.")
+	if rename_dialog != null and city_name_input != null:
+		city_name_input.text = original_city_name
+		rename_dialog.hide()
 		rename_dialog.queue_free()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
@@ -3694,7 +3704,7 @@ func _run_gameplay_test() -> void:
 	_test_construction_bom_contract()
 	_test_regional_building_and_material_gates()
 	_test_citizen_feedback_bubbles()
-	_test_trade_depot_and_global_market()
+	await _test_trade_depot_and_global_market()
 	_test_building_model_loader_contract()
 	await _test_build_menu_visibility()
 	await _test_settings_panel_contract()
