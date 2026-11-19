@@ -188,6 +188,7 @@ func _ready() -> void:
 	PlayerAccountManager.session_changed.connect(_on_settings_account_session_changed)
 	PlayerAccountManager.profile_loaded.connect(_on_settings_profile_loaded)
 	PlayerAccountManager.profile_save_failed.connect(_on_settings_profile_save_failed)
+	SaveManager.save_failed.connect(_on_local_save_failed)
 	PlayerAccountManager.authentication_feedback.connect(_on_settings_account_feedback)
 	_settings_login_blink_timer = Timer.new()
 	_settings_login_blink_timer.wait_time = 0.55
@@ -5198,6 +5199,12 @@ func _on_settings_profile_save_failed(reason: String) -> void:
 	if is_instance_valid(status_label):
 		status_label.text = "Settings are saved on this device, but cloud sync failed. They will retry when the connection is restored."
 	push_warning("Player profile settings sync failed: " + reason)
+
+
+func _on_local_save_failed(reason: String) -> void:
+	if is_instance_valid(status_label):
+		status_label.text = "Could not save the latest city changes locally. Please keep the game open and try again."
+	push_warning("Local city JSON save failed: " + reason)
 
 func _on_settings_account_feedback(message: String, success: bool) -> void:
 	if is_instance_valid(_settings_account_status):
