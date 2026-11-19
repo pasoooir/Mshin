@@ -5647,9 +5647,16 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
+	# Reuse an already-open form rather than stacking invisible modal layers.
+	if is_instance_valid(settings_overlay):
+		var existing_dialog := settings_overlay.get_node_or_null("ChangeCityNameDialog")
+		if is_instance_valid(existing_dialog):
+			existing_dialog.z_index = 200
+			return
 	# Use an in-canvas modal instead of a native Window. Embedded Window dialogs
 	# can be hidden behind the game canvas in mobile browsers and WebViews.
 	var viewport_size := get_viewport().get_visible_rect().size
+	var compact_mobile_form := OS.has_feature("mobile") or (viewport_size.x > viewport_size.y and viewport_size.y < 520.0)
 	var modal_layer := Control.new()
 	modal_layer.name = "ChangeCityNameDialog"
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5677,6 +5684,7 @@ func _show_change_city_name() -> void:
 	panel.name = "CityNameModalPanel"
 	panel.custom_minimum_size = Vector2(minf(520.0, viewport_size.x * 0.90), 0)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	panel.set_meta("city_name_form_mobile_safe", compact_mobile_form)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#142E49")
 	panel_style.border_color = Color("#51D4F3")
@@ -5692,10 +5700,20 @@ func _show_change_city_name() -> void:
 	panel.add_theme_stylebox_override("panel", panel_style)
 	center.add_child(panel)
 
+	var scroll := ScrollContainer.new()
+	scroll.name = "CityNameFormScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(0, minf(420.0, maxf(180.0, viewport_size.y * 0.72)))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(scroll)
+
 	var content := VBoxContainer.new()
 	content.name = "CityNameForm"
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 12)
-	panel.add_child(content)
+	scroll.add_child(content)
 
 	var heading := Label.new()
 	heading.name = "CityNameHeading"
@@ -5726,6 +5744,8 @@ func _show_change_city_name() -> void:
 	input.add_theme_stylebox_override("focus", _settings_action_style(Color("#FFFFFF")))
 	input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	content.add_child(input)
+	if compact_mobile_form:
+		content.move_child(actions, 2)
 
 	var validation := Label.new()
 	validation.name = "CityNameValidation"
@@ -5778,8 +5798,29 @@ func _show_change_city_name() -> void:
 	modal_layer.modulate.a = 0.0
 	var entrance := create_tween()
 	entrance.tween_property(modal_layer, "modulate:a", 1.0, 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	input.call_deferred("grab_focus")
-	input.call_deferred("select_all")
+	# Do not summon the mobile keyboard as soon as the modal opens: it can
+	# cover the form before the player has even seen the Save/Cancel actions.
+	if not compact_mobile_form:
+		input.call_deferred("grab_focus")
+		input.call_deferred("select_all")
+	input.focus_entered.connect(func() -> void:
+		scroll.call_deferred("ensure_control_visible", input)
+	)
+	var resize_handler := _update_city_name_modal_layout.bind(modal_layer, panel, scroll)
+	get_viewport().size_changed.connect(resize_handler)
+	modal_layer.tree_exited.connect(func() -> void:
+		var viewport := get_viewport()
+		if is_instance_valid(viewport) and viewport.size_changed.is_connected(resize_handler):
+			viewport.size_changed.disconnect(resize_handler)
+	)
+
+
+func _update_city_name_modal_layout(modal_layer: Control, panel: PanelContainer, scroll: ScrollContainer) -> void:
+	if not is_instance_valid(modal_layer) or not is_instance_valid(panel) or not is_instance_valid(scroll):
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	panel.custom_minimum_size.x = minf(520.0, viewport_size.x * 0.90)
+	scroll.custom_minimum_size.y = minf(420.0, maxf(150.0, viewport_size.y * 0.72))
 
 
 func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
