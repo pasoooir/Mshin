@@ -317,16 +317,21 @@ func _run() -> void:
 
 	# Google profile claims are display-only metadata. The avatar is shown in a
 	# large circular frame at the upper-left of Settings after authentication.
-	var fake_claims := {"name": "Mshin Mayor", "email": "mayor@example.test", "picture": ""}
+	var fake_claims := {"name": "Mshin Mayor", "email": "mayor@example.test", "picture": "https://images.example.test/mshin-avatar.jpg"}
 	var encoded_claims := Marshalls.utf8_to_base64(JSON.stringify(fake_claims)).replace("+", "-").replace("/", "_").trim_suffix("=")
 	PlayerAccountManager._update_google_identity_from_token("header." + encoded_claims + ".signature")
+	if PlayerAccountManager.google_display_name != "Mshin Mayor" or PlayerAccountManager.google_avatar_url != "https://images.example.test/mshin-avatar.jpg":
+		push_error("[NotificationPreferencesSmoke] Google ID token profile claims were not decoded for display.")
+		quit(1)
+		return
+	PlayerAccountManager.google_avatar_url = ""
 	PlayerAccountManager.player_id = 987654
 	PlayerAccountManager.access_token = "smoke-test-token"
 	hud._show_settings_panel()
 	await process_frame
 	var avatar_frame := hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
 	var avatar_texture := hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
-	if avatar_frame == null or not avatar_frame.visible or avatar_texture == null:
+	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null:
 		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the circular Gmail profile avatar in its header.")
 		quit(1)
 		return
