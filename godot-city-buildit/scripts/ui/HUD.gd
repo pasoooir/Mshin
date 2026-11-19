@@ -253,7 +253,7 @@ func _on_viewport_size_changed() -> void:
 		var form_scroll := city_modal.find_child("CityNameFormScroll", true, false) as ScrollContainer
 		if is_instance_valid(form_scroll):
 			var viewport_height := get_viewport().get_visible_rect().size.y
-			form_scroll.custom_minimum_size.y = minf(320.0, maxf(160.0, viewport_height * 0.72))
+			form_scroll.custom_minimum_size.y = minf(420.0, maxf(100.0, viewport_height * 0.72))
 	if is_instance_valid(production_panel) and is_instance_valid(_production_building):
 		open_production_panel(_production_building)
 
@@ -5666,6 +5666,7 @@ func _show_change_city_name() -> void:
 			existing_input.grab_focus()
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
+	var compact_mobile_form := OS.has_feature("mobile") or (viewport_size.x > viewport_size.y and viewport_size.y < 520.0)
 	var modal_layer := Control.new()
 	modal_layer.name = "ChangeCityNameDialog"
 	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5712,7 +5713,7 @@ func _show_change_city_name() -> void:
 	form_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	form_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	form_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	form_scroll.custom_minimum_size = Vector2(0, minf(320.0, maxf(160.0, viewport_size.y * 0.72)))
+	form_scroll.custom_minimum_size = Vector2(0, minf(420.0, maxf(100.0, viewport_size.y * 0.72)))
 	panel.add_child(form_scroll)
 
 	var content := VBoxContainer.new()
@@ -5750,6 +5751,9 @@ func _show_change_city_name() -> void:
 	input.add_theme_stylebox_override("focus", _settings_action_style(Color("#FFFFFF")))
 	input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	content.add_child(input)
+	input.focus_entered.connect(func() -> void:
+		form_scroll.call_deferred("ensure_control_visible", input)
+	)
 
 	var validation := Label.new()
 	validation.name = "CityNameValidation"
@@ -5764,6 +5768,10 @@ func _show_change_city_name() -> void:
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 12)
 	content.add_child(actions)
+	# On compact landscape devices, keep Save/Cancel above the input so the
+	# keyboard cannot cover the primary action after the player starts typing.
+	if compact_mobile_form:
+		content.move_child(actions, 2)
 
 	var cancel_button := Button.new()
 	cancel_button.name = "CityNameCancel"
