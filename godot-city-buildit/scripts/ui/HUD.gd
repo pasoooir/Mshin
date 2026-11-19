@@ -5643,19 +5643,36 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 
 
 func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
+	# Render settings sub-forms inside the game's CanvasLayer. Native Window
+	# popups can capture the HTML5/mobile input stream and make the city appear
+	# frozen after a tap. The hidden Window remains only as a compatibility
+	# handle for existing settings state and automated tests.
 	var viewport_size := get_viewport().get_visible_rect().size
-	var safe_size := Vector2i(
-		mini(size.x, maxi(280, roundi(viewport_size.x * 0.92))),
-		mini(size.y, maxi(220, roundi(viewport_size.y * 0.86)))
-	)
-	var scale_factor := minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0))
-	scale_factor = maxf(0.62, scale_factor)
-	dialog.add_theme_color_override("font_color", Color("#EAF7FF"))
-	dialog.add_theme_color_override("title_color", Color("#F5FBFF"))
-	dialog.add_theme_color_override("font_shadow_color", Color("#082A42"))
-	dialog.add_theme_constant_override("shadow_offset_x", 1)
-	dialog.add_theme_constant_override("shadow_offset_y", 1)
-	dialog.add_theme_font_size_override("font_size", _popup_font_size(18))
+	var scale_factor := maxf(0.62, minf(_ui_scale, minf(viewport_size.x / 360.0, viewport_size.y / 280.0)))
+	dialog.visible = false
+	var overlay := Control.new()
+	overlay.name = str(dialog.name) + "Overlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 230 + get_child_count()
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	var backdrop := ColorRect.new()
+	backdrop.name = "SettingsDialogBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.005, 0.015, 0.03, 0.82)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center := CenterContainer.new()
+	center.name = "SettingsDialogCenter"
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.name = "SettingsDialogPanel"
+	panel.custom_minimum_size = Vector2(minf(float(size.x), viewport_size.x * 0.92), minf(float(size.y), viewport_size.y * 0.84))
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("#142E49")
 	panel_style.border_color = Color("#51D4F3")
@@ -5664,22 +5681,69 @@ func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
 	panel_style.shadow_color = Color(0.01, 0.04, 0.12, 0.58)
 	panel_style.shadow_size = 22
 	panel_style.shadow_offset = Vector2(0, 8)
-	panel_style.content_margin_left = 24 * scale_factor
-	panel_style.content_margin_right = 24 * scale_factor
-	panel_style.content_margin_top = 20 * scale_factor
-	panel_style.content_margin_bottom = 18 * scale_factor
-	dialog.add_theme_stylebox_override("panel", panel_style)
-	dialog.add_theme_stylebox_override("button", _settings_green_button_style(Color("#24678C")))
-	dialog.add_theme_stylebox_override("button_hover", _settings_green_button_style(Color("#318AB5")))
-	dialog.add_theme_stylebox_override("button_pressed", _settings_green_button_style(Color("#174B6D")))
-	dialog.add_theme_color_override("line_edit_font_color", Color("#142B45"))
-	dialog.add_theme_color_override("line_edit_font_selected_color", Color("#FFFFFF"))
-	dialog.add_theme_stylebox_override("line_edit", _settings_action_style(Color("#F0FAFF")))
-	dialog.add_theme_stylebox_override("line_edit_focus", _settings_action_style(Color("#FFFFFF")))
-	dialog.add_theme_color_override("check_button_color", Color("#54D8F5"))
-	dialog.add_theme_color_override("slider_color", Color("#53D6F4"))
+	panel_style.content_margin_left = 20 * scale_factor
+	panel_style.content_margin_right = 20 * scale_factor
+	panel_style.content_margin_top = 16 * scale_factor
+	panel_style.content_margin_bottom = 16 * scale_factor
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+	var layout := VBoxContainer.new()
+	layout.name = "SettingsDialogLayout"
+	layout.add_theme_constant_override("separation", 12 * scale_factor)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(layout)
+	var heading := HBoxContainer.new()
+	heading.name = "SettingsDialogHeading"
+	layout.add_child(heading)
+	var title := Label.new()
+	title.text = dialog.title
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", _settings_font_size(22))
+	title.add_theme_color_override("font_color", Color("#F5FBFF"))
+	heading.add_child(title)
+	var close := Button.new()
+	close.name = "SettingsDialogClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(46, 46) * scale_factor
+	close.add_theme_font_size_override("font_size", _settings_font_size(22))
+	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
+	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
+	close.pressed.connect(dialog.queue_free)
+	heading.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsDialogScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(0, minf(float(size.y) * 0.66, viewport_size.y * 0.66))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.name = "SettingsDialogBody"
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 10 * scale_factor)
+	scroll.add_child(body)
+	if not dialog.dialog_text.strip_edges().is_empty():
+		var message := Label.new()
+		message.name = "SettingsDialogMessage"
+		message.text = dialog.dialog_text
+		message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		message.add_theme_color_override("font_color", Color("#D7EAF7"))
+		message.add_theme_font_size_override("font_size", _popup_font_size(17))
+		body.add_child(message)
+		dialog.dialog_text = ""
+	for child in dialog.get_children():
+		if child is Control:
+			dialog.remove_child(child)
+			body.add_child(child)
+	dialog.tree_exiting.connect(func() -> void:
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	)
 	dialog.close_requested.connect(dialog.queue_free)
-	dialog.popup_centered(safe_size)
+	close.grab_focus.call_deferred()
+
 
 func _show_settings_about() -> void:
 	var dialog := AcceptDialog.new()
