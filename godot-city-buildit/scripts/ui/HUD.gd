@@ -5647,71 +5647,172 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
-	var dialog := ConfirmationDialog.new()
-	dialog.name = "ChangeCityNameDialog"
-	dialog.title = "Change City Name"
-	dialog.ok_button_text = "Save city name"
-	var form := VBoxContainer.new()
-	form.name = "CityNameForm"
-	form.add_theme_constant_override("separation", 8)
-	dialog.add_child(form)
+	# Use an in-canvas modal instead of a native Window. Embedded Window dialogs
+	# can be hidden behind the game canvas in mobile browsers and WebViews.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var modal_layer := Control.new()
+	modal_layer.name = "ChangeCityNameDialog"
+	modal_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal_layer.z_index = 200
+	modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	if is_instance_valid(settings_overlay):
+		settings_overlay.add_child(modal_layer)
+	else:
+		add_child(modal_layer)
+
+	var backdrop := ColorRect.new()
+	backdrop.name = "CityNameModalBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.005, 0.015, 0.03, 0.84)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	modal_layer.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.name = "CityNameModalCenter"
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modal_layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.name = "CityNameModalPanel"
+	panel.custom_minimum_size = Vector2(minf(520.0, viewport_size.x * 0.90), 0)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#142E49")
+	panel_style.border_color = Color("#51D4F3")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(22)
+	panel_style.shadow_color = Color(0.01, 0.04, 0.12, 0.62)
+	panel_style.shadow_size = 22
+	panel_style.shadow_offset = Vector2(0, 8)
+	panel_style.content_margin_left = 22
+	panel_style.content_margin_right = 22
+	panel_style.content_margin_top = 20
+	panel_style.content_margin_bottom = 20
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.name = "CityNameForm"
+	content.add_theme_constant_override("separation", 12)
+	panel.add_child(content)
+
+	var heading := Label.new()
+	heading.name = "CityNameHeading"
+	heading.text = "REGISTER YOUR CITY"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", _settings_font_size(25))
+	heading.add_theme_color_override("font_color", Color("#F5FBFF"))
+	content.add_child(heading)
+
+	var description := Label.new()
+	description.text = "Choose a name for your city. You can change it again later."
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.add_theme_font_size_override("font_size", _settings_font_size(16))
+	description.add_theme_color_override("font_color", Color("#C4DDED"))
+	content.add_child(description)
+
 	var input := LineEdit.new()
 	input.name = "CityNameInput"
 	input.text = GameManager.city_name
 	input.max_length = 28
 	input.placeholder_text = "Enter your city name"
-	input.custom_minimum_size = Vector2(minf(360.0 * _ui_scale, get_viewport().get_visible_rect().size.x * 0.72), 48 * _ui_scale)
-	input.add_theme_font_size_override("font_size", _settings_font_size(19))
-	form.add_child(input)
+	input.custom_minimum_size = Vector2(0, 54)
+	input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	input.add_theme_font_size_override("font_size", _settings_font_size(20))
+	input.add_theme_color_override("font_color", Color("#142B45"))
+	input.add_theme_stylebox_override("normal", _settings_action_style(Color("#F0FAFF")))
+	input.add_theme_stylebox_override("focus", _settings_action_style(Color("#FFFFFF")))
+	input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
+	content.add_child(input)
+
 	var validation := Label.new()
 	validation.name = "CityNameValidation"
 	validation.text = "%d / 28 characters" % input.text.length()
-	validation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	validation.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	validation.add_theme_font_size_override("font_size", _settings_font_size(14))
 	validation.add_theme_color_override("font_color", Color("#A8D7EB"))
-	form.add_child(validation)
+	content.add_child(validation)
+
+	var actions := HBoxContainer.new()
+	actions.name = "CityNameActions"
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 12)
+	content.add_child(actions)
+
+	var cancel_button := Button.new()
+	cancel_button.name = "CityNameCancel"
+	cancel_button.text = "Cancel"
+	cancel_button.custom_minimum_size = Vector2(0, 50)
+	cancel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_button.add_theme_font_size_override("font_size", _settings_font_size(18))
+	cancel_button.add_theme_stylebox_override("normal", _settings_action_style(Color("#31516B")))
+	cancel_button.add_theme_stylebox_override("hover", _settings_action_style(Color("#426B88")))
+	cancel_button.pressed.connect(modal_layer.queue_free)
+	actions.add_child(cancel_button)
+
+	var save_button := Button.new()
+	save_button.name = "CityNameSave"
+	save_button.text = "Save City"
+	save_button.custom_minimum_size = Vector2(0, 50)
+	save_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	save_button.add_theme_font_size_override("font_size", _settings_font_size(18))
+	save_button.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#16865F")))
+	save_button.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#20A879")))
+	save_button.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#116346")))
+	actions.add_child(save_button)
+
 	input.text_changed.connect(func(next_text: String) -> void:
 		validation.text = "%d / 28 characters" % next_text.length()
-		validation.add_theme_color_override("font_color", Color("#A8D7EB"))
+		var valid_name := not next_text.strip_edges().is_empty()
+		save_button.disabled = not valid_name
+		validation.add_theme_color_override("font_color", Color("#A8D7EB") if valid_name else Color("#FFB8A8"))
 	)
-	var save_in_progress := false
+	save_button.disabled = input.text.strip_edges().is_empty()
+	save_button.pressed.connect(_save_city_name_from_form.bind(input, validation, save_button, modal_layer))
 	input.text_submitted.connect(func(_submitted_text: String) -> void:
-		dialog.confirmed.emit()
+		if not save_button.disabled:
+			_save_city_name_from_form(input, validation, save_button, modal_layer)
 	)
-	dialog.confirmed.connect(func() -> void:
-		if save_in_progress:
-			return
-		save_in_progress = true
-		var previous_name := GameManager.city_name
-		if not GameManager.set_city_name(input.text):
-			save_in_progress = false
-			validation.text = "Please enter a city name before saving."
-			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
-			input.grab_focus()
-			return
-		if not SaveManager.save_game():
-			GameManager.city_name = previous_name
-			save_in_progress = false
-			validation.text = "Could not save locally. Your previous city name is unchanged."
-			validation.add_theme_color_override("font_color", Color("#FFB8A8"))
-			input.grab_focus()
-			return
-		if PlayerAccountManager.is_authenticated():
-			var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-			if saved_state is Dictionary:
-				status_label.text = "City name saved locally. Syncing your player profile…"
-				call_deferred("_sync_city_name_profile", saved_state)
-			else:
-				status_label.text = "City name saved locally, but the profile snapshot could not be prepared."
+	modal_layer.modulate.a = 0.0
+	var entrance := create_tween()
+	entrance.tween_property(modal_layer, "modulate:a", 1.0, 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	input.call_deferred("grab_focus")
+	input.call_deferred("select_all")
+
+
+func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
+	if not is_instance_valid(input) or not is_instance_valid(validation) or not is_instance_valid(save_button) or not is_instance_valid(modal_layer):
+		return
+	if save_button.disabled:
+		validation.text = "Please enter a city name before saving."
+		return
+	save_button.disabled = true
+	var previous_name := GameManager.city_name
+	if not GameManager.set_city_name(input.text):
+		save_button.disabled = false
+		validation.text = "Please enter a valid city name."
+		validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+		input.grab_focus()
+		return
+	if not SaveManager.save_game():
+		GameManager.city_name = previous_name
+		save_button.disabled = false
+		validation.text = "Could not save locally. Your previous city name is unchanged."
+		validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+		input.grab_focus()
+		return
+	if PlayerAccountManager.is_authenticated():
+		var saved_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+		if saved_state is Dictionary:
+			status_label.text = "City name saved locally. Syncing your player profile…"
+			call_deferred("_sync_city_name_profile", saved_state)
 		else:
-			status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
-		dialog.queue_free()
-	)
-	dialog.canceled.connect(dialog.queue_free)
-	add_child(dialog)
-	_style_settings_dialog(dialog, Vector2i(520, 250))
-	input.grab_focus()
-	input.select_all()
+			status_label.text = "City name saved locally, but the profile snapshot could not be prepared."
+	else:
+		status_label.text = "City name saved on this device. Sign in with Google to sync it across devices."
+	modal_layer.queue_free()
 
 
 func _sync_city_name_profile(saved_state: Dictionary) -> void:
