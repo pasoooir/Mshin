@@ -149,6 +149,10 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] City registration modal must open as a HUD-root layer above Settings.")
 		quit(1)
 		return
+	if hud.settings_overlay.visible:
+		push_error("[NotificationPreferencesSmoke] Settings must be suspended while city registration owns input.")
+		quit(1)
+		return
 	var city_form_scroll := city_dialog.find_child("CityNameFormScroll", true, false) as ScrollContainer
 	var city_name_input := city_dialog.find_child("CityNameInput", true, false) as LineEdit
 	var city_name_save := city_dialog.find_child("CityNameSave", true, false) as Button
@@ -173,6 +177,10 @@ func _run() -> void:
 	await process_frame
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null or str(game_manager.city_name) != original_city_name:
 		push_error("[NotificationPreferencesSmoke] Cancel must close registration without changing the active city.")
+		quit(1)
+		return
+	if not hud.settings_overlay.visible:
+		push_error("[NotificationPreferencesSmoke] Cancel must restore the Settings panel.")
 		quit(1)
 		return
 
@@ -225,6 +233,10 @@ func _run() -> void:
 		return
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Successful city registration must close the modal.")
+		quit(1)
+		return
+	if not hud.settings_overlay.visible:
+		push_error("[NotificationPreferencesSmoke] Successful registration must restore the Settings panel.")
 		quit(1)
 		return
 
