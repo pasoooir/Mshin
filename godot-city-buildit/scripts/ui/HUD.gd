@@ -5649,7 +5649,7 @@ func _close_settings_dialogs() -> void:
 			child.queue_free()
 
 
-func _style_settings_dialog(dialog: Window, size: Vector2i) -> void:
+func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 	# Render settings sub-forms inside the game's CanvasLayer. Native Window
 	# popups can capture the HTML5/mobile input stream and make the city appear
 	# frozen after a tap. The hidden Window remains only as a compatibility
