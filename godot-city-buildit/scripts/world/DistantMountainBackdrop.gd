@@ -312,8 +312,9 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 
 
 func _create_rock_surface_material() -> ShaderMaterial:
-	# World-space triplanar procedural stone: layered mineral variation,
-	# weathered grain and fine fracture seams without texture downloads or UV seams.
+	# Triplanar mineral weathering with chipped polygonal fracture networks.
+	# All detail is evaluated in world space: no imported textures, UV seams,
+	# extra mesh surfaces or additional draw submissions.
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
@@ -325,6 +326,12 @@ float hash31(vec3 p) {
 	p = fract(p * 0.1031);
 	p += dot(p, p.yzx + 33.33);
 	return fract((p.x + p.y) * p.z);
+}
+
+vec2 hash22(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.xx + p3.yz) * p3.zy);
 }
 
 float value_noise(vec3 p) {
@@ -351,6 +358,29 @@ float stone_fbm(vec3 p) {
 	return n;
 }
 
+// Distance between the two closest cellular feature points creates broken,
+// branching mineral boundaries instead of the previous parallel sine stripes.
+float cellular_edge(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	float nearest = 8.0;
+	float second = 8.0;
+	for (int y = -1; y <= 1; y++) {
+		for (int x = -1; x <= 1; x++) {
+			vec2 offset = vec2(float(x), float(y));
+			vec2 feature = offset + hash22(cell + offset) * 0.82 + 0.09;
+			float distance_to_feature = length(local - feature);
+			if (distance_to_feature < nearest) {
+				second = nearest;
+				nearest = distance_to_feature;
+			} else if (distance_to_feature < second) {
+				second = distance_to_feature;
+			}
+		}
+	}
+	return second - nearest;
+}
+
 void vertex() {
 	rock_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	rock_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
@@ -359,33 +389,54 @@ void vertex() {
 void fragment() {
 	vec3 n = abs(normalize(rock_world_normal));
 	vec3 p = rock_world_position;
-	float grain_x = stone_fbm(p.yzx * 1.65);
-	float grain_y = stone_fbm(p.zxy * 1.65);
-	float grain_z = stone_fbm(p.xyz * 1.65);
-	float grain = dot(vec3(grain_x, grain_y, grain_z), n);
-	float strata = sin(dot(p, vec3(0.19, 0.31, 0.13)) + grain * 5.5);
-	float fracture_field = min(
-		abs(sin(p.x * 2.7 + p.y * 1.1 + grain * 3.0)),
-		min(abs(sin(p.z * 2.35 - p.y * 1.7 + grain * 2.2)),
-			abs(sin(p.x * 1.15 + p.z * 1.8 + p.y * 0.65)))
-	);
-	float fractures = 1.0 - smoothstep(0.025, 0.105, fracture_field);
-	float pores = smoothstep(0.58, 0.88, grain);
-	vec3 base_stone = mix(vec3(0.24, 0.25, 0.23), vec3(0.57, 0.52, 0.42), grain);
-	base_stone *= mix(0.82, 1.12, smoothstep(-0.65, 0.7, strata));
+	vec3 tri_weights = pow(max(n, vec3(0.001)), vec3(4.0));
+	tri_weights /= max(dot(tri_weights, vec3(1.0)), 0.001);
+
+	float grain_x = stone_fbm(p.yz * 1.75);
+	float grain_y = stone_fbm(p.xz * 1.75);
+	float grain_z = stone_fbm(p.xy * 1.75);
+	float grain = dot(vec3(grain_x, grain_y, grain_z), tri_weights);
+	float fine_grain = dot(vec3(
+		stone_fbm(p.yz * 5.8),
+		stone_fbm(p.xz * 5.8),
+		stone_fbm(p.xy * 5.8)
+	), tri_weights);
+
+	// Three axis projections hide stretching on steep and horizontal faces.
+	float crack_x = cellular_edge(p.yz * 1.35 + vec2(grain_x * 0.22));
+	float crack_y = cellular_edge(p.xz * 1.35 + vec2(grain_y * 0.22));
+	float crack_z = cellular_edge(p.xy * 1.35 + vec2(grain_z * 0.22));
+	float crack_edge = dot(vec3(crack_x, crack_y, crack_z), tri_weights);
+	float fracture_core = 1.0 - smoothstep(0.018, 0.075, crack_edge);
+	float fracture_rim = smoothstep(0.075, 0.16, crack_edge) * (1.0 - smoothstep(0.16, 0.24, crack_edge));
+
+	float strata_noise = stone_fbm(p * vec3(0.12, 0.20, 0.12));
+	float strata = sin(p.y * 0.72 + strata_noise * 3.2 + grain * 1.8);
+	float sediment = smoothstep(-0.52, 0.62, strata);
+	float pores = smoothstep(0.68, 0.91, fine_grain);
+	float micro_weathering = mix(0.91, 1.08, fine_grain);
+
+	vec3 dark_mineral = vec3(0.19, 0.205, 0.195);
+	vec3 warm_sandstone = vec3(0.59, 0.53, 0.42);
+	vec3 cool_slate = vec3(0.34, 0.37, 0.35);
+	vec3 base_stone = mix(dark_mineral, warm_sandstone, grain);
+	base_stone = mix(base_stone, cool_slate, smoothstep(0.56, 0.88, grain_x) * 0.24);
+	base_stone *= mix(0.78, 1.13, sediment);
 	base_stone *= mix(0.72, 1.0, COLOR.rgb);
-	base_stone *= 1.0 - fractures * 0.48;
-	base_stone *= 1.0 - pores * 0.12;
+	base_stone *= micro_weathering;
+	base_stone *= 1.0 - fracture_core * 0.62;
+	base_stone *= 1.0 - pores * 0.10;
+	base_stone = mix(base_stone, base_stone * 1.22, fracture_rim * 0.32);
+
 	ALBEDO = base_stone;
-	ROUGHNESS = 0.94;
+	ROUGHNESS = mix(0.88, 0.99, pores);
 	METALLIC = 0.0;
-	SPECULAR = 0.16;
+	SPECULAR = 0.12;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	return material
-
 
 func _build_mountain_rock_outcrops() -> void:
 	var rock_mesh := _create_rock_outcrop_mesh()
