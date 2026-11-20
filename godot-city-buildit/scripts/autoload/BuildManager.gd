@@ -741,8 +741,10 @@ func cancel_construction(building: Building) -> bool:
 	# destroy the paid BOM: keep the site and reservation until space is freed.
 	if refund_total > StorageManager.get_free():
 		return false
-	if not building.construction_reserved_bom.is_empty() and not StorageManager.restore_items_with_cost_batches(building.construction_reserved_bom, building.construction_reserved_cost_batches):
-		return false
+	if not building.construction_reserved_bom.is_empty():
+		var refund_ok := StorageManager.restore_items_with_cost_batches(building.construction_reserved_bom, building.construction_reserved_cost_batches) if not building.construction_reserved_cost_batches.is_empty() else StorageManager.add_items(building.construction_reserved_bom)
+		if not refund_ok:
+			return false
 	if building.construction_reserved_simoleons > 0:
 		EconomyManager.add_simoleons(building.construction_reserved_simoleons)
 	building.construction_reserved_bom.clear()
