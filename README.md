@@ -1824,7 +1824,7 @@ The camera change must be assessed together with the city renderer. The followin
 
 ## Procedural mountain stone surfaces and bounded near shadows — 2026-11-20
 
-- [x] Replace flat vertex-tint-only rock outcrops with a world-space triplanar procedural stone material: layered mineral color, multi-scale weathering grain, pores and fine fracture seams; no external textures, UV seams, runtime downloads or extra mesh submissions.
+- [x] Replace flat vertex-tint-only rock outcrops with a world-space triplanar procedural stone material: layered mineral color, multi-scale weathering grain, pores and branching cellular fracture boundaries with dark crack cores and lighter chipped rims; no external textures, UV seams, runtime downloads or extra mesh submissions.
 - [x] Keep per-instance rock palette variation while adding material-level surface detail shared by the single 72-instance MultiMesh batch.
 - [x] Enable rock shadow casting only on the near-detail batch, whose visibility range ends at 215 world units; distant ridges, vegetation and tunnel dressing remain shadow-free.
 - [x] Extend visual smoke assertions for procedural grain/fracture shader features and the near-only shadow/visibility contract.
