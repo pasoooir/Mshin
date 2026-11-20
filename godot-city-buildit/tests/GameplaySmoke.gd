@@ -4341,21 +4341,16 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("building_supplies")
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
-	var storage_before_missing_wind: Dictionary = StorageManager.to_save_dict()
-	var money_before_missing_wind := EconomyManager.simoleons
+	var money_before_starter_utilities := EconomyManager.simoleons
 	StorageManager.items = {}
-	_check(not BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "A service building must not be placeable when its construction BOM is missing.")
-	_check(not BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Placement API must reject construction without the full BOM.")
-	_check(EconomyManager.simoleons == money_before_missing_wind and StorageManager.items.is_empty(), "Failed construction must not consume money or partially mutate inventory.")
-	StorageManager.from_save_dict(storage_before_missing_wind)
-	_grant_construction_bom_for_test("power_wind")
-	var wind_bom_before := StorageManager.get_all_items()
-	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
-	for item_id in BuildManager.get_construction_bom("power_wind"):
-		_check(StorageManager.get_count(str(item_id)) == int(wind_bom_before.get(item_id, 0)) - int(BuildManager.get_construction_bom("power_wind")[item_id]), "Successful construction must consume its BOM exactly once: " + str(item_id))
+	_check(BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "Starter wind power must be placeable at Level 1 without a material inventory prerequisite.")
+	_check(BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Could not place starter wind power using its Simoleon cost alone.")
+	_check(EconomyManager.simoleons == money_before_starter_utilities - int(BuildManager.building_types["power_wind"].get("cost", 0)) and StorageManager.items.is_empty(), "Starter wind power must charge its catalog cost without consuming unavailable materials.")
 	BuildManager.select_building("water_tower")
-	_grant_construction_bom_for_test("water_tower")
-	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
+	_check(BuildManager.can_place_at(Vector2i(7, 1), "water_tower"), "Starter water tower must be placeable at Level 1 without a material inventory prerequisite.")
+	_check(BuildManager.place_building(Vector2i(7, 1), "water_tower"), "Could not place starter water tower using its Simoleon cost alone.")
+	_check(StorageManager.items.is_empty(), "Starter water tower must not consume material inventory.")
+	EconomyManager.simoleons = money_before_starter_utilities
 
 	await _wait_seconds(4.5)
 	var home = _find_building("residential_1")
