@@ -1263,6 +1263,17 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [ ] Pass exact-head Godot validation, GameplaySmoke, Android APK export and desktop/mobile Web/Chromium smoke.
 - [ ] Capture physical Android frame-time p95/max while repeatedly panning, zooming and orbiting; compare with the previous build.
 
+## City CPU scheduling — traffic manager frame budget — 2026-11-20
+
+- [x] Keep each vehicle's transform/movement updates per-frame, while throttling manager-wide junction bookkeeping to 10 Hz.
+- [x] Throttle vehicle-list/reservation pruning and emergency-station/building scans to 2 Hz; preserve elapsed time when each scheduled pass runs.
+- [x] Limit fleet-count UI signal checks to 4 Hz and emit only when public/emergency counts actually change.
+- [x] Add GameplaySmoke coverage for the scheduling budgets and duplicate fleet-signal suppression.
+- [ ] Pass exact-head Godot validation, full GameplaySmoke, Android APK export and Web/Chromium smoke.
+- [ ] Measure physical Android frame-time p95/max while panning through a dense city with traffic and service buildings active.
+
+**Behavior boundary:** vehicle movement remains per-frame; only non-visual management scans are throttled. Junction signal timing consumes accumulated elapsed time so phase durations remain time-based.
+
 **Measurement honesty:** these changes correct camera time integration and input spikes. They do not by themselves prove that GPU/CPU frame-time bottlenecks are eliminated; physical-device pan/zoom/orbit profiling remains required.
 
 **Measurement honesty:** this is a structural reduction in decorative shadow casters, not a measured FPS or temperature claim. The existing 30-second in-game benchmark remains the device-level source of truth; physical-device A/B results are still required before quantifying gains.
