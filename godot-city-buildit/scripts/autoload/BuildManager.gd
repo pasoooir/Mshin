@@ -688,7 +688,7 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	var construction_bom := {} if allow_reserved_restore else get_construction_bom(chosen)
 	var construction_cost_batches: Dictionary = {}
 	if not construction_bom.is_empty():
-		var construction_removal := StorageManager.remove_items_with_cost_batches(construction_bom)
+		var construction_removal: Dictionary = StorageManager.remove_items_with_cost_batches(construction_bom)
 		if not bool(construction_removal.get("success", false)):
 			building_node.free()
 			return false
@@ -742,7 +742,7 @@ func cancel_construction(building: Building) -> bool:
 	if refund_total > StorageManager.get_free():
 		return false
 	if not building.construction_reserved_bom.is_empty():
-		var refund_ok := StorageManager.restore_items_with_cost_batches(building.construction_reserved_bom, building.construction_reserved_cost_batches) if not building.construction_reserved_cost_batches.is_empty() else StorageManager.add_items(building.construction_reserved_bom)
+		var refund_ok: bool = StorageManager.restore_items_with_cost_batches(building.construction_reserved_bom, building.construction_reserved_cost_batches) if not building.construction_reserved_cost_batches.is_empty() else StorageManager.add_items(building.construction_reserved_bom)
 		if not refund_ok:
 			return false
 	if building.construction_reserved_simoleons > 0:
