@@ -1690,3 +1690,15 @@ The camera change must be assessed together with the city renderer. The followin
 - [x] اعتبارسنجی Godot و آزمون کامل Settings، خروجی و امضای Android Debug APK و اجرای Web/Chromium دسکتاپ و موبایل موفق شدند (PR #605، run 44711159710 و run 44711159709).
 - [ ] انتشار Pages روی commit ادغام‌شده main و بازکردن نسخه immutable پس از deploy تأیید شود؛ deploy در workflow مربوط به PR عمداً اجرا نمی‌شود.
 - [ ] ورود واقعی با Google، دریافت تصویر پروفایل واقعی و نمایش مانده ارزها روی گوشی Android فیزیکی جداگانه تأیید شود.
+
+
+## Australian grassland and visible mountain horizon — 2026-11-20
+
+- [x] Replace the starter temperate ground palette with a brighter Australian coastal grassland palette; retain subtle olive variation without turning locked plots into dark brown wasteland.
+- [x] Brighten the distant green land and mountain vegetation, and reduce atmospheric fog so the ridge silhouette remains readable.
+- [x] Bring the mountain ring closer to the city and raise its rolling ridgelines; align the north/south highway tunnel portals with the existing six-lane motorway.
+- [x] Extend the main camera far clip to 720 world units so the outer ridge and tunnel portals are not clipped by the previous 280-unit limit.
+- [x] Add visual smoke assertions for the starter grass palette, main-camera far clip and mountain visibility envelope.
+- [ ] Pass exact-head Godot visual/gameplay validation, Android Debug APK export and Web/Chromium desktop/mobile smoke.
+
+**Rendering note:** the far-clip mismatch was a concrete visibility defect: the mountain/tunnel ring extended to 330 world units while the main camera stopped rendering at 280. Physical-device visual confirmation remains separate from headless geometry tests.

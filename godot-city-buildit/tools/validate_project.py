@@ -870,8 +870,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#397B36\")",
-    "Color(\"#679A49\")",
+    "Color(\"#4C963F\")",
+    "Color(\"#78AD50\")",
     "const HIGHWAY_LAMP_COUNT := 12",
     "const MEADOW_SHEEP_COUNT := 12",
     "const MEADOW_CATTLE_COUNT := 3",
@@ -1105,7 +1105,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 170.0", "RIDGE_OUTER_RADIUS := 330.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 52.0 + rolling_peaks * 36.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion("]:
+for contract in ["RIDGE_INNER_RADIUS := 120.0", "RIDGE_OUTER_RADIUS := 300.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 62.0 + rolling_peaks * 46.0", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion("]:
     if contract not in mountain_backdrop_source:
         errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
@@ -1717,7 +1717,7 @@ for contract in [
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'LandExpansionManager.get_owned_tiles()',
     '_build_city_grid()',
-    'color = color.lerp(Color("#302B24"), 0.34)',
+    'color = color.lerp(Color("#36523A"), 0.12)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
         errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
