@@ -78,7 +78,9 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
 		quit(1)
 		return
+	print("[SettingsTouchSmoke] GoogleAction rect=%s viewport=%s visible=%s size=%s" % [str(google_action.get_global_rect()), str(google_action.get_viewport_rect()), str(google_action.is_visible_in_tree()), str(google_action.size)])
 	await _tap_control(google_action)
+	print("[SettingsTouchSmoke] GoogleAction status=%s pressed=%s" % [str(hud.find_child("SettingsAccountStatus", true, false).text), str(google_action.button_pressed)])
 	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
 		quit(1)
