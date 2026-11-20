@@ -443,6 +443,50 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
 		quit(1)
 		return
+
+	# Exercise the actual image-decoding callback without relying on Google's
+	# live CDN: valid image bytes must replace the placeholder; invalid bytes
+	# must release the URL guard so a later retry can succeed.
+	account_manager.player_id = 987654
+	account_manager.access_token = "smoke-test-token"
+	account_manager.google_avatar_url = "https://images.example.test/mshin-avatar.png"
+	hud._settings_avatar_request_url = account_manager.google_avatar_url
+	hud._show_settings_panel()
+	await process_frame
+	avatar_frame = hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
+	avatar_texture = hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
+	var placeholder := hud.find_child("SettingsProfileAvatarFallback", true, false) as Label
+	var generated_avatar := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+	generated_avatar.fill(Color("#5BD7F7"))
+	var avatar_bytes := generated_avatar.save_png_to_buffer()
+	var invalid_request := HTTPRequest.new()
+	hud.add_child(invalid_request)
+	hud._settings_avatar_request_url = account_manager.google_avatar_url
+	hud._on_settings_profile_avatar_downloaded(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), PackedByteArray([1, 2, 3]), invalid_request, account_manager.google_avatar_url)
+	if hud._settings_avatar_request_url != "" or avatar_texture.texture != null or not placeholder.visible:
+		push_error("[NotificationPreferencesSmoke] Invalid avatar data must preserve the fallback and allow retry.")
+		quit(1)
+		return
+	var valid_request := HTTPRequest.new()
+	hud.add_child(valid_request)
+	hud._settings_avatar_request_url = account_manager.google_avatar_url
+	hud._on_settings_profile_avatar_downloaded(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), avatar_bytes, valid_request, account_manager.google_avatar_url)
+	if avatar_texture.texture == null or placeholder.visible or not avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Valid avatar image bytes did not replace the profile placeholder.")
+		quit(1)
+		return
+	var oversized_image := Image.create(1025, 2, false, Image.FORMAT_RGBA8)
+	oversized_image.fill(Color.WHITE)
+	var oversized_request := HTTPRequest.new()
+	hud.add_child(oversized_request)
+	hud._settings_avatar_request_url = account_manager.google_avatar_url
+	hud._on_settings_profile_avatar_downloaded(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), oversized_image.save_png_to_buffer(), oversized_request, account_manager.google_avatar_url)
+	if hud._settings_avatar_request_url != "" or avatar_texture.texture != null or not placeholder.visible:
+		push_error("[NotificationPreferencesSmoke] Oversized avatar images must be rejected safely.")
+		quit(1)
+		return
+	account_manager.logout()
+
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
 	if settings_close == null:
 		push_error("[NotificationPreferencesSmoke] Settings panel has no close action.")

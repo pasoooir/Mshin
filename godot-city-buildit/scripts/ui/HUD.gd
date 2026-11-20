@@ -5461,6 +5461,7 @@ func _refresh_settings_profile_avatar() -> void:
 	var request := HTTPRequest.new()
 	request.name = "SettingsProfileAvatarRequest"
 	request.timeout = 12.0
+	request.body_size_limit = 2 * 1024 * 1024
 	add_child(request)
 	request.request_completed.connect(_on_settings_profile_avatar_downloaded.bind(request, avatar_url), CONNECT_ONE_SHOT)
 	var request_error := request.request(avatar_url)
@@ -5482,7 +5483,13 @@ func _on_settings_profile_avatar_downloaded(result: int, response_code: int, _he
 		image_error = avatar_image.load_png_from_buffer(body)
 	if image_error != OK:
 		image_error = avatar_image.load_webp_from_buffer(body)
-	if image_error != OK:
+	if image_error != OK or avatar_image.is_empty() or avatar_image.get_width() > 1024 or avatar_image.get_height() > 1024:
+		if _settings_avatar_request_url == avatar_url:
+			_settings_avatar_request_url = ""
+		if is_instance_valid(_settings_profile_avatar):
+			_settings_profile_avatar.texture = null
+		if is_instance_valid(_settings_avatar_placeholder):
+			_settings_avatar_placeholder.show()
 		return
 	if is_instance_valid(_settings_profile_avatar):
 		_settings_profile_avatar.texture = ImageTexture.create_from_image(avatar_image)
