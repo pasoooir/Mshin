@@ -352,15 +352,11 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 		surface.add_vertex(ring_bottom[index])
 		surface.add_vertex(ring_bottom[next_index])
 
-	# Three recessed fracture channels are actual inset triangles, not
-	# painted lines. Their dark cores and narrow chipped rims add depth while
-	# remaining part of this same single-surface ArrayMesh.
+	# Three recessed fracture channels are actual inset triangles, not painted lines.
 	for crack_index in range(3):
 		var crack_angle := TAU * float(crack_index) / 3.0 + 0.31
 		_append_rock_fracture_groove(surface, crack_angle, 0.78 + float(crack_index) * 0.08)
-
-	# Small attached talus stones are fused into the shared rock mesh. They
-	# follow each MultiMesh instance, so there is no pebble node or draw call.
+	# Four attached talus stones are fused into this same mesh and batch.
 	_append_rock_foot_pebbles(surface)
 
 	surface.generate_normals()
@@ -393,7 +389,7 @@ func _append_rock_fracture_groove(surface: SurfaceTool, angle: float, strength: 
 	surface.add_vertex(middle_right)
 	surface.add_vertex(upper_left)
 	surface.add_vertex(upper_right)
-	# Thin exposed mineral lips catch the existing key light on either side.
+	# Narrow exposed mineral lips catch the existing key light.
 	surface.set_color(Color(0.64, 0.59, 0.48) * strength)
 	surface.add_vertex(lower_left - tangent * 0.012)
 	surface.add_vertex(middle_left - tangent * 0.010)
@@ -510,8 +506,7 @@ float cellular_edge(vec2 p) {
 void vertex() {
 	rock_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	rock_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
-	// Convert local height to world-space offset so contact width stays
-	// consistent across differently scaled MultiMesh rock instances.
+	// World-space offset keeps the contact band consistent across rock scales.
 	rock_local_height = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y - MODEL_MATRIX[3].y;
 }
 
@@ -557,8 +552,7 @@ void fragment() {
 	base_stone *= 1.0 - pores * 0.10;
 	base_stone = mix(base_stone, base_stone * 1.22, fracture_rim * 0.32);
 
-	// A cheap local-space contact-occlusion band darkens the rock-to-ground
-	// seam without a second shadow caster, screen-space pass or extra light.
+	// Cheap contact occlusion: no extra light, shadow caster or render pass.
 	float contact_band = 1.0 - smoothstep(-0.015, 0.30, rock_local_height);
 	float contact_occlusion = mix(1.0, 0.58, contact_band);
 	base_stone *= contact_occlusion;
@@ -629,3 +623,107 @@ func _build_mountain_shrubs() -> void:
 		var point := _ridge_point(side, along, depth)
 		var scale := 1.0 + float((index * 13) % 11) * 0.13
 		var basis := Basis(Vector3.UP, float((index * 29) % 360) * PI / 180.0).scaled(Vector3(scale, scale * 0.72, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, point + Vector3(0.0, 0.65 * scale, 0.0)))
+		multimesh.set_instance_color(index, palette[index % palette.size()])
+	var shrubs := MultiMeshInstance3D.new()
+	shrubs.name = "DarkGreenMountainShrubs"
+	shrubs.multimesh = multimesh
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 1.0
+	shrubs.material_override = material
+	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(shrubs)
+
+
+func _build_mountain_grass() -> void:
+	var blade_mesh := BoxMesh.new()
+	blade_mesh.size = Vector3(0.16, 0.72, 0.14)
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = blade_mesh
+	multimesh.instance_count = GRASS_COUNT
+	var palette: Array[Color] = [Color("#23492B"), Color("#315B32"), Color("#3B6638"), Color("#1C4227")]
+	for index in range(GRASS_COUNT):
+		var side := index % 4
+		var row := int(index / 4)
+		var along := -RIDGE_HALF_LENGTH * 0.91 + fposmod(float(row) * 19.73, RIDGE_HALF_LENGTH * 1.82)
+		var depth := 0.12 + float((row * 11) % 72) / 100.0
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			continue
+		var point := _ridge_point(side, along, depth)
+		var scale := 0.55 + float((index * 5) % 9) * 0.12
+		var yaw := float((index * 47) % 360) * PI / 180.0
+		var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale, scale, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, point + Vector3(0.0, 0.32 * scale, 0.0)))
+		multimesh.set_instance_color(index, palette[index % palette.size()])
+	var grass := MultiMeshInstance3D.new()
+	grass.name = "MountainDarkGrass"
+	grass.multimesh = multimesh
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 1.0
+	grass.material_override = material
+	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(grass)
+
+
+
+func _build_mountain_eucalypts() -> void:
+	# Australian gum trees: pale trunks and sparse blue-green crowns. Two
+	# shared meshes, each submitted as one MultiMesh batch for the whole rim.
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.16
+	trunk_mesh.bottom_radius = 0.28
+	trunk_mesh.height = 5.8
+	trunk_mesh.radial_segments = 6
+	var trunk_material := StandardMaterial3D.new()
+	trunk_material.albedo_color = Color("#B8AA87")
+	trunk_material.roughness = 1.0
+	var crown_mesh := SphereMesh.new()
+	crown_mesh.radius = 1.0
+	crown_mesh.height = 2.0
+	crown_mesh.radial_segments = 7
+	crown_mesh.rings = 4
+	var crown_material := StandardMaterial3D.new()
+	crown_material.vertex_color_use_as_albedo = true
+	crown_material.roughness = 1.0
+	var trunks := MultiMesh.new()
+	trunks.transform_format = MultiMesh.TRANSFORM_3D
+	trunks.mesh = trunk_mesh
+	trunks.instance_count = EUCALYPT_COUNT
+	var crowns := MultiMesh.new()
+	crowns.transform_format = MultiMesh.TRANSFORM_3D
+	crowns.use_colors = true
+	crowns.mesh = crown_mesh
+	crowns.instance_count = EUCALYPT_COUNT
+	var foliage: Array[Color] = [Color("#557A69"), Color("#668675"), Color("#78927A"), Color("#496D60")]
+	for index in range(EUCALYPT_COUNT):
+		var side := index % 4
+		var row := int(index / 4)
+		var along := -RIDGE_HALF_LENGTH * 0.84 + fposmod(float(row) * 53.7 + float(side) * 29.0, RIDGE_HALF_LENGTH * 1.68)
+		var depth := 0.24 + float((row * 13 + side * 7) % 48) / 100.0
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			continue
+		var point := _ridge_point(side, along, depth)
+		var tree_scale := 0.82 + float((index * 7) % 8) * 0.075
+		var yaw := float((index * 41) % 360) * PI / 180.0
+		var rotation := Basis(Vector3.UP, yaw)
+		var trunk_origin := point + Vector3(0.0, 2.9 * tree_scale, 0.0)
+		var crown_origin := point + Vector3(0.0, 6.0 * tree_scale, 0.0)
+		trunks.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(tree_scale, tree_scale, tree_scale)), trunk_origin))
+		crowns.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(0.82 * tree_scale, 1.55 * tree_scale, 0.82 * tree_scale)), crown_origin))
+		crowns.set_instance_color(index, foliage[index % foliage.size()])
+	var trunk_batch := MultiMeshInstance3D.new()
+	trunk_batch.name = "AustralianEucalyptTrunks"
+	trunk_batch.multimesh = trunks
+	trunk_batch.material_override = trunk_material
+	trunk_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(trunk_batch)
+	var crown_batch := MultiMeshInstance3D.new()
+	crown_batch.name = "AustralianEucalyptCanopies"
+	crown_batch.multimesh = crowns
+	crown_batch.material_override = crown_material
+	crown_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(crown_batch)
