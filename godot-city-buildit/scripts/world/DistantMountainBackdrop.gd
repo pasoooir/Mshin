@@ -373,7 +373,7 @@ void fragment() {
 	float pores = smoothstep(0.58, 0.88, grain);
 	vec3 base_stone = mix(vec3(0.24, 0.25, 0.23), vec3(0.57, 0.52, 0.42), grain);
 	base_stone *= mix(0.82, 1.12, smoothstep(-0.65, 0.7, strata));
-	base_stone *= mix(0.72, 1.0, INSTANCE_COLOR.rgb);
+	base_stone *= mix(0.72, 1.0, COLOR.rgb);
 	base_stone *= 1.0 - fractures * 0.48;
 	base_stone *= 1.0 - pores * 0.12;
 	ALBEDO = base_stone;
