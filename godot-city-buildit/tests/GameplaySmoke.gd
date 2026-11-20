@@ -42,12 +42,16 @@ class FireHazardTestBuilding extends Node3D:
 var failures: Array[String] = []
 var storage_capacity_signal_count := 0
 var storage_changed_signal_count := 0
+var traffic_test_fleet_signal_count := 0
 
 func _on_test_storage_capacity_changed(_new_capacity: int) -> void:
 	storage_capacity_signal_count += 1
 
 func _on_test_storage_changed() -> void:
 	storage_changed_signal_count += 1
+
+func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -> void:
+	traffic_test_fleet_signal_count += 1
 
 func _ready() -> void:
 	call_deferred("_run_gameplay_test")
@@ -1090,6 +1094,24 @@ func _test_immigration_coefficients() -> void:
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, false, false), 0.7), "Single-utility immigration factor must be 0.7.")
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, false), 1.0), "Dual-utility immigration factor must be 1.0.")
 	_check(is_equal_approx(HappinessManager._immigration_service_factor(true, true, true), 1.15), "Full-service immigration factor must be 1.15.")
+
+func _test_traffic_manager_frame_budget() -> void:
+	_check(is_equal_approx(TrafficManager.JUNCTION_CONTROLLER_INTERVAL, 0.1), "Junction signal bookkeeping must run at a bounded 10 Hz cadence, not every render frame.")
+	_check(is_equal_approx(TrafficManager.VEHICLE_PRUNE_INTERVAL, 0.5), "Vehicle-list and reservation pruning must be throttled to twice per second.")
+	_check(is_equal_approx(TrafficManager.EMERGENCY_DISPATCH_SCAN_INTERVAL, 0.5), "Emergency-station scans must not traverse every building on every render frame.")
+	_check(is_equal_approx(TrafficManager.FLEET_SIGNAL_INTERVAL, 0.25), "Fleet UI notifications must be checked at a bounded four Hz cadence.")
+	var previous_public := TrafficManager._last_emitted_public_count
+	var previous_emergency := TrafficManager._last_emitted_emergency_count
+	var previous_count := traffic_test_fleet_signal_count
+	TrafficManager.fleet_changed.connect(_on_test_traffic_fleet_changed)
+	TrafficManager._last_emitted_public_count = -1
+	TrafficManager._last_emitted_emergency_count = -1
+	TrafficManager._emit_fleet_changed_if_needed()
+	TrafficManager._emit_fleet_changed_if_needed()
+	_check(traffic_test_fleet_signal_count == previous_count + 1, "Unchanged fleet counts must not emit duplicate UI signals.")
+	TrafficManager.fleet_changed.disconnect(_on_test_traffic_fleet_changed)
+	TrafficManager._last_emitted_public_count = previous_public
+	TrafficManager._last_emitted_emergency_count = previous_emergency
 
 func _test_camera_focus_math() -> void:
 	var current := Vector3(-9.0, 0.0, 2.5)
@@ -3960,6 +3982,7 @@ func _run_gameplay_test() -> void:
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
 	_test_camera_focus_math()
+	_test_traffic_manager_frame_budget()
 	_test_placement_rotation_contract()
 	_check(is_equal_approx(HappinessManager.BASE_HAPPINESS, 100.0), "A new city home should not start with an unexplained 30% happiness score.")
 	_check(IconAtlas.validate_all_icons(), "One or more local UI icon textures are missing or empty.")
