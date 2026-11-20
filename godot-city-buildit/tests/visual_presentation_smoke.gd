@@ -31,6 +31,25 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Both tunnels must include a roof, side walls and framed inner/outer portals")
 		get_tree().quit(1)
 		return
+	for tunnel in [north_tunnel, south_tunnel]:
+		if tunnel.get_node_or_null("InnerPortalCrownCap") == null or tunnel.get_node_or_null("InnerPortalRetainingWing") == null or tunnel.get_node_or_null("InnerPortalAmberReflector") == null or tunnel.get_node_or_null("TunnelCeilingRibs") == null or tunnel.get_node_or_null("TunnelCenterlineDashes") == null:
+			push_error("[VisualPresentationSmoke] Tunnel portals must include layered crowns, retaining wings, amber markers, ceiling ribs and lane dashes")
+			get_tree().quit(1)
+			return
+	if backdrop.get_node_or_null("AustralianEucalyptTrunks") == null or backdrop.get_node_or_null("AustralianEucalyptCanopies") == null:
+		push_error("[VisualPresentationSmoke] Australian eucalypts must render as two batched trunk/canopy meshes")
+		get_tree().quit(1)
+		return
+	var trunk_batch := backdrop.get_node("AustralianEucalyptTrunks") as MultiMeshInstance3D
+	var canopy_batch := backdrop.get_node("AustralianEucalyptCanopies") as MultiMeshInstance3D
+	if trunk_batch.multimesh.instance_count != DistantMountainBackdropScript.EUCALYPT_COUNT or canopy_batch.multimesh.instance_count != DistantMountainBackdropScript.EUCALYPT_COUNT or trunk_batch.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or canopy_batch.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		push_error("[VisualPresentationSmoke] Eucalypts must stay in fixed-size mobile batches without distant-tree shadows")
+		get_tree().quit(1)
+		return
+	if backdrop._ridge_color(-120.0, 0.52, 0).is_equal_approx(backdrop._ridge_color(110.0, 0.52, 0)):
+		push_error("[VisualPresentationSmoke] Mountain ridge vertex palette must vary across sediment bands and grassy slopes")
+		get_tree().quit(1)
+		return
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
 	if main_scene == null:
 		push_error("[VisualPresentationSmoke] Main scene must load for far-clip visibility validation")

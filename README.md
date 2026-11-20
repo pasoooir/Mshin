@@ -1661,6 +1661,20 @@ The camera change must be assessed together with the city renderer. The followin
 **Visual acceptance:** at maximum zoom and at every reachable pan edge, the player must see continuous natural ground and green mountain scenery rather than an exposed grey void. The whole currently built city should fit comfortably in the overview where its unlocked footprint allows it. Existing close zoom, production interactions, building placement and road editing must remain unchanged.
 
 
+
+## Natural Australian mountain detail — 2026-11-20
+
+- [x] Add layered sediment/rock color bands to the existing four ridge meshes, with grassy lower slopes and green ridge crowns; reuse the existing vertex-color surfaces rather than adding material passes.
+- [x] Add native Australian eucalyptus silhouettes with pale trunks and blue-green foliage. Forty-four tree slots are rendered in two fixed MultiMesh batches (trunks and crowns); distant tree shadows remain disabled.
+- [x] Refine both highway tunnel entrances with stepped concrete crown caps, flared retaining wings, amber reflectors, repeated ceiling ribs and visible centerline dashes.
+- [x] Keep tunnel ribs and road markings batched; keep mountain grass, shrubs and eucalyptus trees shadow-free to limit mobile GPU work.
+- [x] Extend the visual presentation smoke test to verify layered ridge color variation, eucalyptus batch counts/shadow policy and the tunnel portal detail contract.
+- [ ] Pass exact-head Godot import/parse, visual smoke, full GameplaySmoke, Android APK export/signature and desktop/mobile Chromium checks.
+- [ ] Inspect the published build on a physical Android device at close and maximum zoom; automated CI is not a substitute for real-device visual/performance acceptance.
+
+**Performance contract:** the existing four ridge surfaces remain four mesh submissions. New tree content uses two MultiMesh submissions total for the entire mountain ring; tunnel details use two MultiMesh submissions per tunnel. No per-tree or per-rib scene nodes, runtime downloads, high-poly assets or additional shadow-casting lights are introduced. Actual phone frame time, memory and thermal behavior must be measured on-device before claiming a performance improvement.
+
+
 ## تنظیمات بازی، حساب Google و پاداش‌های ورود — 2026-11-18
 
 ### تجربه تنظیمات و وضعیت حساب
