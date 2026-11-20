@@ -510,7 +510,9 @@ float cellular_edge(vec2 p) {
 void vertex() {
 	rock_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	rock_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
-	rock_local_height = VERTEX.y;
+	// Convert local height to world-space offset so contact width stays
+	// consistent across differently scaled MultiMesh rock instances.
+	rock_local_height = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y - MODEL_MATRIX[3].y;
 }
 
 void fragment() {
