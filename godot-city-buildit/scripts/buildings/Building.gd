@@ -1944,7 +1944,7 @@ func try_upgrade() -> bool:
 			consumed_bom[item_id] = int(consumed_bom.get(item_id, 0)) + int(requirement.amount)
 		if consumed_bom.is_empty():
 			return false
-		var residential_removal := StorageManager.remove_items_with_cost_batches(consumed_bom)
+		var residential_removal: Dictionary = StorageManager.remove_items_with_cost_batches(consumed_bom)
 		if not bool(residential_removal.get("success", false)):
 			return false
 		upgrade_reserved_cost_batches = residential_removal.get("cost_batches", {}).duplicate(true)
@@ -1959,7 +1959,7 @@ func try_upgrade() -> bool:
 		var upgrade_cost := BuildManager.get_non_residential_upgrade_cost(building_type, upgrade_stage)
 		if not EconomyManager.spend_simoleons(upgrade_cost):
 			return false
-		var non_residential_removal := StorageManager.remove_items_with_cost_batches(upgrade_bom)
+		var non_residential_removal: Dictionary = StorageManager.remove_items_with_cost_batches(upgrade_bom)
 		if not bool(non_residential_removal.get("success", false)):
 			EconomyManager.add_simoleons(upgrade_cost)
 			return false
@@ -1988,7 +1988,7 @@ func cancel_upgrade() -> bool:
 	if refund_total > StorageManager.get_free():
 		return false
 	if not upgrade_reserved_bom.is_empty():
-		var refund_ok := StorageManager.restore_items_with_cost_batches(upgrade_reserved_bom, upgrade_reserved_cost_batches) if not upgrade_reserved_cost_batches.is_empty() else StorageManager.add_items(upgrade_reserved_bom)
+		var refund_ok: bool = StorageManager.restore_items_with_cost_batches(upgrade_reserved_bom, upgrade_reserved_cost_batches) if not upgrade_reserved_cost_batches.is_empty() else StorageManager.add_items(upgrade_reserved_bom)
 		if not refund_ok:
 			return false
 	if upgrade_reserved_simoleons > 0:
