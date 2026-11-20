@@ -206,7 +206,7 @@ func _build_highway_tunnels() -> void:
 		ribs.name = "TunnelCeilingRibs"
 		ribs.multimesh = rib_batch
 		ribs.material_override = road_edge
-		tribs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ribs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		tunnel.add_child(ribs)
 		var dash_mesh := BoxMesh.new()
 		dash_mesh.size = Vector3(0.22, 0.025, 2.2)
