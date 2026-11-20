@@ -464,7 +464,12 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
-			if str(slot.get("auto_chain_id", "")) == chain_id and str(slot.get("item_id", "")) == item_id:
+			# Dependencies are shared across independent roots. A raw/intermediate
+			# output already reserved by any active chain satisfies part of the
+			# global outstanding demand, preventing duplicate parallel production.
+			# If another root consumes that output first, its next scheduler pass
+			# will request the remaining unit(s) normally.
+			if not str(slot.get("auto_chain_id", "")).is_empty() and str(slot.get("item_id", "")) == item_id:
 				outstanding += 1
 	var needed := maxi(0, amount - outstanding)
 	if needed <= 0:

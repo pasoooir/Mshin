@@ -558,6 +558,50 @@ func _test_automatic_production_chain() -> void:
 			break
 	_check(StorageManager.get_count("nails") == 2, "Concurrent automatic chains must each produce one requested item without double-consuming shared raw stock.")
 	_check(store.slots[0].is_empty() and second_store.slots[0].is_empty() and ProductionManager.get_automatic_chain_statuses().is_empty(), "Concurrent automatic chains must finish and release every root/dependency slot.")
+
+	# Two independent Chair roots share the same Nails and Hammer dependency
+	# graph. The first scheduler pass must reserve only one of each shared
+	# intermediate; a second batch is scheduled only after a root consumes it.
+	GameManager.level = 10
+	var second_furniture_store := ProductionComponentScript.new()
+	second_furniture_store.name = "AutomaticChainSharedFurnitureProbe"
+	second_furniture_store.shop_id = "furniture_store"
+	second_furniture_store.slot_count = 2
+	add_child(second_furniture_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {}})
+	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "First shared-dependency Chair root must be accepted.")
+	_check(ProductionManager.request_automatic_chain(second_furniture_store, "chair", 0), "Second independent Chair root must be accepted while shared dependencies are outstanding.")
+	var shared_root_a := str(furniture_store.slots[0].get("auto_chain_id", ""))
+	var shared_root_b := str(second_furniture_store.slots[0].get("auto_chain_id", ""))
+	ProductionManager._process_automatic_chains()
+	var shared_nails_jobs := 0
+	var shared_hammer_jobs := 0
+	for component in get_tree().get_nodes_in_group("production_components"):
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")).is_empty():
+				continue
+			if str(slot.get("item_id", "")) == "nails":
+				shared_nails_jobs += 1
+			elif str(slot.get("item_id", "")) == "hammer":
+				shared_hammer_jobs += 1
+	_check(shared_nails_jobs == 1 and shared_hammer_jobs == 1, "Independent roots must share one outstanding Nails and Hammer dependency reservation instead of scheduling duplicate parallel work.")
+	for _step in range(96):
+		ProductionManager._process_automatic_chains()
+		var shared_now := int(Time.get_unix_time_from_system())
+		for component in get_tree().get_nodes_in_group("production_components"):
+			for slot_index in range(component.slots.size()):
+				var shared_slot: Dictionary = component.slots[slot_index]
+				var shared_chain := str(shared_slot.get("auto_chain_id", ""))
+				if [shared_root_a, shared_root_b].has(shared_chain) and int(shared_slot.get("finish_unix", 0)) > 0 and not bool(shared_slot.get("ready", false)):
+					shared_slot["finish_unix"] = shared_now - 1
+					component.slots[slot_index] = shared_slot
+			component.refresh_slots()
+		ProductionManager._process_automatic_chains()
+		if furniture_store.slots[0].is_empty() and second_furniture_store.slots[0].is_empty() and ProductionManager.get_automatic_chain_statuses().is_empty():
+			break
+	_check(StorageManager.get_count("chair") == 2, "Shared intermediate scheduling must still fulfill both independent Chair root orders.")
+	_check(furniture_store.slots[0].is_empty() and second_furniture_store.slots[0].is_empty() and ProductionManager.get_automatic_chain_statuses().is_empty(), "Shared cross-root dependencies must release all reservations after both roots finish.")
+	second_furniture_store.queue_free()
 	GameManager.level = saved_level
 
 	factory.queue_free()
