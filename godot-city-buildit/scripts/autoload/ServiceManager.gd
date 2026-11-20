@@ -163,7 +163,12 @@ func _recalculate_workforce(consumers: Array, phase: String = "all") -> void:
 		workforce_changed.emit(available_workers, demand_workers, employed_workers)
 
 func _ready() -> void:
+	GameManager.level_changed.connect(_on_mayor_level_changed)
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
+
+func _on_mayor_level_changed(_new_level: int) -> void:
+	# Re-evaluate every existing household immediately after a service unlock.
+	recalculate_from_buildings()
 
 func get_home_service_demand(home: Node3D) -> int:
 	if not is_instance_valid(home):

@@ -1681,6 +1681,13 @@ func _update_simcash() -> void:
 func _on_level_changed(level: int) -> void:
 	if level_label: level_label.text = str(level)
 	_on_xp_changed(GameManager.experience, GameManager.get_xp_needed())
+	if is_instance_valid(submenu_scroll) and submenu_scroll.visible and not active_category.is_empty():
+		if not active_service_group.is_empty():
+			_show_group_buildings(active_service_group, "services")
+		elif not active_specialization_group.is_empty():
+			_show_group_buildings(active_specialization_group, "specializations")
+		else:
+			_show_submenu(active_category)
 
 func _on_population_changed(population: int) -> void:
 	if population_label: population_label.text = _format_count(population)

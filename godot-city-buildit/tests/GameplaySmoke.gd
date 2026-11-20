@@ -1945,7 +1945,16 @@ func _test_build_menu_visibility() -> void:
 	var water_card := hud.find_child("water_tower", true, false) as Button
 	_check(water_card != null and water_card.find_child("CatalogLock", true, false) == null, "Water Tower must be placeable from Services at Level 1 with no material prerequisite.")
 	_check(BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Water Tower construction must not wait for starter materials.")
+	GameManager.level = 5
+	hud.active_category = "services"
+	hud.active_service_group = ""
+	hud._show_submenu("services")
+	hud._on_level_changed(5)
+	var unlocked_fire_group := hud.find_child("group_fire", true, false) as Button
+	_check(unlocked_fire_group != null and unlocked_fire_group.find_child("CatalogLock", true, false) == null, "Fire group lock must clear immediately after reaching Level 5 while Services is open.")
 	GameManager.level = saved_menu_level
+	hud.active_category = "services"
+	hud.active_service_group = ""
 	hud._show_submenu("services")
 	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	_check(hud.context_header_subtitle.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART and hud.context_header_subtitle.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "The long City Services summary must wrap within the mobile header instead of overflowing horizontally.")
