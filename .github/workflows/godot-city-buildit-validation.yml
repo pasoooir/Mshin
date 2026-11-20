@@ -45,7 +45,7 @@ jobs:
         run: godot --version
 
       - name: Import and parse project
-        run: godot --headless --path godot-city-buildit --editor --quit
+        run: godot --headless --path godot-city-buildit --editor --import
 
       - name: Headless startup smoke test
         run: |
@@ -72,7 +72,7 @@ jobs:
           set -o pipefail
           timeout 90s godot --headless --path godot-city-buildit res://tests/gameplay_smoke.tscn 2>&1 | tee /tmp/godot-gameplay.log
           if grep -q "SCRIPT ERROR" /tmp/godot-gameplay.log; then exit 1; fi
-          if grep -q "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
+          if grep -Fq "ERROR: [GameplaySmoke]" /tmp/godot-gameplay.log; then exit 1; fi
           grep -F "[GameplaySmoke] PASS" /tmp/godot-gameplay.log
 
       - name: City visual presentation geometry smoke test
@@ -185,7 +185,7 @@ jobs:
           test -x "$ANDROID_HOME/platform-tools/adb"
 
       - name: Import and parse project
-        run: godot --headless --editor --path godot-city-buildit --quit
+        run: godot --headless --editor --path godot-city-buildit --import
 
       - name: Export Android Debug APK
         shell: bash
