@@ -927,7 +927,7 @@ EA Update 84 مورخ ۶ نوامبر ۲۰۲۶ فقط اصلاح ناهماهن�
 - [x] بازپخش بازگشتی AUTO CHAIN و snapshot فعال شهر زنده در PR #514 پیاده‌سازی و CI شد؛ [Godot + APK run 43712308645](https://github.com/pasoooir/Mshin/actions/runs/43712308645)، [Web/Chromium run 43712308649](https://github.com/pasoooir/Mshin/actions/runs/43712308649).
 - [ ] رزرو/ادغام مشترک بین چند ریشه و محاسبه صریح critical path هنوز پیاده‌سازی نشده است.
 - [x] FIFO cost batches در شبیه‌ساز سناریو و محاسبه COGS/حاشیه سود فروش با بهای خرید صریح پیاده و در CI آزمون شد؛ ارزش کاتالوگ به‌عنوان هزینه خرید استفاده نمی‌شود.
-- [ ] اتصال دائمی cost batches به StorageManager، تولید زنده، TradeManager و save/load هنوز باز است.
+- [x] اتصال FIFO cost batches به StorageManager، تولید دستی و AUTO CHAIN زنده، اسلات‌های تولید، Trade Depot، لغو آگهی، خرید Global Trade HQ، سفارش‌های تحویل، Cargo Ship و Save/Load پیاده و آزمون شده است؛ GameplaySmoke بهای تمام‌شده و حاشیه سود واقعی/نامشخص را کنترل می‌کند و MacroEconomySmoke گزارش حسابداری را اعتبارسنجی می‌کند (Godot run 1923 و Web run 1969 موفق).
 - [ ] اتصال مصرف موجودی به سفارش‌های تحویل و تقاضای بازار؛ نرخ فروش یا تقاضا نباید حدس زده شود.
 - [x] Web build و اجرای دسکتاپ/موبایل در Chromium روی code SHA نهایی: [run 43708045318 — success](https://github.com/pasoooir/Mshin/actions/runs/43708045318).
 - [ ] آزمون نصب و لمس روی گوشی Android واقعی.
