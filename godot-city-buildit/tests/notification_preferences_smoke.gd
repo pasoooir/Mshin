@@ -14,7 +14,7 @@ func _tap_control(control: Control) -> void:
 			await process_frame
 			break
 		ancestor = ancestor.get_parent()
-	var pointer_position := control.get_screen_transform() * (control.size * 0.5)
+	var pointer_position := control.get_global_transform_with_canvas() * (control.size * 0.5)
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.position = pointer_position
