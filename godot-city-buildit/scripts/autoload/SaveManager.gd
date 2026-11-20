@@ -214,6 +214,8 @@ func capture_region_snapshot() -> Dictionary:
 			"production": {
 				"construction_finish_unix": building.construction_finish_unix,
 				"construction_paused_remaining_seconds": building.construction_paused_remaining_seconds,
+				"construction_reserved_bom": building.construction_reserved_bom.duplicate(true),
+				"construction_reserved_simoleons": building.construction_reserved_simoleons,
 				"current_product": building.current_product,
 				"is_producing": building.is_producing,
 				"has_ready_product": building.has_ready_product,

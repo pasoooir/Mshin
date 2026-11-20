@@ -694,6 +694,8 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 			StorageManager.add_items(construction_bom)
 		building_node.free()
 		return false
+	building_node.construction_reserved_bom = construction_bom.duplicate(true)
+	building_node.construction_reserved_simoleons = cost
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
 	var data: Dictionary = {
 		"id": building_id,
@@ -721,6 +723,39 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	building_placed.emit(data)
 	GameManager.add_experience(3)
 	return true
+
+func cancel_construction(building: Building) -> bool:
+	if not is_instance_valid(building) or building.status != "constructing":
+		return false
+	if buildings.get(building.building_id) != building:
+		return false
+	var refund_total := 0
+	for amount_variant in building.construction_reserved_bom.values():
+		refund_total += maxi(0, int(amount_variant))
+	# The player may have filled storage after starting construction. Never
+	# destroy the paid BOM: keep the site and reservation until space is freed.
+	if refund_total > StorageManager.get_free():
+		return false
+	if not building.construction_reserved_bom.is_empty() and not StorageManager.add_items(building.construction_reserved_bom):
+		return false
+	if building.construction_reserved_simoleons > 0:
+		EconomyManager.add_simoleons(building.construction_reserved_simoleons)
+	building.construction_reserved_bom.clear()
+	building.construction_reserved_simoleons = 0
+	for cell in get_footprint_cells(building.grid_pos, building.definition.get("size", Vector2i(2, 2))):
+		if building_cells.get(cell) == building:
+			building_cells.erase(cell)
+	buildings.erase(building.building_id)
+	if str(building.definition.get("category", "")) == "industrial" and bool(building.definition.get("counts_toward_factory_limit", true)):
+		factory_count = maxi(0, factory_count - 1)
+	var removed_id := building.building_id
+	building_removed.emit(removed_id)
+	building.queue_free()
+	ServiceManager.recalculate_from_buildings()
+	if has_node("/root/FireHazardManager"):
+		FireHazardManager.on_city_changed()
+	return true
+
 
 func world_to_grid(world_pos: Vector3) -> Vector2i:
 	return Vector2i(floori(world_pos.x / GRID_SIZE), floori(world_pos.z / GRID_SIZE))

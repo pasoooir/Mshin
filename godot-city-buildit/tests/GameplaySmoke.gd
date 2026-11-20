@@ -157,6 +157,73 @@ func _test_non_residential_upgrade_execution() -> void:
 	StorageManager.from_save_dict(previous_storage)
 	EconomyManager.simoleons = previous_money
 
+func _test_construction_cancellation_ui() -> void:
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_money := EconomyManager.simoleons
+	var funded_money := maxi(previous_money, 500)
+	EconomyManager.simoleons = funded_money
+	if StorageManager.get_count("nails") < 1:
+		_check(StorageManager.add_items({"nails": 1}), "Could not provision the construction BOM for cancellation smoke test.")
+	var inventory_before_payment := StorageManager.get_all_items()
+	_check(StorageManager.remove_items({"nails": 1}), "Construction site must reserve its exact BOM before the cancellation test.")
+	_check(EconomyManager.spend_simoleons(75), "Construction site must reserve its Simoleon cost before the cancellation test.")
+	var scene_root := get_tree().current_scene
+	var world = scene_root.get_node_or_null("World/Buildings") if scene_root else null
+	_check(is_instance_valid(world), "Construction cancellation smoke test requires World/Buildings.")
+	if not is_instance_valid(world):
+		StorageManager.from_save_dict(previous_storage)
+		EconomyManager.simoleons = previous_money
+		return
+	var grid := Vector2i(34, 34)
+	while not BuildManager.is_cell_free(grid, Vector2i.ONE) and grid.x > -34:
+		grid.x -= 1
+	var building_id := "smoke_cancel_construction_%d" % Time.get_ticks_msec()
+	var building := BuildingScene.instantiate() as Building
+	building.building_id = building_id
+	building.building_type = "residential_1"
+	building.grid_pos = grid
+	building.status = "constructing"
+	building.definition = {"name": "Refund Test Site", "category": "residential", "size": Vector2i.ONE}
+	building.construction_reserved_bom = {"nails": 1}
+	building.construction_reserved_simoleons = 75
+	world.add_child(building)
+	BuildManager.buildings[building_id] = building
+	BuildManager.building_cells[grid] = building
+	building.setup({
+		"id": building_id,
+		"type": "residential_1",
+		"grid_pos": grid,
+		"definition": building.definition,
+		"status": "constructing",
+		"build_time": 120.0
+	})
+	var filler_amount := StorageManager.get_free()
+	if filler_amount > 0:
+		_check(StorageManager.add_items({"wood": filler_amount}), "Could not fill storage to test construction refund safety.")
+	_check(not BuildManager.cancel_construction(building), "Construction cancellation must refuse to destroy a paid BOM when storage is full.")
+	_check(BuildManager.buildings.get(building_id) == building and building.status == "constructing", "A storage-blocked construction cancellation must leave the site registered and intact.")
+	if filler_amount > 0:
+		_check(StorageManager.remove_item("wood", filler_amount), "Could not free storage space for the construction refund.")
+	var hud = scene_root.get_node_or_null("HUD")
+	_check(is_instance_valid(hud), "Construction cancellation smoke test requires the live HUD.")
+	if is_instance_valid(hud):
+		hud.open_construction_cancel_panel(building)
+		await get_tree().process_frame
+		var dialog := hud.find_child("ConstructionCancellationDialog", true, false) as ConfirmationDialog
+		_check(dialog != null and not dialog.get_ok_button().disabled, "Construction dialog must expose an enabled cancellation action when the refund fits.")
+		if dialog != null and not dialog.get_ok_button().disabled:
+			await _tap_mouse_control(dialog.get_ok_button())
+	_check(not BuildManager.buildings.has(building_id), "Tapping CANCEL CONSTRUCTION must remove the in-progress building from the city registry.")
+	_check(not BuildManager.building_cells.has(grid), "Canceling construction must release the entire reserved plot footprint.")
+	_check(StorageManager.get_count("nails") == int(inventory_before_payment.get("nails", 0)), "Canceling construction must return the exact reserved material quantity.")
+	_check(EconomyManager.simoleons == funded_money, "Canceling construction must refund the exact reserved Simoleon cost.")
+	if is_instance_valid(building):
+		building.queue_free()
+	await get_tree().process_frame
+	StorageManager.from_save_dict(previous_storage)
+	EconomyManager.simoleons = previous_money
+
+
 func _test_residential_upgrade_cancel_ui() -> void:
 	var home = _find_building("residential_1")
 	if not is_instance_valid(home):
@@ -189,7 +256,7 @@ func _test_residential_upgrade_cancel_ui() -> void:
 	var cancel_button := hud.find_child("ResidentialCancelUpgradeButton", true, false) as Button
 	_check(cancel_button != null and not cancel_button.disabled, "An active residential upgrade must expose an enabled cancel-and-refund action when storage has room.")
 	if cancel_button != null and not cancel_button.disabled:
-		await _tap_native_control(cancel_button)
+		await _tap_mouse_control(cancel_button)
 	_check(not home.upgrade_in_progress, "Tapping the residential cancel action must stop the upgrade timer.")
 	_check(home.upgrade_reserved_bom.is_empty(), "Residential cancellation must clear its reserved BOM after refund.")
 	if home.upgrade_in_progress:
@@ -241,6 +308,26 @@ func _tap_native_control(control: Control) -> void:
 	touch_up.pressed = false
 	touch_up.position = touch_position
 	get_viewport().push_input(touch_up, true)
+	await get_tree().process_frame
+
+
+func _tap_mouse_control(control: Control) -> void:
+	if not is_instance_valid(control) or not control.is_inside_tree() or control.disabled:
+		_check(false, "Mouse hit-test target must be visible, enabled and inside the active scene tree.")
+		return
+	var mouse_position: Vector2 = control.get_global_transform_with_canvas() * (control.size * 0.5)
+	var target_viewport := control.get_viewport()
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.pressed = true
+	mouse_down.position = mouse_position
+	target_viewport.push_input(mouse_down, true)
+	await get_tree().process_frame
+	var mouse_up := InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.pressed = false
+	mouse_up.position = mouse_position
+	target_viewport.push_input(mouse_up, true)
 	await get_tree().process_frame
 
 
@@ -4901,6 +4988,7 @@ func _run_gameplay_test() -> void:
 	_test_automatic_production_chain()
 	_test_building_notification_grouping()
 	_test_non_residential_upgrade_execution()
+	await _test_construction_cancellation_ui()
 	await _test_residential_upgrade_cancel_ui()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,

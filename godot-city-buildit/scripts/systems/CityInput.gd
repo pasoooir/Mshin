@@ -537,7 +537,11 @@ func _try_interact(world_position: Vector3) -> void:
 	if camera_rig != null and camera_rig.has_method("focus_on"):
 		camera_rig.focus_on(building.global_position, 18.0)
 	if building.status != "completed":
-		_set_status("Still under construction…")
+		var construction_hud := get_tree().current_scene.get_node_or_null("HUD")
+		if construction_hud and construction_hud.has_method("open_construction_cancel_panel"):
+			construction_hud.open_construction_cancel_panel(building)
+		else:
+			_set_status("Still under construction…")
 		return
 
 	var category := str(building.definition.get("category", ""))
