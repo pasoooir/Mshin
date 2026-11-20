@@ -454,7 +454,7 @@ func _run() -> void:
 	await process_frame
 	avatar_frame = hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
 	avatar_texture = hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
-	var placeholder := hud.find_child("SettingsProfileAvatarPlaceholder", true, false) as Label
+	var placeholder := hud.find_child("SettingsProfileAvatarFallback", true, false) as Label
 	var generated_avatar := Image.create(2, 2, false, Image.FORMAT_RGBA8)
 	generated_avatar.fill(Color("#5BD7F7"))
 	var avatar_bytes := generated_avatar.save_png_to_buffer()
