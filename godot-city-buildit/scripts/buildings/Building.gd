@@ -1685,6 +1685,8 @@ func _on_construction_finished() -> void:
 	status = "completed"
 	construction_finish_unix = 0
 	construction_paused_remaining_seconds = -1
+	construction_reserved_bom.clear()
+	construction_reserved_simoleons = 0
 	setup_production_from_definition()
 	if hard_hat: hard_hat.visible = false
 	if scaffold_root:
