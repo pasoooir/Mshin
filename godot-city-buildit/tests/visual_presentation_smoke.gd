@@ -36,8 +36,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var rock_material := rock_outcrops.material_override as ShaderMaterial
-	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("fracture_field") or not rock_material.shader.code.contains("stone_fbm"):
-		push_error("[VisualPresentationSmoke] Near rocks must use procedural mineral grain and fracture detail")
+	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights"):
+		push_error("[VisualPresentationSmoke] Near rocks must use triplanar mineral grain, cellular fracture edges and controlled roughness")
 		get_tree().quit(1)
 		return
 	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
