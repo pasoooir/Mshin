@@ -7,20 +7,19 @@ func _initialize() -> void:
 func _tap_control(control: Control) -> void:
 	if not is_instance_valid(control) or not control.is_inside_tree():
 		return
+	var viewport := control.get_viewport()
 	var pointer_position := control.get_global_rect().get_center()
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.position = pointer_position
 	press.pressed = true
-	Input.parse_input_event(press)
-	Input.flush_buffered_events()
+	viewport.push_input(press)
 	await process_frame
 	var release := InputEventMouseButton.new()
 	release.button_index = MOUSE_BUTTON_LEFT
 	release.position = pointer_position
 	release.pressed = false
-	Input.parse_input_event(release)
-	Input.flush_buffered_events()
+	viewport.push_input(release)
 	await process_frame
 
 func _run() -> void:
