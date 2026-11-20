@@ -44,8 +44,8 @@ func _ready() -> void:
 	var rock_vertices: PackedVector3Array = rock_arrays[Mesh.ARRAY_VERTEX]
 	var rock_normals: PackedVector3Array = rock_arrays[Mesh.ARRAY_NORMAL]
 	var rock_bounds := rock_mesh.get_aabb()
-	if rock_vertices.size() < 180 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 1.65 or rock_bounds.size.z < 1.25:
-		push_error("[VisualPresentationSmoke] Near rock mesh must contain chipped silhouette geometry, recessed facets and complete normals")
+	if rock_vertices.size() < 240 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 1.65 or rock_bounds.size.z < 1.25:
+		push_error("[VisualPresentationSmoke] Near rock mesh must contain layered fracture grooves, attached talus and complete normals")
 		get_tree().quit(1)
 		return
 	var view_directions: Array[Vector3] = [
@@ -62,7 +62,7 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var rock_material := rock_outcrops.material_override as ShaderMaterial
-	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights"):
+	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights") or not rock_material.shader.code.contains("contact_occlusion") or not rock_material.shader.code.contains("rock_local_height"):
 		push_error("[VisualPresentationSmoke] Near rocks must use triplanar mineral grain, cellular fracture edges and controlled roughness")
 		get_tree().quit(1)
 		return
