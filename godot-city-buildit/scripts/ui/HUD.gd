@@ -2004,8 +2004,8 @@ func open_building_upgrade_panel(building: Building) -> void:
 	dialog.get_ok_button().text = "START UPGRADE"
 	dialog.get_ok_button().disabled = building.upgrade_in_progress or not lock_reason.is_empty() or requirements.is_empty()
 	dialog.confirmed.connect(_start_non_residential_upgrade.bind(building))
-	dialog.confirmed.connect(_close_settings_modal.bind(dialog))
-	dialog.canceled.connect(_close_settings_modal.bind(dialog))
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
 	dialog.popup_centered(Vector2i(480, 340))
 
