@@ -1249,6 +1249,7 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [x] Remove redundant real-time directional shadow casting from the three decorative tree MultiMesh batches; retain the soft contact shadows.
 - [x] Remove real-time shadow casting from the 900-instance fine-grass batch without reducing its visible density or material detail.
 - [x] Add GameplaySmoke coverage that builds the actual procedural tree/grass batches and checks the shadow policy and retained contact-shadow batch.
+- [x] Isolate Web/Chromium CI concurrency by PR number so concurrent feature PRs cannot cancel one another's browser acceptance run.
 - [ ] Pass exact-head Godot validation, GameplaySmoke, Android APK export/signature verification and desktop/mobile Web/Chromium smoke on PR #612.
 - [ ] Capture before/after frame-time, draw-call, primitive and video-memory reports on representative physical Android devices; inspect thermal behavior over a sustained session.
 
