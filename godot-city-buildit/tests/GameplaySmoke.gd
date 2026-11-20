@@ -213,10 +213,9 @@ func _test_construction_cancellation_ui() -> void:
 	var construction_snapshot := SaveManager.capture_region_snapshot()
 	var saved_construction: Dictionary = {}
 	for saved_building in construction_snapshot.get("buildings", []):
-		if str(saved_building.get("type", "")) == building.building_type and str(saved_building.get("production", {}).get("construction_reserved_bom", {}).keys()) != "":
+		if saved_building.get("grid", []) == [grid.x, grid.y]:
 			saved_construction = saved_building.get("production", {})
-			if saved_construction.get("construction_reserved_bom", {}) == building.construction_reserved_bom:
-				break
+			break
 	_check(saved_construction.get("construction_reserved_cost_batches", {}) == building.construction_reserved_cost_batches, "Save snapshots must persist exact FIFO cost batches for construction refunds.")
 	var filler_amount := StorageManager.get_free()
 	if filler_amount > 0:
