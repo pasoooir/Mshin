@@ -15,6 +15,8 @@ var status: String = "constructing"
 var build_time: float = 10.0
 var construction_finish_unix: int = 0
 var construction_paused_remaining_seconds: int = -1
+var construction_reserved_bom: Dictionary = {}
+var construction_reserved_simoleons: int = 0
 var _construction_initialized := false
 var _construction_tween: Tween
 var production_timer: float = 0.0
@@ -2136,6 +2138,8 @@ func get_info() -> String:
 	return info
 
 func restore_production_state(saved: Dictionary) -> void:
+	construction_reserved_bom = saved.get("construction_reserved_bom", {}).duplicate(true)
+	construction_reserved_simoleons = maxi(0, int(saved.get("construction_reserved_simoleons", 0)))
 	if status == "constructing":
 		construction_paused_remaining_seconds = int(saved.get("construction_paused_remaining_seconds", -1))
 		var saved_construction_finish := int(saved.get("construction_finish_unix", 0))
