@@ -11,6 +11,7 @@ const RIDGE_SEGMENTS := 64
 const RIDGE_DEPTH_STEPS := 14
 const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
+const EUCALYPT_COUNT := 44
 const TUNNEL_CENTER_X := -55.0
 const TUNNEL_CUTOUT_HALF_WIDTH := 28.0
 const TUNNEL_OPENING_WIDTH := 42.0
@@ -23,6 +24,7 @@ func _ready() -> void:
 	_build_highway_tunnels()
 	_build_mountain_shrubs()
 	_build_mountain_grass()
+	_build_mountain_eucalypts()
 
 
 func _build_backdrop_land() -> void:
@@ -123,12 +125,23 @@ func _ridge_height(along: float, depth: float, side: int) -> float:
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:
-	var slope := sin(PI * depth)
+	# Grassy lower slopes and ridgelines are interrupted by exposed, weathered
+	# sediment bands. The deterministic bands are vertex colors on the same
+	# four ridge meshes: no extra material passes or draw calls are introduced.
+	var slope_cover := sin(PI * depth)
+	var height := _ridge_height(along, depth, side)
 	var variation := 0.5 + 0.5 * sin(along * 0.11 + float(side) * 2.3)
-	var dark_green := Color("#1D4828")
-	var meadow_green := Color("#4A8748")
-	var color := dark_green.lerp(meadow_green, 0.24 + slope * 0.46)
-	return color.lerp(Color("#78A957"), variation * slope * 0.24)
+	var dark_green := Color("#294C2C")
+	var meadow_green := Color("#60964A")
+	var grass := dark_green.lerp(meadow_green, 0.22 + slope_cover * 0.55)
+	grass = grass.lerp(Color("#9AB85D"), variation * slope_cover * 0.22)
+	var strata_wave := sin(along * 0.047 + depth * 23.0 + float(side) * 1.9)
+	var exposed_rock := smoothstep(0.18, 0.78, absf(cos(PI * depth))) * smoothstep(24.0, 58.0, height)
+	var band_mask := smoothstep(0.05, 0.72, strata_wave) * exposed_rock
+	var rock_base := Color("#716C5B").lerp(Color("#8C8068"), 0.35 + variation * 0.28)
+	var dark_strata := Color("#4E5148")
+	var layered_rock := dark_strata.lerp(rock_base, smoothstep(-0.25, 0.55, strata_wave))
+	return grass.lerp(layered_rock, clampf(band_mask * 0.88, 0.0, 0.88))
 
 
 func _build_highway_tunnels() -> void:
@@ -160,11 +173,56 @@ func _build_highway_tunnels() -> void:
 			for frame_side in [-1.0, 1.0]:
 				_make_tunnel_box(tunnel, portal_prefix + "Pillar", Vector3(3.0, TUNNEL_WALL_HEIGHT + 1.0, 4.0), Vector3(TUNNEL_CENTER_X + frame_side * (TUNNEL_OPENING_WIDTH * 0.5 + 1.5), (TUNNEL_WALL_HEIGHT + 1.0) * 0.5, portal_z), concrete)
 			_make_tunnel_box(tunnel, portal_prefix + "Lintel", Vector3(TUNNEL_OPENING_WIDTH + 7.0, 3.0, 4.0), Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT + 0.5, portal_z), concrete)
+			# A stepped crown, flared retaining wings and amber portal markers
+			# give the opening a readable road-engineering silhouette at distance.
+			_make_tunnel_box(tunnel, portal_prefix + "CrownCap", Vector3(TUNNEL_OPENING_WIDTH + 10.0, 0.65, 4.8), Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT + 2.15, portal_z), concrete)
+			for wing_side in [-1.0, 1.0]:
+				var wing := _make_tunnel_box(tunnel, portal_prefix + "RetainingWing", Vector3(8.0, 9.0, 3.2), Vector3(TUNNEL_CENTER_X + wing_side * 25.0, 4.5, portal_z + side_sign * 3.2), concrete)
+				wing.rotation.y = -wing_side * 0.28 * side_sign
+			var reflector_material := StandardMaterial3D.new()
+			reflector_material.albedo_color = Color("#E6B64E")
+			reflector_material.emission_enabled = true
+			reflector_material.emission = Color("#A87928")
+			reflector_material.emission_energy_multiplier = 0.22
+			for marker_side in [-1.0, 1.0]:
+				_make_tunnel_box(tunnel, portal_prefix + "AmberReflector", Vector3(0.34, 0.72, 0.16), Vector3(TUNNEL_CENTER_X + marker_side * (TUNNEL_OPENING_WIDTH * 0.5 + 1.5), 3.2, portal_z + side_sign * 2.12), reflector_material)
 			if portal_index == 0:
 				var dark_mouth := StandardMaterial3D.new()
 				dark_mouth.albedo_color = Color("#101713")
 				dark_mouth.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 				_make_tunnel_box(tunnel, portal_prefix + "DarkInteriorMouth", Vector3(TUNNEL_OPENING_WIDTH - 2.0, TUNNEL_WALL_HEIGHT - 1.5, 0.18), Vector3(TUNNEL_CENTER_X, (TUNNEL_WALL_HEIGHT - 1.5) * 0.5, portal_z + side_sign * 1.8), dark_mouth)
+		# Repeated ceiling ribs and short centerline dashes use two MultiMeshes
+		# per tunnel, avoiding a node per lamp/marking along the 180 m bore.
+		var rib_mesh := BoxMesh.new()
+		rib_mesh.size = Vector3(TUNNEL_OPENING_WIDTH - 1.0, 0.22, 0.42)
+		var rib_batch := MultiMesh.new()
+		rib_batch.transform_format = MultiMesh.TRANSFORM_3D
+		rib_batch.mesh = rib_mesh
+		rib_batch.instance_count = 12
+		for rib_index in range(12):
+			var z := side_sign * (RIDGE_INNER_RADIUS + 10.0 + float(rib_index) * 14.0)
+			rib_batch.set_instance_transform(rib_index, Transform3D(Basis.IDENTITY, Vector3(TUNNEL_CENTER_X, TUNNEL_WALL_HEIGHT - 0.1, z)))
+		var ribs := MultiMeshInstance3D.new()
+		ribs.name = "TunnelCeilingRibs"
+		ribs.multimesh = rib_batch
+		ribs.material_override = road_edge
+		ribs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tunnel.add_child(ribs)
+		var dash_mesh := BoxMesh.new()
+		dash_mesh.size = Vector3(0.22, 0.025, 2.2)
+		var dash_batch := MultiMesh.new()
+		dash_batch.transform_format = MultiMesh.TRANSFORM_3D
+		dash_batch.mesh = dash_mesh
+		dash_batch.instance_count = 18
+		for dash_index in range(18):
+			var z := side_sign * (RIDGE_INNER_RADIUS + 5.0 + float(dash_index) * 9.5)
+			dash_batch.set_instance_transform(dash_index, Transform3D(Basis.IDENTITY, Vector3(TUNNEL_CENTER_X, 0.205, z)))
+		var dashes := MultiMeshInstance3D.new()
+		dashes.name = "TunnelCenterlineDashes"
+		dashes.multimesh = dash_batch
+		dashes.material_override = road_edge
+		dashes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tunnel.add_child(dashes)
 		add_child(tunnel)
 
 
@@ -247,3 +305,63 @@ func _build_mountain_grass() -> void:
 	grass.material_override = material
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(grass)
+
+
+
+func _build_mountain_eucalypts() -> void:
+	# Australian gum trees: pale trunks and sparse blue-green crowns. Two
+	# shared meshes, each submitted as one MultiMesh batch for the whole rim.
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.16
+	trunk_mesh.bottom_radius = 0.28
+	trunk_mesh.height = 5.8
+	trunk_mesh.radial_segments = 6
+	var trunk_material := StandardMaterial3D.new()
+	trunk_material.albedo_color = Color("#B8AA87")
+	trunk_material.roughness = 1.0
+	var crown_mesh := SphereMesh.new()
+	crown_mesh.radius = 1.0
+	crown_mesh.height = 2.0
+	crown_mesh.radial_segments = 7
+	crown_mesh.rings = 4
+	var crown_material := StandardMaterial3D.new()
+	crown_material.vertex_color_use_as_albedo = true
+	crown_material.roughness = 1.0
+	var trunks := MultiMesh.new()
+	trunks.transform_format = MultiMesh.TRANSFORM_3D
+	trunks.mesh = trunk_mesh
+	trunks.instance_count = EUCALYPT_COUNT
+	var crowns := MultiMesh.new()
+	crowns.transform_format = MultiMesh.TRANSFORM_3D
+	crowns.use_colors = true
+	crowns.mesh = crown_mesh
+	crowns.instance_count = EUCALYPT_COUNT
+	var foliage: Array[Color] = [Color("#557A69"), Color("#668675"), Color("#78927A"), Color("#496D60")]
+	for index in range(EUCALYPT_COUNT):
+		var side := index % 4
+		var row := int(index / 4)
+		var along := -RIDGE_HALF_LENGTH * 0.84 + fposmod(float(row) * 53.7 + float(side) * 29.0, RIDGE_HALF_LENGTH * 1.68)
+		var depth := 0.24 + float((row * 13 + side * 7) % 48) / 100.0
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			continue
+		var point := _ridge_point(side, along, depth)
+		var tree_scale := 0.82 + float((index * 7) % 8) * 0.075
+		var yaw := float((index * 41) % 360) * PI / 180.0
+		var rotation := Basis(Vector3.UP, yaw)
+		var trunk_origin := point + Vector3(0.0, 2.9 * tree_scale, 0.0)
+		var crown_origin := point + Vector3(0.0, 6.0 * tree_scale, 0.0)
+		trunks.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(tree_scale, tree_scale, tree_scale)), trunk_origin))
+		crowns.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(0.82 * tree_scale, 1.55 * tree_scale, 0.82 * tree_scale)), crown_origin))
+		crowns.set_instance_color(index, foliage[index % foliage.size()])
+	var trunk_batch := MultiMeshInstance3D.new()
+	trunk_batch.name = "AustralianEucalyptTrunks"
+	trunk_batch.multimesh = trunks
+	trunk_batch.material_override = trunk_material
+	trunk_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(trunk_batch)
+	var crown_batch := MultiMeshInstance3D.new()
+	crown_batch.name = "AustralianEucalyptCanopies"
+	crown_batch.multimesh = crowns
+	crown_batch.material_override = crown_material
+	crown_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(crown_batch)
