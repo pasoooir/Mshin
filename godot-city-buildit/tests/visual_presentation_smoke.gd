@@ -32,7 +32,7 @@ func _ready() -> void:
 			return
 	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
 	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
-		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size, shadow-free MultiMesh with a bounded visibility range")
+		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
 		get_tree().quit(1)
 		return
 	var rock_material := rock_outcrops.material_override as ShaderMaterial

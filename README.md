@@ -1826,7 +1826,7 @@ The camera change must be assessed together with the city renderer. The followin
 
 - [x] Replace flat vertex-tint-only rock outcrops with a world-space triplanar procedural stone material: layered mineral color, multi-scale weathering grain, pores and fine fracture seams; no external textures, UV seams, runtime downloads or extra mesh submissions.
 - [x] Keep per-instance rock palette variation while adding material-level surface detail shared by the single 72-instance MultiMesh batch.
-- [x] Enable rock shadow casting only on the near-detail batch, whose visibility range ends at RIDGE_DETAIL_DISTANCE world units; distant ridges, vegetation and tunnel dressing remain shadow-free.
+- [x] Enable rock shadow casting only on the near-detail batch, whose visibility range ends at 215 world units; distant ridges, vegetation and tunnel dressing remain shadow-free.
 - [x] Extend visual smoke assertions for procedural grain/fracture shader features and the near-only shadow/visibility contract.
 - [ ] Pass exact-head Godot shader parse/import, visual smoke, full GameplaySmoke, Android Debug APK export/signature and desktop/mobile Chromium checks.
 - [ ] Inspect close-up stone shading and shadow stability on a physical Android device; collect frame-time, GPU/memory and thermal measurements before claiming device-performance improvements.
