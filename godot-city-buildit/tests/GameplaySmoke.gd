@@ -5002,6 +5002,7 @@ func _run_gameplay_test() -> void:
 	livestock_probe.queue_free()
 
 	_test_performance_monitor_aggregation()
+	_test_world_presentation_mobile_shadow_budget()
 
 	if failures.is_empty():
 		print("[GameplaySmoke] PASS: road network, footprint collision, road access, touch drag safety, fire hazard coverage/smoke timers, construction, production, collection, crafting, utilities, upgrade, population, save and load.")
@@ -5015,6 +5016,31 @@ func _run_gameplay_test() -> void:
 func _finish(exit_code: int = 0) -> void:
 	get_tree().quit(exit_code)
 
+
+
+func _test_world_presentation_mobile_shadow_budget() -> void:
+	# Exercise the actual procedural batches in headless CI; the main scene
+	# intentionally uses lightweight marker nodes in that environment.
+	var presentation := WorldPresentationScript.new()
+	presentation.name = "MobileShadowBudgetProbe"
+	add_child(presentation)
+	presentation.call("_build_tree_belts")
+	for node_name in ["TreeRootBases", "TreeTrunks", "TreeCanopies"]:
+		var batch := presentation.get_node_or_null(node_name) as GeometryInstance3D
+		_check(batch != null, "Tree visual batch is missing: %s" % node_name)
+		if batch != null:
+			_check(batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Decorative tree batch must not render a redundant real-time shadow: %s" % node_name)
+	var contact_shadows := presentation.get_node_or_null("TreeContactShadows") as MultiMeshInstance3D
+	_check(contact_shadows != null, "Tree contact-shadow batch must remain visible after shadow optimization.")
+	if contact_shadows != null:
+		_check(contact_shadows.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Soft tree contact shadows must not cast into the real-time shadow map.")
+	presentation.call("_build_grass_detail")
+	var grass := presentation.get_node_or_null("ColorfulGrassDetail") as MultiMeshInstance3D
+	_check(grass != null and grass.multimesh != null and grass.multimesh.instance_count > 0, "Natural grass detail must remain instanced and visible.")
+	if grass != null:
+		_check(grass.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Tiny grass blades must not add a real-time shadow-caster pass.")
+	presentation.queue_free()
+	await get_tree().process_frame
 
 func _test_performance_monitor_aggregation() -> void:
 	var samples: Array[float] = [10.0, 20.0, 30.0, 40.0]

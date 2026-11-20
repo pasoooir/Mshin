@@ -680,7 +680,12 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 	var instance := MultiMeshInstance3D.new()
 	instance.name = node_name
 	instance.multimesh = multimesh
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# The tree belt already has one batched, soft contact-shadow pass. Rendering
+	# every root/trunk/canopy into the directional shadow map multiplies shadow
+	# caster work without a visible quality gain at the camera's normal distance.
+	# Keep the detailed geometry and its baked-style contact shadows; skip only
+	# the three redundant real-time shadow-caster batches.
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
 
 
@@ -895,6 +900,10 @@ func _build_grass_detail() -> void:
 	var grass := MultiMeshInstance3D.new()
 	grass.name = "ColorfulGrassDetail"
 	grass.multimesh = multimesh
+	# Individual grass blades are too small to contribute useful silhouettes
+	# to the directional shadow map. Their color, geometry and density remain
+	# unchanged, while disabling their shadow pass reduces mobile GPU work.
+	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(grass)
 
 func _build_meadow_livestock() -> void:

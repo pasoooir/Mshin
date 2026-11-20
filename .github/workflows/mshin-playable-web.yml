@@ -20,9 +20,10 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
-  # Keep only the newest Pages publisher alive. A newer push supersedes
-  # an older queued/running publisher and prevents overlapping deployments.
+  # Isolate pull-request validation from the main Pages publisher and from
+  # other PRs. Only a newer run for the same PR (or main) may supersede it.
+  # A global group cancels unrelated mobile/desktop browser acceptance jobs.
+  group: github-pages-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
