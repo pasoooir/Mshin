@@ -5647,9 +5647,51 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 
 
 func _close_settings_dialogs() -> void:
-	for child in get_children():
-		if child is Window and (str(child.name).begins_with("Settings") or str(child.name) == "WalletPurchaseInfoDialog"):
-			child.queue_free()
+	# A settings sub-form consists of a hidden compatibility Window and a
+	# visible HUD Control overlay. Clear both synchronously; otherwise an old
+	# overlay can keep owning touch input after Settings is reopened.
+	for child in get_children().duplicate():
+		if child is Window and (
+			str(child.name).begins_with("Settings")
+			or str(child.name).begins_with("NotificationSettings")
+			or str(child.name).begins_with("WalletPurchaseInfo")
+		):
+			_close_settings_modal(child)
+	for child in get_children().duplicate():
+		if child is Control and _is_settings_modal_overlay(str(child.name)):
+			_detach_settings_modal_overlay(child)
+
+
+func _is_settings_modal_overlay(node_name: String) -> bool:
+	return node_name.ends_with("Overlay") and (
+		node_name.begins_with("Settings")
+		or node_name.begins_with("NotificationSettings")
+		or node_name.begins_with("WalletPurchaseInfo")
+	)
+
+
+func _detach_settings_modal_overlay(overlay: Control) -> void:
+	if not is_instance_valid(overlay):
+		return
+	overlay.hide()
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if overlay.get_parent() == self:
+		remove_child(overlay)
+	if not overlay.is_queued_for_deletion():
+		overlay.queue_free()
+
+
+func _close_settings_modal(dialog: Window) -> void:
+	if not is_instance_valid(dialog):
+		return
+	var overlay := get_node_or_null(str(dialog.name) + "Overlay") as Control
+	if is_instance_valid(overlay):
+		_detach_settings_modal_overlay(overlay)
+	dialog.hide()
+	if dialog.get_parent() == self:
+		remove_child(dialog)
+	if not dialog.is_queued_for_deletion():
+		dialog.queue_free()
 
 
 func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
@@ -5719,23 +5761,7 @@ func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 	close.add_theme_font_size_override("font_size", _settings_font_size(22))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
-	close.pressed.connect(func() -> void:
-		# Detach both layers synchronously so no queued Window/Control can
-		# continue to own input during the same frame on mobile browsers.
-		if is_instance_valid(overlay):
-			overlay.hide()
-			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			if overlay.get_parent() == self:
-				remove_child(overlay)
-			if not overlay.is_queued_for_deletion():
-				overlay.queue_free()
-		if is_instance_valid(dialog):
-			dialog.hide()
-			if dialog.get_parent() == self:
-				remove_child(dialog)
-			if not dialog.is_queued_for_deletion():
-				dialog.queue_free()
-	)
+	close.pressed.connect(_close_settings_modal.bind(dialog))
 	heading.add_child(close)
 	var scroll := ScrollContainer.new()
 	scroll.name = "SettingsDialogScroll"
@@ -5767,7 +5793,7 @@ func _style_settings_dialog(dialog: AcceptDialog, size: Vector2i) -> void:
 		if is_instance_valid(overlay) and not overlay.is_queued_for_deletion():
 			overlay.queue_free()
 	)
-	dialog.close_requested.connect(dialog.queue_free)
+	dialog.close_requested.connect(_close_settings_modal.bind(dialog))
 	close.call_deferred("grab_focus")
 
 
@@ -5816,8 +5842,8 @@ func _show_settings_about() -> void:
 	benchmark.pressed.connect(_start_performance_benchmark)
 	content.add_child(benchmark)
 	add_child(dialog)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(_close_settings_modal.bind(dialog))
+	dialog.canceled.connect(_close_settings_modal.bind(dialog))
 	_style_settings_dialog(dialog, Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
 
 
@@ -5833,8 +5859,8 @@ func _show_settings_help() -> void:
 	dialog.title = "How to play"
 	dialog.dialog_text = "Build roads first, then place buildings beside connected roads.\n\nTap a building to manage it. Drag production items into an empty queue slot. Use the bottom action bar for storage, city needs, trade, regions and saving."
 	add_child(dialog)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(_close_settings_modal.bind(dialog))
+	dialog.canceled.connect(_close_settings_modal.bind(dialog))
 	_style_settings_dialog(dialog, Vector2i(640, 360))
 
 
@@ -6113,8 +6139,8 @@ func _show_notification_settings() -> void:
 		toggle.add_theme_font_size_override("font_size", _settings_font_size(19))
 		toggle.toggled.connect(_on_notification_preference_toggled.bind(key, toggle, feedback))
 		content.add_child(toggle)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(_close_settings_modal.bind(dialog))
+	dialog.canceled.connect(_close_settings_modal.bind(dialog))
 	add_child(dialog)
 	_style_settings_dialog(dialog, Vector2i(560, 300))
 
@@ -6146,8 +6172,8 @@ func _show_wallet_panel() -> void:
 	purchase_info.custom_minimum_size = Vector2(300, 48) * _ui_scale
 	purchase_info.pressed.connect(_show_wallet_purchase_info)
 	dialog.add_child(purchase_info)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(_close_settings_modal.bind(dialog))
+	dialog.canceled.connect(_close_settings_modal.bind(dialog))
 	add_child(dialog)
 	_style_settings_dialog(dialog, Vector2i(560, 320))
 
@@ -6157,8 +6183,8 @@ func _show_wallet_purchase_info() -> void:
 	info.name = "WalletPurchaseInfoDialog"
 	info.title = "Purchases are not available yet"
 	info.dialog_text = "Real-money purchases and bank payments are not enabled in this version. No payment will be requested or processed. You can continue earning and using in-game currencies through city gameplay."
-	info.confirmed.connect(info.queue_free)
-	info.canceled.connect(info.queue_free)
+	info.confirmed.connect(_close_settings_modal.bind(info))
+	info.canceled.connect(_close_settings_modal.bind(info))
 	add_child(info)
 	_style_settings_dialog(info, Vector2i(520, 260))
 
