@@ -212,7 +212,7 @@ func _test_construction_cancellation_ui() -> void:
 		var dialog := hud.find_child("ConstructionCancellationDialog", true, false) as ConfirmationDialog
 		_check(dialog != null and not dialog.get_ok_button().disabled, "Construction dialog must expose an enabled cancellation action when the refund fits.")
 		if dialog != null and not dialog.get_ok_button().disabled:
-			await _tap_native_control(dialog.get_ok_button())
+			await _tap_mouse_control(dialog.get_ok_button())
 	_check(not BuildManager.buildings.has(building_id), "Tapping CANCEL CONSTRUCTION must remove the in-progress building from the city registry.")
 	_check(not BuildManager.building_cells.has(grid), "Canceling construction must release the entire reserved plot footprint.")
 	_check(StorageManager.get_count("nails") == int(inventory_before_payment.get("nails", 0)), "Canceling construction must return the exact reserved material quantity.")
@@ -256,7 +256,7 @@ func _test_residential_upgrade_cancel_ui() -> void:
 	var cancel_button := hud.find_child("ResidentialCancelUpgradeButton", true, false) as Button
 	_check(cancel_button != null and not cancel_button.disabled, "An active residential upgrade must expose an enabled cancel-and-refund action when storage has room.")
 	if cancel_button != null and not cancel_button.disabled:
-		await _tap_native_control(cancel_button)
+		await _tap_mouse_control(cancel_button)
 	_check(not home.upgrade_in_progress, "Tapping the residential cancel action must stop the upgrade timer.")
 	_check(home.upgrade_reserved_bom.is_empty(), "Residential cancellation must clear its reserved BOM after refund.")
 	if home.upgrade_in_progress:
@@ -308,6 +308,25 @@ func _tap_native_control(control: Control) -> void:
 	touch_up.pressed = false
 	touch_up.position = touch_position
 	get_viewport().push_input(touch_up, true)
+	await get_tree().process_frame
+
+
+func _tap_mouse_control(control: Control) -> void:
+	if not is_instance_valid(control) or not control.is_inside_tree() or control.disabled:
+		_check(false, "Mouse hit-test target must be visible, enabled and inside the active scene tree.")
+		return
+	var mouse_position: Vector2 = control.get_global_transform_with_canvas() * (control.size * 0.5)
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.pressed = true
+	mouse_down.position = mouse_position
+	get_viewport().push_input(mouse_down, true)
+	await get_tree().process_frame
+	var mouse_up := InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.pressed = false
+	mouse_up.position = mouse_position
+	get_viewport().push_input(mouse_up, true)
 	await get_tree().process_frame
 
 
