@@ -1994,20 +1994,41 @@ func open_building_upgrade_panel(building: Building) -> void:
 	dialog.name = "NonResidentialUpgradeDialog"
 	dialog.title = "%s · UPGRADE" % str(building.definition.get("name", "Building"))
 	if building.upgrade_in_progress:
-		dialog.dialog_text = "Upgrade to Level %d is in progress. Remaining: %ds." % [stage + 1, building.get_upgrade_remaining_seconds()]
+		var refund_lines: Array[String] = []
+		var refund_total := 0
+		for item_id in building.upgrade_reserved_bom:
+			var amount := int(building.upgrade_reserved_bom[item_id])
+			refund_total += amount
+			refund_lines.append("%s ×%d" % [str(item_id).capitalize(), amount])
+		dialog.dialog_text = "Upgrade to Level %d is in progress. Remaining: %ds.\n\nCancel to refund §%d and return: %s" % [
+			stage + 1, building.get_upgrade_remaining_seconds(), int(building.upgrade_reserved_simoleons), ", ".join(refund_lines)
+		]
+		dialog.get_ok_button().text = "CANCEL UPGRADE"
+		dialog.get_ok_button().disabled = refund_total > StorageManager.get_free()
+		dialog.confirmed.connect(_cancel_non_residential_upgrade.bind(building))
 	else:
 		dialog.dialog_text = "Level %d → %d\nCost: §%d\nConstruction time: %ds\nMaterials: %s" % [
 			stage, stage + 1, cost, duration, ", ".join(material_lines)
 		]
 		if not lock_reason.is_empty():
 			dialog.dialog_text += "\n\n" + lock_reason
-	dialog.get_ok_button().text = "START UPGRADE"
-	dialog.get_ok_button().disabled = building.upgrade_in_progress or not lock_reason.is_empty() or requirements.is_empty()
-	dialog.confirmed.connect(_start_non_residential_upgrade.bind(building))
+		dialog.get_ok_button().text = "START UPGRADE"
+		dialog.get_ok_button().disabled = not lock_reason.is_empty() or requirements.is_empty()
+		dialog.confirmed.connect(_start_non_residential_upgrade.bind(building))
 	dialog.confirmed.connect(dialog.queue_free)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
 	dialog.popup_centered(Vector2i(480, 340))
+
+func _cancel_non_residential_upgrade(building: Building) -> void:
+	if not is_instance_valid(building) or not building.cancel_upgrade():
+		if is_instance_valid(status_label):
+			status_label.text = "Upgrade cancellation failed. Free enough City Storage space and try again."
+		return
+	if is_instance_valid(status_label):
+		status_label.text = "Upgrade canceled. Paid materials and Simoleons were refunded."
+	if is_instance_valid(_production_building) and _production_building == building:
+		open_production_panel(building)
 
 func _start_non_residential_upgrade(building: Building) -> void:
 	if not is_instance_valid(building) or not building.try_upgrade():
