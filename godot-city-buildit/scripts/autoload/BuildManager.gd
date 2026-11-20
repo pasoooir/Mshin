@@ -686,15 +686,20 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 	if building_node == null:
 		return false
 	var construction_bom := {} if allow_reserved_restore else get_construction_bom(chosen)
-	if not construction_bom.is_empty() and not StorageManager.remove_items(construction_bom):
-		building_node.free()
-		return false
+	var construction_cost_batches: Dictionary = {}
+	if not construction_bom.is_empty():
+		var construction_removal: Dictionary = StorageManager.remove_items_with_cost_batches(construction_bom)
+		if not bool(construction_removal.get("success", false)):
+			building_node.free()
+			return false
+		construction_cost_batches = construction_removal.get("cost_batches", {}).duplicate(true)
 	if cost > 0 and not EconomyManager.spend_simoleons(cost):
 		if not construction_bom.is_empty():
-			StorageManager.add_items(construction_bom)
+			StorageManager.restore_items_with_cost_batches(construction_bom, construction_cost_batches)
 		building_node.free()
 		return false
 	building_node.construction_reserved_bom = construction_bom.duplicate(true)
+	building_node.construction_reserved_cost_batches = construction_cost_batches.duplicate(true)
 	building_node.construction_reserved_simoleons = cost
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
 	var data: Dictionary = {
@@ -736,11 +741,14 @@ func cancel_construction(building: Building) -> bool:
 	# destroy the paid BOM: keep the site and reservation until space is freed.
 	if refund_total > StorageManager.get_free():
 		return false
-	if not building.construction_reserved_bom.is_empty() and not StorageManager.add_items(building.construction_reserved_bom):
-		return false
+	if not building.construction_reserved_bom.is_empty():
+		var refund_ok: bool = StorageManager.restore_items_with_cost_batches(building.construction_reserved_bom, building.construction_reserved_cost_batches) if not building.construction_reserved_cost_batches.is_empty() else StorageManager.add_items(building.construction_reserved_bom)
+		if not refund_ok:
+			return false
 	if building.construction_reserved_simoleons > 0:
 		EconomyManager.add_simoleons(building.construction_reserved_simoleons)
 	building.construction_reserved_bom.clear()
+	building.construction_reserved_cost_batches.clear()
 	building.construction_reserved_simoleons = 0
 	for cell in get_footprint_cells(building.grid_pos, building.definition.get("size", Vector2i(2, 2))):
 		if building_cells.get(cell) == building:

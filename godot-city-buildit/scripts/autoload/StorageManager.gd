@@ -126,6 +126,110 @@ func remove_items(requirements: Dictionary) -> bool:
 	storage_changed.emit()
 	return true
 
+func remove_items_with_cost_batches(requirements: Dictionary) -> Dictionary:
+	if requirements.is_empty() or not has_items(requirements):
+		return {"success": false, "reason": "insufficient_inventory"}
+	var normalized: Dictionary = {}
+	for item_variant in requirements.keys():
+		var item_id := str(item_variant)
+		var amount := int(requirements[item_variant])
+		if item_id.is_empty() or amount <= 0:
+			return {"success": false, "reason": "invalid_requirements"}
+		normalized[item_id] = amount
+		_ensure_cost_batches_for_item(item_id)
+	# Work on a copy so a malformed batch cannot partially consume inventory.
+	var working_batches: Dictionary = item_cost_batches.duplicate(true)
+	var removed_batches: Dictionary = {}
+	for item_id in normalized:
+		var remaining := int(normalized[item_id])
+		var source: Array = working_batches.get(item_id, [])
+		var retained: Array[Dictionary] = []
+		var removed: Array[Dictionary] = []
+		for batch_variant in source:
+			if not batch_variant is Dictionary:
+				return {"success": false, "reason": "invalid_cost_batch"}
+			var batch: Dictionary = batch_variant.duplicate(true)
+			var batch_quantity := maxi(0, int(batch.get("quantity", 0)))
+			if batch_quantity <= 0:
+				continue
+			if remaining <= 0:
+				retained.append(batch)
+				continue
+			var take := mini(remaining, batch_quantity)
+			var batch_total := maxi(0, int(batch.get("total_cost", 0)))
+			var cost_part := roundi(float(batch_total) * float(take) / float(batch_quantity))
+			removed.append({
+				"quantity": take,
+				"total_cost": cost_part,
+				"known": bool(batch.get("known", false))
+			})
+			remaining -= take
+			var left := batch_quantity - take
+			if left > 0:
+				batch["quantity"] = left
+				batch["total_cost"] = batch_total - cost_part
+				retained.append(batch)
+		if remaining > 0:
+			return {"success": false, "reason": "cost_batch_quantity_mismatch"}
+		working_batches[item_id] = retained
+		removed_batches[item_id] = removed
+	item_cost_batches = working_batches
+	for item_id in normalized:
+		var left := get_count(item_id) - int(normalized[item_id])
+		if left <= 0:
+			items.erase(item_id)
+		else:
+			items[item_id] = left
+	storage_changed.emit()
+	return {"success": true, "cost_batches": removed_batches}
+
+
+func restore_items_with_cost_batches(additions: Dictionary, cost_batches: Dictionary) -> bool:
+	if additions.is_empty() or cost_batches.is_empty():
+		return false
+	var total_to_add := 0
+	var normalized_batches: Dictionary = {}
+	for item_variant in additions.keys():
+		var item_id := str(item_variant)
+		var amount := int(additions[item_variant])
+		if item_id.is_empty() or amount <= 0:
+			return false
+		var raw_batches: Variant = cost_batches.get(item_id, null)
+		if not raw_batches is Array or raw_batches.is_empty():
+			return false
+		var batches: Array[Dictionary] = []
+		var batch_quantity_total := 0
+		for batch_variant in raw_batches:
+			if not batch_variant is Dictionary:
+				return false
+			var batch: Dictionary = batch_variant
+			var quantity := int(batch.get("quantity", 0))
+			var total_cost := int(batch.get("total_cost", 0))
+			if quantity <= 0 or total_cost < 0:
+				return false
+			batches.append({
+				"quantity": quantity,
+				"total_cost": total_cost,
+				"known": bool(batch.get("known", false))
+			})
+			batch_quantity_total += quantity
+		if batch_quantity_total != amount:
+			return false
+		normalized_batches[item_id] = batches
+		total_to_add += amount
+	if normalized_batches.size() != additions.size() or get_free() < total_to_add:
+		return false
+	for item_id in additions:
+		var key := str(item_id)
+		items[key] = get_count(key) + int(additions[item_id])
+		var existing: Array = item_cost_batches.get(key, []).duplicate(true)
+		for batch in normalized_batches[key]:
+			existing.append(batch.duplicate(true))
+		item_cost_batches[key] = existing
+	storage_changed.emit()
+	return true
+
+
 func add_items(additions: Dictionary) -> bool:
 	if additions.is_empty():
 		return false

@@ -215,6 +215,7 @@ func capture_region_snapshot() -> Dictionary:
 				"construction_finish_unix": building.construction_finish_unix,
 				"construction_paused_remaining_seconds": building.construction_paused_remaining_seconds,
 				"construction_reserved_bom": building.construction_reserved_bom.duplicate(true),
+				"construction_reserved_cost_batches": building.construction_reserved_cost_batches.duplicate(true),
 				"construction_reserved_simoleons": building.construction_reserved_simoleons,
 				"current_product": building.current_product,
 				"is_producing": building.is_producing,
@@ -224,6 +225,7 @@ func capture_region_snapshot() -> Dictionary:
 				"upgrade_finish_unix": building.upgrade_finish_unix,
 				"upgrade_paused_remaining_seconds": building.upgrade_paused_remaining_seconds,
 				"upgrade_reserved_bom": building.upgrade_reserved_bom.duplicate(true),
+				"upgrade_reserved_cost_batches": building.upgrade_reserved_cost_batches.duplicate(true),
 				"upgrade_reserved_simoleons": building.upgrade_reserved_simoleons,
 				"store_star_level": building.production_component.store_star_level if is_instance_valid(building.production_component) else 0,
 				"slots": building.production_component.to_save_array() if is_instance_valid(building.production_component) else []
