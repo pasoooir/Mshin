@@ -221,6 +221,8 @@ func capture_region_snapshot() -> Dictionary:
 				"upgrade_in_progress": building.upgrade_in_progress,
 				"upgrade_finish_unix": building.upgrade_finish_unix,
 				"upgrade_paused_remaining_seconds": building.upgrade_paused_remaining_seconds,
+				"upgrade_reserved_bom": building.upgrade_reserved_bom.duplicate(true),
+				"upgrade_reserved_simoleons": building.upgrade_reserved_simoleons,
 				"store_star_level": building.production_component.store_star_level if is_instance_valid(building.production_component) else 0,
 				"slots": building.production_component.to_save_array() if is_instance_valid(building.production_component) else []
 			}

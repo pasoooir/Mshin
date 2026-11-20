@@ -34,6 +34,9 @@ var upgrade_ready: bool = false
 var upgrade_in_progress: bool = false
 var upgrade_finish_unix: int = 0
 var upgrade_paused_remaining_seconds: int = -1
+# Exact materials and currency consumed by the active upgrade, retained for cancellation.
+var upgrade_reserved_bom: Dictionary = {}
+var upgrade_reserved_simoleons: int = 0
 var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
 var demolition_highlight_active: bool = false
@@ -1923,11 +1926,16 @@ func try_upgrade() -> bool:
 	var category := str(definition.get("category", ""))
 	if status != "completed" or is_epic_building or upgrade_stage >= max_stage or upgrade_in_progress:
 		return false
+	var consumed_bom: Dictionary = {}
+	var consumed_simoleons := 0
 	if category == "residential":
 		if not ProductionManager.can_afford_upgrade(upgrade_stage):
 			print("[Building] Need materials for residential upgrade to stage ", upgrade_stage + 1)
 			return false
-		if not ProductionManager.consume_upgrade_materials(upgrade_stage):
+		for requirement in ProductionManager.get_upgrade_requirements(upgrade_stage):
+			var item_id := str(requirement.item)
+			consumed_bom[item_id] = int(consumed_bom.get(item_id, 0)) + int(requirement.amount)
+		if consumed_bom.is_empty() or not StorageManager.remove_items(consumed_bom):
 			return false
 		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
 	elif category in ["commercial", "industrial", "service", "park"]:
@@ -1943,14 +1951,44 @@ func try_upgrade() -> bool:
 		if not StorageManager.remove_items(upgrade_bom):
 			EconomyManager.add_simoleons(upgrade_cost)
 			return false
+		consumed_bom = upgrade_bom.duplicate(true)
+		consumed_simoleons = upgrade_cost
 		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + BuildManager.get_non_residential_upgrade_duration_seconds(building_type, upgrade_stage)
 	else:
 		return false
+	upgrade_reserved_bom = consumed_bom
+	upgrade_reserved_simoleons = consumed_simoleons
 	upgrade_in_progress = true
 	upgrade_paused_remaining_seconds = -1
 	upgrade_ready = false
 	if hard_hat: hard_hat.visible = false
 	_start_residential_upgrade_animation()
+	return true
+
+func cancel_upgrade() -> bool:
+	if not upgrade_in_progress:
+		return false
+	var refund_total := 0
+	for amount_variant in upgrade_reserved_bom.values():
+		refund_total += maxi(0, int(amount_variant))
+	# Do not destroy paid materials if the player filled the freed capacity.
+	if refund_total > StorageManager.get_free():
+		return false
+	if not upgrade_reserved_bom.is_empty() and not StorageManager.add_items(upgrade_reserved_bom):
+		return false
+	if upgrade_reserved_simoleons > 0:
+		EconomyManager.add_simoleons(upgrade_reserved_simoleons)
+	upgrade_reserved_bom.clear()
+	upgrade_reserved_simoleons = 0
+	upgrade_in_progress = false
+	upgrade_finish_unix = 0
+	upgrade_paused_remaining_seconds = -1
+	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
+		_upgrade_tween.kill()
+	if is_instance_valid(scaffold_root):
+		scaffold_root.visible = false
+		scaffold_root.scale = Vector3.ONE
+	_check_upgrade_ready()
 	return true
 
 func _start_residential_upgrade_animation() -> void:
@@ -1975,6 +2013,8 @@ func _finish_residential_upgrade() -> void:
 	upgrade_in_progress = false
 	upgrade_finish_unix = 0
 	upgrade_paused_remaining_seconds = -1
+	upgrade_reserved_bom.clear()
+	upgrade_reserved_simoleons = 0
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
@@ -1995,6 +2035,8 @@ func _finish_non_residential_upgrade() -> void:
 	upgrade_in_progress = false
 	upgrade_finish_unix = 0
 	upgrade_paused_remaining_seconds = -1
+	upgrade_reserved_bom.clear()
+	upgrade_reserved_simoleons = 0
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
@@ -2112,6 +2154,8 @@ func restore_production_state(saved: Dictionary) -> void:
 	upgrade_in_progress = bool(saved.get("upgrade_in_progress", false))
 	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
 	upgrade_paused_remaining_seconds = int(saved.get("upgrade_paused_remaining_seconds", -1))
+	upgrade_reserved_bom = saved.get("upgrade_reserved_bom", {}).duplicate(true)
+	upgrade_reserved_simoleons = maxi(0, int(saved.get("upgrade_reserved_simoleons", 0)))
 	if upgrade_in_progress and upgrade_paused_remaining_seconds >= 0:
 		upgrade_finish_unix = 0
 	elif upgrade_in_progress:
