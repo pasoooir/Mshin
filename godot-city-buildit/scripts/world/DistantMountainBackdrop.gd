@@ -278,38 +278,82 @@ func _make_tunnel_box(parent: Node3D, node_name: String, dimensions: Vector3, po
 
 
 func _create_rock_outcrop_mesh() -> ArrayMesh:
-	# A compact five-sided, chipped basalt/sandstone outcrop with flat faces.
-	# One shared low-poly mesh is instanced across the near ridge in a single draw.
+	# A chipped, undercut 12-sector outcrop. Two irregular intermediate rings
+	# create real silhouette breaks, recessed facets and fractured ledges even
+	# when the procedural surface shader is disabled.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sides := 5
+	var sectors := 12
 	var ring_bottom: Array[Vector3] = []
-	var ring_top: Array[Vector3] = []
-	for index in range(sides):
-		var angle := TAU * float(index) / sides
-		var radius := 0.72 + 0.18 * sin(float(index) * 2.4 + 0.7)
-		ring_bottom.append(Vector3(cos(angle) * radius, 0.0, sin(angle) * radius))
-		ring_top.append(Vector3(cos(angle + 0.12) * radius * 0.66, 1.0 + 0.38 * sin(float(index) * 1.8), sin(angle + 0.12) * radius * 0.66))
-	var top := Vector3(0.16, 1.72, -0.12)
-	for index in range(sides):
-		var next_index := (index + 1) % sides
-		surface.set_color(Color("#777364"))
+	var ring_mid: Array[Vector3] = []
+	var ring_upper: Array[Vector3] = []
+	for index in range(sectors):
+		var angle := TAU * float(index) / float(sectors)
+		var wave_a := sin(float(index) * 2.17 + 0.43)
+		var wave_b := sin(float(index) * 3.71 + 1.26)
+		var wave_c := sin(float(index) * 1.37 + 2.04)
+		var lower_radius := 0.76 + wave_a * 0.105 + wave_b * 0.045
+		var mid_radius := 0.70 + wave_b * 0.105 + wave_c * 0.055
+		# Alternating inward cuts form visible notches and undercut shelves.
+		if index % 5 == 2:
+			mid_radius -= 0.17
+		if index % 7 == 4:
+			mid_radius -= 0.09
+		var upper_radius := 0.49 + wave_a * 0.095 - wave_c * 0.055
+		var lower_y := -0.035 + wave_b * 0.055
+		var mid_y := 0.52 + wave_a * 0.19
+		var upper_y := 1.12 + wave_c * 0.25
+		ring_bottom.append(Vector3(cos(angle) * lower_radius, lower_y, sin(angle) * lower_radius))
+		ring_mid.append(Vector3(cos(angle + 0.035) * mid_radius, mid_y, sin(angle + 0.035) * mid_radius))
+		ring_upper.append(Vector3(cos(angle - 0.045) * upper_radius, upper_y, sin(angle - 0.045) * upper_radius))
+
+	var peak_a := Vector3(0.13, 1.82, -0.11)
+	var peak_b := Vector3(-0.22, 1.56, 0.19)
+	var bottom_center := Vector3(0.0, -0.075, 0.0)
+	for index in range(sectors):
+		var next_index := (index + 1) % sectors
+		var lower_tone := 0.82 + 0.12 * sin(float(index) * 2.31)
+		var middle_tone := 0.88 + 0.10 * sin(float(index) * 1.73 + 0.8)
+		var upper_tone := 0.91 + 0.08 * sin(float(index) * 2.83 + 1.4)
+		var lower_color := Color(0.47, 0.44, 0.37) * lower_tone
+		var middle_color := Color(0.55, 0.50, 0.41) * middle_tone
+		var upper_color := Color(0.61, 0.56, 0.46) * upper_tone
+
+		# Lower wall: a broken, non-planar band with alternating broad facets.
+		surface.set_color(lower_color)
 		surface.add_vertex(ring_bottom[index])
-		surface.set_color(Color("#8B806B"))
-		surface.add_vertex(ring_top[index])
-		surface.set_color(Color("#655F53"))
+		surface.add_vertex(ring_mid[index])
 		surface.add_vertex(ring_bottom[next_index])
-		surface.set_color(Color("#8B806B"))
+		surface.set_color(lower_color * 0.92)
 		surface.add_vertex(ring_bottom[next_index])
-		surface.add_vertex(ring_top[index])
-		surface.set_color(Color("#9A8B70"))
-		surface.add_vertex(ring_top[next_index])
-		surface.add_vertex(ring_top[index])
-		surface.add_vertex(top)
-		surface.add_vertex(ring_top[next_index])
+		surface.add_vertex(ring_mid[index])
+		surface.add_vertex(ring_mid[next_index])
+
+		# Middle wall: inward ring cuts produce genuine concave pockets.
+		surface.set_color(middle_color)
+		surface.add_vertex(ring_mid[index])
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(ring_mid[next_index])
+		surface.set_color(middle_color * 0.88)
+		surface.add_vertex(ring_mid[next_index])
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(ring_upper[next_index])
+
+		# Jagged crown with alternating high/low shoulders and a split peak.
+		surface.set_color(upper_color)
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(peak_a if index % 3 != 1 else peak_b)
+		surface.add_vertex(ring_upper[next_index])
+
+		# Small triangular chips at the foot break the otherwise clean base.
+		if index % 3 == 0:
+			surface.set_color(lower_color * 0.76)
+			surface.add_vertex(bottom_center)
+			surface.add_vertex(ring_bottom[next_index])
+			surface.add_vertex(ring_bottom[index])
+
 	surface.generate_normals()
 	return surface.commit()
-
 
 func _create_rock_surface_material() -> ShaderMaterial:
 	# Triplanar mineral weathering with chipped polygonal fracture networks.
