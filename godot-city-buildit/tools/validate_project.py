@@ -1017,7 +1017,7 @@ for building_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_sola
         errors.append(f"Services menu building definition is missing: {building_id}")
 for service_id in ["power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "sewage_small", "sewage_basic", "sewage_deluxe",
                    "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "clinic_small", "clinic", "hospital", "town_hall", "trade_depot", "global_trade_hq", "cargo_port"]:
-    definition_line = next((line for line in build_manager.splitlines() if re.search(r'^\\s*"'+ re.escape(service_id) + r'": \\{"name"', line)), "")
+    definition_line = next((line.strip() for line in build_manager.splitlines() if line.strip().startswith(f'"{service_id}": {{"name"')), "")
     if '"service_group"' not in definition_line:
         errors.append(f"Service building lacks service_group metadata: {service_id}")
 health_contracts = {
