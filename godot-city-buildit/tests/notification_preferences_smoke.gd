@@ -393,7 +393,7 @@ func _run() -> void:
 	hud._show_settings_panel()
 	await process_frame
 	help_button = hud.find_child("SettingsHelpButton", true, false) as Button
-	help_button.pressed.emit()
+	await _tap_control(help_button)
 	await process_frame
 	var guide_panel := guide.get("_panel") as Control
 	if guide_panel == null or not guide_panel.visible:
