@@ -1254,6 +1254,17 @@ The existing Figma production studio frame was updated to match the no-START, dr
 - [ ] Pass exact-head Godot validation, GameplaySmoke, Android APK export/signature verification and desktop/mobile Web/Chromium smoke on PR #612.
 - [ ] Capture before/after frame-time, draw-call, primitive and video-memory reports on representative physical Android devices; inspect thermal behavior over a sustained session.
 
+## Camera responsiveness — Android pan and inertia — 2026-11-20
+
+- [x] Remove the 30 FPS inertia time-step ceiling that discarded elapsed movement on slower phones; preserve elapsed time down to 20 FPS and cap only long stalls at 50 ms to avoid camera teleports.
+- [x] Increase screen-pan response from 0.82 to 0.95 and soften inertial damping from 8.0 to 6.5.
+- [x] Clamp reported Android touch/mouse/pinch inertial velocity to 1,600 px/s while preserving live finger movement and normal velocity values.
+- [x] Add GameplaySmoke regression coverage for 20 FPS time-step preservation, long-stall protection and velocity spike clamping.
+- [ ] Pass exact-head Godot validation, GameplaySmoke, Android APK export and desktop/mobile Web/Chromium smoke.
+- [ ] Capture physical Android frame-time p95/max while repeatedly panning, zooming and orbiting; compare with the previous build.
+
+**Measurement honesty:** these changes correct camera time integration and input spikes. They do not by themselves prove that GPU/CPU frame-time bottlenecks are eliminated; physical-device pan/zoom/orbit profiling remains required.
+
 **Measurement honesty:** this is a structural reduction in decorative shadow casters, not a measured FPS or temperature claim. The existing 30-second in-game benchmark remains the device-level source of truth; physical-device A/B results are still required before quantifying gains.
 
 ## Production drag-to-building and strict ingredient availability — 2026-11-15
