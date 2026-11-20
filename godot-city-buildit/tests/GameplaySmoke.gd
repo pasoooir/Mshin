@@ -176,7 +176,7 @@ func _test_construction_cancellation_ui() -> void:
 	StorageManager.item_cost_batches["nails"] = [{"quantity": nail_count_before, "total_cost": nail_count_before * 7, "known": true}]
 	var expected_construction_cost_basis: Dictionary = StorageManager.get_cost_basis({"nails": 1})
 	var inventory_before_payment := StorageManager.get_all_items()
-	var construction_removal := StorageManager.remove_items_with_cost_batches({"nails": 1})
+	var construction_removal: Dictionary = StorageManager.remove_items_with_cost_batches({"nails": 1})
 	_check(bool(construction_removal.get("success", false)), "Construction site must reserve its exact BOM and FIFO cost batch before the cancellation test.")
 	_check(EconomyManager.spend_simoleons(75), "Construction site must reserve its Simoleon cost before the cancellation test.")
 	var scene_root := get_tree().current_scene
