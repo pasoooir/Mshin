@@ -1977,6 +1977,39 @@ func _on_roads_pressed() -> void:
 		road_system.set_road_mode(true)
 		status_label.text = "Road mode — tap or drag from the highway (50 Simoleons per tile)"
 
+func open_construction_cancel_panel(building: Building) -> void:
+	if not is_instance_valid(building) or building.status != "constructing":
+		return
+	var refund_lines: Array[String] = []
+	var refund_total := 0
+	for item_id in building.construction_reserved_bom:
+		var amount := int(building.construction_reserved_bom[item_id])
+		refund_total += amount
+		refund_lines.append("%s ×%d" % [str(item_id).capitalize(), amount])
+	var dialog := ConfirmationDialog.new()
+	dialog.name = "ConstructionCancellationDialog"
+	dialog.title = "%s · CONSTRUCTION SITE" % str(building.definition.get("name", "Building"))
+	dialog.dialog_text = "Construction is in progress. Canceling removes this site and returns §%d plus: %s" % [
+		int(building.construction_reserved_simoleons), ", ".join(refund_lines) if not refund_lines.is_empty() else "no reserved materials"
+	]
+	dialog.get_ok_button().text = "CANCEL CONSTRUCTION"
+	dialog.get_ok_button().disabled = refund_total > StorageManager.get_free()
+	dialog.confirmed.connect(_cancel_construction_site.bind(building))
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(480, 300))
+
+
+func _cancel_construction_site(building: Building) -> void:
+	if not is_instance_valid(building) or not BuildManager.cancel_construction(building):
+		if is_instance_valid(status_label):
+			status_label.text = "Construction cancellation failed. Free enough City Storage space and try again."
+		return
+	if is_instance_valid(status_label):
+		status_label.text = "Construction canceled. Reserved materials and Simoleons were refunded."
+
+
 func open_building_upgrade_panel(building: Building) -> void:
 	if not is_instance_valid(building) or building.status != "completed":
 		return
