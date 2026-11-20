@@ -157,6 +157,47 @@ func _test_non_residential_upgrade_execution() -> void:
 	StorageManager.from_save_dict(previous_storage)
 	EconomyManager.simoleons = previous_money
 
+func _test_residential_upgrade_cancel_ui() -> void:
+	var home = _find_building("residential_1")
+	if not is_instance_valid(home):
+		home = _find_building("residential_villa")
+	_check(is_instance_valid(home), "Residential cancellation smoke test requires a completed starter home.")
+	if not is_instance_valid(home):
+		return
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var requirements: Array = ProductionManager.get_upgrade_requirements(home.upgrade_stage)
+	var additions: Dictionary = {}
+	for requirement in requirements:
+		var item_id := str(requirement.get("item", ""))
+		var missing := maxi(0, int(requirement.get("amount", 0)) - StorageManager.get_count(item_id))
+		if missing > 0:
+			additions[item_id] = int(additions.get(item_id, 0)) + missing
+	if not additions.is_empty():
+		_check(StorageManager.add_items(additions), "Could not provision residential upgrade materials for cancellation UI test.")
+	_check(home.try_upgrade(), "Residential upgrade must start with its complete material bill.")
+	if not home.upgrade_in_progress:
+		StorageManager.from_save_dict(previous_storage)
+		return
+	var hud = get_tree().current_scene.get_node_or_null("HUD")
+	_check(is_instance_valid(hud), "Residential upgrade cancellation test requires the live HUD.")
+	if not is_instance_valid(hud):
+		home.cancel_upgrade()
+		StorageManager.from_save_dict(previous_storage)
+		return
+	hud.open_residential_panel(home)
+	await get_tree().process_frame
+	var cancel_button := hud.find_child("ResidentialCancelUpgradeButton", true, false) as Button
+	_check(cancel_button != null and not cancel_button.disabled, "An active residential upgrade must expose an enabled cancel-and-refund action when storage has room.")
+	if cancel_button != null and not cancel_button.disabled:
+		await _tap_native_control(cancel_button)
+	_check(not home.upgrade_in_progress, "Tapping the residential cancel action must stop the upgrade timer.")
+	_check(home.upgrade_reserved_bom.is_empty(), "Residential cancellation must clear its reserved BOM after refund.")
+	if home.upgrade_in_progress:
+		home.cancel_upgrade()
+	hud._close_residential_panel()
+	StorageManager.from_save_dict(previous_storage)
+
+
 func _grant_construction_bom_for_test(type_id: String) -> void:
 	var requirements := BuildManager.get_construction_bom(type_id)
 	var additions: Dictionary = {}
@@ -4860,6 +4901,7 @@ func _run_gameplay_test() -> void:
 	_test_automatic_production_chain()
 	_test_building_notification_grouping()
 	_test_non_residential_upgrade_execution()
+	await _test_residential_upgrade_cancel_ui()
 
 	# Livestock may graze only on the two desert fringe strips, never on asphalt,
 	# connected roads or player-owned/buildable city plots.
