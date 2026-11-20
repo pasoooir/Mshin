@@ -1926,6 +1926,23 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
+	var saved_menu_level := GameManager.level
+	GameManager.level = 1
+	hud._show_submenu("services")
+	var power_group_button := hud.find_child("group_power", true, false) as Button
+	var water_group_button := hud.find_child("group_water", true, false) as Button
+	var fire_group_button := hud.find_child("group_fire", true, false) as Button
+	_check(power_group_button != null and power_group_button.find_child("CatalogLock", true, false) == null, "Power group must be unlocked in Services at Level 1.")
+	_check(water_group_button != null and water_group_button.find_child("CatalogLock", true, false) == null, "Water group must be unlocked in Services at Level 1.")
+	_check(fire_group_button != null and fire_group_button.find_child("CatalogLock", true, false) != null, "Fire group must display its Level 5 lock at Level 1.")
+	hud._on_submenu_option("services", "group_power")
+	var wind_card := hud.find_child("power_wind", true, false) as Button
+	_check(wind_card != null and wind_card.find_child("CatalogLock", true, false) == null, "Wind Power Plant must be placeable from Services at Level 1.")
+	hud._on_submenu_option("services", "back")
+	hud._on_submenu_option("services", "group_water")
+	var water_card := hud.find_child("water_tower", true, false) as Button
+	_check(water_card != null and water_card.find_child("CatalogLock", true, false) == null, "Water Tower must be placeable from Services at Level 1.")
+	GameManager.level = saved_menu_level
 	hud._show_submenu("services")
 	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	_check(hud.context_header_subtitle.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART and hud.context_header_subtitle.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "The long City Services summary must wrap within the mobile header instead of overflowing horizontally.")
@@ -2441,7 +2458,15 @@ func _test_power_water_gateway_access() -> void:
 	waste_plant.global_position = Vector3.ZERO
 	BuildManager.buildings[waste_plant.building_id] = waste_plant
 
+	GameManager.level = 1
 	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_power == 0 and ServiceManager.demand_water == 0, "Level 1 starter homes must not consume household Power and Water.")
+	_check(ServiceManager.power_served_ids.has(connected_home.building_id) and ServiceManager.water_served_ids.has(connected_home.building_id), "Household Power and Water are treated as satisfied at Level 1 without utility plants.")
+	_check(ServiceManager.demand_sewage == 0 and ServiceManager.demand_waste == 0, "Household Sewage and Waste demand stays dormant before its unlock level.")
+	GameManager.level = 2
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_power == 2 and ServiceManager.demand_water == 2, "All completed starter homes begin consuming Power and Water at Level 2.")
+	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "From Level 2, missing household utilities become real service shortages.")
 	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
 	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
 	# At Level 4, Power and Water are unlocked. Zero operational capacity must

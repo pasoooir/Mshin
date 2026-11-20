@@ -61,6 +61,11 @@ var unlocked_services: Array = ["power", "water"]
 var max_factories: int = 2
 
 const FACTORY_LIMITS := {1:2, 2:3, 3:4, 6:5, 12:6, 18:7, 24:8, 30:9, 37:10, 46:11, 58:12}
+const SERVICE_UNLOCK_LEVELS := {
+	"power": 1, "water": 1, "fire": 5, "sewage": 8,
+	"police": 12, "waste": 14, "health": 16,
+	"government": 1, "trade": 1
+}
 var unlocked_features: Array = ["roads", "residential"]
 
 func _ready() -> void:
@@ -110,6 +115,9 @@ func is_material_unlocked(id: String) -> bool:
 
 func is_service_unlocked(id: String) -> bool:
 	return id in unlocked_services
+
+func get_service_unlock_level(id: String) -> int:
+	return int(SERVICE_UNLOCK_LEVELS.get(id, 1))
 
 func is_feature_unlocked(id: String) -> bool:
 	return id in unlocked_features
