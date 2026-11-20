@@ -10,10 +10,10 @@ extends Node3D
 @export var max_zoom: float = 150.0
 @export var world_limit: float = 130.0
 @export_range(20.0, 75.0, 1.0) var camera_pitch_degrees: float = 48.0
-@export var pan_inertia_damping: float = 8.0
+@export var pan_inertia_damping: float = 6.5
 @export var orbit_inertia_damping: float = 10.0
 @export var focus_smoothing: float = 8.0
-@export_range(0.1, 1.0, 0.05) var pan_screen_sensitivity: float = 0.82
+@export_range(0.1, 1.0, 0.05) var pan_screen_sensitivity: float = 0.95
 
 @onready var camera: Camera3D = $Camera3D
 
@@ -35,7 +35,8 @@ const ORBIT_INERTIA_STOP_SPEED := 0.01
 const TWO_FINGER_PAN_DEADZONE := 0.8
 const PINCH_DEADZONE := 0.35
 const TWIST_DEADZONE := 0.002
-const MAX_CAMERA_STEP := 1.0 / 30.0
+const MAX_CAMERA_STEP := 1.0 / 20.0
+const MAX_PAN_INERTIA_SPEED := 1600.0
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
@@ -49,7 +50,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if delta <= 0.0:
 		return
-	var step_delta := minf(delta, MAX_CAMERA_STEP)
+	var step_delta := camera_step_delta(delta)
 	if _is_road_mode() or BuildManager.is_moving:
 		pan_velocity = Vector2.ZERO
 		orbit_velocity = 0.0
@@ -105,6 +106,19 @@ func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:
 	var zoom_needs_focus := focus_zoom_target > 0.0 and absf(current_zoom - focus_zoom_target) > 0.05
 	is_focus_animating = position_needs_focus or zoom_needs_focus
 	_refresh_processing()
+
+static func camera_step_delta(delta: float) -> float:
+	# Preserve the full elapsed time at 20 FPS and above. The old 1/30 s cap
+	# silently discarded camera travel on slower phones, making inertia lag.
+	# A 50 ms ceiling still prevents a long app pause from causing a teleport.
+	return minf(maxf(delta, 0.0), MAX_CAMERA_STEP)
+
+static func clamp_pan_velocity(velocity: Vector2) -> Vector2:
+	# Touch drivers can report very large screen_velocity spikes on Android.
+	# Bound the inertial tail, not the live finger delta, to prevent jumps.
+	if velocity.length_squared() <= MAX_PAN_INERTIA_SPEED * MAX_PAN_INERTIA_SPEED:
+		return velocity
+	return velocity.normalized() * MAX_PAN_INERTIA_SPEED
 
 static func interpolate_focus(current: Vector3, target: Vector3, delta: float, smoothing: float) -> Vector3:
 	var weight := 1.0 - exp(-maxf(0.0, smoothing) * maxf(0.0, delta))
@@ -165,7 +179,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and is_mouse_panning:
 		if not _is_building_press_pending(-1):
 			_pan(event.position - last_mouse_position)
-			pan_velocity = event.velocity
+			pan_velocity = clamp_pan_velocity(event.velocity)
 		last_mouse_position = event.position
 		_refresh_processing()
 	elif event is InputEventScreenTouch:
@@ -193,7 +207,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_pan(event.relative)
 				orbit_velocity = 0.0
 				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-				pan_velocity = event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta
+				pan_velocity = clamp_pan_velocity(event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta)
 		elif touch_points.size() >= 2:
 			_update_pinch()
 		_refresh_processing()
@@ -233,7 +247,7 @@ func _update_pinch() -> void:
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
 			_pan(centroid_delta)
 			var pan_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			pan_velocity = centroid_delta / pan_frame_delta
+			pan_velocity = clamp_pan_velocity(centroid_delta / pan_frame_delta)
 		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
 		if absf(distance_delta) >= PINCH_DEADZONE:
 			_zoom(distance_delta)
