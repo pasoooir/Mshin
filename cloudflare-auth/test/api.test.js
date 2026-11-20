@@ -121,8 +121,17 @@ test("welcome reward is one-time and daily reward is idempotent per UTC day", as
   assert.equal(secondBody.welcome.granted, false);
   assert.equal(secondBody.daily.granted, false);
   assert.deepEqual(secondBody.balances, { simoleons: 5100, sim_cash: 10 });
+  assert.equal(secondBody.revision, firstBody.revision, "a no-op retry must not advertise an unpersisted revision");
+  assert.equal(files.get("players/100003.json").revision, firstBody.revision);
   assert.equal(files.get("players/100003.json").market_account.rewards.daily_last_claim_utc, firstBody.claimed_day_utc);
   assert.equal(writes.length, 1);
+
+  const otherPlayer = await call(coordinator, 100005, "/v1/rewards/claim", "POST", {});
+  assert.equal(otherPlayer.status, 200);
+  const otherBody = await otherPlayer.json();
+  assert.equal(otherBody.welcome.granted, true, "welcome eligibility must be isolated per player");
+  assert.equal(otherBody.daily.granted, true, "daily eligibility must be isolated per player");
+  assert.deepEqual(otherBody.balances, { simoleons: 5100, sim_cash: 10 });
 });
 
 test("daily rewards work for existing accounts without granting the welcome bonus", async () => {
@@ -173,4 +182,25 @@ test("first-login eligibility survives an initial profile save before reward cla
   assert.equal(body.balances.simoleons, 30100);
   assert.equal(body.balances.sim_cash, 35);
   assert.equal(files.get("players/100004.json").market_account.rewards.welcome_eligible, undefined);
+});
+
+
+test("simultaneous reward claims grant each reward once and keep the stored revision authoritative", async () => {
+  const { coordinator, files, writes } = setup();
+  const freshId = 100006;
+  const responses = await Promise.all([
+    call(coordinator, freshId, "/v1/rewards/claim", "POST", {}),
+    call(coordinator, freshId, "/v1/rewards/claim", "POST", {})
+  ]);
+  assert.deepEqual(responses.map(response => response.status), [200, 200]);
+  const bodies = await Promise.all(responses.map(response => response.json()));
+  assert.equal(bodies.filter(body => body.welcome.granted).length, 1);
+  assert.equal(bodies.filter(body => body.daily.granted).length, 1);
+  assert.deepEqual(files.get("players/100006.json").market_account && {
+    simoleons: files.get("players/100006.json").market_account.simoleons,
+    sim_cash: files.get("players/100006.json").market_account.sim_cash
+  }, { simoleons: 5100, sim_cash: 10 });
+  assert.equal(bodies[0].revision, files.get("players/100006.json").revision);
+  assert.equal(bodies[1].revision, files.get("players/100006.json").revision);
+  assert.equal(writes.length, 1);
 });
