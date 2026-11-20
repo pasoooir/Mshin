@@ -116,12 +116,13 @@ export class MshinApiCoordinator {
           gameState.economy ??= {};
           gameState.economy.simoleons = account.simoleons;
           gameState.economy.sim_cash = account.sim_cash;
+          const changed = welcomeGranted || dailyGranted || isNewAccount;
           const next = {
-            schema_version: 1, user_id: playerId, revision: current.revision + 1,
-            created_at: current.created_at || now.toISOString(), updated_at: now.toISOString(),
+            schema_version: 1, user_id: playerId, revision: current.revision + (changed ? 1 : 0),
+            created_at: current.created_at || now.toISOString(), updated_at: changed ? now.toISOString() : current.updated_at,
             market_account: account, game_state: gameState
           };
-          if (welcomeGranted || dailyGranted || isNewAccount) {
+          if (changed) {
             await storage.writeMany([
               { path: "players/" + playerId + ".json", value: next },
               { path: rewardLedgerPath, value: rewardLedger }
