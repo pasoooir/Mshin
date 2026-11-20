@@ -7,6 +7,13 @@ func _initialize() -> void:
 func _tap_control(control: Control) -> void:
 	if not is_instance_valid(control) or not control.is_inside_tree():
 		return
+	var ancestor := control.get_parent()
+	while ancestor != null:
+		if ancestor is ScrollContainer:
+			ancestor.ensure_control_visible(control)
+			await process_frame
+			break
+		ancestor = ancestor.get_parent()
 	var viewport := control.get_viewport()
 	var pointer_position := control.get_global_transform_with_canvas() * (control.size * 0.5)
 	var press := InputEventMouseButton.new()
@@ -110,11 +117,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification form did not open as an input-owning HUD modal with both controls.")
 		quit(1)
 		return
-	print("[SettingsTouchSmoke] BuildingAlerts rect=%s pos=%s size=%s" % [str(building_toggle.get_global_rect()), str(building_toggle.get_global_transform_with_canvas() * (building_toggle.size * 0.5)), str(building_toggle.size)])
 	await _tap_control(building_toggle)
-	print("[SettingsTouchSmoke] BuildingAlerts pressed=%s live=%s prefs=%s" % [str(building_toggle.button_pressed), str(alert_layer.are_building_alerts_enabled()), str(save_manager.get_notification_preferences())])
 	await _tap_control(updates_toggle)
-	print("[SettingsTouchSmoke] CityUpdates pressed=%s live=%s prefs=%s" % [str(updates_toggle.button_pressed), str(citizen_feedback.are_city_updates_enabled()), str(save_manager.get_notification_preferences())])
 	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
 		push_error("[NotificationPreferencesSmoke] Notification toggle events did not update live systems.")
 		quit(1)
