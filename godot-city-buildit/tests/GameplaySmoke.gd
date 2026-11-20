@@ -316,17 +316,18 @@ func _tap_mouse_control(control: Control) -> void:
 		_check(false, "Mouse hit-test target must be visible, enabled and inside the active scene tree.")
 		return
 	var mouse_position: Vector2 = control.get_global_transform_with_canvas() * (control.size * 0.5)
+	var target_viewport := control.get_viewport()
 	var mouse_down := InputEventMouseButton.new()
 	mouse_down.button_index = MOUSE_BUTTON_LEFT
 	mouse_down.pressed = true
 	mouse_down.position = mouse_position
-	get_viewport().push_input(mouse_down, true)
+	target_viewport.push_input(mouse_down, true)
 	await get_tree().process_frame
 	var mouse_up := InputEventMouseButton.new()
 	mouse_up.button_index = MOUSE_BUTTON_LEFT
 	mouse_up.pressed = false
 	mouse_up.position = mouse_position
-	get_viewport().push_input(mouse_up, true)
+	target_viewport.push_input(mouse_up, true)
 	await get_tree().process_frame
 
 
