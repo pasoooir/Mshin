@@ -38,6 +38,7 @@ var upgrade_finish_unix: int = 0
 var upgrade_paused_remaining_seconds: int = -1
 # Exact materials and currency consumed by the active upgrade, retained for cancellation.
 var upgrade_reserved_bom: Dictionary = {}
+var upgrade_reserved_cost_batches: Dictionary = {}
 var upgrade_reserved_simoleons: int = 0
 var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
@@ -1939,8 +1940,12 @@ func try_upgrade() -> bool:
 		for requirement in ProductionManager.get_upgrade_requirements(upgrade_stage):
 			var item_id := str(requirement.item)
 			consumed_bom[item_id] = int(consumed_bom.get(item_id, 0)) + int(requirement.amount)
-		if consumed_bom.is_empty() or not StorageManager.remove_items(consumed_bom):
+		if consumed_bom.is_empty():
 			return false
+		var residential_removal := StorageManager.remove_items_with_cost_batches(consumed_bom)
+		if not bool(residential_removal.get("success", false)):
+			return false
+		upgrade_reserved_cost_batches = residential_removal.get("cost_batches", {}).duplicate(true)
 		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
 	elif category in ["commercial", "industrial", "service", "park"]:
 		var upgrade_bom := BuildManager.get_non_residential_upgrade_bom(building_type, upgrade_stage)
@@ -1952,10 +1957,12 @@ func try_upgrade() -> bool:
 		var upgrade_cost := BuildManager.get_non_residential_upgrade_cost(building_type, upgrade_stage)
 		if not EconomyManager.spend_simoleons(upgrade_cost):
 			return false
-		if not StorageManager.remove_items(upgrade_bom):
+		var non_residential_removal := StorageManager.remove_items_with_cost_batches(upgrade_bom)
+		if not bool(non_residential_removal.get("success", false)):
 			EconomyManager.add_simoleons(upgrade_cost)
 			return false
 		consumed_bom = upgrade_bom.duplicate(true)
+		upgrade_reserved_cost_batches = non_residential_removal.get("cost_batches", {}).duplicate(true)
 		consumed_simoleons = upgrade_cost
 		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + BuildManager.get_non_residential_upgrade_duration_seconds(building_type, upgrade_stage)
 	else:
@@ -1978,11 +1985,12 @@ func cancel_upgrade() -> bool:
 	# Do not destroy paid materials if the player filled the freed capacity.
 	if refund_total > StorageManager.get_free():
 		return false
-	if not upgrade_reserved_bom.is_empty() and not StorageManager.add_items(upgrade_reserved_bom):
+	if not upgrade_reserved_bom.is_empty() and not StorageManager.restore_items_with_cost_batches(upgrade_reserved_bom, upgrade_reserved_cost_batches):
 		return false
 	if upgrade_reserved_simoleons > 0:
 		EconomyManager.add_simoleons(upgrade_reserved_simoleons)
 	upgrade_reserved_bom.clear()
+	upgrade_reserved_cost_batches.clear()
 	upgrade_reserved_simoleons = 0
 	upgrade_in_progress = false
 	upgrade_finish_unix = 0
@@ -2161,6 +2169,7 @@ func restore_production_state(saved: Dictionary) -> void:
 	upgrade_finish_unix = int(saved.get("upgrade_finish_unix", 0))
 	upgrade_paused_remaining_seconds = int(saved.get("upgrade_paused_remaining_seconds", -1))
 	upgrade_reserved_bom = saved.get("upgrade_reserved_bom", {}).duplicate(true)
+	upgrade_reserved_cost_batches = saved.get("upgrade_reserved_cost_batches", {}).duplicate(true)
 	upgrade_reserved_simoleons = maxi(0, int(saved.get("upgrade_reserved_simoleons", 0)))
 	if upgrade_in_progress and upgrade_paused_remaining_seconds >= 0:
 		upgrade_finish_unix = 0
