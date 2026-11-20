@@ -1820,3 +1820,15 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] آزمون بصری روی گوشی Android واقعی؛ CI و Chromium موبایل جایگزین دستگاه فیزیکی نیستند.
 
 **منبع حقیقت اجرایی:** `LevelProgression.gd`, `ServiceManager.gd`, `BuildManager.gd`, `HUD.gd`, `RoadSystem.gd`, `RegionManager.gd`. تغییر داده‌های سطح باید همراه با به‌روزرسانی این جدول و آزمون‌ها در همان PR انجام شود.
+
+
+## Procedural mountain stone surfaces and bounded near shadows — 2026-11-20
+
+- [x] Replace flat vertex-tint-only rock outcrops with a world-space triplanar procedural stone material: layered mineral color, multi-scale weathering grain, pores and fine fracture seams; no external textures, UV seams, runtime downloads or extra mesh submissions.
+- [x] Keep per-instance rock palette variation while adding material-level surface detail shared by the single 72-instance MultiMesh batch.
+- [x] Enable rock shadow casting only on the near-detail batch, whose visibility range ends at RIDGE_DETAIL_DISTANCE world units; distant ridges, vegetation and tunnel dressing remain shadow-free.
+- [x] Extend visual smoke assertions for procedural grain/fracture shader features and the near-only shadow/visibility contract.
+- [ ] Pass exact-head Godot shader parse/import, visual smoke, full GameplaySmoke, Android Debug APK export/signature and desktop/mobile Chromium checks.
+- [ ] Inspect close-up stone shading and shadow stability on a physical Android device; collect frame-time, GPU/memory and thermal measurements before claiming device-performance improvements.
+
+**Rendering budget:** the rock material is one shared ShaderMaterial on one existing MultiMesh draw. Fracture and mineral patterns are evaluated procedurally in world space. Only the already range-culled near rock batch casts shadows; the four mountain ridge LOD meshes and distant environment props remain non-shadow-casting.

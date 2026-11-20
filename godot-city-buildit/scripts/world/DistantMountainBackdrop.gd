@@ -311,6 +311,82 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 	return surface.commit()
 
 
+func _create_rock_surface_material() -> ShaderMaterial:
+	# World-space triplanar procedural stone: layered mineral variation,
+	# weathered grain and fine fracture seams without texture downloads or UV seams.
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+varying vec3 rock_world_position;
+varying vec3 rock_world_normal;
+
+float hash31(vec3 p) {
+	p = fract(p * 0.1031);
+	p += dot(p, p.yzx + 33.33);
+	return fract((p.x + p.y) * p.z);
+}
+
+float value_noise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash31(i);
+	float b = hash31(i + vec3(1.0, 0.0, 0.0));
+	float c = hash31(i + vec3(0.0, 1.0, 0.0));
+	float d = hash31(i + vec3(1.0, 1.0, 0.0));
+	float e = hash31(i + vec3(0.0, 0.0, 1.0));
+	float f1 = hash31(i + vec3(1.0, 0.0, 1.0));
+	float g = hash31(i + vec3(0.0, 1.0, 1.0));
+	float h = hash31(i + vec3(1.0, 1.0, 1.0));
+	return mix(mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
+		mix(mix(e, f1, f.x), mix(g, h, f.x), f.y), f.z);
+}
+
+float stone_fbm(vec3 p) {
+	float n = 0.0;
+	n += value_noise(p) * 0.57;
+	n += value_noise(p * 2.13) * 0.28;
+	n += value_noise(p * 4.37) * 0.15;
+	return n;
+}
+
+void vertex() {
+	rock_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	rock_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
+}
+
+void fragment() {
+	vec3 n = abs(normalize(rock_world_normal));
+	vec3 p = rock_world_position;
+	float grain_x = stone_fbm(p.yzx * 1.65);
+	float grain_y = stone_fbm(p.zxy * 1.65);
+	float grain_z = stone_fbm(p.xyz * 1.65);
+	float grain = dot(vec3(grain_x, grain_y, grain_z), n);
+	float strata = sin(dot(p, vec3(0.19, 0.31, 0.13)) + grain * 5.5);
+	float fracture_field = min(
+		abs(sin(p.x * 2.7 + p.y * 1.1 + grain * 3.0)),
+		min(abs(sin(p.z * 2.35 - p.y * 1.7 + grain * 2.2)),
+			abs(sin(p.x * 1.15 + p.z * 1.8 + p.y * 0.65)))
+	);
+	float fractures = 1.0 - smoothstep(0.025, 0.105, fracture_field);
+	float pores = smoothstep(0.58, 0.88, grain);
+	vec3 base_stone = mix(vec3(0.24, 0.25, 0.23), vec3(0.57, 0.52, 0.42), grain);
+	base_stone *= mix(0.82, 1.12, smoothstep(-0.65, 0.7, strata));
+	base_stone *= mix(0.72, 1.0, INSTANCE_COLOR.rgb);
+	base_stone *= 1.0 - fractures * 0.48;
+	base_stone *= 1.0 - pores * 0.12;
+	ALBEDO = base_stone;
+	ROUGHNESS = 0.94;
+	METALLIC = 0.0;
+	SPECULAR = 0.16;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+
 func _build_mountain_rock_outcrops() -> void:
 	var rock_mesh := _create_rock_outcrop_mesh()
 	var batch := MultiMesh.new()
@@ -336,11 +412,10 @@ func _build_mountain_rock_outcrops() -> void:
 	var rocks := MultiMeshInstance3D.new()
 	rocks.name = "MountainNearRockOutcrops"
 	rocks.multimesh = batch
-	var material := StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.roughness = 1.0
-	rocks.material_override = material
-	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rocks.material_override = _create_rock_surface_material()
+	# Only the near-detail batch casts shadows. Its visibility range is the
+	# hard shadow budget: rocks disappear before they can add distant shadow work.
+	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	rocks.visibility_range_end_margin = 14.0
 	add_child(rocks)
