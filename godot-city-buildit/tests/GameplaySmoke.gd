@@ -120,6 +120,10 @@ func _test_non_residential_upgrade_execution() -> void:
 			additions[str(item_id)] = missing
 	if not additions.is_empty():
 		_check(StorageManager.add_items(additions), "Could not provision the non-residential upgrade's exact material bill.")
+	for item_id in bom:
+		var item_count := StorageManager.get_count(str(item_id))
+		StorageManager.item_cost_batches[str(item_id)] = [{"quantity": item_count, "total_cost": item_count * 11, "known": true}]
+	var expected_upgrade_cost_basis: Dictionary = StorageManager.get_cost_basis(bom)
 	EconomyManager.simoleons = maxi(EconomyManager.simoleons, BuildManager.get_non_residential_upgrade_cost(wind.building_type, wind.upgrade_stage))
 	var capacity_before := ServiceManager.get_building_service_capacity(wind, "power")
 	var inventory_before_upgrade := StorageManager.get_all_items()
@@ -127,6 +131,7 @@ func _test_non_residential_upgrade_execution() -> void:
 	_check(wind.try_upgrade(), "A road-connected wind power building with sufficient funds and materials must start a non-residential upgrade.")
 	_check(wind.upgrade_in_progress and wind.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Non-residential upgrade must persist a real future finish timestamp.")
 	_check(wind.upgrade_reserved_bom == bom and wind.upgrade_reserved_simoleons == BuildManager.get_non_residential_upgrade_cost(wind.building_type, previous_stage), "An active upgrade must retain its exact consumed BOM and Simoleon cost for cancellation.")
+	_check(wind.upgrade_reserved_cost_batches.size() == bom.size(), "An active upgrade must retain the exact FIFO acquisition-cost batches for every reserved material.")
 	var upgrade_snapshot := SaveManager.capture_region_snapshot()
 	var saved_upgrade: Dictionary = {}
 	for saved_building in upgrade_snapshot.get("buildings", []):
@@ -134,6 +139,7 @@ func _test_non_residential_upgrade_execution() -> void:
 			saved_upgrade = saved_building.get("production", {})
 			break
 	_check(saved_upgrade.get("upgrade_reserved_bom", {}) == bom and int(saved_upgrade.get("upgrade_reserved_simoleons", 0)) == wind.upgrade_reserved_simoleons, "Save snapshots must persist the active upgrade's exact refundable reservation.")
+	_check(saved_upgrade.get("upgrade_reserved_cost_batches", {}) == wind.upgrade_reserved_cost_batches, "Save snapshots must persist exact FIFO cost batches for upgrade refunds.")
 	var filler_amount := StorageManager.get_free()
 	if filler_amount > 0:
 		_check(StorageManager.add_items({"wood": filler_amount}), "Could not fill storage to test safe upgrade cancellation.")
@@ -146,7 +152,9 @@ func _test_non_residential_upgrade_execution() -> void:
 	_check(EconomyManager.simoleons == money_before_upgrade, "Canceling a non-residential upgrade must refund its full Simoleon cost.")
 	for item_id in bom:
 		_check(StorageManager.get_count(str(item_id)) == int(inventory_before_upgrade.get(str(item_id), 0)), "Canceling an upgrade must refund the exact quantity of " + str(item_id) + ".")
-	_check(wind.upgrade_reserved_bom.is_empty() and wind.upgrade_reserved_simoleons == 0, "Completed cancellation must clear the persisted refund reservation.")
+	var restored_upgrade_cost_basis: Dictionary = StorageManager.get_cost_basis(bom)
+	_check(bool(restored_upgrade_cost_basis.get("known", false)) == bool(expected_upgrade_cost_basis.get("known", false)) and int(restored_upgrade_cost_basis.get("total_cost", -1)) == int(expected_upgrade_cost_basis.get("total_cost", -2)), "Canceling an upgrade must restore its exact FIFO acquisition-cost basis.")
+	_check(wind.upgrade_reserved_bom.is_empty() and wind.upgrade_reserved_cost_batches.is_empty() and wind.upgrade_reserved_simoleons == 0, "Completed cancellation must clear the persisted refund reservation.")
 	_check(wind.try_upgrade(), "A refunded upgrade must be startable again without losing its materials.")
 	wind.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
 	wind.update_upgrade_access_state()
