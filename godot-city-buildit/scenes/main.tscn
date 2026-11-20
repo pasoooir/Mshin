@@ -47,7 +47,7 @@ script = ExtResource("1_camera")
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 30)
 current = true
 fov = 46.0
-far = 280.0
+far = 720.0
 
 [node name="CityInput" type="Node3D" parent="."]
 script = ExtResource("3_input")

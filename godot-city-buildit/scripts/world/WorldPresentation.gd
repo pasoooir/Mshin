@@ -20,6 +20,10 @@ const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
+const AUSTRALIAN_GRASSLAND_PALETTE := [
+	Color("#4C963F"), Color("#63A64A"), Color("#78AD50"),
+	Color("#3E8439"), Color("#8BB65B"), Color("#579B45")
+]
 
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
@@ -68,7 +72,7 @@ func _build_environment() -> void:
 	environment.tonemap_exposure = 1.08
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.72, 0.82, 0.82)
-	environment.fog_density = 0.00125
+	environment.fog_density = 0.00065
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	world_environment.environment = environment
 	add_child(world_environment)
@@ -107,12 +111,19 @@ func _apply_region_climate(sky_material: ProceduralSkyMaterial, environment: Env
 			sky_material.ground_bottom_color = Color("#596342")
 			sky_material.ground_horizon_color = Color("#A9A078")
 			environment.fog_light_color = Color("#D9D0B7")
+		"temperate":
+			# Australian coastal grassland: clear blue sky with a warm, green horizon.
+			sky_material.sky_top_color = Color("#287BB0")
+			sky_material.sky_horizon_color = Color("#B8D9D1")
+			sky_material.ground_bottom_color = Color("#315B39")
+			sky_material.ground_horizon_color = Color("#83A96F")
+			environment.fog_light_color = Color("#C0D8C4")
 		_:
-			sky_material.sky_top_color = Color(0.12, 0.34, 0.55)
-			sky_material.sky_horizon_color = Color(0.72, 0.84, 0.91)
-			sky_material.ground_bottom_color = Color(0.13, 0.19, 0.17)
-			sky_material.ground_horizon_color = Color(0.55, 0.63, 0.61)
-			environment.fog_light_color = Color(0.72, 0.82, 0.82)
+			sky_material.sky_top_color = Color("#287BB0")
+			sky_material.sky_horizon_color = Color("#B8D9D1")
+			sky_material.ground_bottom_color = Color("#315B39")
+			sky_material.ground_horizon_color = Color("#83A96F")
+			environment.fog_light_color = Color("#C0D8C4")
 
 func _on_region_changed(_region_id: String) -> void:
 	refresh_region_appearance()
@@ -216,13 +227,8 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	else:
 		# A brighter temperate meadow: several green families with restrained
 		# olive and dry-grass variation, never a flat monochrome green carpet.
-		var grass_palette: Array[Color] = [
-			Color("#397B36"), Color("#47883A"),
-			Color("#559443"), Color("#679A49"),
-			Color("#4A873F"), Color("#739B4D")
-		]
-		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % grass_palette.size()
-		color = grass_palette[palette_index].lerp(Color("#A0A15B"), blend * 0.20)
+		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % AUSTRALIAN_GRASSLAND_PALETTE.size()
+		color = AUSTRALIAN_GRASSLAND_PALETTE[palette_index].lerp(Color("#A0A15B"), blend * 0.12)
 		if fine_noise > 0.58:
 			color = color.lerp(Color("#315F31"), 0.13)
 		elif fine_noise < -0.62:
@@ -242,9 +248,9 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var in_east_pasture := point.x >= -42.0 and point.x <= 44.0
 	var in_west_pasture := point.x >= -90.0 and point.x <= -69.0
 	if absf(point.z) >= 80.0 and absf(point.z) <= 90.0 and (in_east_pasture or in_west_pasture):
-		color = color.lerp(Color("#B99A68"), 0.52)
+		color = color.lerp(Color("#B4A36F"), 0.24)
 	if not LandExpansionManager.is_world_position_unlocked(point):
-		color = color.lerp(Color("#302B24"), 0.34)
+		color = color.lerp(Color("#36523A"), 0.12)
 	surface.set_color(color)
 	surface.add_vertex(point)
 

@@ -4,8 +4,8 @@ extends Node3D
 ## replace an exposed world edge with a continuous natural backdrop.
 
 const LAND_SIZE := Vector2(1000.0, 1000.0)
-const RIDGE_INNER_RADIUS := 170.0
-const RIDGE_OUTER_RADIUS := 330.0
+const RIDGE_INNER_RADIUS := 120.0
+const RIDGE_OUTER_RADIUS := 300.0
 const RIDGE_HALF_LENGTH := 470.0
 const RIDGE_SEGMENTS := 64
 const RIDGE_DEPTH_STEPS := 14
@@ -14,7 +14,8 @@ const GRASS_COUNT := 760
 const TUNNEL_CENTER_X := -55.0
 const TUNNEL_CUTOUT_HALF_WIDTH := 28.0
 const TUNNEL_OPENING_WIDTH := 42.0
-const TUNNEL_WALL_HEIGHT := 13.0
+const TUNNEL_WALL_HEIGHT := 15.0
+const MIN_CAMERA_FAR_CLIP := 720.0
 
 func _ready() -> void:
 	_build_backdrop_land()
@@ -47,7 +48,7 @@ void fragment() {
 		discard;
 	}
 	float grain = sin(world_position.x * 0.12 + world_position.z * 0.08) * cos(world_position.z * 0.11 - world_position.x * 0.06);
-	ALBEDO = vec3(0.16, 0.31, 0.18) + vec3(grain * 0.012);
+	ALBEDO = vec3(0.22, 0.43, 0.24) + vec3(grain * 0.018);
 	ROUGHNESS = 1.0;
 }
 """
@@ -118,16 +119,16 @@ func _ridge_height(along: float, depth: float, side: int) -> float:
 	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 42.0, 0.0, 1.0))
 	var rolling_peaks := 0.5 + 0.5 * sin(along * 0.031 + float(side) * 1.7) + 0.16 * cos(along * 0.073 - float(side))
 	var peak_height := 52.0 + rolling_peaks * 36.0
-	return peak_height * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
+	return (62.0 + rolling_peaks * 46.0) * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:
 	var slope := sin(PI * depth)
 	var variation := 0.5 + 0.5 * sin(along * 0.11 + float(side) * 2.3)
-	var dark_green := Color("#15351F")
-	var meadow_green := Color("#376B3A")
+	var dark_green := Color("#1D4828")
+	var meadow_green := Color("#4A8748")
 	var color := dark_green.lerp(meadow_green, 0.24 + slope * 0.46)
-	return color.lerp(Color("#5B8544"), variation * slope * 0.20)
+	return color.lerp(Color("#78A957"), variation * slope * 0.24)
 
 
 func _build_highway_tunnels() -> void:

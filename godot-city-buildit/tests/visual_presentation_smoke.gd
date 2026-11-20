@@ -31,6 +31,30 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Both tunnels must include a roof, side walls and framed inner/outer portals")
 		get_tree().quit(1)
 		return
+	var main_scene := load("res://scenes/main.tscn") as PackedScene
+	if main_scene == null:
+		push_error("[VisualPresentationSmoke] Main scene must load for far-clip visibility validation")
+		get_tree().quit(1)
+		return
+	var main_instance := main_scene.instantiate()
+	var city_camera := main_instance.get_node_or_null("CameraRig/Camera3D") as Camera3D
+	if city_camera == null or city_camera.far < DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
+		push_error("[VisualPresentationSmoke] Camera far clip must include both distant mountain ridges and outer tunnel portals")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	if DistantMountainBackdropScript.RIDGE_INNER_RADIUS < 100.0 or DistantMountainBackdropScript.RIDGE_OUTER_RADIUS > city_camera.far:
+		push_error("[VisualPresentationSmoke] Mountain ring must remain inside the camera visible world distance")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	if WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE.size() < 5 or WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].g <= WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].r:
+		push_error("[VisualPresentationSmoke] Starter temperate terrain must use a green grassland palette")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	main_instance.free()
+
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
 	if canopy == null or canopy.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Canopy must be a single mesh surface")
@@ -124,7 +148,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	warm_fill_light.free()
-	print("[VisualPresentationSmoke] PASS: clustered canopy geometry, tree batching, deterministic transforms and 38-instance shoreline pebble batching")
+	print("[VisualPresentationSmoke] PASS: Australian grassland palette, visible mountain/tunnel range, clustered canopy geometry, tree batching and shoreline detail")
 	tree_batch.free()
 	presentation.free()
 	get_tree().quit(0)
