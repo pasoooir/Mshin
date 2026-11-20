@@ -19,19 +19,16 @@ func _tap_control(control: Control) -> void:
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.position = pointer_position
 	press.pressed = true
-	Input.parse_input_event(press)
-	Input.flush_buffered_events()
+	viewport.push_input(press, true)
 	await process_frame
 	var release := InputEventMouseButton.new()
 	release.button_index = MOUSE_BUTTON_LEFT
 	release.position = pointer_position
 	release.pressed = false
-	Input.parse_input_event(release)
-	Input.flush_buffered_events()
+	viewport.push_input(release, true)
 	await process_frame
 
 func _run() -> void:
-	Input.emulate_touch_from_mouse = true
 	var config := ConfigFile.new()
 	config.set_value("notifications", "building_alerts", false)
 	config.set_value("notifications", "city_updates", false)
@@ -78,9 +75,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
 		quit(1)
 		return
-	print("[SettingsTouchSmoke] GoogleAction rect=%s viewport=%s visible=%s size=%s" % [str(google_action.get_global_rect()), str(google_action.get_viewport_rect()), str(google_action.is_visible_in_tree()), str(google_action.size)])
 	await _tap_control(google_action)
-	print("[SettingsTouchSmoke] GoogleAction status=%s pressed=%s" % [str(hud.find_child("SettingsAccountStatus", true, false).text), str(google_action.button_pressed)])
 	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
 		quit(1)
