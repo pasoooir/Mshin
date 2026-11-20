@@ -3,6 +3,32 @@ extends SceneTree
 func _initialize() -> void:
 	call_deferred("_run")
 
+
+func _tap_control(control: Control) -> void:
+	if not is_instance_valid(control) or not control.is_inside_tree():
+		return
+	var ancestor := control.get_parent()
+	while ancestor != null:
+		if ancestor is ScrollContainer:
+			ancestor.ensure_control_visible(control)
+			await process_frame
+			break
+		ancestor = ancestor.get_parent()
+	var viewport := control.get_viewport()
+	var pointer_position := control.get_global_transform_with_canvas() * (control.size * 0.5)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.position = pointer_position
+	press.pressed = true
+	viewport.push_input(press, true)
+	await process_frame
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.position = pointer_position
+	release.pressed = false
+	viewport.push_input(release, true)
+	await process_frame
+
 func _run() -> void:
 	var config := ConfigFile.new()
 	config.set_value("notifications", "building_alerts", false)
@@ -50,7 +76,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
 		quit(1)
 		return
-	google_action.pressed.emit()
+	await _tap_control(google_action)
 	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
 		quit(1)
@@ -63,10 +89,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches are missing.")
 		quit(1)
 		return
-	music_toggle.button_pressed = not original_music_enabled
-	music_toggle.toggled.emit(not original_music_enabled)
-	sfx_toggle.button_pressed = not original_sfx_enabled
-	sfx_toggle.toggled.emit(not original_sfx_enabled)
+	await _tap_control(music_toggle)
+	await _tap_control(sfx_toggle)
 	await create_timer(0.8).timeout
 	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
@@ -74,17 +98,15 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
 		quit(1)
 		return
-	music_toggle.button_pressed = original_music_enabled
-	music_toggle.toggled.emit(original_music_enabled)
-	sfx_toggle.button_pressed = original_sfx_enabled
-	sfx_toggle.toggled.emit(original_sfx_enabled)
+	await _tap_control(music_toggle)
+	await _tap_control(sfx_toggle)
 	await create_timer(0.8).timeout
 	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
 	if notification_button == null:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
 		quit(1)
 		return
-	notification_button.pressed.emit()
+	await _tap_control(notification_button)
 	await process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
@@ -94,8 +116,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification form did not open as an input-owning HUD modal with both controls.")
 		quit(1)
 		return
-	building_toggle.toggled.emit(true)
-	updates_toggle.toggled.emit(true)
+	await _tap_control(building_toggle)
+	await _tap_control(updates_toggle)
 	if not alert_layer.are_building_alerts_enabled() or not citizen_feedback.are_city_updates_enabled():
 		push_error("[NotificationPreferencesSmoke] Notification toggle events did not update live systems.")
 		quit(1)
@@ -124,7 +146,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification sub-form has no close action.")
 		quit(1)
 		return
-	notification_close.pressed.emit()
+	await _tap_control(notification_close)
 	await process_frame
 	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null or hud.find_child("NotificationSettingsDialog", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Notification close action did not release both modal layers.")
@@ -133,7 +155,7 @@ func _run() -> void:
 	# The native Window close request (Escape / platform close) must release
 	# the visible HUD overlay through the same synchronous cleanup path.
 	notification_button = hud.find_child("SettingsNotificationsButton", true, false) as Button
-	notification_button.pressed.emit()
+	await _tap_control(notification_button)
 	await process_frame
 	notification_dialog = hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	if notification_dialog == null:
@@ -153,7 +175,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] About action button is missing.")
 		quit(1)
 		return
-	about_button.pressed.emit()
+	await _tap_control(about_button)
 	await process_frame
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
@@ -185,7 +207,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] About sub-form has no close action.")
 		quit(1)
 		return
-	about_close.pressed.emit()
+	await _tap_control(about_close)
 	await process_frame
 	if hud.find_child("SettingsAboutDialogOverlay", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] About close action did not release modal input.")
@@ -198,7 +220,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Wallet action button is missing.")
 		quit(1)
 		return
-	wallet_button.pressed.emit()
+	await _tap_control(wallet_button)
 	await process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
 	var wallet_overlay := hud.find_child("SettingsWalletDialogOverlay", true, false) as Control
@@ -211,7 +233,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Wallet must explain the current purchase availability.")
 		quit(1)
 		return
-	purchase_info_button.pressed.emit()
+	await _tap_control(purchase_info_button)
 	await process_frame
 	var purchase_info_overlay := hud.find_child("WalletPurchaseInfoDialogOverlay", true, false) as Control
 	if purchase_info_overlay == null or not purchase_info_overlay.visible:
@@ -223,7 +245,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Wallet purchase information has no close action.")
 		quit(1)
 		return
-	purchase_close.pressed.emit()
+	await _tap_control(purchase_close)
 	await process_frame
 	if hud.find_child("WalletPurchaseInfoDialogOverlay", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Closing purchase information did not release input.")
@@ -234,7 +256,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Wallet sub-form has no close action.")
 		quit(1)
 		return
-	wallet_close.pressed.emit()
+	await _tap_control(wallet_close)
 	await process_frame
 	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null or hud.find_child("SettingsWalletDialog", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Wallet close action did not release both modal layers.")
@@ -243,7 +265,7 @@ func _run() -> void:
 	# Reopening Settings while a sub-form is still open must not leave any
 	# transparent modal overlay above the game.
 	wallet_button = hud.find_child("SettingsWalletButton", true, false) as Button
-	wallet_button.pressed.emit()
+	await _tap_control(wallet_button)
 	await process_frame
 	hud._show_settings_panel()
 	await process_frame
@@ -258,7 +280,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
 		quit(1)
 		return
-	rename_button.pressed.emit()
+	await _tap_control(rename_button)
 	await process_frame
 	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null or city_dialog.get_parent() != hud:
@@ -289,7 +311,7 @@ func _run() -> void:
 
 	var original_city_name := str(game_manager.city_name)
 	city_name_input.text = "Discard This Name"
-	city_name_cancel.pressed.emit()
+	await _tap_control(city_name_cancel)
 	await process_frame
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null or str(game_manager.city_name) != original_city_name:
 		push_error("[NotificationPreferencesSmoke] Cancel must close registration without changing the active city.")
@@ -300,7 +322,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	rename_button.pressed.emit()
+	await _tap_control(rename_button)
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
@@ -331,7 +353,7 @@ func _run() -> void:
 
 	var save_events := [0]
 	save_manager.save_completed.connect(func(_path: String) -> void: save_events[0] += 1, CONNECT_ONE_SHOT)
-	city_name_save.pressed.emit()
+	await _tap_control(city_name_save)
 	await process_frame
 	await process_frame
 	if str(game_manager.city_name) != "Test Harbor":
@@ -356,7 +378,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	rename_button.pressed.emit()
+	await _tap_control(rename_button)
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	city_name_input = city_dialog.find_child("CityNameInput", true, false) as LineEdit
@@ -364,7 +386,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Reopening city registration must load the saved city name.")
 		quit(1)
 		return
-	city_dialog.find_child("CityNameCancel", true, false).pressed.emit()
+	await _tap_control(city_dialog.find_child("CityNameCancel", true, false) as Control)
 	await process_frame
 
 	# Help must reopen the interactive tutorial instead of doing nothing.
@@ -377,7 +399,7 @@ func _run() -> void:
 	hud._show_settings_panel()
 	await process_frame
 	help_button = hud.find_child("SettingsHelpButton", true, false) as Button
-	help_button.pressed.emit()
+	await _tap_control(help_button)
 	await process_frame
 	var guide_panel := guide.get("_panel") as Control
 	if guide_panel == null or not guide_panel.visible:
@@ -407,7 +429,7 @@ func _run() -> void:
 		quit(1)
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
-	google_action.pressed.emit()
+	await _tap_control(google_action)
 	if account_manager.is_authenticated() or avatar_frame.visible:
 		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
 		quit(1)
@@ -417,7 +439,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Settings panel has no close action.")
 		quit(1)
 		return
-	settings_close.pressed.emit()
+	await _tap_control(settings_close)
 	await process_frame
 	if hud.settings_overlay != null:
 		push_error("[NotificationPreferencesSmoke] Settings close action did not close the panel.")
