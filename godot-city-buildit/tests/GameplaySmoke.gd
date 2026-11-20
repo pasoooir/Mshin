@@ -84,9 +84,11 @@ func _test_construction_bom_contract() -> void:
 			_check(not bom.is_empty(), "Every non-bootstrap building type must resolve a construction BOM: " + str(type_id))
 			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
 	StorageManager.items = {}
-	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
-	StorageManager.items = {"nails":1, "metal":1}
-	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	_check(BuildManager.get_construction_bom("power_wind").is_empty() and BuildManager.get_construction_bom("water_tower").is_empty(), "Starter Power and Water facilities must not have a material prerequisite that blocks their Level 1 placement.")
+	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty() and BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Starter Power and Water facilities must be buildable with their Simoleon cost alone.")
+	_check(not BuildManager.get_construction_bom_lock_reason("power_coal").is_empty(), "Non-starter utility alternatives must still enforce their construction materials.")
+	StorageManager.items = {"nails":3, "metal":2}
+	_check(BuildManager.get_construction_bom_lock_reason("power_coal").is_empty(), "A utility construction BOM must become affordable when all required materials are present.")
 	var villa_bom := BuildManager.get_construction_bom("residential_farm")
 	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
 	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
@@ -1941,7 +1943,8 @@ func _test_build_menu_visibility() -> void:
 	hud._on_submenu_option("services", "back")
 	hud._on_submenu_option("services", "group_water")
 	var water_card := hud.find_child("water_tower", true, false) as Button
-	_check(water_card != null and water_card.find_child("CatalogLock", true, false) == null, "Water Tower must be placeable from Services at Level 1.")
+	_check(water_card != null and water_card.find_child("CatalogLock", true, false) == null, "Water Tower must be placeable from Services at Level 1 with no material prerequisite.")
+	_check(BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Water Tower construction must not wait for starter materials.")
 	GameManager.level = saved_menu_level
 	hud._show_submenu("services")
 	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
