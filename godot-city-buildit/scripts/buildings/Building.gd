@@ -2026,6 +2026,7 @@ func _finish_residential_upgrade() -> void:
 	upgrade_finish_unix = 0
 	upgrade_paused_remaining_seconds = -1
 	upgrade_reserved_bom.clear()
+	upgrade_reserved_cost_batches.clear()
 	upgrade_reserved_simoleons = 0
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
@@ -2048,6 +2049,7 @@ func _finish_non_residential_upgrade() -> void:
 	upgrade_finish_unix = 0
 	upgrade_paused_remaining_seconds = -1
 	upgrade_reserved_bom.clear()
+	upgrade_reserved_cost_batches.clear()
 	upgrade_reserved_simoleons = 0
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
