@@ -126,8 +126,24 @@ func _run() -> void:
 		return
 	notification_close.pressed.emit()
 	await process_frame
-	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null:
-		push_error("[NotificationPreferencesSmoke] Notification close action did not release modal input.")
+	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null or hud.find_child("NotificationSettingsDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Notification close action did not release both modal layers.")
+		quit(1)
+		return
+	# The native Window close request (Escape / platform close) must release
+	# the visible HUD overlay through the same synchronous cleanup path.
+	notification_button = hud.find_child("SettingsNotificationsButton", true, false) as Button
+	notification_button.pressed.emit()
+	await process_frame
+	notification_dialog = hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
+	if notification_dialog == null:
+		push_error("[NotificationPreferencesSmoke] Notification form could not reopen after closing.")
+		quit(1)
+		return
+	notification_dialog.close_requested.emit()
+	await process_frame
+	if hud.find_child("NotificationSettingsDialogOverlay", true, false) != null or hud.find_child("NotificationSettingsDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Platform close request left a stale notification input layer.")
 		quit(1)
 		return
 
@@ -220,8 +236,19 @@ func _run() -> void:
 		return
 	wallet_close.pressed.emit()
 	await process_frame
-	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null:
-		push_error("[NotificationPreferencesSmoke] Wallet close action did not release modal input.")
+	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null or hud.find_child("SettingsWalletDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Wallet close action did not release both modal layers.")
+		quit(1)
+		return
+	# Reopening Settings while a sub-form is still open must not leave any
+	# transparent modal overlay above the game.
+	wallet_button = hud.find_child("SettingsWalletButton", true, false) as Button
+	wallet_button.pressed.emit()
+	await process_frame
+	hud._show_settings_panel()
+	await process_frame
+	if hud.find_child("SettingsWalletDialogOverlay", true, false) != null or hud.find_child("SettingsWalletDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Reopening Settings left a stale wallet modal or input overlay.")
 		quit(1)
 		return
 
