@@ -1735,13 +1735,13 @@ The camera change must be assessed together with the city renderer. The followin
 |---|---:|---|
 | Power | L1 | Wind Power Plant L1؛ Coal Power Plant L1؛ Deluxe Wind L10؛ Solar L15؛ Oil L18؛ Nuclear L22 |
 | Water | L1 | Water Tower L1؛ Water Pumping Station L12 |
-| Fire | L5 | Small / Standard / Deluxe Fire Station همگی L5 |
 | Sewage | L8 | Small و Basic Sewage Outflow هر دو L8؛ Deluxe Treatment Plant L14 |
-| Police | L12 | Police Station، Small، Basic و Precinct همگی L12 |
 | Waste | L14 | Small Garbage Dump، Garbage Dump و Incinerator همگی L14؛ Recycling Center L20 |
+| Fire | L5 | Small / Standard / Deluxe Fire Station همگی L5 |
+| Police | L12 | Police Station، Small، Basic و Precinct همگی L12 |
 | Health | L16 | Small Clinic، Clinic و Hospital همگی L16 |
 | Government | L1 | Town Hall L1؛ Department of Epic Projects L16 |
-| Trade | گروه از L1 قابل مشاهده است؛ ساخت با جمعیت | Trade Depot در 8,000 نفر؛ Global Trade HQ در 10,000 نفر؛ Cargo Port در 20,000 نفر |
+| Trade | L1 برای نمایش گروه؛ ساخت با جمعیت | Trade Depot در 8,000 نفر؛ Global Trade HQ در 10,000 نفر؛ Cargo Port در 20,000 نفر |
 
 ### زیرمنوی Specializations
 
