@@ -31,8 +31,17 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
-	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
-		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size, shadow-free MultiMesh with a bounded visibility range")
+	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
+		get_tree().quit(1)
+		return
+	var rock_material := rock_outcrops.material_override as ShaderMaterial
+	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("fracture_field") or not rock_material.shader.code.contains("stone_fbm"):
+		push_error("[VisualPresentationSmoke] Near rocks must use procedural mineral grain and fracture detail")
+		get_tree().quit(1)
+		return
+	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+		push_error("[VisualPresentationSmoke] Rock shadows must be enabled only inside the bounded near-detail range")
 		get_tree().quit(1)
 		return
 	if absf(backdrop._ridge_radial_offset(83.0, 0.48, 0)) < 0.5 or absf(backdrop._ridge_radial_offset(-217.0, 0.63, 2)) < 0.5:
