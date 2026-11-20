@@ -69,8 +69,17 @@ func _run() -> void:
 
 	save_manager.persistence_ready = true
 	save_manager.is_loading = false
-	hud._show_settings_panel()
+	var settings_action := hud.find_child("SettingsAction", true, false) as Button
+	if settings_action == null:
+		push_error("[NotificationPreferencesSmoke] Main Settings gear action is missing.")
+		quit(1)
+		return
+	await _tap_control(settings_action)
 	await process_frame
+	if hud.settings_overlay == null or not hud.settings_overlay.visible:
+		push_error("[NotificationPreferencesSmoke] Tapping the main Settings gear did not open the Settings panel.")
+		quit(1)
+		return
 	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	if google_action == null:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
