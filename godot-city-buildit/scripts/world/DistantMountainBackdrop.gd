@@ -118,8 +118,8 @@ func _ridge_point(side: int, along: float, depth: float) -> Vector3:
 func _ridge_height(along: float, depth: float, side: int) -> float:
 	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 42.0, 0.0, 1.0))
 	var rolling_peaks := 0.5 + 0.5 * sin(along * 0.031 + float(side) * 1.7) + 0.16 * cos(along * 0.073 - float(side))
-	var peak_height := 52.0 + rolling_peaks * 36.0
-	return (62.0 + rolling_peaks * 46.0) * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
+	var peak_height := 62.0 + rolling_peaks * 46.0
+	return peak_height * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:

@@ -1717,7 +1717,7 @@ for contract in [
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'LandExpansionManager.get_owned_tiles()',
     '_build_city_grid()',
-    'color = color.lerp(Color("#302B24"), 0.34)',
+    'color = color.lerp(Color("#36523A"), 0.12)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
         errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
