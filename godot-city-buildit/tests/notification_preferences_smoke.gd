@@ -7,25 +7,24 @@ func _initialize() -> void:
 func _tap_control(control: Control) -> void:
 	if not is_instance_valid(control) or not control.is_inside_tree():
 		return
-	var touch_position := control.get_global_rect().get_center()
-	var press := InputEventScreenTouch.new()
-	press.index = 0
-	press.position = touch_position
+	var pointer_position := control.get_global_rect().get_center()
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.position = pointer_position
 	press.pressed = true
 	Input.parse_input_event(press)
 	Input.flush_buffered_events()
 	await process_frame
-	var release := InputEventScreenTouch.new()
-	release.index = 0
-	release.position = touch_position
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.position = pointer_position
 	release.pressed = false
 	Input.parse_input_event(release)
 	Input.flush_buffered_events()
 	await process_frame
 
-
 func _run() -> void:
-	Input.emulate_mouse_from_touch = true
+	Input.emulate_touch_from_mouse = true
 	var config := ConfigFile.new()
 	config.set_value("notifications", "building_alerts", false)
 	config.set_value("notifications", "city_updates", false)
