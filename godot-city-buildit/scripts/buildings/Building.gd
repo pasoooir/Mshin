@@ -1987,8 +1987,10 @@ func cancel_upgrade() -> bool:
 	# Do not destroy paid materials if the player filled the freed capacity.
 	if refund_total > StorageManager.get_free():
 		return false
-	if not upgrade_reserved_bom.is_empty() and not StorageManager.restore_items_with_cost_batches(upgrade_reserved_bom, upgrade_reserved_cost_batches):
-		return false
+	if not upgrade_reserved_bom.is_empty():
+		var refund_ok := StorageManager.restore_items_with_cost_batches(upgrade_reserved_bom, upgrade_reserved_cost_batches) if not upgrade_reserved_cost_batches.is_empty() else StorageManager.add_items(upgrade_reserved_bom)
+		if not refund_ok:
+			return false
 	if upgrade_reserved_simoleons > 0:
 		EconomyManager.add_simoleons(upgrade_reserved_simoleons)
 	upgrade_reserved_bom.clear()
