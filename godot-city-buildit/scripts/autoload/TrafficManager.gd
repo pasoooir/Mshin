@@ -744,8 +744,12 @@ func spawn_emergency_vehicle(station: Node3D) -> TrafficVehicle:
 
 func _update_emergency_dispatch(delta: float) -> void:
 	for station_value in BuildManager.buildings.values():
+		# Validate the Variant before casting: removed construction sites can be
+		# queued for deletion while a dispatch pass is already iterating.
+		if not is_instance_valid(station_value):
+			continue
 		var station = station_value as Node3D
-		if not is_instance_valid(station) or str(station.get("status")) != "completed":
+		if station == null or str(station.get("status")) != "completed":
 			continue
 		var definition: Dictionary = station.get("definition")
 		var service_group := str(definition.get("service_group", ""))
