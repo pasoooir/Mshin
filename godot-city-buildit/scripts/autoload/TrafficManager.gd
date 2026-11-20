@@ -21,6 +21,12 @@ const HIGHWAY_MAX_GRID_Z: int = 44
 # Three physical lanes per carriageway, measured from the highway centre line.
 const HIGHWAY_LANE_OFFSETS: Array[float] = [9.1, 5.8, 2.5]
 const EMERGENCY_SPAWN_INTERVAL: float = 12.0
+# City traffic decisions are less latency-sensitive than rendering and vehicle motion.
+# Keep vehicle motion per-frame, but schedule manager-wide scans at bounded rates.
+const JUNCTION_CONTROLLER_INTERVAL: float = 0.1
+const VEHICLE_PRUNE_INTERVAL: float = 0.5
+const EMERGENCY_DISPATCH_SCAN_INTERVAL: float = 0.5
+const FLEET_SIGNAL_INTERVAL: float = 0.25
 const MAX_PUBLIC_VEHICLES: int = 18
 const MAX_EMERGENCY_VEHICLES: int = 8
 const MIN_FOLLOWING_GAP: float = 2.25
@@ -59,14 +65,30 @@ var _road_block_sources: Dictionary = {}
 var _active_vehicle: TrafficVehicle
 var _station_dispatch_elapsed: Dictionary = {}
 var _route_destination_cursor: int = 0
+var _junction_update_elapsed: float = 0.0
+var _vehicle_prune_elapsed: float = 0.0
+var _emergency_dispatch_scan_elapsed: float = 0.0
+var _fleet_signal_elapsed: float = 0.0
+var _last_emitted_public_count: int = -1
+var _last_emitted_emergency_count: int = -1
 
 func _ready() -> void:
 	print("[TrafficManager] Right-hand traffic, multi-vehicle flow and emergency fleets online")
 
 func _process(delta: float) -> void:
-	_prune_vehicle_list()
+	# Vehicle transforms still update every frame in TrafficVehicle. These
+	# manager-wide scans only maintain bookkeeping and signal phases, so they
+	# do not need to compete with camera rendering at 60 Hz.
+	_vehicle_prune_elapsed += delta
+	if _vehicle_prune_elapsed >= VEHICLE_PRUNE_INTERVAL:
+		_vehicle_prune_elapsed = fmod(_vehicle_prune_elapsed, VEHICLE_PRUNE_INTERVAL)
+		_prune_vehicle_list()
 	if vehicle_simulation_enabled:
-		_update_junction_controllers(delta)
+		_junction_update_elapsed += delta
+		if _junction_update_elapsed >= JUNCTION_CONTROLLER_INTERVAL:
+			var junction_delta := _junction_update_elapsed
+			_junction_update_elapsed = fmod(_junction_update_elapsed, JUNCTION_CONTROLLER_INTERVAL)
+			_update_junction_controllers(junction_delta)
 	if not vehicle_simulation_enabled:
 		return
 	# All ordinary public traffic now uses the highway -> city -> adjacent
@@ -77,8 +99,24 @@ func _process(delta: float) -> void:
 		_highway_spawn_elapsed = fmod(_highway_spawn_elapsed, HIGHWAY_SPAWN_INTERVAL)
 		if _active_public_vehicle_count() < _get_public_vehicle_limit():
 			spawn_highway_vehicle_now()
-	_update_emergency_dispatch(delta)
-	fleet_changed.emit(_active_public_vehicle_count(), _active_emergency_vehicle_count())
+	_emergency_dispatch_scan_elapsed += delta
+	if _emergency_dispatch_scan_elapsed >= EMERGENCY_DISPATCH_SCAN_INTERVAL:
+		var dispatch_delta := _emergency_dispatch_scan_elapsed
+		_emergency_dispatch_scan_elapsed = fmod(_emergency_dispatch_scan_elapsed, EMERGENCY_DISPATCH_SCAN_INTERVAL)
+		_update_emergency_dispatch(dispatch_delta)
+	_fleet_signal_elapsed += delta
+	if _fleet_signal_elapsed >= FLEET_SIGNAL_INTERVAL:
+		_fleet_signal_elapsed = fmod(_fleet_signal_elapsed, FLEET_SIGNAL_INTERVAL)
+		_emit_fleet_changed_if_needed()
+
+func _emit_fleet_changed_if_needed() -> void:
+	var public_count := _active_public_vehicle_count()
+	var emergency_count := _active_emergency_vehicle_count()
+	if public_count == _last_emitted_public_count and emergency_count == _last_emitted_emergency_count:
+		return
+	_last_emitted_public_count = public_count
+	_last_emitted_emergency_count = emergency_count
+	fleet_changed.emit(public_count, emergency_count)
 
 func _prune_vehicle_list() -> void:
 	var valid: Array[TrafficVehicle] = []
@@ -790,6 +828,12 @@ func clear_active_vehicle() -> void:
 	_highway_lane_cursor = 0
 	_highway_direction_cursor = 0
 	_emergency_elapsed = 0.0
+	_junction_update_elapsed = 0.0
+	_vehicle_prune_elapsed = 0.0
+	_emergency_dispatch_scan_elapsed = 0.0
+	_fleet_signal_elapsed = 0.0
+	_last_emitted_public_count = -1
+	_last_emitted_emergency_count = -1
 
 func get_happiness_penalty() -> float:
 	if congestion_ratio >= 1.5:
