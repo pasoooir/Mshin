@@ -7,8 +7,13 @@ const LAND_SIZE := Vector2(1000.0, 1000.0)
 const RIDGE_INNER_RADIUS := 120.0
 const RIDGE_OUTER_RADIUS := 300.0
 const RIDGE_HALF_LENGTH := 470.0
-const RIDGE_SEGMENTS := 64
-const RIDGE_DEPTH_STEPS := 14
+const RIDGE_SEGMENTS := 96
+const RIDGE_DEPTH_STEPS := 20
+const RIDGE_FAR_SEGMENTS := 32
+const RIDGE_FAR_DEPTH_STEPS := 10
+const RIDGE_LOD_DISTANCE := 190.0
+const RIDGE_DETAIL_DISTANCE := 215.0
+const RIDGE_ROCK_COUNT := 72
 const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
 const EUCALYPT_COUNT := 44
@@ -21,6 +26,7 @@ const MIN_CAMERA_FAR_CLIP := 720.0
 func _ready() -> void:
 	_build_backdrop_land()
 	_build_mountain_ridges()
+	_build_mountain_rock_outcrops()
 	_build_highway_tunnels()
 	_build_mountain_shrubs()
 	_build_mountain_grass()
@@ -62,32 +68,48 @@ void fragment() {
 
 
 func _build_mountain_ridges() -> void:
+	var names := ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]
 	for side in range(4):
-		var surface := SurfaceTool.new()
-		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for along_index in range(RIDGE_SEGMENTS):
-			var t0 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index) / RIDGE_SEGMENTS)
-			var t1 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index + 1) / RIDGE_SEGMENTS)
-			for depth_index in range(RIDGE_DEPTH_STEPS):
-				var d0 := float(depth_index) / RIDGE_DEPTH_STEPS
-				var d1 := float(depth_index + 1) / RIDGE_DEPTH_STEPS
-				_add_ridge_vertex(surface, side, t0, d0)
-				_add_ridge_vertex(surface, side, t1, d0)
-				_add_ridge_vertex(surface, side, t0, d1)
-				_add_ridge_vertex(surface, side, t1, d0)
-				_add_ridge_vertex(surface, side, t1, d1)
-				_add_ridge_vertex(surface, side, t0, d1)
-		surface.generate_normals()
-		var ridge := MeshInstance3D.new()
-		ridge.name = ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"][side]
-		ridge.mesh = surface.commit()
 		var material := StandardMaterial3D.new()
 		material.vertex_color_use_as_albedo = true
 		material.roughness = 1.0
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		ridge.material_override = material
-		ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(ridge)
+		var near_ridge := MeshInstance3D.new()
+		near_ridge.name = names[side]
+		near_ridge.mesh = _create_ridge_mesh(side, RIDGE_SEGMENTS, RIDGE_DEPTH_STEPS)
+		near_ridge.material_override = material
+		near_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		near_ridge.visibility_range_end = RIDGE_LOD_DISTANCE
+		near_ridge.visibility_range_end_margin = 12.0
+		add_child(near_ridge)
+		var far_ridge := MeshInstance3D.new()
+		far_ridge.name = names[side] + "FarLOD"
+		far_ridge.mesh = _create_ridge_mesh(side, RIDGE_FAR_SEGMENTS, RIDGE_FAR_DEPTH_STEPS)
+		far_ridge.material_override = material
+		far_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		far_ridge.visibility_range_begin = RIDGE_LOD_DISTANCE
+		far_ridge.visibility_range_begin_margin = 12.0
+		far_ridge.visibility_range_end = MIN_CAMERA_FAR_CLIP
+		add_child(far_ridge)
+
+
+func _create_ridge_mesh(side: int, along_segments: int, depth_steps: int) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for along_index in range(along_segments):
+		var t0 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index) / along_segments)
+		var t1 := lerpf(-RIDGE_HALF_LENGTH, RIDGE_HALF_LENGTH, float(along_index + 1) / along_segments)
+		for depth_index in range(depth_steps):
+			var d0 := float(depth_index) / depth_steps
+			var d1 := float(depth_index + 1) / depth_steps
+			_add_ridge_vertex(surface, side, t0, d0)
+			_add_ridge_vertex(surface, side, t1, d0)
+			_add_ridge_vertex(surface, side, t0, d1)
+			_add_ridge_vertex(surface, side, t1, d0)
+			_add_ridge_vertex(surface, side, t1, d1)
+			_add_ridge_vertex(surface, side, t0, d1)
+	surface.generate_normals()
+	return surface.commit()
 
 
 func _is_tunnel_portal_vegetation_exclusion(side: int, along: float, depth: float) -> bool:
@@ -104,7 +126,7 @@ func _add_ridge_vertex(surface: SurfaceTool, side: int, along: float, depth: flo
 
 
 func _ridge_point(side: int, along: float, depth: float) -> Vector3:
-	var radius := lerpf(RIDGE_INNER_RADIUS, RIDGE_OUTER_RADIUS, depth)
+	var radius := lerpf(RIDGE_INNER_RADIUS, RIDGE_OUTER_RADIUS, depth) + _ridge_radial_offset(along, depth, side)
 	var height := _ridge_height(along, depth, side)
 	match side:
 		0:
@@ -117,11 +139,26 @@ func _ridge_point(side: int, along: float, depth: float) -> Vector3:
 			return Vector3(radius, height, along)
 
 
+func _ridge_radial_offset(along: float, depth: float, side: int) -> float:
+	# Break the mathematically straight ridge walls into long eroded shoulders,
+	# shallow gullies and exposed rock ribs. The same deterministic field is
+	# sampled by both LOD meshes, so the silhouette does not morph at the switch.
+	var slope_mask := pow(maxf(0.0, sin(PI * depth)), 1.15)
+	var broad_shoulder := sin(along * 0.038 + float(side) * 2.1) * 8.0
+	var broken_spur := sin(along * 0.091 - depth * 8.0 + float(side) * 1.37) * 3.8
+	var erosion_cut := cos(along * 0.153 + depth * 17.0 - float(side)) * 1.65
+	return (broad_shoulder + broken_spur + erosion_cut) * slope_mask
+
+
 func _ridge_height(along: float, depth: float, side: int) -> float:
 	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 42.0, 0.0, 1.0))
+	var slope_mask := pow(maxf(0.0, sin(PI * depth)), 0.82)
 	var rolling_peaks := 0.5 + 0.5 * sin(along * 0.031 + float(side) * 1.7) + 0.16 * cos(along * 0.073 - float(side))
-	var peak_height := 62.0 + rolling_peaks * 46.0
-	return peak_height * pow(maxf(0.0, sin(PI * depth)), 0.82) * end_fade
+	var sharp_crag := pow(maxf(0.0, sin(along * 0.067 + float(side) * 2.7)), 5.0) * 13.0
+	var broken_faces := sin(along * 0.137 + depth * 19.0 + float(side) * 1.9) * 3.2
+	var cross_gullies := cos(along * 0.047 - depth * 31.0 + float(side) * 0.8) * 2.1
+	var peak_height := 62.0 + rolling_peaks * 46.0 + sharp_crag + broken_faces + cross_gullies
+	return maxf(0.0, peak_height * slope_mask * end_fade)
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:
@@ -237,6 +274,76 @@ func _make_tunnel_box(parent: Node3D, node_name: String, dimensions: Vector3, po
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(instance)
 	return instance
+
+
+
+func _create_rock_outcrop_mesh() -> ArrayMesh:
+	# A compact five-sided, chipped basalt/sandstone outcrop with flat faces.
+	# One shared low-poly mesh is instanced across the near ridge in a single draw.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sides := 5
+	var ring_bottom: Array[Vector3] = []
+	var ring_top: Array[Vector3] = []
+	for index in range(sides):
+		var angle := TAU * float(index) / sides
+		var radius := 0.72 + 0.18 * sin(float(index) * 2.4 + 0.7)
+		ring_bottom.append(Vector3(cos(angle) * radius, 0.0, sin(angle) * radius))
+		ring_top.append(Vector3(cos(angle + 0.12) * radius * 0.66, 1.0 + 0.38 * sin(float(index) * 1.8), sin(angle + 0.12) * radius * 0.66))
+	var top := Vector3(0.16, 1.72, -0.12)
+	for index in range(sides):
+		var next_index := (index + 1) % sides
+		surface.set_color(Color("#777364"))
+		surface.add_vertex(ring_bottom[index])
+		surface.set_color(Color("#8B806B"))
+		surface.add_vertex(ring_top[index])
+		surface.set_color(Color("#655F53"))
+		surface.add_vertex(ring_bottom[next_index])
+		surface.set_color(Color("#8B806B"))
+		surface.add_vertex(ring_bottom[next_index])
+		surface.add_vertex(ring_top[index])
+		surface.set_color(Color("#9A8B70"))
+		surface.add_vertex(ring_top[next_index])
+		surface.add_vertex(ring_top[index])
+		surface.add_vertex(top)
+		surface.add_vertex(ring_top[next_index])
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _build_mountain_rock_outcrops() -> void:
+	var rock_mesh := _create_rock_outcrop_mesh()
+	var batch := MultiMesh.new()
+	batch.transform_format = MultiMesh.TRANSFORM_3D
+	batch.use_colors = true
+	batch.mesh = rock_mesh
+	batch.instance_count = RIDGE_ROCK_COUNT
+	var palette: Array[Color] = [Color("#777365"), Color("#8A806C"), Color("#665F53"), Color("#9A8D75")]
+	for index in range(RIDGE_ROCK_COUNT):
+		var side := index % 4
+		var row := int(index / 4)
+		var along := -RIDGE_HALF_LENGTH * 0.86 + fposmod(float(row) * 47.3 + float(side) * 17.0, RIDGE_HALF_LENGTH * 1.72)
+		var depth := 0.28 + float((row * 17 + side * 9) % 42) / 100.0
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			continue
+		var point := _ridge_point(side, along, depth)
+		var size := 1.6 + float((index * 11) % 13) * 0.32
+		var yaw := float((index * 67) % 360) * PI / 180.0
+		var scale := Vector3(size * (0.72 + float(index % 3) * 0.17), size * (0.78 + float(index % 4) * 0.16), size * (0.68 + float(index % 5) * 0.12))
+		var transform := Transform3D(Basis(Vector3.UP, yaw).scaled(scale), point + Vector3(0.0, -0.25, 0.0))
+		batch.set_instance_transform(index, transform)
+		batch.set_instance_color(index, palette[index % palette.size()])
+	var rocks := MultiMeshInstance3D.new()
+	rocks.name = "MountainNearRockOutcrops"
+	rocks.multimesh = batch
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 1.0
+	rocks.material_override = material
+	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
+	rocks.visibility_range_end_margin = 14.0
+	add_child(rocks)
 
 
 func _build_mountain_shrubs() -> void:

@@ -13,6 +13,32 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Mountain perimeter must render all four overlapping ridge walls")
 		get_tree().quit(1)
 		return
+	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]:
+		var near_ridge := backdrop.get_node_or_null(ridge_name) as MeshInstance3D
+		var far_ridge := backdrop.get_node_or_null(ridge_name + "FarLOD") as MeshInstance3D
+		if near_ridge == null or far_ridge == null or near_ridge.mesh == null or far_ridge.mesh == null:
+			push_error("[VisualPresentationSmoke] Each mountain wall must provide near and far geometry LODs")
+			get_tree().quit(1)
+			return
+		if near_ridge.visibility_range_end != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_begin != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_end != DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
+			push_error("[VisualPresentationSmoke] Mountain LOD visibility ranges must meet without a gap")
+			get_tree().quit(1)
+			return
+		var near_vertices: PackedVector3Array = near_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var far_vertices: PackedVector3Array = far_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		if near_vertices.size() <= far_vertices.size() * 3:
+			push_error("[VisualPresentationSmoke] Near mountain geometry must carry materially more silhouette detail than far LOD")
+			get_tree().quit(1)
+			return
+	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
+	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size, shadow-free MultiMesh with a bounded visibility range")
+		get_tree().quit(1)
+		return
+	if absf(backdrop._ridge_radial_offset(83.0, 0.48, 0)) < 0.5 or absf(backdrop._ridge_radial_offset(-217.0, 0.63, 2)) < 0.5:
+		push_error("[VisualPresentationSmoke] Mountain ridge silhouette must contain deterministic lateral erosion and irregular rock shoulders")
+		get_tree().quit(1)
+		return
 	if backdrop.get_node_or_null("NorthHighwayTunnel") == null or backdrop.get_node_or_null("SouthHighwayTunnel") == null:
 		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
 		get_tree().quit(1)

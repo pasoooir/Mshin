@@ -1675,6 +1675,21 @@ The camera change must be assessed together with the city renderer. The followin
 **Performance contract:** the existing four ridge surfaces remain four mesh submissions. New tree content uses two MultiMesh submissions total for the entire mountain ring; tunnel details use two MultiMesh submissions per tunnel. No per-tree or per-rib scene nodes, runtime downloads, high-poly assets or additional shadow-casting lights are introduced. Actual phone frame time, memory and thermal behavior must be measured on-device before claiming a performance improvement.
 
 
+
+## Irregular mountain rock geometry and distance LOD — 2026-11-20
+
+- [x] Replace smooth, straight ridge cross-sections with deterministic multi-frequency lateral erosion, broken rock shoulders, sharp crag peaks and shallow gullies. The same world-space shape field feeds both LODs, avoiding silhouette changes at the transition.
+- [x] Increase near ridge tessellation to 96 × 20 cells per side (four meshes) for closer camera views.
+- [x] Add a far ridge LOD at 32 × 10 cells per side, switching at 190 world units and remaining visible through the 720-unit camera range. Near/far visibility ranges meet at the same threshold.
+- [x] Add 72 low-poly chipped rock outcrops as one MultiMesh batch, visible only within 215 world units; no per-rock scene nodes.
+- [x] Keep all ridge and rock-outcrop shadow casting disabled. No extra materials, runtime assets, shader passes or dynamic per-frame terrain updates.
+- [x] Extend visual smoke tests for near/far mesh density, LOD range continuity, deterministic irregular silhouette, rock batch size and mobile shadow policy.
+- [ ] Pass exact-head Godot import/parse, visual smoke, full GameplaySmoke, Android Debug APK export/signature and desktop/mobile Chromium checks.
+- [ ] Inspect the LOD transition and rock silhouette at close/far zoom on a physical Android device; collect frame-time and memory measurements before making device-performance claims.
+
+**Geometry/performance budget:** four near ridge meshes (96 × 20 cells) and four far LOD meshes (32 × 10 cells), with complementary visibility ranges; one 72-instance rock MultiMesh bounded to 215 units. Only one ridge LOD per side should be visible at a time. The near detail batch is culled by visibility range, and distant mountain geometry never casts shadows.
+
+
 ## تنظیمات بازی، حساب Google و پاداش‌های ورود — 2026-11-18
 
 ### تجربه تنظیمات و وضعیت حساب
