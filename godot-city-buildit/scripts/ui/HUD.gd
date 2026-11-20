@@ -4053,6 +4053,22 @@ func open_residential_panel(building: Building) -> void:
 		if remaining_seconds > 0:
 			var progress_tween := create_tween()
 			progress_tween.tween_property(upgrade_progress, "value", 1.0, float(remaining_seconds))
+	if is_upgrading:
+		var refund_total := 0
+		var refund_parts: Array[String] = []
+		for item_id in building.upgrade_reserved_bom:
+			var amount := int(building.upgrade_reserved_bom[item_id])
+			refund_total += amount
+			refund_parts.append("%s ×%d" % [str(item_id).capitalize(), amount])
+		var cancel_upgrade := Button.new()
+		cancel_upgrade.name = "ResidentialCancelUpgradeButton"
+		cancel_upgrade.text = "CANCEL UPGRADE · REFUND MATERIALS"
+		cancel_upgrade.disabled = refund_total > StorageManager.get_free()
+		cancel_upgrade.tooltip_text = "Return: " + ", ".join(refund_parts) if not cancel_upgrade.disabled else "Free City Storage space before canceling to receive all materials."
+		cancel_upgrade.custom_minimum_size.y = 44 * _ui_scale
+		cancel_upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#C65C52"), Color("#F0A49C")))
+		cancel_upgrade.pressed.connect(_cancel_residential_upgrade_from_panel.bind(building))
+		layout.add_child(cancel_upgrade)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
 	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))
@@ -4084,6 +4100,18 @@ func _upgrade_residential_from_panel(building: Building) -> void:
 		return
 	if building.try_upgrade():
 		_close_residential_panel()
+
+
+func _cancel_residential_upgrade_from_panel(building: Building) -> void:
+	if not is_instance_valid(building) or _residential_building != building or not is_instance_valid(residential_overlay):
+		return
+	if not building.cancel_upgrade():
+		if is_instance_valid(status_label):
+			status_label.text = "Upgrade cancellation failed. Free enough City Storage space and try again."
+		return
+	if is_instance_valid(status_label):
+		status_label.text = "Residential upgrade canceled. Materials were refunded."
+	open_residential_panel(building)
 
 
 func _open_epic_project_panel(building: Building) -> void:
