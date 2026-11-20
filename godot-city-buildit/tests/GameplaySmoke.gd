@@ -122,8 +122,32 @@ func _test_non_residential_upgrade_execution() -> void:
 		_check(StorageManager.add_items(additions), "Could not provision the non-residential upgrade's exact material bill.")
 	EconomyManager.simoleons = maxi(EconomyManager.simoleons, BuildManager.get_non_residential_upgrade_cost(wind.building_type, wind.upgrade_stage))
 	var capacity_before := ServiceManager.get_building_service_capacity(wind, "power")
+	var inventory_before_upgrade := StorageManager.get_all_items()
+	var money_before_upgrade := EconomyManager.simoleons
 	_check(wind.try_upgrade(), "A road-connected wind power building with sufficient funds and materials must start a non-residential upgrade.")
 	_check(wind.upgrade_in_progress and wind.upgrade_finish_unix > int(Time.get_unix_time_from_system()), "Non-residential upgrade must persist a real future finish timestamp.")
+	_check(wind.upgrade_reserved_bom == bom and wind.upgrade_reserved_simoleons == BuildManager.get_non_residential_upgrade_cost(wind.building_type, previous_stage), "An active upgrade must retain its exact consumed BOM and Simoleon cost for cancellation.")
+	var upgrade_snapshot := SaveManager.capture_region_snapshot()
+	var saved_upgrade: Dictionary = {}
+	for saved_building in upgrade_snapshot.get("buildings", []):
+		if str(saved_building.get("type", "")) == wind.building_type:
+			saved_upgrade = saved_building.get("production", {})
+			break
+	_check(saved_upgrade.get("upgrade_reserved_bom", {}) == bom and int(saved_upgrade.get("upgrade_reserved_simoleons", 0)) == wind.upgrade_reserved_simoleons, "Save snapshots must persist the active upgrade's exact refundable reservation.")
+	var filler_amount := StorageManager.get_free()
+	if filler_amount > 0:
+		_check(StorageManager.add_items({"wood": filler_amount}), "Could not fill storage to test safe upgrade cancellation.")
+	_check(not wind.cancel_upgrade(), "Upgrade cancellation must refuse to discard materials when the freed storage capacity has been consumed.")
+	_check(wind.upgrade_in_progress and wind.upgrade_reserved_bom == bom, "A storage-blocked cancellation must leave the upgrade and its refund reservation intact.")
+	if filler_amount > 0:
+		_check(StorageManager.remove_item("wood", filler_amount), "Could not free storage capacity for the pending upgrade refund.")
+	_check(wind.cancel_upgrade(), "An active non-residential upgrade must cancel when its exact refund fits in storage.")
+	_check(not wind.upgrade_in_progress and wind.upgrade_stage == previous_stage, "Canceling an upgrade must stop its timer without advancing the building stage.")
+	_check(EconomyManager.simoleons == money_before_upgrade, "Canceling a non-residential upgrade must refund its full Simoleon cost.")
+	for item_id in bom:
+		_check(StorageManager.get_count(str(item_id)) == int(inventory_before_upgrade.get(str(item_id), 0)), "Canceling an upgrade must refund the exact quantity of " + str(item_id) + ".")
+	_check(wind.upgrade_reserved_bom.is_empty() and wind.upgrade_reserved_simoleons == 0, "Completed cancellation must clear the persisted refund reservation.")
+	_check(wind.try_upgrade(), "A refunded upgrade must be startable again without losing its materials.")
 	wind.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
 	wind.update_upgrade_access_state()
 	_check(not wind.upgrade_in_progress and wind.upgrade_stage == previous_stage + 1, "Non-residential upgrade must complete at its Unix finish timestamp and advance the building stage.")
