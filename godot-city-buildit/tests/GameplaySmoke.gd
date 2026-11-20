@@ -172,8 +172,12 @@ func _test_construction_cancellation_ui() -> void:
 	EconomyManager.simoleons = funded_money
 	if StorageManager.get_count("nails") < 1:
 		_check(StorageManager.add_items({"nails": 1}), "Could not provision the construction BOM for cancellation smoke test.")
+	var nail_count_before := StorageManager.get_count("nails")
+	StorageManager.item_cost_batches["nails"] = [{"quantity": nail_count_before, "total_cost": nail_count_before * 7, "known": true}]
+	var expected_construction_cost_basis: Dictionary = StorageManager.get_cost_basis({"nails": 1})
 	var inventory_before_payment := StorageManager.get_all_items()
-	_check(StorageManager.remove_items({"nails": 1}), "Construction site must reserve its exact BOM before the cancellation test.")
+	var construction_removal := StorageManager.remove_items_with_cost_batches({"nails": 1})
+	_check(bool(construction_removal.get("success", false)), "Construction site must reserve its exact BOM and FIFO cost batch before the cancellation test.")
 	_check(EconomyManager.spend_simoleons(75), "Construction site must reserve its Simoleon cost before the cancellation test.")
 	var scene_root := get_tree().current_scene
 	var world = scene_root.get_node_or_null("World/Buildings") if scene_root else null
@@ -193,6 +197,7 @@ func _test_construction_cancellation_ui() -> void:
 	building.status = "constructing"
 	building.definition = {"name": "Refund Test Site", "category": "residential", "size": Vector2i.ONE}
 	building.construction_reserved_bom = {"nails": 1}
+	building.construction_reserved_cost_batches = construction_removal.get("cost_batches", {}).duplicate(true)
 	building.construction_reserved_simoleons = 75
 	world.add_child(building)
 	BuildManager.buildings[building_id] = building
@@ -205,6 +210,14 @@ func _test_construction_cancellation_ui() -> void:
 		"status": "constructing",
 		"build_time": 120.0
 	})
+	var construction_snapshot := SaveManager.capture_region_snapshot()
+	var saved_construction: Dictionary = {}
+	for saved_building in construction_snapshot.get("buildings", []):
+		if str(saved_building.get("type", "")) == building.building_type and str(saved_building.get("production", {}).get("construction_reserved_bom", {}).keys()) != "":
+			saved_construction = saved_building.get("production", {})
+			if saved_construction.get("construction_reserved_bom", {}) == building.construction_reserved_bom:
+				break
+	_check(saved_construction.get("construction_reserved_cost_batches", {}) == building.construction_reserved_cost_batches, "Save snapshots must persist exact FIFO cost batches for construction refunds.")
 	var filler_amount := StorageManager.get_free()
 	if filler_amount > 0:
 		_check(StorageManager.add_items({"wood": filler_amount}), "Could not fill storage to test construction refund safety.")
@@ -224,6 +237,8 @@ func _test_construction_cancellation_ui() -> void:
 	_check(not BuildManager.buildings.has(building_id), "Tapping CANCEL CONSTRUCTION must remove the in-progress building from the city registry.")
 	_check(not BuildManager.building_cells.has(grid), "Canceling construction must release the entire reserved plot footprint.")
 	_check(StorageManager.get_count("nails") == int(inventory_before_payment.get("nails", 0)), "Canceling construction must return the exact reserved material quantity.")
+	var restored_construction_cost_basis: Dictionary = StorageManager.get_cost_basis({"nails": 1})
+	_check(bool(restored_construction_cost_basis.get("known", false)) == bool(expected_construction_cost_basis.get("known", false)) and int(restored_construction_cost_basis.get("total_cost", -1)) == int(expected_construction_cost_basis.get("total_cost", -2)), "Canceling construction must restore the exact FIFO acquisition-cost basis.")
 	_check(EconomyManager.simoleons == funded_money, "Canceling construction must refund the exact reserved Simoleon cost.")
 	if is_instance_valid(building):
 		building.queue_free()
