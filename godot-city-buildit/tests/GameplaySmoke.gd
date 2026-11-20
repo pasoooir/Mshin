@@ -1928,6 +1928,9 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
+	var expected_service_unlocks := {"power":1, "water":1, "fire":5, "sewage":8, "police":12, "waste":14, "health":16, "government":1, "trade":1}
+	for service_id in expected_service_unlocks:
+		_check(LevelProgression.get_service_unlock_level(service_id) == int(expected_service_unlocks[service_id]), "Service group unlock level is inconsistent: " + service_id)
 	var saved_menu_level := GameManager.level
 	GameManager.level = 1
 	hud._show_submenu("services")

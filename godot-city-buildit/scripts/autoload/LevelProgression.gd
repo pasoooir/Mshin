@@ -11,7 +11,7 @@ var xp_table := {
 }
 
 var unlocks := {
-	1: {"materials": ["metal", "nails"], "commercial": ["building_supplies"], "factories": 2, "services": ["power", "water"], "other": ["roads", "residential"]},
+	1: {"materials": ["metal", "nails"], "commercial": ["building_supplies"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
 	2: {"materials": ["wood"], "factories": 3},
 	3: {"materials": ["planks"], "factories": 4, "other": ["parks"]},
 	4: {"materials": ["hammer"], "commercial": ["hardware_store"], "factories": 4, "other": ["storage_upgrade"]},
@@ -57,7 +57,7 @@ var population_unlocks := {
 
 var unlocked_materials: Array = ["metal", "nails"]
 var unlocked_commercial: Array = ["building_supplies"]
-var unlocked_services: Array = ["power", "water"]
+var unlocked_services: Array = ["power", "water", "government", "trade"]
 var max_factories: int = 2
 
 const FACTORY_LIMITS := {1:2, 2:3, 3:4, 6:5, 12:6, 18:7, 24:8, 30:9, 37:10, 46:11, 58:12}
