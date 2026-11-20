@@ -1702,3 +1702,92 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] Pass exact-head Godot visual/gameplay validation, Android Debug APK export and Web/Chromium desktop/mobile smoke.
 
 **Rendering note:** the far-clip mismatch was a concrete visibility defect: the mountain/tunnel ring extended to 330 world units while the main camera stopped rendering at 280. Physical-device visual confirmation remains separate from headless geometry tests.
+
+
+## ممیزی جامع منوی شهرسازی و زمان‌بندی آزادسازی قابلیت‌ها
+
+این بخش قرارداد مرجع ترتیب پیشرفت شهر است. «قابل مشاهده بودن منو»، «باز شدن گروه»، «قابل ساخت بودن ساختمان» و «اجباری شدن دریافت خدمت برای خانه‌ها» چهار وضعیت جدا هستند. سطح‌ها از داده‌های فعلی کد استخراج شده‌اند؛ مواردی که هنوز ساختمان یا منطق قابل استفاده ندارند صریحاً برنامه‌ریزی‌شده‌اند.
+
+### قاعده پایه خدمات شهری
+
+- **Level 1:** گروه‌های برق و آب در منوی سمت راست باز هستند. نیروگاه بادی پایه و برج آب از ابتدای بازی و فقط با هزینه Simoleons قابل ساخت‌اند؛ BOM مواد ساخت آن‌ها عمداً خالی است تا بازیکن برای شروع خدمات شهری پشت چرخه تولید قفل نشود. نیروگاه زغالی و مدل‌های پیشرفته همچنان مواد ساخت خود را می‌خواهند. خانه‌های Level 1 هنوز به برق و آب وابسته نیستند و بابت نبود آن‌ها جریمه شادی نمی‌گیرند.
+- **از Level 2:** تمام خانه‌های تکمیل‌شده، حتی خانه‌های قبلی، تقاضای برق و آب ایجاد می‌کنند. سرویس واقعی همچنان به ظرفیت کافی، اتصال به جاده Gateway و پوشش محلی نیروگاه/برج آب نیاز دارد.
+- **از Level 8:** تقاضای فاضلاب خانه‌ها فعال می‌شود.
+- **از Level 14:** تقاضای زباله خانه‌ها فعال می‌شود.
+- تقاضای تجاری/صنعتی از پروفایل عملیاتی خودشان محاسبه می‌شود؛ قاعده شروع مصرف در Level 2 مخصوص خانه‌هاست.
+- تأسیسات فقط پس از تکمیل ساخت و اتصال جاده‌ای ظرفیت می‌دهند؛ مراکز فاضلاب/پسماند به نیروی کار و پیش‌نیاز عملیاتی نیز نیاز دارند.
+
+### نوار عمودی سمت راست — هفت دسته اصلی
+
+| دسته | زمان دسترسی | محتوا و قاعده |
+|---|---:|---|
+| Residential | Level 1 | خانه کوچک و ویلای پایه L1؛ Farm L2؛ Apartment پایه L3؛ خانه‌های منطقه‌ای L25/30/35/40/45 |
+| Commercial | Level 1 | Building Supplies و Chain Store L1؛ Restaurant و Hardware Store L4؛ Art Supplies L5؛ Farmer's Market L8؛ Furniture Store L10؛ Donut Shop L18؛ Fashion Store L19؛ Fast Food L25؛ Home Appliances L29؛ Sports Shop L35؛ Toy Store L40؛ Restoration Office L45؛ Country Store L50؛ Dessert Shop L55 |
+| Industrial | Level 1 | Small Factory L1؛ کارخانه‌های Basic/Mass/High-tech/Nano علاوه بر سطح، شرط جمعیت 4,000 / 27,000 / 80,000 / 1,500,000 دارند؛ مزارع تولید منطقه‌ای L25، L30، L35، L40 و L45 |
+| Services | Level 1 | گروه‌ها طبق جدول خدمات زیر باز می‌شوند؛ کارت هر ساختمان شرط سطح/جمعیت مستقل دارد |
+| Specializations | دسته از ابتدا قابل مشاهده است | Parks در L3 ساختمان قابل ساخت دارد؛ Education و Transportation فقط پرچم پیشرفت L10 دارند و هنوز کاتالوگ ساختمان ندارند؛ Entertainment پرچم L20 دارد ولی کاتالوگ آن خالی است؛ Gambling، Landmarks و Worship هنوز سطح انتشار/ساختمان اجرایی مصوب ندارند |
+| Roads | Level 1 | جاده دوخطه از ابتدا؛ ارتقای هر قطعه به چهارخطه L9، شش‌خطه L15 و Avenue L20 |
+| Bulldoze | Level 1 | حذف ساختمان/جاده طبق قواعد بازپرداخت و اتصال شبکه |
+
+### زیرمنوی Services — سطح دقیق هر گروه و ساختمان
+
+| گروه | بازشدن گروه | ساختمان‌های قابل ساخت |
+|---|---:|---|
+| Power | L1 | Wind Power Plant L1؛ Coal Power Plant L1؛ Deluxe Wind L10؛ Solar L15؛ Oil L18؛ Nuclear L22 |
+| Water | L1 | Water Tower L1؛ Water Pumping Station L12 |
+| Fire | L5 | Small / Standard / Deluxe Fire Station همگی L5 |
+| Sewage | L8 | Small و Basic Sewage Outflow هر دو L8؛ Deluxe Treatment Plant L14 |
+| Police | L12 | Police Station، Small، Basic و Precinct همگی L12 |
+| Waste | L14 | Small Garbage Dump، Garbage Dump و Incinerator همگی L14؛ Recycling Center L20 |
+| Health | L16 | Small Clinic، Clinic و Hospital همگی L16 |
+| Government | L1 | Town Hall L1؛ Department of Epic Projects L16 |
+| Trade | گروه از L1 قابل مشاهده است؛ ساخت با جمعیت | Trade Depot در 8,000 نفر؛ Global Trade HQ در 10,000 نفر؛ Cargo Port در 20,000 نفر |
+
+### زیرمنوی Specializations
+
+| گروه | وضعیت فعلی |
+|---|---|
+| Parks | Small Park در L3 قابل ساخت است |
+| Education | پرچم پیشرفت L10 ثبت شده؛ ساختمان/کاتالوگ هنوز پیاده‌سازی نشده |
+| Transportation | پرچم پیشرفت L10 ثبت شده؛ ساختمان/کاتالوگ هنوز پیاده‌سازی نشده |
+| Entertainment | پرچم پیشرفت L20 ثبت شده؛ ساختمان/کاتالوگ هنوز پیاده‌سازی نشده |
+| Gambling | برنامه‌ریزی‌شده؛ سطح آزادسازی تعیین نشده |
+| Landmarks | برنامه‌ریزی‌شده؛ سطح آزادسازی تعیین نشده |
+| Worship | برنامه‌ریزی‌شده؛ سطح آزادسازی تعیین نشده |
+
+وجود نام در `unlocked_features` به معنی وجود ساختمان قابل ساخت یا قابلیت اجرایی نیست. تا آماده‌شدن کاتالوگ، پیش‌نیازها، اثر گیم‌پلی، ذخیره‌سازی و آزمون پذیرش، این گروه‌ها نباید فعال معرفی شوند.
+
+### سایر دکمه‌ها و پنل‌های ثابت HUD
+
+| پنل/دکمه | زمان دسترسی | عملکرد و محدودیت |
+|---|---:|---|
+| Land Expansion | دکمه از L1 | قطعات زمین با ابزار/کلیدهای مخصوص؛ هر قطعه شرط قیمت و قفل خودش را دارد |
+| Storage | L1 | موجودی و ارتقای ظرفیت طبق سطح/هزینه/مواد |
+| City Needs | L1 | مشاهده تقاضا و کمبودهای واقعی شهر؛ جایگزین ساخت تأسیسات نیست |
+| Trade | دکمه از L1 | پنل تجارت؛ عملیات وابسته به Trade Depot، جمعیت و آنلاین بودن بازار |
+| Regions | L1 برای Capital | Capital از ابتدا؛ Sunny Isles L25، Frosty Fjords L30، Cactus Canyon L35، Green Valley L40، Limestone Cliffs L45 |
+| Achievements | L1 | نمایش دستاوردها با شرط مستقل |
+| Save | L1 | ذخیره محلی/همگام‌سازی حساب طبق اتصال و احراز هویت |
+| Settings | L1 | تنظیمات، حساب و گزینه‌های بازی |
+
+### قرارداد نمایش قفل‌ها در منو
+
+- هر کارت باید سطح موردنیاز یا شرط جمعیت واقعی را نشان دهد.
+- گروه‌های خدماتی از جدول واحد `SERVICE_UNLOCK_LEVELS` در `LevelProgression` استفاده می‌کنند تا زمان بازشدن منو با منطق پیشرفت یکسان بماند.
+- کارت ساختمان از سطح کاتالوگ و شرط‌های جمعیت/منطقه استفاده می‌کند؛ سطح نباید برای زیبایی UI حدس زده شود.
+- گروه تخصصی خالی باید «هنوز پیاده‌سازی نشده» نشان داده شود، نه «آزادشده» یا قابل ساخت.
+- پس از Level Up، قفل‌های منوی باز باید تازه‌سازی شوند.
+
+### شواهد و آزمون‌های پذیرش
+
+- [x] Power و Water از Level 1 در منوی سمت راست قابل انتخاب‌اند؛ Wind Power Plant و Water Tower قفل سطحی یا پیش‌نیاز مواد ساخت ندارند و فقط هزینه Simoleons لازم است.
+- [x] خانه‌های Level 1 تقاضای برق/آب/فاضلاب/زباله ندارند و بابت نبود زیرساخت جریمه نمی‌شوند.
+- [x] از Level 2 تقاضای برق و آب برای همه خانه‌های تکمیل‌شده فعال می‌شود.
+- [x] تقاضای فاضلاب خانه‌ها از L8 و زباله از L14 فعال می‌شود.
+- [x] آزمون منوی Services قفل Fire در L1 و دسترسی Power/Water را بررسی می‌کند.
+- [ ] پیاده‌سازی Education، Transportation و Entertainment با ساختمان‌ها/اثر/هزینه/مواد/ظرفیت.
+- [ ] تعیین سطح و طراحی اجرایی Gambling، Landmarks و Worship؛ تا آن زمان غیرقابل ساخت بمانند.
+- [ ] تکمیل آزمون تمام کارت‌های منو در تمام سطوح و شرایط جمعیت/منطقه.
+- [ ] آزمون بصری روی گوشی Android واقعی؛ CI و Chromium موبایل جایگزین دستگاه فیزیکی نیستند.
+
+**منبع حقیقت اجرایی:** `LevelProgression.gd`, `ServiceManager.gd`, `BuildManager.gd`, `HUD.gd`, `RoadSystem.gd`, `RegionManager.gd`. تغییر داده‌های سطح باید همراه با به‌روزرسانی این جدول و آزمون‌ها در همان PR انجام شود.

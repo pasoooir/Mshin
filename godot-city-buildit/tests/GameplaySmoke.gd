@@ -84,9 +84,11 @@ func _test_construction_bom_contract() -> void:
 			_check(not bom.is_empty(), "Every non-bootstrap building type must resolve a construction BOM: " + str(type_id))
 			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
 	StorageManager.items = {}
-	_check(not BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction must be blocked when its BOM materials are missing.")
-	StorageManager.items = {"nails":1, "metal":1}
-	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty(), "Construction BOM must become affordable when all required materials are present.")
+	_check(BuildManager.get_construction_bom("power_wind").is_empty() and BuildManager.get_construction_bom("water_tower").is_empty(), "Starter Power and Water facilities must not have a material prerequisite that blocks their Level 1 placement.")
+	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty() and BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Starter Power and Water facilities must be buildable with their Simoleon cost alone.")
+	_check(not BuildManager.get_construction_bom_lock_reason("power_coal").is_empty(), "Non-starter utility alternatives must still enforce their construction materials.")
+	StorageManager.items = {"nails":3, "metal":2}
+	_check(BuildManager.get_construction_bom_lock_reason("power_coal").is_empty(), "A utility construction BOM must become affordable when all required materials are present.")
 	var villa_bom := BuildManager.get_construction_bom("residential_farm")
 	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
 	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
@@ -1926,6 +1928,33 @@ func _test_build_menu_visibility() -> void:
 	_check(road_system_for_menu != null and road_system_for_menu.is_road_upgrade_mode, "Selecting Upgrade Road must activate tap-to-upgrade mode.")
 	hud._on_cancel_pressed()
 	_check(road_system_for_menu != null and not road_system_for_menu.is_road_upgrade_mode, "Cancel must exit road upgrade mode.")
+	var saved_menu_level := GameManager.level
+	GameManager.level = 1
+	hud._show_submenu("services")
+	var power_group_button := hud.find_child("group_power", true, false) as Button
+	var water_group_button := hud.find_child("group_water", true, false) as Button
+	var fire_group_button := hud.find_child("group_fire", true, false) as Button
+	_check(power_group_button != null and power_group_button.find_child("CatalogLock", true, false) == null, "Power group must be unlocked in Services at Level 1.")
+	_check(water_group_button != null and water_group_button.find_child("CatalogLock", true, false) == null, "Water group must be unlocked in Services at Level 1.")
+	_check(fire_group_button != null and fire_group_button.find_child("CatalogLock", true, false) != null, "Fire group must display its Level 5 lock at Level 1.")
+	hud._on_submenu_option("services", "group_power")
+	var wind_card := hud.find_child("power_wind", true, false) as Button
+	_check(wind_card != null and wind_card.find_child("CatalogLock", true, false) == null, "Wind Power Plant must be placeable from Services at Level 1.")
+	hud._on_submenu_option("services", "back")
+	hud._on_submenu_option("services", "group_water")
+	var water_card := hud.find_child("water_tower", true, false) as Button
+	_check(water_card != null and water_card.find_child("CatalogLock", true, false) == null, "Water Tower must be placeable from Services at Level 1 with no material prerequisite.")
+	_check(BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Water Tower construction must not wait for starter materials.")
+	GameManager.level = 5
+	hud.active_category = "services"
+	hud.active_service_group = ""
+	hud._show_submenu("services")
+	hud._on_level_changed(5)
+	var unlocked_fire_group := hud.find_child("group_fire", true, false) as Button
+	_check(unlocked_fire_group != null and unlocked_fire_group.find_child("CatalogLock", true, false) == null, "Fire group lock must clear immediately after reaching Level 5 while Services is open.")
+	GameManager.level = saved_menu_level
+	hud.active_category = "services"
+	hud.active_service_group = ""
 	hud._show_submenu("services")
 	_check(hud.context_header_subtitle.text.contains("Sewage") and hud.context_header_subtitle.text.contains("Waste") and hud.context_header_subtitle.text.contains("Fire") and hud.context_header_subtitle.text.contains("Police") and hud.context_header_subtitle.text.contains("Health") and hud.context_header_subtitle.text.contains("Traffic"), "The City Services header must show sewage, waste and traffic demand/capacity.")
 	_check(hud.context_header_subtitle.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART and hud.context_header_subtitle.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "The long City Services summary must wrap within the mobile header instead of overflowing horizontally.")
@@ -2441,7 +2470,15 @@ func _test_power_water_gateway_access() -> void:
 	waste_plant.global_position = Vector3.ZERO
 	BuildManager.buildings[waste_plant.building_id] = waste_plant
 
+	GameManager.level = 1
 	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_power == 0 and ServiceManager.demand_water == 0, "Level 1 starter homes must not consume household Power and Water.")
+	_check(ServiceManager.power_served_ids.has(connected_home.building_id) and ServiceManager.water_served_ids.has(connected_home.building_id), "Household Power and Water are treated as satisfied at Level 1 without utility plants.")
+	_check(ServiceManager.demand_sewage == 0 and ServiceManager.demand_waste == 0, "Household Sewage and Waste demand stays dormant before its unlock level.")
+	GameManager.level = 2
+	ServiceManager.recalculate_from_buildings()
+	_check(ServiceManager.demand_power == 2 and ServiceManager.demand_water == 2, "All completed starter homes begin consuming Power and Water at Level 2.")
+	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "From Level 2, missing household utilities become real service shortages.")
 	_check(ServiceManager.total_power == 0 and ServiceManager.total_water == 0, "Disconnected power and water facilities must not contribute operational city capacity.")
 	_check(not ServiceManager.power_served_ids.has(connected_home.building_id) and not ServiceManager.water_served_ids.has(connected_home.building_id), "Nearby disconnected utilities must not serve a connected home.")
 	# At Level 4, Power and Water are unlocked. Zero operational capacity must
@@ -4304,21 +4341,16 @@ func _run_gameplay_test() -> void:
 	BuildManager.select_building("building_supplies")
 	_check(BuildManager.place_building(Vector2i(4, 1)), "Could not place Building Supplies shop.")
 	BuildManager.select_building("power_wind")
-	var storage_before_missing_wind: Dictionary = StorageManager.to_save_dict()
-	var money_before_missing_wind := EconomyManager.simoleons
+	var money_before_starter_utilities := EconomyManager.simoleons
 	StorageManager.items = {}
-	_check(not BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "A service building must not be placeable when its construction BOM is missing.")
-	_check(not BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Placement API must reject construction without the full BOM.")
-	_check(EconomyManager.simoleons == money_before_missing_wind and StorageManager.items.is_empty(), "Failed construction must not consume money or partially mutate inventory.")
-	StorageManager.from_save_dict(storage_before_missing_wind)
-	_grant_construction_bom_for_test("power_wind")
-	var wind_bom_before := StorageManager.get_all_items()
-	_check(BuildManager.place_building(Vector2i(6, 1)), "Could not place wind power utility.")
-	for item_id in BuildManager.get_construction_bom("power_wind"):
-		_check(StorageManager.get_count(str(item_id)) == int(wind_bom_before.get(item_id, 0)) - int(BuildManager.get_construction_bom("power_wind")[item_id]), "Successful construction must consume its BOM exactly once: " + str(item_id))
+	_check(BuildManager.can_place_at(Vector2i(6, 1), "power_wind"), "Starter wind power must be placeable at Level 1 without a material inventory prerequisite.")
+	_check(BuildManager.place_building(Vector2i(6, 1), "power_wind"), "Could not place starter wind power using its Simoleon cost alone.")
+	_check(EconomyManager.simoleons == money_before_starter_utilities - int(BuildManager.building_types["power_wind"].get("cost", 0)) and StorageManager.items.is_empty(), "Starter wind power must charge its catalog cost without consuming unavailable materials.")
 	BuildManager.select_building("water_tower")
-	_grant_construction_bom_for_test("water_tower")
-	_check(BuildManager.place_building(Vector2i(7, 1)), "Could not place water tower.")
+	_check(BuildManager.can_place_at(Vector2i(7, 1), "water_tower"), "Starter water tower must be placeable at Level 1 without a material inventory prerequisite.")
+	_check(BuildManager.place_building(Vector2i(7, 1), "water_tower"), "Could not place starter water tower using its Simoleon cost alone.")
+	_check(StorageManager.items.is_empty(), "Starter water tower must not consume material inventory.")
+	EconomyManager.simoleons = money_before_starter_utilities
 
 	await _wait_seconds(4.5)
 	var home = _find_building("residential_1")

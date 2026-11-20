@@ -163,12 +163,29 @@ func _recalculate_workforce(consumers: Array, phase: String = "all") -> void:
 		workforce_changed.emit(available_workers, demand_workers, employed_workers)
 
 func _ready() -> void:
+	GameManager.level_changed.connect(_on_mayor_level_changed)
 	print("[ServiceManager] Power/water/sewage/waste capacity network online")
+
+func _on_mayor_level_changed(_new_level: int) -> void:
+	# Re-evaluate every existing household immediately after a service unlock.
+	recalculate_from_buildings()
 
 func get_home_service_demand(home: Node3D) -> int:
 	if not is_instance_valid(home):
 		return 1
 	return maxi(1, int(home.definition.get("service_demand", 1)))
+
+func get_home_utility_demand(home: Node3D, utility_key: String) -> int:
+	if not is_instance_valid(home):
+		return 0
+	# Household utilities are phased in with their infrastructure unlocks.
+	if utility_key in ["power", "water"] and GameManager.level < 2:
+		return 0
+	if utility_key == "sewage" and GameManager.level < 8:
+		return 0
+	if utility_key == "waste" and GameManager.level < 14:
+		return 0
+	return get_home_service_demand(home)
 
 func register_power(_amount: int) -> void:
 	recalculate_from_buildings()
@@ -317,10 +334,10 @@ func recalculate_from_buildings() -> void:
 		var service_group := str(definition.get("service_group", ""))
 		if category == "residential":
 			homes.append(building)
-			demand_power += get_home_service_demand(building)
-			demand_water += get_home_service_demand(building)
-			demand_sewage += get_home_service_demand(building)
-			demand_waste += get_home_service_demand(building)
+			demand_power += get_home_utility_demand(building, "power")
+			demand_water += get_home_utility_demand(building, "water")
+			demand_sewage += get_home_utility_demand(building, "sewage")
+			demand_waste += get_home_utility_demand(building, "waste")
 		elif NON_RESIDENTIAL_UTILITY_DEMAND_PROFILES.has(category) or EMERGENCY_SERVICE_OPERATING_PROFILES.has(service_group):
 			operating_consumers.append(building)
 			demand_power += get_building_utility_demand(building, "power")
@@ -335,19 +352,22 @@ func recalculate_from_buildings() -> void:
 			total_power += get_building_service_capacity(building, "power")
 			total_water += get_building_service_capacity(building, "water")
 
-	# Power and water keep their local-radius service model, but demand is
-	# derived from each home's explicit low/medium/high service-demand value.
+	# Power and water keep their local-radius service model, but household demand
+	# begins only at Level 2. Before unlock, each home is treated as satisfied.
 	for home in homes:
-		# Every household service requires a continuous road connection to the
-		# permanent Gateway; otherwise capacity remains available but unserved.
+		var power_demand := get_home_utility_demand(home, "power")
+		var water_demand := get_home_utility_demand(home, "water")
+		if power_demand <= 0:
+			power_served_ids[home.building_id] = true
+		if water_demand <= 0:
+			water_served_ids[home.building_id] = true
 		if not _has_gateway_road_access(home):
 			continue
-		var demand := get_home_service_demand(home)
-		if used_power + demand <= total_power and _has_nearby_utility(home, "power"):
-			used_power += demand
+		if power_demand > 0 and used_power + power_demand <= total_power and _has_nearby_utility(home, "power"):
+			used_power += power_demand
 			power_served_ids[home.building_id] = true
-		if used_water + demand <= total_water and _has_nearby_utility(home, "water"):
-			used_water += demand
+		if water_demand > 0 and used_water + water_demand <= total_water and _has_nearby_utility(home, "water"):
+			used_water += water_demand
 			water_served_ids[home.building_id] = true
 
 	# Non-residential production is allocated after household demand so
@@ -380,21 +400,26 @@ func recalculate_from_buildings() -> void:
 		elif provider_group == "waste" and BuildManager.is_building_operational(provider):
 			total_waste += get_building_service_capacity(provider, "waste")
 
-	# Sewage and waste are city-wide capacity services. Household demand has
-	# priority; production and emergency providers consume the remaining capacity.
+	# Sewage and waste are city-wide services and household demand starts only
+	# at their own unlock levels. Unlocked demand still has household priority.
 	var sewage_remaining := total_sewage
 	var waste_remaining := total_waste
 	for home in homes:
+		var sewage_demand := get_home_utility_demand(home, "sewage")
+		var waste_demand := get_home_utility_demand(home, "waste")
+		if sewage_demand <= 0:
+			sewage_served_ids[home.building_id] = true
+		if waste_demand <= 0:
+			waste_served_ids[home.building_id] = true
 		if not _has_gateway_road_access(home):
 			continue
-		var demand := get_home_service_demand(home)
-		if sewage_remaining >= demand:
-			sewage_remaining -= demand
-			used_sewage += demand
+		if sewage_demand > 0 and sewage_remaining >= sewage_demand:
+			sewage_remaining -= sewage_demand
+			used_sewage += sewage_demand
 			sewage_served_ids[home.building_id] = true
-		if waste_remaining >= demand:
-			waste_remaining -= demand
-			used_waste += demand
+		if waste_demand > 0 and waste_remaining >= waste_demand:
+			waste_remaining -= waste_demand
+			used_waste += waste_demand
 			waste_served_ids[home.building_id] = true
 	for consumer in operating_consumers:
 		if not _has_gateway_road_access(consumer):

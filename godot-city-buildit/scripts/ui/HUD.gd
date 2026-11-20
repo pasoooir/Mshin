@@ -1092,7 +1092,9 @@ func _show_group_options(groups: Array, parent_category: String) -> void:
 		var group_id := str(group.get("id", ""))
 		var group_label := str(group.get("label", group_id))
 		var buildings: Array = group.get("buildings", [])
-		_add_submenu_button("group_" + group_id, group_label, group_id, "Choose category" if not buildings.is_empty() else "Coming later", false, parent_category, 1, buildings.is_empty())
+		var required_level := LevelProgression.get_service_unlock_level(group_id) if parent_category == "services" else 1
+		var group_detail := "Choose category" if not buildings.is_empty() else "Not implemented yet — planned feature"
+		_add_submenu_button("group_" + group_id, group_label, group_id, group_detail, false, parent_category, required_level, buildings.is_empty())
 
 func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	active_service_group = group_id if parent_category == "services" else ""
@@ -1113,7 +1115,7 @@ func _show_group_buildings(group_id: String, parent_category: String) -> void:
 	else:
 		var buildings: Array = selected_group.get("buildings", [])
 		if buildings.is_empty():
-			_add_submenu_button("group_locked", str(selected_group.get("label", group_id)), group_id, "Unlocks in a future update", false, parent_category, 1, true)
+			_add_submenu_button("group_locked", str(selected_group.get("label", group_id)), group_id, "Not implemented yet — no buildable catalog or release level", false, parent_category, 1, true)
 		else:
 			for type_id_value in buildings:
 				var type_id := str(type_id_value)
@@ -1142,7 +1144,7 @@ func _add_submenu_button(option_id: String, title: String, icon_name: String, de
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.disabled = disabled and not level_locked
-	button.tooltip_text = ("Unlocks at Level %d" % required_level) if level_locked else detail
+	button.tooltip_text = ("Unlocks at Level %d" % required_level) if GameManager.level < required_level else detail
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	var content := VBoxContainer.new()
@@ -1679,6 +1681,13 @@ func _update_simcash() -> void:
 func _on_level_changed(level: int) -> void:
 	if level_label: level_label.text = str(level)
 	_on_xp_changed(GameManager.experience, GameManager.get_xp_needed())
+	if is_instance_valid(submenu_scroll) and submenu_scroll.visible and not active_category.is_empty():
+		if not active_service_group.is_empty():
+			_show_group_buildings(active_service_group, "services")
+		elif not active_specialization_group.is_empty():
+			_show_group_buildings(active_specialization_group, "specializations")
+		else:
+			_show_submenu(active_category)
 
 func _on_population_changed(population: int) -> void:
 	if population_label: population_label.text = _format_count(population)
