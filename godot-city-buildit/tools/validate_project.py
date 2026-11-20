@@ -1419,19 +1419,36 @@ for residential_id, expected_demand in [
         errors.append(f"Residential service-demand tier is incorrect: {residential_id}")
 for contract in [
     "func get_home_service_demand(home: Node3D)",
+    "func get_home_utility_demand(home: Node3D, utility_key: String)",
     "var total_sewage: int",
     "var demand_sewage: int",
     "var total_waste: int",
     "var demand_waste: int",
     "used_waste = 0",
     "func _has_gateway_road_access(building: Node3D)",
-    "demand_sewage += get_home_service_demand(building)",
-    "demand_waste += get_home_service_demand(building)",
-    "if sewage_remaining >= demand:",
-    "if waste_remaining >= demand:",
+    "demand_sewage += get_home_utility_demand(building, \"sewage\")",
+    "demand_waste += get_home_utility_demand(building, \"waste\")",
+    "if sewage_demand > 0 and sewage_remaining >= sewage_demand",
+    "if waste_demand > 0 and waste_remaining >= waste_demand",
 ]:
     if contract not in service_manager_source:
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
+
+for contract in [
+    "const SERVICE_UNLOCK_LEVELS :=",
+    "func get_service_unlock_level(id: String) -> int:",
+]:
+    if contract not in level_progression_source:
+        errors.append(f"Service unlock progression contract is missing: {contract}")
+
+for contract in [
+    "Level 1 starter homes must not consume household Power and Water.",
+    "All completed starter homes begin consuming Power and Water at Level 2.",
+    "Power group must be unlocked in Services at Level 1.",
+    "Fire group must display its Level 5 lock at Level 1.",
+]:
+    if contract not in gameplay_smoke_source:
+        errors.append(f"Household utility progression regression test is missing: {contract}")
 
 # A real 3D vehicle must traverse the connected Gateway graph and return.
 if traffic_manager_source.count("func _select_junction_approach(") != 1:
