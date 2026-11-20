@@ -345,12 +345,12 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 		surface.add_vertex(peak_a if index % 3 != 1 else peak_b)
 		surface.add_vertex(ring_upper[next_index])
 
-		# Small triangular chips at the foot break the otherwise clean base.
-		if index % 3 == 0:
-			surface.set_color(lower_color * 0.76)
-			surface.add_vertex(bottom_center)
-			surface.add_vertex(ring_bottom[next_index])
-			surface.add_vertex(ring_bottom[index])
+		# A faceted underside closes the mesh and keeps the rock readable
+		# from steep low camera angles; reverse winding points normals downward.
+		surface.set_color(lower_color * 0.76)
+		surface.add_vertex(bottom_center)
+		surface.add_vertex(ring_bottom[index])
+		surface.add_vertex(ring_bottom[next_index])
 
 	surface.generate_normals()
 	return surface.commit()
