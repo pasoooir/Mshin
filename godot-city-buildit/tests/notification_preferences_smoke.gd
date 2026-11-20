@@ -450,6 +450,7 @@ func _run() -> void:
 	account_manager.player_id = 987654
 	account_manager.access_token = "smoke-test-token"
 	account_manager.google_avatar_url = "https://images.example.test/mshin-avatar.png"
+	hud._settings_avatar_request_url = account_manager.google_avatar_url
 	hud._show_settings_panel()
 	await process_frame
 	avatar_frame = hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
