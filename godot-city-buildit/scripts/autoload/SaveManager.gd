@@ -260,6 +260,7 @@ func save_game(sync_profile: bool = true) -> bool:
 	var building_data: Array = region_snapshot.get("buildings", [])
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
+		"saved_at": Time.get_datetime_string_from_system(true),
 		"starter_grant_claimed": true,
 		"game": {
 			"level": GameManager.level,
