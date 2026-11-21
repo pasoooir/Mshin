@@ -5284,9 +5284,13 @@ func _refresh_settings_account_section() -> void:
 func _on_settings_account_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
 		_settings_account_action.disabled = true
-		await PlayerAccountManager.logout()
+		if is_instance_valid(_settings_account_status):
+			_settings_account_status.text = "Saving your city before sign-out…"
+		var logout_ok: bool = await PlayerAccountManager.logout()
 		_refresh_settings_account_section()
 		_settings_account_action.disabled = false
+		if not logout_ok and is_instance_valid(_settings_account_status):
+			_settings_account_status.text = "Cloud sync failed. You are still signed in; retry when online."
 		return
 	_settings_account_action.disabled = true
 	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
