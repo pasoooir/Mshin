@@ -566,7 +566,10 @@ func _request_cc0_asphalt_texture(material: StandardMaterial3D) -> void:
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
 			var image := Image.new()
-			if image.load_jpg_from_buffer(body) == OK:
+			var image_error := image.load_png_from_buffer(body)
+			if image_error != OK:
+				image_error = image.load_jpg_from_buffer(body)
+			if image_error == OK:
 				image.generate_mipmaps()
 				material.albedo_texture = ImageTexture.create_from_image(image)
 			else:
@@ -575,7 +578,7 @@ func _request_cc0_asphalt_texture(material: StandardMaterial3D) -> void:
 			push_warning("[RoadSystem] Asphalt CDN unavailable; local PBR fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
 		request.queue_free()
 
 func _create_asphalt_textures() -> Array[Texture2D]:
