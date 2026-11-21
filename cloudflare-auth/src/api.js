@@ -142,6 +142,16 @@ export class MshinApiCoordinator {
       if (url.pathname === "/v1/profile" && (request.method === "GET" || request.method === "PUT")) {
         if (request.method === "GET") {
           try {
+            const profilePath = "players/" + playerId + ".json";
+            const storedProfile = await storage.readJson(profilePath);
+            if (storedProfile === null) {
+              // A successful first authenticated profile read must create the
+              // player's private JSON file, even if the app closes before its
+              // first gameplay save or reward claim.
+              const initialProfile = profileDefault(playerId);
+              await writeProfile(playerId, initialProfile);
+              return jsonResponse(200, initialProfile, { etag: '"0"' });
+            }
             const profile = await readProfile(playerId);
             return jsonResponse(200, profile, { etag: '"' + profile.revision + '"' });
           } catch { return jsonResponse(500, { error: "profile_read_failed" }); }
