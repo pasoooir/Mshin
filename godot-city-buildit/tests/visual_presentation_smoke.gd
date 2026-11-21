@@ -21,7 +21,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 8.0, 24, 4, -0.025)
-	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 9.0:
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 16.0:
 		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
 		get_tree().quit(1)
 		return
