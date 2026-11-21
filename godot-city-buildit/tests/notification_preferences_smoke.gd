@@ -197,7 +197,7 @@ func _run() -> void:
 	# The native Window close request (Escape / platform close) must release
 	# the visible HUD overlay through the same synchronous cleanup path.
 	notification_button = hud.find_child("SettingsNotificationsButton", true, false) as Button
-	await _tap_control(notification_button)
+	notification_button.pressed.emit()
 	await process_frame
 	notification_dialog = hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	if notification_dialog == null:
