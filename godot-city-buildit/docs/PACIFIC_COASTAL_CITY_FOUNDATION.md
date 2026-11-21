@@ -14,13 +14,13 @@ The player should enter a calm, mostly undeveloped city where the Pacific shorel
 - The sandy beach is widened to a 36 m transition band, with an additional green-to-sand dune transition.
 - Deep ocean geometry extends offshore to X = 250; shallow turquoise water remains a narrow continuous band immediately outside the beach.
 - A curved timber promenade follows the sampled coastline and is built as one mesh.
-- Eighteen palm trees are placed in a loose landscaped line between the inland green edge and beach. Trunks and fronds are each batched in a MultiMesh.
+- Twenty-four palm trees are placed in a loose landscaped line between the inland green edge and beach. Trunks and fronds are each batched in a MultiMesh.
 - Inland terrain uses a lush Pacific-green palette and an expanded tree belt. The procedural ground remains local/offline; no runtime asset downloads are introduced by this slice.
 - Terrain tessellation is increased to 128 divisions and extends farther inland to avoid a narrow, visibly bounded starter island.
 
 ## Entry camera
 
-The opening camera is framed to show the undeveloped city, coastal park edge and broad beach in one calm composition. The player can zoom in to build and zoom out to read the overall city/coast relationship.
+The opening camera targets X=38 at the 150 m overview zoom, framed to show the buildable city, broad beach and Pacific water together. The player can zoom in to build and zoom out to read the overall city/coast relationship.
 
 ## Mobile rendering constraints
 
