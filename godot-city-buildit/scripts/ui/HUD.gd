@@ -5271,10 +5271,15 @@ func _refresh_settings_account_section() -> void:
 			_settings_avatar_placeholder.text = "👤"
 			_settings_avatar_placeholder.show()
 		_settings_avatar_request_url = ""
-		_settings_account_status.text = "Guest mode\nSign in to secure your city and receive login rewards."
+		_settings_account_status.text = "Guest mode\nSign in to unlock city registration, secure your progress and receive login rewards."
 		_settings_account_action.text = ""
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
 			_settings_account_action.get_node("GmailButtonContent").show()
+	var city_name_action := find_child("SettingsChangeCityNameButton", true, false) as Button
+	if is_instance_valid(city_name_action):
+		var city_name_unlocked := PlayerAccountManager.is_authenticated()
+		city_name_action.disabled = not city_name_unlocked
+		city_name_action.tooltip_text = "" if city_name_unlocked else "Sign in with Google to register or rename your city."
 
 func _on_settings_account_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
@@ -5963,6 +5968,10 @@ func _show_settings_help() -> void:
 
 
 func _show_change_city_name() -> void:
+	if not PlayerAccountManager.is_authenticated():
+		if is_instance_valid(_settings_account_status):
+			_settings_account_status.text = "Sign in with Google before registering or renaming your city."
+		return
 	# Keep one registration modal at the HUD CanvasLayer root. A nested modal
 	# inherits the Settings overlay's input/lifetime stack and can become
 	# inaccessible when the overlay is rebuilt or the mobile viewport changes.
@@ -6139,6 +6148,11 @@ func _close_city_registration_modal(modal_layer: Control) -> void:
 func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: Button, modal_layer: Control) -> void:
 	if not is_instance_valid(input) or not is_instance_valid(validation) or not is_instance_valid(save_button) or not is_instance_valid(modal_layer):
 		return
+	if not PlayerAccountManager.is_authenticated():
+		save_button.disabled = true
+		validation.text = "Sign in with Google before saving your city name."
+		validation.add_theme_color_override("font_color", Color("#FFB8A8"))
+		return
 	if save_button.disabled:
 		validation.text = "Please enter a city name before saving."
 		return
@@ -6150,7 +6164,7 @@ func _save_city_name_from_form(input: LineEdit, validation: Label, save_button: 
 		validation.add_theme_color_override("font_color", Color("#FFB8A8"))
 		input.grab_focus()
 		return
-	if not SaveManager.save_game():
+	if not SaveManager.save_game(false):
 		GameManager.city_name = previous_name
 		save_button.disabled = false
 		validation.text = "Could not save locally. Your previous city name is unchanged."
