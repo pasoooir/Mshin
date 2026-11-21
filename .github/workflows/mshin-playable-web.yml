@@ -188,32 +188,21 @@ jobs:
             });
           }
 
-          // Reload once per area, then use ordinary zoom input for the near view.
-          // This keeps the smoke test deterministic without synthetic camera drags.
-          async function captureNearView(filename) {
-            await page.mouse.move(640, 360);
-            for (let i = 0; i < 8; i++) await page.mouse.wheel(0, -100);
-            await page.waitForTimeout(900);
-            await page.screenshot({
-              path: 'artifacts/visual-acceptance/' + filename,
-              animations: 'disabled',
-              timeout: 60000
-            });
-          }
-
+          // Deterministic QA-only URLs capture each surface at two distances.
+          // No synthetic drag or wheel input is injected into the player camera.
           await captureCameraPreset('coast_far', 'desktop-coast-far.png');
-          await captureNearView('desktop-coast-near.png');
+          await captureCameraPreset('coast_near', 'desktop-coast-near.png');
           await captureCameraPreset('asphalt_far', 'desktop-asphalt-far.png');
-          await captureNearView('desktop-asphalt-near.png');
+          await captureCameraPreset('asphalt_near', 'desktop-asphalt-near.png');
           await captureCameraPreset('tunnel_far', 'desktop-tunnel-far.png');
-          await captureNearView('desktop-tunnel-near.png');
+          await captureCameraPreset('tunnel_near', 'desktop-tunnel-near.png');
 
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
             captures: ['desktop-entry.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
-            zoomInteraction: 'Deterministic WebGL QA camera presets per area, with normal wheel zoom for the matching near views',
+            zoomInteraction: 'Deterministic WebGL QA camera presets for near/far coastline, asphalt and tunnel views',
             note: 'Desktop WebGL canvas captures are real rendered game frames. Coastline, deep/shallow water, asphalt and tunnel are captured at near/far scales. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
