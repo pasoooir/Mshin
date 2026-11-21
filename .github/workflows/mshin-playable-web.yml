@@ -50,7 +50,7 @@ jobs:
         run: python godot-city-buildit/tools/validate_project.py
 
       - name: Import and parse project
-        run: godot --headless --editor --path godot-city-buildit --quit
+        run: godot --headless --editor --path godot-city-buildit --import
 
       - name: Headless startup smoke test
         run: |
