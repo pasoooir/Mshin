@@ -1149,6 +1149,8 @@ for contract in [
     "loader.remove();",
     "window.google.accounts.id.renderButton",
     "func logout() -> bool:",
+    "if not has_node(\"/root/SaveManager\") or not SaveManager.persistence_ready:",
+    "Sign-out must be blocked while the local save system is not ready.",
     "func _wait_for_save_manager_ready() -> bool:",
     "func _restore_authenticated_profile_game_state() -> bool:",
     "static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:",
