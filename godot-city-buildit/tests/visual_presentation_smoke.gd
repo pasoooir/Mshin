@@ -43,6 +43,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] First camera frame must include the starter plots, highway access and coastal environment")
 		get_tree().quit(1)
 		return
+	if not camera_source.contains("func _apply_visual_acceptance_preset()") or not camera_source.contains("new URLSearchParams(window.location.search).get('visual_camera')") or not camera_source.contains('"coast_near"') or not camera_source.contains('"tunnel_far"'):
+		push_error("[VisualPresentationSmoke] Explicit WebGL visual-acceptance presets must expose coastline and tunnel camera views without altering the default entry camera")
+		get_tree().quit(1)
+		return
 	var tutorial_source := FileAccess.get_file_as_string("res://scripts/ui/TutorialGuide.gd")
 	if not tutorial_source.contains("var desired_height := 218.0 if current_step == 0") or not tutorial_source.contains("The name field is directly visible in the compact coach") or not tutorial_source.contains("_guide_scroll.visible = not is_name_step"):
 		push_error("[VisualPresentationSmoke] First-entry coach must stay compact and keep the city view unobstructed")
