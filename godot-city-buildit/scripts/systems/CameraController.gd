@@ -60,19 +60,19 @@ func _apply_visual_acceptance_preset() -> void:
 	match preset:
 		"coast_far":
 			global_position = Vector3(18.0, 0.0, 0.0)
-			current_zoom = 84.0
+			current_zoom = 68.0
 		"coast_near":
 			global_position = Vector3(40.0, 0.0, 0.0)
 			current_zoom = 52.0
 		"asphalt_far":
 			global_position = Vector3(-40.0, 0.0, 0.0)
-			current_zoom = 84.0
+			current_zoom = 68.0
 		"asphalt_near":
 			global_position = Vector3(-48.0, 0.0, 0.0)
 			current_zoom = 52.0
 		"tunnel_far":
 			global_position = Vector3(-55.0, 0.0, 68.0)
-			current_zoom = 84.0
+			current_zoom = 68.0
 		"tunnel_near":
 			global_position = Vector3(-55.0, 0.0, 68.0)
 			current_zoom = 52.0
