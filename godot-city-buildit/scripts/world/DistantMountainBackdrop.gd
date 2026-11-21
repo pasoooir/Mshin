@@ -4,8 +4,8 @@ extends Node3D
 ## replace an exposed world edge with a continuous natural backdrop.
 
 const LAND_SIZE := Vector2(1000.0, 1000.0)
-const RIDGE_INNER_RADIUS := 120.0
-const RIDGE_OUTER_RADIUS := 300.0
+const RIDGE_INNER_RADIUS := 68.0
+const RIDGE_OUTER_RADIUS := 205.0
 const RIDGE_HALF_LENGTH := 470.0
 const RIDGE_SEGMENTS := 96
 const RIDGE_DEPTH_STEPS := 20
@@ -26,12 +26,20 @@ const TUNNEL_WALL_HEIGHT := 15.0
 const MIN_CAMERA_FAR_CLIP := 720.0
 
 func _ready() -> void:
+	# Spread procedural generation over separate rendered frames. The playable
+	# city appears immediately instead of waiting for every mountain mesh and
+	# vegetation batch to be built synchronously during scene startup.
 	_build_backdrop_land()
+	await get_tree().process_frame
 	_build_mountain_ridges()
+	await get_tree().process_frame
 	_build_mountain_rock_outcrops()
+	await get_tree().process_frame
 	_build_highway_tunnels()
+	await get_tree().process_frame
 	_build_mountain_shrubs()
 	_build_mountain_grass()
+	await get_tree().process_frame
 	_build_mountain_eucalypts()
 
 
