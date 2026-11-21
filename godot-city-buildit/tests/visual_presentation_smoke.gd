@@ -38,6 +38,32 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required_coastal_feature in [
+		"const COASTLINE_BASE_X := 110.0",
+		"const BEACH_WIDTH := 36.0",
+		"func _build_coastal_promenade(",
+		"func _build_beach_palms(",
+		"func _create_palm_frond_mesh(",
+		"PacificCoastalPromenade",
+		"PacificPalmTrunks",
+		"PacificPalmCrowns",
+		"COASTAL_GREEN_PALETTE",
+		"_build_coastal_promenade()",
+		"_build_beach_palms()"
+	]:
+		if not world_visual_source.contains(required_coastal_feature):
+			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
+			get_tree().quit(1)
+			return
+	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0:
+		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
+		get_tree().quit(1)
+		return
+	var palm_mesh: ArrayMesh = presentation._create_palm_frond_mesh()
+	if palm_mesh == null or palm_mesh.get_surface_count() != 1 or palm_mesh.get_aabb().size.x < 5.0 or palm_mesh.get_aabb().size.z < 5.0:
+		push_error("[VisualPresentationSmoke] Palm crown must be a single broad radial frond mesh")
+		get_tree().quit(1)
+		return
 	for required_visual_feature in [
 		"func _terrain_height(",
 		"func _build_dirt_tracks(",
