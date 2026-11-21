@@ -575,7 +575,7 @@ func _request_cc0_asphalt_texture(material: StandardMaterial3D) -> void:
 			push_warning("[RoadSystem] Asphalt CDN unavailable; local PBR fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.meshy.ai/landing-assets/textures/stone/dark-asphalt/dark-asphalt-2k.jpg") != OK:
+	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
 		request.queue_free()
 
 func _create_asphalt_textures() -> Array[Texture2D]:
