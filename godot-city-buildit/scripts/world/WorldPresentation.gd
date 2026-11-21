@@ -1105,8 +1105,8 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	var rock_mesh := backdrop.call("_create_rock_outcrop_mesh") as ArrayMesh
 	var rock_material := backdrop.call("_create_rock_surface_material") as ShaderMaterial
 	var anchors: Array[Vector2] = [
-		Vector2(-38.0, -47.0), Vector2(-16.0, -48.0), Vector2(8.0, -47.0), Vector2(31.0, -48.0),
-		Vector2(-38.0, 47.0), Vector2(-16.0, 48.0), Vector2(8.0, 47.0), Vector2(31.0, 48.0)
+		Vector2(-32.0, -42.5), Vector2(-12.0, -42.5), Vector2(12.0, -42.5), Vector2(32.0, -42.5),
+		Vector2(-32.0, 42.5), Vector2(-12.0, 42.5), Vector2(12.0, 42.5), Vector2(32.0, 42.5)
 	]
 	var batch := MultiMesh.new()
 	batch.transform_format = MultiMesh.TRANSFORM_3D
@@ -1116,7 +1116,7 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	var palette: Array[Color] = [Color("#827B69"), Color("#A09278"), Color("#69675D"), Color("#8D806B")]
 	for index in range(anchors.size()):
 		var anchor := anchors[index]
-		var size := 2.8 + float((index * 5) % 4) * 0.48
+		var size := 2.45 + float((index * 5) % 4) * 0.34
 		var scale := Vector3(size * 0.92, size * (1.10 + float(index % 3) * 0.12), size * 0.86)
 		var yaw := float(index * 47 % 360) * PI / 180.0
 		var position := Vector3(anchor.x, _terrain_height(anchor.x, anchor.y) + 0.12, anchor.y)
@@ -1296,7 +1296,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	# A deterministic broken ring keeps larger scrub visible from the city camera.
 	for index in range(72):
 		var angle := TAU * float(index) / 72.0
-		var radius := 47.0 + sin(float(index) * 2.7) * 2.4
+		var radius := 43.5 + sin(float(index) * 2.7) * 1.6
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0:
@@ -1343,7 +1343,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
 	for index in range(96):
 		var angle := TAU * float(index) / 96.0
-		var radius := 45.0 + float(index % 4) * 2.2
+		var radius := 42.5 + float(index % 4) * 1.8
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
