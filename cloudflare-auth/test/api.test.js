@@ -164,7 +164,7 @@ test("normal profile saves cannot overwrite either server-owned currency", async
 
 
 test("first-login eligibility survives an initial profile save before reward claim", async () => {
-  const { coordinator, files } = setup();
+  const { coordinator, files, writes } = setup();
   const freshId = 100004;
   const initial = await call(coordinator, freshId, "/v1/profile");
   assert.equal(initial.status, 200);
