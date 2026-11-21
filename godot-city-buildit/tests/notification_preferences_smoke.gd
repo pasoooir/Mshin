@@ -490,13 +490,20 @@ func _run() -> void:
 	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
 	var original_signout_persistence_ready := SaveManager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
+	SaveManager.persistence_ready = true
+	await _tap_control(google_action)
+	await process_frame
+	if not account_manager.is_authenticated() or not avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out must keep the session active when its final cloud save fails.")
+		quit(1)
+		return
 	SaveManager.persistence_ready = false
 	await _tap_control(google_action)
+	await process_frame
 	SaveManager.persistence_ready = original_signout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
-	await process_frame
 	if account_manager.is_authenticated() or avatar_frame.visible:
-		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
+		push_error("[NotificationPreferencesSmoke] Sign-out must clear the account and hide the avatar after the local-only test path completes.")
 		quit(1)
 		return
 
