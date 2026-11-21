@@ -414,9 +414,9 @@ func _test_building_notification_grouping() -> void:
 	if attached_anchor != null:
 		_check(attached_anchor.get_parent() == fixture, "World-space notification anchor must follow the owning building through camera orbit and city movement.")
 		_check(attached_anchor.position.y > 0.0, "World-space notification anchor must be positioned above the building roof, not at ground level.")
-		_check(attached_anchor.get("notification_pressed") != null, "World-space notification anchor must expose its actionable tap signal.")
-		_check(attached_anchor.has_method("get_visible_notification_count") and attached_anchor.get_visible_notification_count() == 1, "The attached world-space anchor must render the same live notification state as its screen-space fallback.")
-		_check(attached_anchor.notification_pressed.is_connected(Callable(notification_layer, "_on_world_notification_pressed")), "World-space notification taps must route back into the existing building action handlers.")
+		_check(attached_anchor.has_signal("notification_pressed"), "World-space notification anchor must expose its actionable tap signal.")
+		_check(attached_anchor.has_method("get_visible_notification_count") and int(attached_anchor.call("get_visible_notification_count")) == 1, "The attached world-space anchor must render the same live notification state as its screen-space fallback.")
+		_check(attached_anchor.is_connected("notification_pressed", Callable(notification_layer, "_on_world_notification_pressed")), "World-space notification taps must route back into the existing building action handlers.")
 	notification_layer.queue_free()
 	fixture.queue_free()
 	await get_tree().process_frame
