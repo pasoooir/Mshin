@@ -634,10 +634,16 @@ void fragment() {
 
 func _build_mountain_rock_outcrops() -> void:
 	var rock_mesh := _create_rock_outcrop_mesh()
+	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
+		push_error("[DistantMountainBackdrop] Refusing to register invalid near-rock mesh")
+		return
 	var batch := MultiMesh.new()
 	batch.transform_format = MultiMesh.TRANSFORM_3D
 	batch.use_colors = true
 	batch.mesh = rock_mesh
+	if batch.mesh == null:
+		push_error("[DistantMountainBackdrop] Near-rock MultiMesh mesh assignment failed")
+		return
 	batch.instance_count = RIDGE_ROCK_COUNT
 	var palette: Array[Color] = [Color("#777365"), Color("#8A806C"), Color("#665F53"), Color("#9A8D75")]
 	for index in range(RIDGE_ROCK_COUNT):
@@ -664,6 +670,7 @@ func _build_mountain_rock_outcrops() -> void:
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	rocks.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	rocks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(rocks)
 
 
