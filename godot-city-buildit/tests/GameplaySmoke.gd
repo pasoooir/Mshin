@@ -4381,7 +4381,7 @@ func _run_gameplay_test() -> void:
 		var backdrop_plane := backdrop_ground.mesh as PlaneMesh
 		_check(backdrop_plane.size.x >= 900.0 and backdrop_plane.size.y >= 900.0, "The green ground backdrop must cover the complete camera travel area.")
 		var backdrop_material := backdrop_ground.material_override as ShaderMaterial
-		_check(backdrop_material != null and backdrop_material.shader != null and backdrop_material.shader.code.contains("world_position.x >= 49.0"), "The green ground must preserve the coastal water opening.")
+		_check(backdrop_material != null and backdrop_material.shader != null and backdrop_material.shader.code.contains("float coastline = 51.0") and backdrop_material.shader.code.contains("world_position.x >= coastline - 0.1"), "The green ground must preserve the coastal water opening.")
 	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]:
 		var ridge := mountain_backdrop.get_node_or_null(ridge_name) as MeshInstance3D
 		_check(ridge != null and ridge.mesh is ArrayMesh, "Mountain horizon segment is missing or has no generated mesh resource: %s" % ridge_name)
