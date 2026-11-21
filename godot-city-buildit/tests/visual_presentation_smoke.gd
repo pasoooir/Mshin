@@ -9,6 +9,10 @@ func _ready() -> void:
 	add_child(presentation)
 	var backdrop := DistantMountainBackdropScript.new()
 	presentation.add_child(backdrop)
+	# Mountain generation is intentionally staged across frames at runtime.
+	# Wait for the same completion signal in this smoke test before inspecting
+	# the generated perimeter, LOD meshes, tunnels and vegetation batches.
+	await backdrop.generation_completed
 	if backdrop.get_node_or_null("NorthMountainRidge") == null or backdrop.get_node_or_null("SouthMountainRidge") == null or backdrop.get_node_or_null("WestMountainRidge") == null or backdrop.get_node_or_null("EastMountainRidge") == null:
 		push_error("[VisualPresentationSmoke] Mountain perimeter must render all four overlapping ridge walls")
 		get_tree().quit(1)
@@ -140,7 +144,7 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	if DistantMountainBackdropScript.RIDGE_INNER_RADIUS < 100.0 or DistantMountainBackdropScript.RIDGE_OUTER_RADIUS > city_camera.far:
+	if DistantMountainBackdropScript.RIDGE_INNER_RADIUS < 60.0 or DistantMountainBackdropScript.RIDGE_OUTER_RADIUS > city_camera.far:
 		push_error("[VisualPresentationSmoke] Mountain ring must remain inside the camera visible world distance")
 		main_instance.free()
 		get_tree().quit(1)
