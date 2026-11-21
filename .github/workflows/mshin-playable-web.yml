@@ -163,8 +163,17 @@ jobs:
           // The Godot canvas fills the 1280x720 game viewport. Move the pointer
           // directly instead of asking Playwright to calculate its bounding box.
           await page.mouse.move(640, 360);
-          // Exercise the actual Godot wheel-zoom path and capture a near view.
-          for (let i = 0; i < 7; i++) await page.mouse.wheel(0, -100);
+          // Capture a medium-distance view first: the playable meadow edge,
+          // near-city outcrops and the distant ridge should share the frame.
+          for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-mountain-medium.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          // Continue into a close view to inspect the fractured rock silhouettes.
+          for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
           await page.waitForTimeout(1200);
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-mountain-near.png',
@@ -183,8 +192,8 @@ jobs:
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-entry.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
-            zoomInteraction: 'Godot mouse wheel: 7 steps in, 15 steps out',
+            captures: ['desktop-entry.png', 'desktop-mountain-medium.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
+            zoomInteraction: 'Godot mouse wheel: 3 steps to medium, 4 additional steps to near, 15 steps out',
             note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
