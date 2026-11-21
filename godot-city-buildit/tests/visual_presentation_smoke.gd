@@ -30,7 +30,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Build grid must stay hidden until an explicit building-placement action")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float broad = meadow_fbm(world_position.xz * 0.055)") or not world_source.contains("float dry_patch = smoothstep(0.67, 0.88"):
+	if not world_source.contains("float broad = value_noise(world_position.xz * 0.055)") or not world_source.contains("float dry_patch = smoothstep(0.72, 0.90") or world_source.contains("meadow_fbm"):
 		push_error("[VisualPresentationSmoke] Meadow material must include multi-scale natural ground variation")
 		get_tree().quit(1)
 		return
