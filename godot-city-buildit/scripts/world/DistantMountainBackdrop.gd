@@ -20,6 +20,8 @@ const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
 const EUCALYPT_COUNT := 44
 const TUNNEL_CENTER_X := -55.0
+
+signal generation_completed
 const TUNNEL_CUTOUT_HALF_WIDTH := 28.0
 const TUNNEL_OPENING_WIDTH := 42.0
 const TUNNEL_WALL_HEIGHT := 15.0
@@ -41,6 +43,7 @@ func _ready() -> void:
 	_build_mountain_grass()
 	await get_tree().process_frame
 	_build_mountain_eucalypts()
+	generation_completed.emit()
 
 
 func _build_backdrop_land() -> void:
