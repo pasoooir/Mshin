@@ -100,6 +100,7 @@ func _build_mountain_ridges() -> void:
 		near_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		near_ridge.visibility_range_end = RIDGE_LOD_DISTANCE
 		near_ridge.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+		near_ridge.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		add_child(near_ridge)
 		var far_ridge := MeshInstance3D.new()
 		far_ridge.name = names[side] + "FarLOD"
@@ -108,6 +109,7 @@ func _build_mountain_ridges() -> void:
 		far_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		far_ridge.visibility_range_begin = RIDGE_LOD_DISTANCE - RIDGE_LOD_OVERLAP
 		far_ridge.visibility_range_begin_margin = RIDGE_LOD_FADE_MARGIN
+		far_ridge.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		far_ridge.visibility_range_end = MIN_CAMERA_FAR_CLIP
 		add_child(far_ridge)
 
@@ -661,7 +663,7 @@ func _build_mountain_rock_outcrops() -> void:
 	# per-rock shadow casters are submitted to the mobile directional shadow map.
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
-	rocks.visibility_range_end_margin = 18.0
+	rocks.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
 	add_child(rocks)
 
 
@@ -700,6 +702,7 @@ func _build_mountain_shrubs() -> void:
 	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	shrubs.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	shrubs.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	shrubs.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(shrubs)
 
 
@@ -736,6 +739,7 @@ func _build_mountain_grass() -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	grass.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	grass.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(grass)
 
 
@@ -799,6 +803,7 @@ func _build_mountain_eucalypts() -> void:
 	trunk_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	trunk_batch.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	trunk_batch.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	trunk_batch.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(trunk_batch)
 	var crown_batch := MultiMeshInstance3D.new()
 	crown_batch.name = "AustralianEucalyptCanopies"
@@ -807,6 +812,7 @@ func _build_mountain_eucalypts() -> void:
 	crown_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	crown_batch.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	crown_batch.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	crown_batch.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(crown_batch)
 
 
