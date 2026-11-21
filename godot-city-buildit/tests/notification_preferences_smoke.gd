@@ -487,7 +487,11 @@ func _run() -> void:
 		quit(1)
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	await _tap_control(google_action)
+	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
+	await process_frame
 	if account_manager.is_authenticated() or avatar_frame.visible:
 		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
 		quit(1)
