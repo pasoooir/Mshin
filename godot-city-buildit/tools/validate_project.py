@@ -1140,6 +1140,35 @@ for contract in [
 ]:
     if contract not in camera_controller_source:
         errors.append(f"Camera inertia implementation contract is missing: {contract}")
+player_account_manager_source = (ROOT / "scripts/autoload/PlayerAccountManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "const loadIdentity = function () {",
+    'loader.dataset.mshinLoadState = "loading";',
+    'loader.dataset.mshinLoadState = "failed";',
+    "loader.remove();",
+    "window.google.accounts.id.renderButton",
+]:
+    if contract not in player_account_manager_source:
+        errors.append(f"Retryable Google Identity loader contract is missing: {contract}")
+hud_settings_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+for contract in [
+    "city_name_action.disabled = not city_name_unlocked",
+    "func _show_change_city_name() -> void:",
+    "func _save_city_name_from_form(",
+    "SaveManager.save_game(false)",
+]:
+    if contract not in hud_settings_source:
+        errors.append(f"Google-authenticated city registration contract is missing: {contract}")
+save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "func save_game(sync_profile: bool = true) -> bool:",
+    "if sync_profile and has_node",
+]:
+    if contract not in save_manager_source:
+        errors.append(f"Immediate player-profile save contract is missing: {contract}")
+launcher_source = (ROOT / "web/launcher.html").read_text(encoding="utf-8")
+if "identity-credentials-get" not in launcher_source:
+    errors.append("Google FedCM iframe permission is missing from the Web launcher.")
 for contract in [
     "func rotate_placement() -> bool:",
     "func get_building_size(type_id: String, rotation_quarters: int = 0) -> Vector2i:",
