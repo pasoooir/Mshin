@@ -39,8 +39,12 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
-	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or rock_outcrops.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF:
-		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
+	if rock_outcrops == null or rock_outcrops.multimesh == null or rock_outcrops.multimesh.mesh == null:
+		push_error("[VisualPresentationSmoke] Near rock outcrops must register one initialized MultiMesh with a valid shared mesh")
+		get_tree().quit(1)
+		return
+	if rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or not is_finite(rock_outcrops.visibility_range_end) or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or rock_outcrops.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF:
+		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with finite self-faded visibility bounds")
 		get_tree().quit(1)
 		return
 	if DistantMountainBackdropScript.ROCK_FRACTURE_GROOVE_COUNT != 3 or DistantMountainBackdropScript.ROCK_FOOT_PEBBLE_COUNT != 4:
