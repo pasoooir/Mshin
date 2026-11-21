@@ -5283,8 +5283,10 @@ func _refresh_settings_account_section() -> void:
 
 func _on_settings_account_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
-		PlayerAccountManager.logout()
+		_settings_account_action.disabled = true
+		await PlayerAccountManager.logout()
 		_refresh_settings_account_section()
+		_settings_account_action.disabled = false
 		return
 	_settings_account_action.disabled = true
 	var sign_in_started := PlayerAccountManager.begin_google_sign_in()
