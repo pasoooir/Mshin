@@ -130,25 +130,18 @@ func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
 	if not await _wait_for_save_manager_ready():
 		_last_auth_error = "The city save system is still starting. Please retry Google sign-in."
 		return false
+	# The Settings action is a sign-out while a Mayor is authenticated. Refuse
+	# a second sign-in here so one account can never inherit another account's
+	# in-memory city; logout first saves the old account and restores guest state.
+	if is_authenticated():
+		_last_auth_error = "Sign out of the current Mayor before switching Google accounts."
+		return false
 	# Preserve the guest city before switching the active save path to a Mayor ID.
-	# A returning account will load its own remote game state below; a new account
-	# inherits this guest state once, then receives its own isolated JSON profile.
-	if not is_authenticated():
-		if not SaveManager.save_game(false):
-			_last_auth_error = "Your current city could not be saved before Google sign-in."
-			return false
-	else:
-		if not SaveManager.save_game(false):
-			_last_auth_error = "Your current account city could not be saved before sign-in."
-			return false
-		var previous_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-		if not previous_state is Dictionary:
-			_last_auth_error = "Your current account save could not be read before changing the sign-in session."
-			return false
-		var previous_snapshot: Dictionary = previous_state
-		if not await save_profile_now(previous_snapshot):
-			_last_auth_error = "Your current account could not sync before changing the sign-in session."
-			return false
+	# A first-time account inherits this state once; returning accounts load their
+	# own remote game_state before any post-login autosave can run.
+	if not SaveManager.save_game(false):
+		_last_auth_error = "Your current city could not be saved before Google sign-in."
+		return false
 	var response := await _request_json(
 		_auth_url() + "/v1/auth/google",
 		HTTPClient.METHOD_POST,
