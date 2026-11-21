@@ -1311,6 +1311,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	var original_yaw: float = camera_rig.rotation_degrees.y
 	var original_zoom: float = camera_rig.current_zoom
 	camera_rig.touch_points.clear()
+	camera_rig._multi_touch_gesture_active = false
 	camera_rig.pan_velocity = Vector2.ZERO
 	camera_rig.orbit_velocity = 0.0
 	camera_rig.last_pinch_distance = 0.0
