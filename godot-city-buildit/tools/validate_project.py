@@ -1207,6 +1207,11 @@ for contract in [
 
 for contract in [
     "func _test_camera_inertia_math()",
+    "func _test_camera_touch_gesture_integration()",
+    "Real two-finger touch events moving inward must zoom the live camera in.",
+    "Real two-finger touch events spreading outward must zoom the live camera out.",
+    "Moving both active touches together must pan the live city camera",
+    "Live two-finger touch input must complete a full 360-degree orbit",
     "Camera pan inertia must decay over time",
     "Camera orbit inertia must decay over time",
     "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).",
