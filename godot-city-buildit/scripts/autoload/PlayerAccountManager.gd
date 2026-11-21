@@ -361,7 +361,10 @@ func _flush_pending_save() -> void:
 
 func logout() -> bool:
 	var cloud_sync_ok := true
-	if is_authenticated() and has_node("/root/SaveManager") and SaveManager.persistence_ready:
+	if is_authenticated():
+		if not has_node("/root/SaveManager") or not SaveManager.persistence_ready:
+			authentication_feedback.emit("Your city save system is not ready. You are still signed in; retry sign-out when the city is ready.", false)
+			return false
 		if SaveManager.save_game(false):
 			var current_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
 			if current_state is Dictionary:
