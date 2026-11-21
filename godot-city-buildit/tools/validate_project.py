@@ -1113,7 +1113,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 120.0", "RIDGE_OUTER_RADIUS := 300.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 62.0 + rolling_peaks * 46.0", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion("]:
+for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 62.0 + rolling_peaks * 46.0", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "await get_tree().process_frame"]:
     if contract not in mountain_backdrop_source:
         errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
