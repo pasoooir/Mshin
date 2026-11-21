@@ -534,7 +534,10 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Oversized avatar images must be rejected safely.")
 		quit(1)
 		return
-	account_manager.logout()
+	var logout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
+	await account_manager.logout()
+	ProjectSettings.set_setting("mshin/account/api_base_url", logout_api_base)
 
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
 	if settings_close == null:
