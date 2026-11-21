@@ -24,18 +24,22 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Each mountain wall must provide near and far geometry LODs")
 			get_tree().quit(1)
 			return
-		if near_ridge.visibility_range_end != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_begin != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_end != DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
-			push_error("[VisualPresentationSmoke] Mountain LOD visibility ranges must meet without a gap")
+		if near_ridge.visibility_range_end != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_begin != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE - DistantMountainBackdropScript.RIDGE_LOD_OVERLAP or far_ridge.visibility_range_end != DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
+			push_error("[VisualPresentationSmoke] Mountain LOD visibility ranges must retain the configured overlap without a gap")
 			get_tree().quit(1)
 			return
 		var near_vertices: PackedVector3Array = near_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var far_vertices: PackedVector3Array = far_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		if near_ridge.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or far_ridge.visibility_range_begin_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or DistantMountainBackdropScript.RIDGE_LOD_OVERLAP < DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
+			push_error("[VisualPresentationSmoke] Mountain LOD cross-fade margins must fit inside the overlap")
+			get_tree().quit(1)
+			return
 		if near_vertices.size() <= far_vertices.size() * 3:
 			push_error("[VisualPresentationSmoke] Near mountain geometry must carry materially more silhouette detail than far LOD")
 			get_tree().quit(1)
 			return
 	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
-	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
 		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
 		get_tree().quit(1)
 		return
