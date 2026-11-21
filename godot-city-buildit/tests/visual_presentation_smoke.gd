@@ -35,6 +35,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
 		get_tree().quit(1)
 		return
+	if DistantMountainBackdropScript.ROCK_FRACTURE_GROOVE_COUNT != 3 or DistantMountainBackdropScript.ROCK_FOOT_PEBBLE_COUNT != 4:
+		push_error("[VisualPresentationSmoke] Near rocks must keep three layered fractures and four fused foot stones per shared mesh")
+		get_tree().quit(1)
+		return
 	var rock_mesh := backdrop._create_rock_outcrop_mesh() as ArrayMesh
 	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Chipped near rocks must stay one reusable mesh surface")
@@ -62,7 +66,7 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var rock_material := rock_outcrops.material_override as ShaderMaterial
-	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights") or not rock_material.shader.code.contains("contact_occlusion") or not rock_material.shader.code.contains("rock_local_height"):
+	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights") or not rock_material.shader.code.contains("contact_occlusion") or not rock_material.shader.code.contains("rock_local_height") or not rock_material.shader.code.contains("stone_fbm(vec3(p.yz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xy"):
 		push_error("[VisualPresentationSmoke] Near rocks must use triplanar mineral grain, cellular fracture edges and controlled roughness")
 		get_tree().quit(1)
 		return
@@ -73,7 +77,7 @@ func _ready() -> void:
 		return
 	var shadow_scene := main_scene_for_shadows.instantiate()
 	var key_light := shadow_scene.get_node_or_null("World/DirectionalLight3D") as DirectionalLight3D
-	if key_light == null or not key_light.shadow_enabled or key_light.shadow_opacity < 0.25 or key_light.shadow_blur < 0.5 or key_light.directional_shadow_max_distance < DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+	if key_light == null or not key_light.shadow_enabled or key_light.shadow_opacity < 0.25 or key_light.shadow_blur < 0.5 or absf(key_light.directional_shadow_max_distance - DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE) > 0.01:
 		push_error("[VisualPresentationSmoke] Main directional shadow map must cover near rocks with controlled softness and opacity")
 		shadow_scene.free()
 		get_tree().quit(1)
