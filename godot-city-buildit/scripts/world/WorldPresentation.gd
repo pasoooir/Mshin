@@ -1502,18 +1502,6 @@ func _build_meadow_shrubs_and_stones() -> void:
 		if absf(x - creek_x) < 6.0 or _is_city_road_footprint(x, z):
 			continue
 		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.85, z))
-	# A deterministic broken ring keeps larger scrub visible from the city camera.
-	for index in range(20):
-		var angle := TAU * float(index) / 72.0
-		var radius := 34.0 + sin(float(index) * 2.7) * 2.4
-		var x := cos(angle) * radius
-		var z := sin(angle) * radius
-		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0 or _is_city_road_footprint(x, z):
-			continue
-		var creek_x := 36.0 + sin(z * 0.045) * 2.0
-		if absf(x - creek_x) < 6.0:
-			continue
-		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.9, z))
 	shrub_batch.instance_count = shrub_positions.size()
 	var shrub_palette: Array[Color] = [Color("#456A3C"), Color("#71834B"), Color("#536F52"), Color("#8B9256"), Color("#3D6046")]
 	for index in range(shrub_positions.size()):
@@ -1550,14 +1538,6 @@ func _build_meadow_shrubs_and_stones() -> void:
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
 		if absf(x) < 25.0 and absf(z) < 25.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0 or _is_city_road_footprint(x, z):
-			continue
-		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
-	for index in range(0):
-		var angle := TAU * float(index) / 96.0
-		var radius := 25.5 + float(index % 4) * 1.5
-		var x := cos(angle) * radius
-		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0 or _is_city_road_footprint(x, z):
 			continue
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
