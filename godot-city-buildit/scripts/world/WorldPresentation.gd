@@ -1175,7 +1175,7 @@ func _build_creek_channel() -> void:
 	var water := MeshInstance3D.new()
 	water.name = "MeadowCreekWater"
 	water.mesh = water_surface.commit()
-	water.material_override = _create_shallow_water_material()
+	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 	_build_creek_rock_edges()
