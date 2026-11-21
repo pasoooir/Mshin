@@ -1226,14 +1226,25 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig._unhandled_input(outward_first)
 	_check(camera_rig.current_zoom > zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera out.")
 
+	var position_before_two_finger_pan: Vector3 = camera_rig.global_position
+	var pan_second := InputEventScreenDrag.new()
+	pan_second.index = 2
+	pan_second.position = Vector2(320.0, 220.0)
+	camera_rig._unhandled_input(pan_second)
+	var pan_first := InputEventScreenDrag.new()
+	pan_first.index = 1
+	pan_first.position = Vector2(120.0, 220.0)
+	camera_rig._unhandled_input(pan_first)
+	_check(camera_rig.global_position.distance_to(position_before_two_finger_pan) > 0.01, "Moving both active touches together must pan the live city camera without changing the two-finger baseline.")
+
 	var release_second := InputEventScreenTouch.new()
 	release_second.index = 2
-	release_second.position = Vector2(300.0, 200.0)
+	release_second.position = Vector2(320.0, 220.0)
 	release_second.pressed = false
 	camera_rig._unhandled_input(release_second)
 	var release_first := InputEventScreenTouch.new()
 	release_first.index = 1
-	release_first.position = Vector2(100.0, 200.0)
+	release_first.position = Vector2(120.0, 220.0)
 	release_first.pressed = false
 	camera_rig._unhandled_input(release_first)
 
