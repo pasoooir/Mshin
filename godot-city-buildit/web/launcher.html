@@ -65,7 +65,7 @@
         const frame = document.createElement('iframe');
         frame.id = 'game-frame';
         frame.title = 'Pasoo City BuildIt';
-        frame.allow = 'fullscreen; autoplay; gamepad';
+        frame.allow = 'fullscreen; autoplay; gamepad; identity-credentials-get';
         frame.allowFullscreen = true;
         frame.src = gameUrl;
         document.body.replaceChildren(frame);
