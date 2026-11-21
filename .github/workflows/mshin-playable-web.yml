@@ -146,11 +146,20 @@ jobs:
           // Avoid page-side evaluate/clientWidth: under software WebGL the
           // renderer can stall the iframe main thread after startup, causing
           // an otherwise healthy visible canvas to time out during evaluation.
-          const canvasWidth = Number(await gameCanvas.getAttribute('width'));
+          await page.waitForTimeout(1200);
+          const canvasWidthAttribute = Number(await gameCanvas.getAttribute('width'));
           const canvasHeight = Number(await gameCanvas.getAttribute('height'));
+          // Godot's canvas backing-width attribute may be zero while its
+          // responsive iframe is already laid out. Measure the outer iframe
+          // in the parent document (not the potentially stalled WebGL frame).
+          const iframeDisplayWidth = Math.round(await gameFrame.evaluate(frame => frame.getBoundingClientRect().width));
+          const canvasWidth = Math.max(canvasWidthAttribute, iframeDisplayWidth);
           if (canvasWidth < 640 || canvasHeight < 360) {
-            throw new Error('Desktop WebGL canvas display size is too small: ' + canvasWidth + 'x' + canvasHeight);
+            throw new Error('Desktop WebGL display size is too small: ' + canvasWidth + 'x' + canvasHeight + ' (canvas attribute ' + canvasWidthAttribute + ')');
           }
+          // Allow the optional Poly Haven CDN textures to arrive before the
+          // first visual acceptance frame; procedural fallbacks remain valid.
+          await page.waitForTimeout(1500);
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-entry.png',
             animations: 'disabled',
