@@ -193,7 +193,7 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 
 - [x] Reposition the starter Pacific shoreline beyond the buildable city and widen the beach to 36 m.
 - [x] Extend offshore water to the horizon-facing side of the map and retain the shallow turquoise shoreline band.
-- [x] Add a curved single-mesh timber promenade and 18 palms in two mobile-friendly MultiMeshes.
+- [x] Add a curved single-mesh timber promenade and 24 palms in two mobile-friendly MultiMeshes.
 - [x] Expand the lush inland greenbelt and use a Southern California coastal-green palette.
 - [x] Remove rural livestock, dirt tracks, creek and fieldstone dressing from the active starter scene.
 - [x] Set the initial camera to reveal the empty city grid, green inland edge and wide beach together.
