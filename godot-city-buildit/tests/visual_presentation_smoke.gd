@@ -35,11 +35,54 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
 		get_tree().quit(1)
 		return
+	if DistantMountainBackdropScript.ROCK_FRACTURE_GROOVE_COUNT != 3 or DistantMountainBackdropScript.ROCK_FOOT_PEBBLE_COUNT != 4:
+		push_error("[VisualPresentationSmoke] Near rocks must keep three layered fractures and four fused foot stones per shared mesh")
+		get_tree().quit(1)
+		return
+	var rock_mesh := backdrop._create_rock_outcrop_mesh() as ArrayMesh
+	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
+		push_error("[VisualPresentationSmoke] Chipped near rocks must stay one reusable mesh surface")
+		get_tree().quit(1)
+		return
+	var rock_arrays := rock_mesh.surface_get_arrays(0)
+	var rock_vertices: PackedVector3Array = rock_arrays[Mesh.ARRAY_VERTEX]
+	var rock_normals: PackedVector3Array = rock_arrays[Mesh.ARRAY_NORMAL]
+	var rock_bounds := rock_mesh.get_aabb()
+	if rock_vertices.size() < 300 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 1.65 or rock_bounds.size.z < 1.25:
+		push_error("[VisualPresentationSmoke] Near rock mesh must contain layered fracture grooves, attached talus and complete normals")
+		get_tree().quit(1)
+		return
+	var view_directions: Array[Vector3] = [
+		Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK,
+		Vector3.UP, Vector3.DOWN
+	]
+	for direction in view_directions:
+		var facing_count := 0
+		for normal in rock_normals:
+			if normal.dot(direction) > 0.24:
+				facing_count += 1
+		if facing_count < 3:
+			push_error("[VisualPresentationSmoke] Rock facets must expose readable surfaces from all six camera-side directions")
+			get_tree().quit(1)
+			return
 	var rock_material := rock_outcrops.material_override as ShaderMaterial
-	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights"):
+	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights") or not rock_material.shader.code.contains("contact_occlusion") or not rock_material.shader.code.contains("rock_local_height") or not rock_material.shader.code.contains("stone_fbm(vec3(p.yz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xy"):
 		push_error("[VisualPresentationSmoke] Near rocks must use triplanar mineral grain, cellular fracture edges and controlled roughness")
 		get_tree().quit(1)
 		return
+	var main_scene_for_shadows := load("res://scenes/main.tscn") as PackedScene
+	if main_scene_for_shadows == null:
+		push_error("[VisualPresentationSmoke] Main scene must load for rock shadow validation")
+		get_tree().quit(1)
+		return
+	var shadow_scene := main_scene_for_shadows.instantiate()
+	var key_light := shadow_scene.get_node_or_null("World/DirectionalLight3D") as DirectionalLight3D
+	if key_light == null or not key_light.shadow_enabled or key_light.shadow_opacity < 0.25 or key_light.shadow_blur < 0.5 or absf(key_light.directional_shadow_max_distance - DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE) > 0.01:
+		push_error("[VisualPresentationSmoke] Main directional shadow map must cover near rocks with controlled softness and opacity")
+		shadow_scene.free()
+		get_tree().quit(1)
+		return
+	shadow_scene.free()
 	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
 		push_error("[VisualPresentationSmoke] Rock shadows must be enabled only inside the bounded near-detail range")
 		get_tree().quit(1)

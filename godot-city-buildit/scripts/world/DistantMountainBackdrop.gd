@@ -14,6 +14,8 @@ const RIDGE_FAR_DEPTH_STEPS := 10
 const RIDGE_LOD_DISTANCE := 190.0
 const RIDGE_DETAIL_DISTANCE := 215.0
 const RIDGE_ROCK_COUNT := 72
+const ROCK_FRACTURE_GROOVE_COUNT := 3
+const ROCK_FOOT_PEBBLE_COUNT := 4
 const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
 const EUCALYPT_COUNT := 44
@@ -278,37 +280,158 @@ func _make_tunnel_box(parent: Node3D, node_name: String, dimensions: Vector3, po
 
 
 func _create_rock_outcrop_mesh() -> ArrayMesh:
-	# A compact five-sided, chipped basalt/sandstone outcrop with flat faces.
-	# One shared low-poly mesh is instanced across the near ridge in a single draw.
+	# A chipped, undercut 12-sector outcrop. Two irregular intermediate rings
+	# create real silhouette breaks, recessed facets and fractured ledges even
+	# when the procedural surface shader is disabled.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sides := 5
+	var sectors := 12
 	var ring_bottom: Array[Vector3] = []
-	var ring_top: Array[Vector3] = []
-	for index in range(sides):
-		var angle := TAU * float(index) / sides
-		var radius := 0.72 + 0.18 * sin(float(index) * 2.4 + 0.7)
-		ring_bottom.append(Vector3(cos(angle) * radius, 0.0, sin(angle) * radius))
-		ring_top.append(Vector3(cos(angle + 0.12) * radius * 0.66, 1.0 + 0.38 * sin(float(index) * 1.8), sin(angle + 0.12) * radius * 0.66))
-	var top := Vector3(0.16, 1.72, -0.12)
-	for index in range(sides):
-		var next_index := (index + 1) % sides
-		surface.set_color(Color("#777364"))
+	var ring_mid: Array[Vector3] = []
+	var ring_upper: Array[Vector3] = []
+	for index in range(sectors):
+		var angle := TAU * float(index) / float(sectors)
+		var wave_a := sin(float(index) * 2.17 + 0.43)
+		var wave_b := sin(float(index) * 3.71 + 1.26)
+		var wave_c := sin(float(index) * 1.37 + 2.04)
+		var lower_radius := 0.76 + wave_a * 0.105 + wave_b * 0.045
+		var mid_radius := 0.70 + wave_b * 0.105 + wave_c * 0.055
+		# Alternating inward cuts form visible notches and undercut shelves.
+		if index % 5 == 2:
+			mid_radius -= 0.17
+		if index % 7 == 4:
+			mid_radius -= 0.09
+		var upper_radius := 0.49 + wave_a * 0.095 - wave_c * 0.055
+		var lower_y := -0.035 + wave_b * 0.055
+		var mid_y := 0.52 + wave_a * 0.19
+		var upper_y := 1.12 + wave_c * 0.25
+		ring_bottom.append(Vector3(cos(angle) * lower_radius, lower_y, sin(angle) * lower_radius))
+		ring_mid.append(Vector3(cos(angle + 0.035) * mid_radius, mid_y, sin(angle + 0.035) * mid_radius))
+		ring_upper.append(Vector3(cos(angle - 0.045) * upper_radius, upper_y, sin(angle - 0.045) * upper_radius))
+
+	var peak_a := Vector3(0.13, 1.82, -0.11)
+	var peak_b := Vector3(-0.22, 1.56, 0.19)
+	var bottom_center := Vector3(0.0, -0.075, 0.0)
+	for index in range(sectors):
+		var next_index := (index + 1) % sectors
+		var lower_tone := 0.82 + 0.12 * sin(float(index) * 2.31)
+		var middle_tone := 0.88 + 0.10 * sin(float(index) * 1.73 + 0.8)
+		var upper_tone := 0.91 + 0.08 * sin(float(index) * 2.83 + 1.4)
+		var lower_color := Color(0.47, 0.44, 0.37) * lower_tone
+		var middle_color := Color(0.55, 0.50, 0.41) * middle_tone
+		var upper_color := Color(0.61, 0.56, 0.46) * upper_tone
+
+		# Lower wall: a broken, non-planar band with alternating broad facets.
+		surface.set_color(lower_color)
 		surface.add_vertex(ring_bottom[index])
-		surface.set_color(Color("#8B806B"))
-		surface.add_vertex(ring_top[index])
-		surface.set_color(Color("#655F53"))
+		surface.add_vertex(ring_mid[index])
 		surface.add_vertex(ring_bottom[next_index])
-		surface.set_color(Color("#8B806B"))
+		surface.set_color(lower_color * 0.92)
 		surface.add_vertex(ring_bottom[next_index])
-		surface.add_vertex(ring_top[index])
-		surface.set_color(Color("#9A8B70"))
-		surface.add_vertex(ring_top[next_index])
-		surface.add_vertex(ring_top[index])
-		surface.add_vertex(top)
-		surface.add_vertex(ring_top[next_index])
+		surface.add_vertex(ring_mid[index])
+		surface.add_vertex(ring_mid[next_index])
+
+		# Middle wall: inward ring cuts produce genuine concave pockets.
+		surface.set_color(middle_color)
+		surface.add_vertex(ring_mid[index])
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(ring_mid[next_index])
+		surface.set_color(middle_color * 0.88)
+		surface.add_vertex(ring_mid[next_index])
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(ring_upper[next_index])
+
+		# Jagged crown with alternating high/low shoulders and a split peak.
+		surface.set_color(upper_color)
+		surface.add_vertex(ring_upper[index])
+		surface.add_vertex(peak_a if index % 3 != 1 else peak_b)
+		surface.add_vertex(ring_upper[next_index])
+
+		# A faceted underside closes the mesh and keeps the rock readable
+		# from steep low camera angles; reverse winding points normals downward.
+		surface.set_color(lower_color * 0.76)
+		surface.add_vertex(bottom_center)
+		surface.add_vertex(ring_bottom[index])
+		surface.add_vertex(ring_bottom[next_index])
+
+	# Three recessed fracture channels are actual inset triangles, not painted lines.
+	for crack_index in range(ROCK_FRACTURE_GROOVE_COUNT):
+		var crack_angle := TAU * float(crack_index) / 3.0 + 0.31
+		_append_rock_fracture_groove(surface, crack_angle, 0.78 + float(crack_index) * 0.08)
+	# Four attached talus stones are fused into this same mesh and batch.
+	_append_rock_foot_pebbles(surface)
+
 	surface.generate_normals()
 	return surface.commit()
+
+
+func _append_rock_fracture_groove(surface: SurfaceTool, angle: float, strength: float) -> void:
+	var radial := Vector3(cos(angle), 0.0, sin(angle))
+	var tangent := Vector3(-radial.z, 0.0, radial.x)
+	var lower := radial * 0.455 + Vector3(0.0, 0.20, 0.0)
+	var middle := radial * 0.405 + Vector3(0.0, 0.69, 0.0)
+	var upper := radial * 0.355 + Vector3(0.0, 1.20, 0.0)
+	var width := 0.026 * strength
+	var lower_left := lower - tangent * width
+	var lower_right := lower + tangent * width
+	var middle_left := middle - tangent * width * 0.72
+	var middle_right := middle + tangent * width * 0.72
+	var upper_left := upper - tangent * width * 0.38
+	var upper_right := upper + tangent * width * 0.38
+	surface.set_color(Color(0.105, 0.112, 0.105))
+	surface.add_vertex(lower_left)
+	surface.add_vertex(middle_left)
+	surface.add_vertex(lower_right)
+	surface.add_vertex(lower_right)
+	surface.add_vertex(middle_left)
+	surface.add_vertex(middle_right)
+	surface.add_vertex(middle_left)
+	surface.add_vertex(upper_left)
+	surface.add_vertex(middle_right)
+	surface.add_vertex(middle_right)
+	surface.add_vertex(upper_left)
+	surface.add_vertex(upper_right)
+	# Narrow exposed mineral lips catch the existing key light.
+	surface.set_color(Color(0.64, 0.59, 0.48) * strength)
+	surface.add_vertex(lower_left - tangent * 0.012)
+	surface.add_vertex(middle_left - tangent * 0.010)
+	surface.add_vertex(lower_left)
+	surface.add_vertex(middle_left - tangent * 0.010)
+	surface.add_vertex(upper_left - tangent * 0.006)
+	surface.add_vertex(upper_left)
+
+
+func _append_rock_foot_pebbles(surface: SurfaceTool) -> void:
+	for pebble_index in range(ROCK_FOOT_PEBBLE_COUNT):
+		var angle := TAU * float(pebble_index) / 4.0 + 0.42
+		var radial_distance := 0.62 + float(pebble_index % 2) * 0.075
+		var center := Vector3(cos(angle) * radial_distance, -0.005, sin(angle) * radial_distance)
+		var radius := 0.105 + float(pebble_index % 2) * 0.025
+		var height := 0.095 + float(pebble_index % 3) * 0.018
+		var tone := 0.76 + float(pebble_index % 3) * 0.07
+		_append_rock_pebble(surface, center, radius, height, tone)
+
+
+func _append_rock_pebble(surface: SurfaceTool, center: Vector3, radius: float, height: float, tone: float) -> void:
+	var sides := 5
+	var ring: Array[Vector3] = []
+	for index in range(sides):
+		var angle := TAU * float(index) / float(sides)
+		var wobble := 0.88 + 0.12 * sin(float(index) * 2.7 + tone)
+		ring.append(center + Vector3(cos(angle) * radius * wobble, 0.0, sin(angle) * radius * wobble))
+	var top := center + Vector3(0.018, height, -0.012)
+	var bottom := center + Vector3(0.0, -height * 0.20, 0.0)
+	for index in range(sides):
+		var next_index := (index + 1) % sides
+		var pebble_color := Color(0.43, 0.405, 0.35) * tone
+		surface.set_color(pebble_color)
+		surface.add_vertex(ring[index])
+		surface.add_vertex(top)
+		surface.add_vertex(ring[next_index])
+		surface.set_color(pebble_color * 0.72)
+		surface.add_vertex(bottom)
+		surface.add_vertex(ring[next_index])
+		surface.add_vertex(ring[index])
 
 
 func _create_rock_surface_material() -> ShaderMaterial:
@@ -321,6 +444,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 varying vec3 rock_world_position;
 varying vec3 rock_world_normal;
+varying float rock_local_height;
 
 float hash31(vec3 p) {
 	p = fract(p * 0.1031);
@@ -384,6 +508,8 @@ float cellular_edge(vec2 p) {
 void vertex() {
 	rock_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	rock_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
+	// World-space offset keeps the contact band consistent across rock scales.
+	rock_local_height = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y - MODEL_MATRIX[3].y;
 }
 
 void fragment() {
@@ -392,14 +518,14 @@ void fragment() {
 	vec3 tri_weights = pow(max(n, vec3(0.001)), vec3(4.0));
 	tri_weights /= max(dot(tri_weights, vec3(1.0)), 0.001);
 
-	float grain_x = stone_fbm(p.yz * 1.75);
-	float grain_y = stone_fbm(p.xz * 1.75);
-	float grain_z = stone_fbm(p.xy * 1.75);
+	float grain_x = stone_fbm(vec3(p.yz * 1.75, 0.0));
+	float grain_y = stone_fbm(vec3(p.xz * 1.75, 0.0));
+	float grain_z = stone_fbm(vec3(p.xy * 1.75, 0.0));
 	float grain = dot(vec3(grain_x, grain_y, grain_z), tri_weights);
 	float fine_grain = dot(vec3(
-		stone_fbm(p.yz * 5.8),
-		stone_fbm(p.xz * 5.8),
-		stone_fbm(p.xy * 5.8)
+		stone_fbm(vec3(p.yz * 5.8, 0.0)),
+		stone_fbm(vec3(p.xz * 5.8, 0.0)),
+		stone_fbm(vec3(p.xy * 5.8, 0.0))
 	), tri_weights);
 
 	// Three axis projections hide stretching on steep and horizontal faces.
@@ -427,6 +553,11 @@ void fragment() {
 	base_stone *= 1.0 - fracture_core * 0.62;
 	base_stone *= 1.0 - pores * 0.10;
 	base_stone = mix(base_stone, base_stone * 1.22, fracture_rim * 0.32);
+
+	// Cheap contact occlusion: no extra light, shadow caster or render pass.
+	float contact_band = 1.0 - smoothstep(-0.015, 0.30, rock_local_height);
+	float contact_occlusion = mix(1.0, 0.58, contact_band);
+	base_stone *= contact_occlusion;
 
 	ALBEDO = base_stone;
 	ROUGHNESS = mix(0.88, 0.99, pores);

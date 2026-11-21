@@ -31,6 +31,8 @@ GitHub Actions به‌صورت خودکار پروژه را بررسی، برا�
 
 ---
 
+- [x] Near-field mountain rock pass: layered inset fracture channels, fused foot talus and low-cost contact occlusion in the existing single-surface rock mesh/MultiMesh batch; bounded key-light shadow coverage to the 215 m near-detail range.
+
 ## هدف پروژه
 
 ساخت یک بازی شهرسازی سه‌بعدی با حس، ظاهر، کنترل و سیستم‌های گیم‌پلی نزدیک به SimCity BuildIt.
