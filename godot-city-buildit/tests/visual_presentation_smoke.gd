@@ -190,7 +190,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Only the actual north/south tunnel mouths must exclude obstructing vegetation; the mountain crown stays continuous")
 		get_tree().quit(1)
 		return
-	if not backdrop._is_tunnel_road_detail_exclusion(0, -55.0) or not backdrop._is_tunnel_road_detail_exclusion(1, -55.0) or backdrop._is_tunnel_road_detail_exclusion(0, -34.0) or backdrop._is_tunnel_road_detail_exclusion(2, -55.0):
+	if not backdrop._is_tunnel_road_detail_exclusion(0, -55.0) or not backdrop._is_tunnel_road_detail_exclusion(1, -55.0) or backdrop._is_tunnel_road_detail_exclusion(0, -27.0) or backdrop._is_tunnel_road_detail_exclusion(2, -55.0):
 		push_error("[VisualPresentationSmoke] Mountain rocks, shrubs and trees must stay outside the complete highway tunnel clearance")
 		get_tree().quit(1)
 		return
