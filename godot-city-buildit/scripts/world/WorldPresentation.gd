@@ -4,7 +4,6 @@ var _road_system_cache: Node
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
-const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
@@ -43,10 +42,6 @@ func _ready() -> void:
 	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
 	_build_environment()
 	_build_terrain()
-	var mountain_backdrop := DistantMountainBackdropScript.new()
-	mountain_backdrop.name = "DistantMountainBackdrop"
-	add_child(mountain_backdrop)
-	_build_near_city_rock_outcrops(mountain_backdrop)
 	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
@@ -196,8 +191,8 @@ func _build_terrain() -> void:
 	add_child(terrain)
 
 	# Both water bands follow the exact sampled coastline instead of using
-	# fixed rectangles. This prevents the new mountain/backdrop geometry from
-	# exposing green slivers, burying the beach or cutting the sea at the edges.
+	# fixed rectangles. This keeps the beach and sea aligned to the sampled coastline
+	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
 	water.mesh = _create_coastal_water_mesh(8.0, 159.0, 96, 12, -0.055)
@@ -1260,40 +1255,6 @@ func _animal_leg_positions(origins: Array[Vector3], body_height: float) -> Array
 	return result
 
 
-func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
-	# Twelve fractured sandstone outcrops sit just beyond the initial 48 m
-	# buildable square, inside the normal city-camera footprint.
-	var rock_mesh := backdrop.call("_create_rock_outcrop_mesh") as ArrayMesh
-	var rock_material := backdrop.call("_create_rock_surface_material") as ShaderMaterial
-	var anchors: Array[Vector2] = [
-		Vector2(-18.0, -27.0), Vector2(-6.0, -27.0), Vector2(6.0, -27.0), Vector2(18.0, -27.0),
-		Vector2(-18.0, 27.0), Vector2(-6.0, 27.0), Vector2(6.0, 27.0), Vector2(18.0, 27.0),
-		Vector2(27.0, -18.0), Vector2(27.0, -6.0), Vector2(27.0, 6.0), Vector2(27.0, 18.0)
-	]
-	var batch := MultiMesh.new()
-	batch.transform_format = MultiMesh.TRANSFORM_3D
-	batch.use_colors = true
-	batch.mesh = rock_mesh
-	batch.instance_count = anchors.size()
-	var palette: Array[Color] = [Color("#827B69"), Color("#A09278"), Color("#69675D"), Color("#8D806B")]
-	for index in range(anchors.size()):
-		var anchor := anchors[index]
-		var size := 2.30 + float((index * 5) % 4) * 0.30
-		var scale := Vector3(size * 0.92, size * (1.10 + float(index % 3) * 0.12), size * 0.86)
-		var yaw := float(index * 47 % 360) * PI / 180.0
-		var position := Vector3(anchor.x, _terrain_height(anchor.x, anchor.y) + 0.12, anchor.y)
-		batch.set_instance_transform(index, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), position))
-		batch.set_instance_color(index, palette[index % palette.size()])
-	var rocks := MultiMeshInstance3D.new()
-	rocks.name = "NearCityFracturedRockBatch"
-	rocks.multimesh = batch
-	rocks.material_override = rock_material
-	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	rocks.visibility_range_end = TREE_BELT_DETAIL_END
-	rocks.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
-	rocks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	add_child(rocks)
-
 func _build_dirt_tracks() -> void:
 	# Three eroded dirt spurs peel away from the motorway into the outer meadow.
 	# All ribbons share one vertex-colored surface and one draw call.
@@ -1634,7 +1595,7 @@ func _create_warm_fill_light() -> DirectionalLight3D:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "DistantMountainBackdrop", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)
