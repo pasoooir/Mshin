@@ -48,7 +48,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Excluded mountain instances must be moved outside the playable camera volume instead of rendering at the world origin")
 		get_tree().quit(1)
 		return
-	var mountain_script_source := DistantMountainBackdropScript.get_source_code()
+	var mountain_script_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
 	for hidden_batch_assignment in [
 		"batch.set_instance_transform(index, _hidden_multimesh_instance_transform())",
 		"multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())",
