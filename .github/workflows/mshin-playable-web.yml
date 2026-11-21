@@ -167,81 +167,39 @@ jobs:
           });
           // The Godot canvas fills the 1280x720 game viewport. Move the pointer
           // directly instead of asking Playwright to calculate its bounding box.
-          await page.mouse.move(640, 360);
-          // Capture a medium-distance view first: the playable meadow edge,
-          // near-city outcrops and the distant ridge should share the frame.
-          for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -100);
-          // Continue into a close view to inspect the fractured rock silhouettes.
-          for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
-          // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
-          for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
-          await page.waitForTimeout(1400);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-far.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
+          async function captureCameraPreset(preset, filename) {
+            const currentSrc = await gameFrame.getAttribute('src');
+            const targetUrl = new URL(currentSrc, 'http://127.0.0.1:4173/');
+            targetUrl.searchParams.set('visual_camera', preset);
+            await gameFrame.evaluate((frame, src) => { frame.src = src; }, targetUrl.toString());
+            await page.waitForFunction(value => {
+              const frame = document.getElementById('game-frame');
+              return !!frame?.contentWindow?.location.search.includes('visual_camera=' + value);
+            }, preset, { timeout: 20000 });
+            await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
+            await page.waitForTimeout(1500);
+            await page.screenshot({
+              path: 'artifacts/visual-acceptance/' + filename,
+              animations: 'disabled',
+              timeout: 60000
+            });
+          }
 
-          // Inspect the coastline and shallow/deep water at both scales.
-          // A diagonal drag moves the orbit target along world X without changing its Z.
-          await page.mouse.move(800, 520);
-          await page.mouse.down();
-          await page.mouse.move(650, 370, { steps: 1 });
-          await page.mouse.up();
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-coast-far.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
-          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-coast-near.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
-          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 100);
+          // These presets are explicit QA URLs; the normal player entry camera
+          // remains unchanged and no synthetic drag can fling the live camera.
+          await captureCameraPreset('coast_far', 'desktop-coast-far.png');
+          await captureCameraPreset('coast_near', 'desktop-coast-near.png');
+          await captureCameraPreset('asphalt_far', 'desktop-asphalt-far.png');
+          await captureCameraPreset('asphalt_near', 'desktop-asphalt-near.png');
+          await captureCameraPreset('tunnel_far', 'desktop-tunnel-far.png');
+          await captureCameraPreset('tunnel_near', 'desktop-tunnel-near.png');
 
-          // Move west to the motorway corridor to inspect the clean asphalt,
-          // city connector and tunnel portals without overlaying the HUD.
-          await page.mouse.move(500, 150);
-          await page.mouse.down();
-          await page.mouse.move(915, 565, { steps: 1 });
-          await page.mouse.up();
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-asphalt-far.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
-          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-asphalt-near.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
-          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-tunnel-near.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
-          for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 100);
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-tunnel-far.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-entry.png', 'desktop-mountain-far.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
-            zoomInteraction: 'Godot mouse wheel at multiple distances plus diagonal orbit-target drags to coastline and motorway corridor',
+            captures: ['desktop-entry.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
+            zoomInteraction: 'Deterministic WebGL QA camera presets for near/far coastline, asphalt and tunnel views',
             note: 'Desktop WebGL canvas captures are real rendered game frames. Coastline, deep/shallow water, asphalt and tunnel are captured at near/far scales. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
