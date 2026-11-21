@@ -488,19 +488,19 @@ func _run() -> void:
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
-	var original_signout_persistence_ready := SaveManager.persistence_ready
+	var original_signout_persistence_ready := save_manager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
-	SaveManager.persistence_ready = true
+	save_manager.persistence_ready = true
 	await _tap_control(google_action)
 	await process_frame
 	if not account_manager.is_authenticated() or not avatar_frame.visible:
 		push_error("[NotificationPreferencesSmoke] Sign-out must keep the session active when its final cloud save fails.")
 		quit(1)
 		return
-	SaveManager.persistence_ready = false
+	save_manager.persistence_ready = false
 	await _tap_control(google_action)
 	await process_frame
-	SaveManager.persistence_ready = original_signout_persistence_ready
+	save_manager.persistence_ready = original_signout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
 	if account_manager.is_authenticated() or avatar_frame.visible:
 		push_error("[NotificationPreferencesSmoke] Sign-out must clear the account and hide the avatar after the local-only test path completes.")
@@ -549,11 +549,11 @@ func _run() -> void:
 		quit(1)
 		return
 	var logout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
-	var logout_persistence_ready := SaveManager.persistence_ready
+	var logout_persistence_ready := save_manager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
-	SaveManager.persistence_ready = false
+	save_manager.persistence_ready = false
 	await account_manager.logout()
-	SaveManager.persistence_ready = logout_persistence_ready
+	save_manager.persistence_ready = logout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", logout_api_base)
 
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
