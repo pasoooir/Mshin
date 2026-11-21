@@ -16,6 +16,9 @@ const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
 const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
 const GATEWAY_ROAD_CELL := Vector2i(-23, -1)
+const STARTER_ACCESS_MIN_X := -23
+const STARTER_ACCESS_MAX_X := 1
+const STARTER_ACCESS_ROWS: Array[int] = [-1, 0]
 
 const DIR_UP := Vector2i(0, -1)
 const DIR_DOWN := Vector2i(0, 1)
@@ -120,8 +123,8 @@ func seed_starter_access() -> void:
 	road_levels.clear()
 	# Seed the complete two-row starter connector first, then build each tile
 	# against the finished neighbor graph so no tile keeps a stale end-cap mesh.
-	for x in range(-23, 2):
-		for z in [-1, 0]:
+	for x in range(STARTER_ACCESS_MIN_X, STARTER_ACCESS_MAX_X + 1):
+		for z in STARTER_ACCESS_ROWS:
 			roads[Vector2i(x, z)] = null
 	for cell in roads.keys():
 		_refresh_road_mesh(cell)
@@ -646,6 +649,17 @@ func _get_white_marking_material() -> StandardMaterial3D:
 	_shared_white_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_shared_white_material.albedo_color = Color(0.92, 0.92, 0.86, 1.0)
 	return _shared_white_material
+
+func get_player_built_road_count() -> int:
+	# The two-row Gateway connector is free starter infrastructure, not a
+	# player-built 50-tile achievement. Exclude it even when restored from a save.
+	var count := 0
+	for cell in roads.keys():
+		if cell.x >= STARTER_ACCESS_MIN_X and cell.x <= STARTER_ACCESS_MAX_X and cell.y in STARTER_ACCESS_ROWS:
+			continue
+		count += 1
+	return count
+
 
 func get_road_count() -> int:
 	return roads.size()
