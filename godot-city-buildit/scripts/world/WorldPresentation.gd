@@ -21,8 +21,8 @@ const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
 const AUSTRALIAN_GRASSLAND_PALETTE := [
-	Color("#4C963F"), Color("#63A64A"), Color("#78AD50"),
-	Color("#3E8439"), Color("#8BB65B"), Color("#579B45")
+	Color("#3F6F37"), Color("#507B3E"), Color("#628548"),
+	Color("#345F31"), Color("#7C9251"), Color("#466F3A")
 ]
 
 func _ready() -> void:
@@ -40,12 +40,15 @@ func _ready() -> void:
 	var mountain_backdrop := DistantMountainBackdropScript.new()
 	mountain_backdrop.name = "DistantMountainBackdrop"
 	add_child(mountain_backdrop)
+	_build_near_city_rock_outcrops(mountain_backdrop)
 	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
+	_build_dirt_tracks()
 	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
+	_build_meadow_shrubs_and_stones()
 	_build_meadow_livestock()
 	_build_shoreline_details()
 	_build_cargo_ship_visual()
@@ -67,9 +70,9 @@ func _build_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.82
+	environment.ambient_light_energy = 0.68
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.tonemap_exposure = 1.08
+	environment.tonemap_exposure = 0.96
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.72, 0.82, 0.82)
 	environment.fog_density = 0.00065
@@ -186,6 +189,7 @@ func _build_terrain() -> void:
 	terrain_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	terrain.material_override = terrain_material
+	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
 	var water := MeshInstance3D.new()
@@ -197,6 +201,7 @@ func _build_terrain() -> void:
 	water.mesh = water_mesh
 	water.position = Vector3(104.0, -0.18, 0.0)
 	water.material_override = _create_water_material()
+	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
@@ -208,10 +213,12 @@ func _build_terrain() -> void:
 	shallow_water.mesh = shallow_mesh
 	shallow_water.position = Vector3(54.0, -0.12, 0.0)
 	shallow_water.material_override = _create_shallow_water_material()
+	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
+	_build_creek_channel()
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
-	# World-space UVs keep the subtle ground grain consistent across the terrain mesh.
+	# Stable world-space texture scale plus restrained relief outside the build grid.
 	surface.set_uv(Vector2(point.x * 0.16, point.z * 0.16))
 	var coast := _coastline(point.z)
 	var broad_noise := sin(point.x * 0.31 + point.z * 0.17) * cos(point.z * 0.23 - point.x * 0.11)
@@ -219,20 +226,20 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var blend := clampf((broad_noise * 0.72 + fine_noise * 0.28 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
 	if point.x > coast - 7.0:
-		# Keep a natural wet-sand transition at the shoreline.
-		color = Color("#9A8057").lerp(Color("#D5C18E"), blend)
+		color = Color("#927B59").lerp(Color("#D0B987"), blend)
 	elif point.x > coast - 13.0:
-		# Sparse coastal scrub blends the grass into the beach instead of a hard edge.
-		color = Color("#587744").lerp(Color("#A49A61"), blend * 0.58)
+		color = Color("#587744").lerp(Color("#B1A16C"), blend * 0.58)
 	else:
-		# A brighter temperate meadow: several green families with restrained
-		# olive and dry-grass variation, never a flat monochrome green carpet.
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % AUSTRALIAN_GRASSLAND_PALETTE.size()
 		color = AUSTRALIAN_GRASSLAND_PALETTE[palette_index].lerp(Color("#A0A15B"), blend * 0.12)
 		if fine_noise > 0.58:
 			color = color.lerp(Color("#315F31"), 0.13)
 		elif fine_noise < -0.62:
 			color = color.lerp(Color("#8E9C50"), 0.10)
+	# Exposed stony patches and dry sediment break up the former continuous green carpet.
+	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
+	var scree_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(18.0, 52.0, absf(point.z))
+	color = color.lerp(Color("#777365"), scree_mask * 0.38)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -251,8 +258,23 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		color = color.lerp(Color("#B4A36F"), 0.24)
 	if not LandExpansionManager.is_world_position_unlocked(point):
 		color = color.lerp(Color("#36523A"), 0.12)
+	var terrain_point := point
+	terrain_point.y = _terrain_height(point.x, point.z)
 	surface.set_color(color)
-	surface.add_vertex(point)
+	surface.add_vertex(terrain_point)
+
+
+func _terrain_height(x: float, z: float) -> float:
+	# The initial owned city is 48 x 48 m. Keep it level, then blend into
+	# visible rolling grassland immediately outside its true boundary.
+	if absf(x - HIGHWAY_CENTER_X) < 14.0:
+		return 0.0
+	var distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)
+	var relief_mask := smoothstep(-1.0, 9.0, distance_from_city)
+	var broad := sin(x * 0.105 + z * 0.073) * 0.46
+	var cross := cos(z * 0.16 - x * 0.12) * 0.23
+	var fine := sin(x * 0.39 + z * 0.27) * 0.075
+	return (broad + cross + fine) * relief_mask
 
 func _coastline(z: float) -> float:
 	return 51.0 + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
@@ -571,16 +593,22 @@ func _add_road_marking(position: Vector3, size: Vector3, color: Color) -> void:
 
 func _build_tree_belts() -> void:
 	var positions: Array[Vector3] = []
-	for x in [-82.0, -74.0, -30.0, -14.0, 12.0, 28.0, 42.0]:
-		positions.append(Vector3(x, 0.0, -68.0 + sin(x * 0.1) * 4.0))
-		positions.append(Vector3(x + 4.0, 0.0, 68.0 + cos(x * 0.12) * 4.0))
-	for z in [-52.0, -28.0, 26.0, 48.0]:
-		positions.append(Vector3(-76.0 + sin(z) * 3.0, 0.0, z))
-	for z in [-58.0, -36.0, 22.0, 46.0]:
-		positions.append(Vector3(44.0 + sin(z * 0.08) * 2.0, 0.0, z))
+	for x in [-84.0, -76.0, -62.0, -48.0, -30.0, -14.0, 8.0, 26.0, 42.0]:
+		positions.append(Vector3(x, _terrain_height(x, -68.0), -68.0 + sin(x * 0.1) * 4.0))
+		positions.append(Vector3(x + 3.0, _terrain_height(x, 68.0), 68.0 + cos(x * 0.12) * 4.0))
+	for z in [-78.0, -56.0, -34.0, 28.0, 52.0, 76.0]:
+		positions.append(Vector3(-78.0 + sin(z * 0.7) * 3.0, _terrain_height(-78.0, z), z))
+		positions.append(Vector3(43.0 + sin(z * 0.08) * 2.0, _terrain_height(43.0, z), z))
+	# Extra irregular gum trees create a broken, natural edge rather than a fence-like row.
+	for index in range(20):
+		var x := -74.0 + fposmod(float(index) * 17.3, 116.0)
+		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
+		if absf(x) < 26.0 and absf(z) < 26.0:
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
+			continue
+		positions.append(Vector3(x, _terrain_height(x, z), z))
 
-	# All tree geometry is measured from y=0: root flare touches the terrain,
-	# trunk bottom is exactly at ground height, and the crown overlaps the trunk.
 	var root_mesh := CylinderMesh.new()
 	root_mesh.top_radius = 0.24
 	root_mesh.bottom_radius = 0.34
@@ -590,32 +618,26 @@ func _build_tree_belts() -> void:
 	bark_material.albedo_texture = _create_bark_texture()
 	bark_material.roughness = 1.0
 	root_mesh.material = bark_material
-
 	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.16
+	trunk_mesh.top_radius = 0.13
 	trunk_mesh.bottom_radius = 0.25
-	trunk_mesh.height = 2.5
+	trunk_mesh.height = 2.8
+	trunk_mesh.radial_segments = 8
 	trunk_mesh.material = bark_material
-
-	# A canopy is a connected cluster of overlapping leaf masses, not one
-	# perfect sphere. This produces a fuller, more natural silhouette while
-	# keeping every tree in the same single MultiMesh draw call.
 	var canopy_mesh := _create_clustered_canopy_mesh()
 	var canopy_material := StandardMaterial3D.new()
 	canopy_material.vertex_color_use_as_albedo = true
 	canopy_material.albedo_texture = _create_foliage_texture()
 	canopy_material.roughness = 0.96
-
 	var tree_shadows := _create_tree_shadow_multimesh(positions)
 	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
-	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.25)
-	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.55)
+	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.40)
+	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.85)
 	crowns.material_override = canopy_material
 	add_child(roots)
 	add_child(trunks)
 	add_child(crowns)
-
 
 func _create_clustered_canopy_mesh() -> ArrayMesh:
 	# Low-poly ellipsoids intersect deliberately to form a single coherent
@@ -644,17 +666,17 @@ func _create_clustered_canopy_mesh() -> ArrayMesh:
 
 
 func _tree_instance_transform(index: int, position: Vector3, height_offset: float) -> Transform3D:
-	# Keep transform generation independent of RenderingServer so it can be
-	# validated in headless CI; the exact result is also written to MultiMesh.
-	var scale := 0.82 + float((index * 7) % 5) * 0.09
-	var width_variation := 0.88 + float((index * 3) % 5) * 0.075
-	var height_variation := 0.88 + float((index * 7) % 4) * 0.09
-	var depth_variation := 0.90 + float((index * 11) % 4) * 0.07
+	# Gentle individual lean, variable trunk/crown proportions and asymmetry.
+	var scale := 0.88 + float((index * 7) % 7) * 0.095
+	var width_variation := 0.82 + float((index * 3) % 6) * 0.085
+	var height_variation := 0.82 + float((index * 7) % 6) * 0.105
+	var depth_variation := 0.78 + float((index * 11) % 6) * 0.10
 	var yaw := float((index * 37) % 360) * PI / 180.0
-	var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
+	var lean := deg_to_rad(-9.0 + float((index * 13) % 19))
+	var basis := Basis(Vector3.UP, yaw) * Basis(Vector3(0.0, 0.0, 1.0), lean)
+	basis = basis.scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
 	var origin := position + Vector3(0.0, height_offset * scale * height_variation, 0.0)
 	return Transform3D(basis, origin)
-
 
 func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], height_offset: float) -> MultiMeshInstance3D:
 	var multimesh := MultiMesh.new()
@@ -671,9 +693,9 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 		Color(0.36, 0.25, 0.17), Color(0.55, 0.39, 0.26)
 	]
 	var foliage_palette: Array[Color] = [
-		Color(0.52, 0.78, 0.38), Color(0.39, 0.68, 0.31),
-		Color(0.62, 0.75, 0.32), Color(0.31, 0.59, 0.29),
-		Color(0.72, 0.79, 0.40), Color(0.42, 0.62, 0.25)
+		Color(0.39, 0.59, 0.43), Color(0.47, 0.64, 0.49),
+		Color(0.55, 0.66, 0.48), Color(0.31, 0.52, 0.43),
+		Color(0.62, 0.70, 0.54), Color(0.42, 0.57, 0.45)
 	]
 	for index in range(positions.size()):
 		multimesh.set_instance_transform(index, _tree_instance_transform(index, positions[index], height_offset))
@@ -876,41 +898,73 @@ void fragment() {
 	return material
 
 func _build_grass_detail() -> void:
-	# Sparse, instanced grass blades add real depth without creating thousands of scene nodes.
-	var blade_mesh := BoxMesh.new()
-	blade_mesh.size = Vector3(0.075, 0.34, 0.055)
+	# Each instance is a multi-blade tussock, not a single rectangular stalk.
+	var blade_mesh := _create_meadow_grass_clump_mesh()
 	var blade_material := StandardMaterial3D.new()
 	blade_material.vertex_color_use_as_albedo = true
-	blade_material.roughness = 0.92
-	blade_mesh.material = blade_material
+	blade_material.roughness = 0.98
+	blade_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var positions: Array[Vector3] = []
-	for index in range(900):
-		var x := -42.0 + fposmod(float(index) * 17.31, 82.0)
-		var z := -84.0 + fposmod(float(index) * 29.17, 168.0)
-		if x > 30.0 or absf(z) < 43.0 and x > -40.0:
+	for index in range(2400):
+		var x := -88.0 + fposmod(float(index) * 19.37, 132.0)
+		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
+		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if x > _coastline(z) - 14.0:
+		if absf(x - HIGHWAY_CENTER_X) < 14.0:
 			continue
-		positions.append(Vector3(x, 0.14, z))
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
+		if absf(x - creek_x) < 5.0 or x > _coastline(z) - 13.0:
+			continue
+		positions.append(Vector3(x, _terrain_height(x, z) + 0.025, z))
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.use_colors = true
 	multimesh.mesh = blade_mesh
 	multimesh.instance_count = positions.size()
-	var grass_palette: Array[Color] = [Color(0.20, 0.42, 0.13), Color(0.34, 0.51, 0.17), Color(0.52, 0.55, 0.22), Color(0.65, 0.48, 0.22), Color(0.13, 0.33, 0.15)]
+	var grass_palette: Array[Color] = [
+		Color("#426C35"), Color("#71934A"), Color("#A0A05A"),
+		Color("#557D43"), Color("#879B58"), Color("#355D35")
+	]
 	for index in range(positions.size()):
-		var scale := 0.55 + float((index * 13) % 9) * 0.12
-		var rotation := Basis(Vector3.UP, float(index % 12) * 0.5236).scaled(Vector3(scale, scale, scale))
-		multimesh.set_instance_transform(index, Transform3D(rotation, positions[index]))
+		var scale := 0.72 + float((index * 13) % 11) * 0.09
+		var tilt := deg_to_rad(-12.0 + float((index * 7) % 25))
+		var yaw := float(index % 12) * 0.5236
+		var basis := Basis(Vector3.UP, yaw) * Basis(Vector3(0.0, 0.0, 1.0), tilt)
+		basis = basis.scaled(Vector3(scale, scale, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, positions[index]))
 		multimesh.set_instance_color(index, grass_palette[index % grass_palette.size()])
 	var grass := MultiMeshInstance3D.new()
 	grass.name = "ColorfulGrassDetail"
 	grass.multimesh = multimesh
-	# Individual grass blades are too small to contribute useful silhouettes
-	# to the directional shadow map. Their color, geometry and density remain
-	# unchanged, while disabling their shadow pass reduces mobile GPU work.
+	grass.material_override = blade_material
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(grass)
+
+
+func _create_meadow_grass_clump_mesh() -> ArrayMesh:
+	# Five crossed tapered blades give every instance a readable tuft silhouette.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for blade_index in range(5):
+		var angle := TAU * float(blade_index) / 5.0
+		var direction := Vector3(cos(angle), 0.0, sin(angle))
+		var tangent := Vector3(-direction.z, 0.0, direction.x)
+		var blade_height := 0.78 + float((blade_index * 7) % 4) * 0.13
+		var lean := direction * (0.18 + float(blade_index % 3) * 0.07)
+		var base := Vector3.ZERO
+		var tip := lean + Vector3(0.0, blade_height, 0.0)
+		var left := base - tangent * 0.085
+		var right := base + tangent * 0.085
+		var color := Color("#4B7439").lerp(Color("#91A956"), float(blade_index) * 0.09)
+		surface.set_color(color)
+		surface.add_vertex(left)
+		surface.add_vertex(right)
+		surface.add_vertex(tip)
+		surface.add_vertex(tip)
+		surface.add_vertex(right)
+		surface.add_vertex(left)
+	surface.generate_normals()
+	return surface.commit()
 
 func _build_meadow_livestock() -> void:
 	# Livestock stays in two sandy grazing strips beyond the playable city boundary.
@@ -1045,6 +1099,288 @@ func _animal_leg_positions(origins: Array[Vector3], body_height: float) -> Array
 		for offset in [Vector3(-0.42, 0.32, -0.42), Vector3(-0.42, 0.32, 0.42), Vector3(0.42, 0.32, -0.42), Vector3(0.42, 0.32, 0.42)]:
 			result.append(origin + offset)
 	return result
+
+
+func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
+	# Twelve fractured sandstone outcrops sit just beyond the initial 48 m
+	# buildable square, inside the normal city-camera footprint.
+	var rock_mesh := backdrop.call("_create_rock_outcrop_mesh") as ArrayMesh
+	var rock_material := backdrop.call("_create_rock_surface_material") as ShaderMaterial
+	var anchors: Array[Vector2] = [
+		Vector2(-18.0, -27.0), Vector2(-6.0, -27.0), Vector2(6.0, -27.0), Vector2(18.0, -27.0),
+		Vector2(-18.0, 27.0), Vector2(-6.0, 27.0), Vector2(6.0, 27.0), Vector2(18.0, 27.0),
+		Vector2(27.0, -18.0), Vector2(27.0, -6.0), Vector2(27.0, 6.0), Vector2(27.0, 18.0)
+	]
+	var batch := MultiMesh.new()
+	batch.transform_format = MultiMesh.TRANSFORM_3D
+	batch.use_colors = true
+	batch.mesh = rock_mesh
+	batch.instance_count = anchors.size()
+	var palette: Array[Color] = [Color("#827B69"), Color("#A09278"), Color("#69675D"), Color("#8D806B")]
+	for index in range(anchors.size()):
+		var anchor := anchors[index]
+		var size := 2.30 + float((index * 5) % 4) * 0.30
+		var scale := Vector3(size * 0.92, size * (1.10 + float(index % 3) * 0.12), size * 0.86)
+		var yaw := float(index * 47 % 360) * PI / 180.0
+		var position := Vector3(anchor.x, _terrain_height(anchor.x, anchor.y) + 0.12, anchor.y)
+		batch.set_instance_transform(index, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), position))
+		batch.set_instance_color(index, palette[index % palette.size()])
+	var rocks := MultiMeshInstance3D.new()
+	rocks.name = "NearCityFracturedRockBatch"
+	rocks.multimesh = batch
+	rocks.material_override = rock_material
+	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(rocks)
+
+func _build_dirt_tracks() -> void:
+	# Three eroded dirt spurs peel away from the motorway into the outer meadow.
+	# All ribbons share one vertex-colored surface and one draw call.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var starts: Array[float] = [-69.0, -5.0, 67.0]
+	var finishes: Array[float] = [-48.0, 22.0, 46.0]
+	for road_index in range(3):
+		var previous_left := Vector3.ZERO
+		var previous_right := Vector3.ZERO
+		for step in range(29):
+			var t := float(step) / 28.0
+			var x := lerpf(HIGHWAY_CENTER_X, -17.0 + float(road_index) * 1.5, t)
+			var z := lerpf(starts[road_index], finishes[road_index], t) + sin(t * PI) * (float(road_index) - 1.0) * 7.0
+			var width := 2.25 - t * 0.55 + sin(t * PI * 4.0 + float(road_index)) * 0.16
+			var center_y := _terrain_height(x, z) + 0.055
+			var left := Vector3(x, center_y + 0.012, z - width)
+			var right := Vector3(x, center_y + 0.012, z + width)
+			if step > 0:
+				var tint := 0.82 + 0.12 * sin(float(step * 7 + road_index * 11))
+				var dust := Color(0.43, 0.34, 0.23) * tint
+				var edge := Color(0.30, 0.27, 0.20) * tint
+				surface.set_color(edge)
+				surface.set_uv(Vector2(float(step) * 0.4, 0.0))
+				surface.add_vertex(previous_left)
+				surface.set_color(dust)
+				surface.set_uv(Vector2(float(step) * 0.4, 1.0))
+				surface.add_vertex(previous_right)
+				surface.set_color(dust)
+				surface.set_uv(Vector2(float(step) * 0.4 + 0.4, 0.0))
+				surface.add_vertex(left)
+				surface.set_color(dust)
+				surface.add_vertex(left)
+				surface.add_vertex(previous_right)
+				surface.set_color(edge)
+				surface.add_vertex(right)
+			previous_left = left
+			previous_right = right
+	surface.generate_normals()
+	var roads := MeshInstance3D.new()
+	roads.name = "NaturalDirtTracks"
+	roads.mesh = surface.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 1.0
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	roads.material_override = material
+	roads.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(roads)
+
+
+func _build_creek_channel() -> void:
+	# A shallow incised creek: lowered bed, sloped eroded banks and a separate
+	# narrow water ribbon. It is real cross-section geometry, not a flat plane.
+	var bank_surface := SurfaceTool.new()
+	bank_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var water_surface := SurfaceTool.new()
+	water_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const STEPS := 44
+	var offsets: Array[float] = [-4.0, -2.0, -1.05, 1.05, 2.0, 4.0]
+	for step in range(STEPS):
+		var z0 := -84.0 + float(step) / float(STEPS - 1) * 168.0
+		var z1 := -84.0 + float(step + 1) / float(STEPS - 1) * 168.0
+		var x0 := 36.0 + sin(z0 * 0.045) * 2.0
+		var x1 := 36.0 + sin(z1 * 0.045) * 2.0
+		var heights: Array[float] = [0.01, -0.18, -0.73, -0.73, -0.18, 0.01]
+		for band in range(offsets.size() - 1):
+			var p00 := Vector3(x0 + offsets[band], _terrain_height(x0 + offsets[band], z0) + heights[band], z0)
+			var p01 := Vector3(x1 + offsets[band], _terrain_height(x1 + offsets[band], z1) + heights[band], z1)
+			var p10 := Vector3(x0 + offsets[band + 1], _terrain_height(x0 + offsets[band + 1], z0) + heights[band + 1], z0)
+			var p11 := Vector3(x1 + offsets[band + 1], _terrain_height(x1 + offsets[band + 1], z1) + heights[band + 1], z1)
+			var sediment := Color("#756448") if band == 0 or band == 4 else Color("#574B39")
+			bank_surface.set_color(sediment)
+			bank_surface.add_vertex(p00)
+			bank_surface.add_vertex(p01)
+			bank_surface.add_vertex(p10)
+			bank_surface.set_color(Color("#8C7955") if band == 1 or band == 3 else sediment)
+			bank_surface.add_vertex(p10)
+			bank_surface.add_vertex(p01)
+			bank_surface.add_vertex(p11)
+		var water_y0 := _terrain_height(x0, z0) - 0.43 + sin(z0 * 0.24) * 0.025
+		var water_y1 := _terrain_height(x1, z1) - 0.43 + sin(z1 * 0.24) * 0.025
+		water_surface.set_color(Color("#2E8D9A"))
+		water_surface.add_vertex(Vector3(x0 - 0.92, water_y0, z0))
+		water_surface.add_vertex(Vector3(x1 - 0.92, water_y1, z1))
+		water_surface.add_vertex(Vector3(x0 + 0.92, water_y0, z0))
+		water_surface.add_vertex(Vector3(x0 + 0.92, water_y0, z0))
+		water_surface.add_vertex(Vector3(x1 - 0.92, water_y1, z1))
+		water_surface.add_vertex(Vector3(x1 + 0.92, water_y1, z1))
+	bank_surface.generate_normals()
+	water_surface.generate_normals()
+	var banks := MeshInstance3D.new()
+	banks.name = "ErodedCreekBanksAndBed"
+	banks.mesh = bank_surface.commit()
+	var bank_material := StandardMaterial3D.new()
+	bank_material.vertex_color_use_as_albedo = true
+	bank_material.roughness = 1.0
+	banks.material_override = bank_material
+	banks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(banks)
+	var water := MeshInstance3D.new()
+	water.name = "MeadowCreekWater"
+	water.mesh = water_surface.commit()
+	water.material_override = _create_water_material()
+	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(water)
+	_build_creek_rock_edges()
+
+
+func _build_creek_rock_edges() -> void:
+	# One low-poly stone mesh, instanced along both eroded creek banks.
+	var stone := SphereMesh.new()
+	stone.radius = 1.0
+	stone.height = 1.0
+	stone.radial_segments = 7
+	stone.rings = 4
+	var batch := MultiMesh.new()
+	batch.transform_format = MultiMesh.TRANSFORM_3D
+	batch.use_colors = true
+	batch.mesh = stone
+	batch.instance_count = 104
+	var palette: Array[Color] = [Color("#777568"), Color("#A09278"), Color("#5E625A"), Color("#88765D")]
+	for index in range(104):
+		var z := -82.0 + float(index) * 1.58
+		var center_x := 36.0 + sin(z * 0.045) * 2.0
+		var side := -1.0 if index % 2 == 0 else 1.0
+		var size := 0.20 + float((index * 7) % 6) * 0.075
+		var x := center_x + side * (2.1 + float(index % 3) * 0.65)
+		var scale := Vector3(size * (1.0 + float(index % 3) * 0.25), size * 0.48, size * 0.72)
+		var basis := Basis(Vector3.UP, float(index * 47 % 360) * PI / 180.0).scaled(scale)
+		batch.set_instance_transform(index, Transform3D(basis, Vector3(x, _terrain_height(x, z) + 0.05, z)))
+		batch.set_instance_color(index, palette[index % palette.size()])
+	var rocks := MultiMeshInstance3D.new()
+	rocks.name = "CreekBankStoneBatch"
+	rocks.multimesh = batch
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 1.0
+	rocks.material_override = material
+	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(rocks)
+
+
+func _build_meadow_shrubs_and_stones() -> void:
+	# Scrub is concentrated around the city perimeter as well as the outer meadow.
+	var shrub_mesh := _create_meadow_shrub_mesh()
+	var shrub_batch := MultiMesh.new()
+	shrub_batch.transform_format = MultiMesh.TRANSFORM_3D
+	shrub_batch.use_colors = true
+	shrub_batch.mesh = shrub_mesh
+	var shrub_positions: Array[Vector3] = []
+	for index in range(260):
+		var x := -87.0 + fposmod(float(index) * 23.71, 130.0)
+		var z := -86.0 + fposmod(float(index) * 37.19, 172.0)
+		if absf(x) < 26.0 and absf(z) < 26.0:
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
+			continue
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
+		if absf(x - creek_x) < 6.0:
+			continue
+		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.85, z))
+	# A deterministic broken ring keeps larger scrub visible from the city camera.
+	for index in range(72):
+		var angle := TAU * float(index) / 72.0
+		var radius := 27.5 + sin(float(index) * 2.7) * 1.3
+		var x := cos(angle) * radius
+		var z := sin(angle) * radius
+		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0:
+			continue
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
+		if absf(x - creek_x) < 6.0:
+			continue
+		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.9, z))
+	shrub_batch.instance_count = shrub_positions.size()
+	var shrub_palette: Array[Color] = [Color("#456A3C"), Color("#71834B"), Color("#536F52"), Color("#8B9256"), Color("#3D6046")]
+	for index in range(shrub_positions.size()):
+		var size := 0.88 + float((index * 11) % 9) * 0.105
+		var yaw := float(index * 31 % 360) * PI / 180.0
+		var basis := Basis(Vector3.UP, yaw).scaled(Vector3(size * 1.25, size, size * 0.92))
+		shrub_batch.set_instance_transform(index, Transform3D(basis, shrub_positions[index]))
+		shrub_batch.set_instance_color(index, shrub_palette[index % shrub_palette.size()])
+	var shrubs := MultiMeshInstance3D.new()
+	shrubs.name = "AustralianMeadowScrub"
+	shrubs.multimesh = shrub_batch
+	var shrub_material := StandardMaterial3D.new()
+	shrub_material.vertex_color_use_as_albedo = true
+	shrub_material.roughness = 1.0
+	shrubs.material_override = shrub_material
+	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(shrubs)
+
+	var stone_mesh := SphereMesh.new()
+	stone_mesh.radius = 1.0
+	stone_mesh.height = 1.0
+	stone_mesh.radial_segments = 7
+	stone_mesh.rings = 4
+	var stone_batch := MultiMesh.new()
+	stone_batch.transform_format = MultiMesh.TRANSFORM_3D
+	stone_batch.use_colors = true
+	stone_batch.mesh = stone_mesh
+	var stone_positions: Array[Vector3] = []
+	for index in range(220):
+		var x := -88.0 + fposmod(float(index) * 29.31, 134.0)
+		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
+		if absf(x) < 25.0 and absf(z) < 25.0:
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
+			continue
+		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
+	for index in range(96):
+		var angle := TAU * float(index) / 96.0
+		var radius := 25.5 + float(index % 4) * 1.5
+		var x := cos(angle) * radius
+		var z := sin(angle) * radius
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
+			continue
+		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
+	stone_batch.instance_count = stone_positions.size()
+	var stone_palette: Array[Color] = [Color("#77766A"), Color("#9B8D75"), Color("#62665E"), Color("#8B795F")]
+	for index in range(stone_positions.size()):
+		var size := 0.18 + float((index * 5) % 8) * 0.095
+		var basis := Basis(Vector3.UP, float(index * 53 % 360) * PI / 180.0).scaled(Vector3(size * 1.25, size * 0.48, size * 0.88))
+		stone_batch.set_instance_transform(index, Transform3D(basis, stone_positions[index]))
+		stone_batch.set_instance_color(index, stone_palette[index % stone_palette.size()])
+	var stones := MultiMeshInstance3D.new()
+	stones.name = "MeadowFieldstoneBatch"
+	stones.multimesh = stone_batch
+	var stone_material := StandardMaterial3D.new()
+	stone_material.vertex_color_use_as_albedo = true
+	stone_material.roughness = 1.0
+	stones.material_override = stone_material
+	stones.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(stones)
+
+func _create_meadow_shrub_mesh() -> ArrayMesh:
+	# Three irregular intersecting leaf masses make a readable scrub silhouette.
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 1.8
+	sphere.radial_segments = 8
+	sphere.rings = 5
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	surface.append_from(sphere, 0, Transform3D(Basis.IDENTITY.scaled(Vector3(0.72, 0.78, 0.70)), Vector3.ZERO))
+	surface.append_from(sphere, 0, Transform3D(Basis.IDENTITY.scaled(Vector3(0.58, 0.60, 0.56)), Vector3(-0.48, -0.12, 0.10)))
+	surface.append_from(sphere, 0, Transform3D(Basis.IDENTITY.scaled(Vector3(0.62, 0.68, 0.58)), Vector3(0.43, -0.08, -0.18)))
+	return surface.commit()
+
 
 
 func _build_shoreline_details() -> void:

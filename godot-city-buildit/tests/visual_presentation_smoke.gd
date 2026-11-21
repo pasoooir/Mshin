@@ -43,6 +43,26 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Near rocks must keep three layered fractures and four fused foot stones per shared mesh")
 		get_tree().quit(1)
 		return
+	var hidden_transform: Transform3D = backdrop._hidden_multimesh_instance_transform()
+	if hidden_transform.origin.y > -1000.0:
+		push_error("[VisualPresentationSmoke] Excluded MultiMesh slots must be moved away from the playable city origin")
+		get_tree().quit(1)
+		return
+	var mountain_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
+	if not mountain_source.contains("render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;"):
+		push_error("[VisualPresentationSmoke] Fractured rock material must render its chipped facets from both sides")
+		get_tree().quit(1)
+		return
+	for hidden_assignment in [
+		"batch.set_instance_transform(index, _hidden_multimesh_instance_transform())",
+		"multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())",
+		"trunks.set_instance_transform(index, hidden_transform)",
+		"crowns.set_instance_transform(index, hidden_transform)"
+	]:
+		if not mountain_source.contains(hidden_assignment):
+			push_error("[VisualPresentationSmoke] Every excluded mountain batch slot must receive an explicit hidden transform: " + hidden_assignment)
+			get_tree().quit(1)
+			return
 	var rock_mesh := backdrop._create_rock_outcrop_mesh() as ArrayMesh
 	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Chipped near rocks must stay one reusable mesh surface")
@@ -52,8 +72,8 @@ func _ready() -> void:
 	var rock_vertices: PackedVector3Array = rock_arrays[Mesh.ARRAY_VERTEX]
 	var rock_normals: PackedVector3Array = rock_arrays[Mesh.ARRAY_NORMAL]
 	var rock_bounds := rock_mesh.get_aabb()
-	if rock_vertices.size() < 300 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 1.65 or rock_bounds.size.z < 1.25:
-		push_error("[VisualPresentationSmoke] Near rock mesh must contain layered fracture grooves, attached talus and complete normals")
+	if rock_vertices.size() < 500 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 2.0 or rock_bounds.size.z < 1.25:
+		push_error("[VisualPresentationSmoke] Near rock mesh must contain dense multi-peak fracture geometry, attached talus and complete normals")
 		get_tree().quit(1)
 		return
 	var view_directions: Array[Vector3] = [
@@ -87,8 +107,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	shadow_scene.free()
-	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
-		push_error("[VisualPresentationSmoke] Rock shadows must be enabled only inside the bounded near-detail range")
+	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+		push_error("[VisualPresentationSmoke] Rock contact occlusion must stay shader-based; individual outcrop shadow casting is disabled for mobile")
 		get_tree().quit(1)
 		return
 	if absf(backdrop._ridge_radial_offset(83.0, 0.48, 0)) < 0.5 or absf(backdrop._ridge_radial_offset(-217.0, 0.63, 2)) < 0.5:
@@ -130,6 +150,34 @@ func _ready() -> void:
 		return
 	if backdrop._ridge_color(-120.0, 0.52, 0).is_equal_approx(backdrop._ridge_color(110.0, 0.52, 0)):
 		push_error("[VisualPresentationSmoke] Mountain ridge vertex palette must vary across sediment bands and grassy slopes")
+		get_tree().quit(1)
+		return
+	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required_visual_feature in [
+		"func _terrain_height(",
+		"func _build_dirt_tracks(",
+		"func _build_creek_channel(",
+		"func _build_creek_rock_edges(",
+		"func _build_meadow_shrubs_and_stones(",
+		"func _create_meadow_shrub_mesh(",
+		"func _build_near_city_rock_outcrops(",
+		"func _create_meadow_grass_clump_mesh(",
+		"NearCityFracturedRockBatch",
+		"Vector2(-18.0, -27.0)",
+		"distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)",
+		"absf(x) < 26.0 and absf(z) < 26.0",
+		"AustralianMeadowScrub",
+		"MeadowFieldstoneBatch",
+		"NaturalDirtTracks",
+		"ErodedCreekBanksAndBed",
+		"MeadowCreekWater"
+	]:
+		if not world_visual_source.contains(required_visual_feature):
+			push_error("[VisualPresentationSmoke] Living Australian ground is missing a required near-camera feature: " + required_visual_feature)
+			get_tree().quit(1)
+			return
+	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
+		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
 		get_tree().quit(1)
 		return
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
