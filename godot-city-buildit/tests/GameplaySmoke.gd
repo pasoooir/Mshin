@@ -4326,7 +4326,12 @@ func _run_gameplay_test() -> void:
 	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(25.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
 	if entry_camera_rig != null:
 		entry_camera_rig.current_zoom = 38.0
-		entry_camera_rig.global_position = Vector3.ZERO
+		entry_camera_rig.global_position = Vector3(-9.0, 0.0, 2.5)
+		entry_camera_rig.focus_target = entry_camera_rig.global_position
+		entry_camera_rig.focus_zoom_target = -1.0
+		entry_camera_rig.is_focus_animating = false
+		entry_camera_rig.pan_velocity = Vector2.ZERO
+		entry_camera_rig.orbit_velocity = 0.0
 		entry_camera_rig._update_camera_transform()
 	_test_persistence_event_signal_coverage()
 	_test_mayor_xp_progression()
