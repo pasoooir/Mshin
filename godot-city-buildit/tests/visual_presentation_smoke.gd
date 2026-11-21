@@ -26,6 +26,14 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	if not world_source.contains("grid_instance.visible = BuildManager.is_placing") or not world_source.contains("func _on_placement_mode_changed(active: bool)"):
+		push_error("[VisualPresentationSmoke] Build grid must stay hidden until an explicit building-placement action")
+		get_tree().quit(1)
+		return
+	if not world_source.contains("float broad = meadow_fbm(world_position.xz * 0.055)") or not world_source.contains("float dry_patch = smoothstep(0.67, 0.88"):
+		push_error("[VisualPresentationSmoke] Meadow material must include multi-scale natural ground variation")
+		get_tree().quit(1)
+		return
 	if world_source.count("_is_city_road_footprint(x, z)") < 6:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
