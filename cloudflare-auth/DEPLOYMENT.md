@@ -26,7 +26,7 @@ npx wrangler secret put GITHUB_JSON_TOKEN
 
 - `AUTH_TOKEN_SECRET`: a new random secret of at least 32 characters. Keep it only as a Worker secret.
 - `GITHUB_JSON_TOKEN`: the existing Fine-grained token, restricted to `pasoooir/mshin-player-data`, with Contents read/write. Never put it in GitHub Pages, Godot, source files, or chat.
-- `GOOGLE_CLIENT_ID`: replace the placeholder in `wrangler.toml` with the Google Web OAuth client ID. It is public configuration, not a secret.
+- `GOOGLE_CLIENT_ID`: the public Google Web OAuth Client ID. It is already configured in `wrangler.toml` and must remain identical to `mshin/account/google_client_id` in `godot-city-buildit/project.godot`; it is not a secret.
 - Keep `GAME_ORIGIN=https://pasoooir.github.io`.
 
 Deploy:
