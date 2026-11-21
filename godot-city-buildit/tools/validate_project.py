@@ -260,6 +260,24 @@ hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 if "const HIGHWAY_LENGTH := 700.0" not in world_presentation_source or "for segment in range(-55, 56):" not in world_presentation_source:
     errors.append("Regional highway must remain visually continuous across both mountain tunnel exits")
+world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
+for contract in [
+    "func _create_coastal_water_mesh(",
+    "var near_x0 := coast_x0 + shore_offset",
+    "var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge",
+    "var beach_fade := smoothstep(0.0, 14.0, _coastline(z) - x)",
+    "_is_city_road_footprint(x, z)",
+]:
+    if contract not in world_presentation_source:
+        errors.append(f"Coastal continuity and road-clearance contract is missing: {contract}")
+for contract in [
+    "var _multi_touch_gesture_active: bool = false",
+    "if _multi_touch_gesture_active:",
+    "pan_velocity = Vector2.ZERO",
+    "orbit_velocity = 0.0",
+]:
+    if contract not in camera_controller_source:
+        errors.append(f"Multi-touch release safety contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
@@ -1118,7 +1136,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var broad_massif := sin(along * 0.014 + float(side) * 1.83) * 0.5 + cos(along * 0.022 - float(side) * 0.91) * 0.32", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "await get_tree().process_frame"]:
+for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var broad_massif := sin(along * 0.014 + float(side) * 1.83) * 0.5 + cos(along * 0.022 - float(side) * 0.91) * 0.32", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= coastline - 0.1", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "await get_tree().process_frame"]:
     if contract not in mountain_backdrop_source:
         errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
