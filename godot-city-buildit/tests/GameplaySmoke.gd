@@ -1185,6 +1185,12 @@ func _test_account_profile_restore_isolation() -> void:
 	_check(SaveManager.persistence_ready, "Account profile restoration must wait until the local city save system is ready.")
 	if not SaveManager.persistence_ready:
 		return
+	var newer_local_snapshot := {"saved_at": "2026-01-01T02:00:00"}
+	var older_remote_snapshot := {"saved_at": "2026-01-01T01:00:00"}
+	var older_local_snapshot := {"saved_at": "2026-01-01T00:30:00"}
+	_check(PlayerAccountManager.should_prefer_local_profile_state(newer_local_snapshot, older_remote_snapshot), "A newer offline local snapshot must win over an older cloud game_state.")
+	_check(not PlayerAccountManager.should_prefer_local_profile_state(older_local_snapshot, older_remote_snapshot), "A newer cloud game_state must replace an older local snapshot.")
+	_check(PlayerAccountManager.should_prefer_local_profile_state(newer_local_snapshot, null), "A local account save must be recovered when the cloud profile has no game_state yet.")
 	var original_player_id: int = PlayerAccountManager.player_id
 	var original_access_token: String = PlayerAccountManager.access_token
 	var original_identity_label: String = PlayerAccountManager.identity_label
