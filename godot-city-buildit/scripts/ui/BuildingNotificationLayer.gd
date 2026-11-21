@@ -178,7 +178,7 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 			building.add_child(anchor)
 			_world_anchors[str(building_id)] = anchor
 		var roof_anchor := _get_roof_anchor(building)
-		anchor.position = Vector3(0.0, roof_anchor.y - building.global_position.y + 1.15, 0.0)
+		anchor.set_anchor_position(Vector3(0.0, roof_anchor.y - building.global_position.y + 1.15, 0.0))
 		anchor.set_notifications(grouped[building_id])
 
 func _notification_type(kind: String) -> int:
