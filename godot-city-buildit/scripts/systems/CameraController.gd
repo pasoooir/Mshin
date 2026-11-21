@@ -83,7 +83,7 @@ func _process(delta: float) -> void:
 	else:
 		pan_velocity = Vector2.ZERO
 	if absf(orbit_velocity) > ORBIT_INERTIA_STOP_SPEED:
-		rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(orbit_velocity * step_delta), -180.0, 180.0)
+		rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, orbit_velocity * step_delta)
 		orbit_velocity = decay_orbit_velocity(orbit_velocity, step_delta, orbit_inertia_damping)
 	else:
 		orbit_velocity = 0.0
@@ -140,6 +140,16 @@ static func pinch_zoom_delta(previous_distance: float, current_distance: float, 
 
 static func touch_centroid(first: Vector2, second: Vector2) -> Vector2:
 	return (first + second) * 0.5
+
+
+static func touch_orbit_delta(previous_angle: float, current_angle: float) -> float:
+	# Keep a twist crossing the -PI/PI seam as a small continuous movement.
+	return wrapf(current_angle - previous_angle, -PI, PI)
+
+
+static func apply_orbit_delta(current_y_degrees: float, angle_delta_radians: float) -> float:
+	# Yaw is normalized but never clamped, so repeated twists can complete full turns.
+	return wrapf(current_y_degrees + rad_to_deg(angle_delta_radians), -180.0, 180.0)
 
 func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
@@ -251,9 +261,9 @@ func _update_pinch() -> void:
 		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
 		if absf(distance_delta) >= PINCH_DEADZONE:
 			_zoom(distance_delta)
-		var angle_delta: float = wrapf(angle - last_pinch_angle, -PI, PI)
+		var angle_delta: float = touch_orbit_delta(last_pinch_angle, angle)
 		if absf(angle_delta) >= TWIST_DEADZONE:
-			rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(angle_delta), -180.0, 180.0)
+			rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, angle_delta)
 			var orbit_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
 			orbit_velocity = angle_delta / orbit_frame_delta
 	last_pinch_distance = distance
