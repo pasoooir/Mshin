@@ -145,16 +145,16 @@ jobs:
           if (!canvasBox || canvasBox.width < 640 || canvasBox.height < 360) {
             throw new Error('Desktop WebGL canvas is not at the expected playable size: ' + JSON.stringify(canvasBox));
           }
-          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-entry.png', animations: 'disabled' });
+          await page.screenshot({ path: 'artifacts/visual-acceptance/desktop-entry.png', animations: 'disabled' });
           // Exercise the actual Godot wheel-zoom path and capture a near view.
           await gameCanvas.hover();
           for (let i = 0; i < 7; i++) await page.mouse.wheel(0, -100);
           await page.waitForTimeout(1200);
-          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-near.png', animations: 'disabled' });
+          await page.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-near.png', animations: 'disabled' });
           // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
           for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
           await page.waitForTimeout(1400);
-          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-far.png', animations: 'disabled' });
+          await page.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-far.png', animations: 'disabled' });
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
