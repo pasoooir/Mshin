@@ -1840,7 +1840,7 @@ The camera change must be assessed together with the city renderer. The followin
 
 - [x] Move the Pacific shoreline beyond the complete starter build grid and widen the sandy beach to a 36 m coastal band.
 - [x] Extend the offshore ocean mesh and retain a continuous shallow turquoise-water transition.
-- [x] Add a curved timber coastal promenade as one mesh and 18 palm trees using batched trunk/crown MultiMeshes.
+- [x] Add a curved timber coastal promenade as one mesh and 24 palm trees using batched trunk/crown MultiMeshes.
 - [x] Replace the starter grassland palette with a lush Pacific-green palette and expand the inland tree belt.
 - [x] Remove rural livestock, dirt-track, creek and fieldstone presentation from the active starter-scene composition; keep the underlying systems/scripts available for later regional use.
 - [x] Reframe the entry camera to show the open city, green edge and Pacific beach together.
