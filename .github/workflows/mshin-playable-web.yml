@@ -171,9 +171,14 @@ jobs:
             const currentSrc = await gameFrame.getAttribute('src');
             const targetUrl = new URL(currentSrc, 'http://127.0.0.1:4173/');
             targetUrl.searchParams.set('visual_camera', preset);
-            const navigated = page.waitForEvent('framenavigated', frame => frame.url().includes('visual_camera=' + preset), { timeout: 20000 });
             await gameFrame.evaluate((frame, src) => { frame.src = src; }, targetUrl.toString());
-            await navigated;
+            const appliedSrc = await gameFrame.getAttribute('src');
+            if (!appliedSrc || !appliedSrc.includes('visual_camera=' + preset)) {
+              throw new Error('Failed to apply visual camera preset: ' + preset);
+            }
+            // Wait for the iframe navigation and WebGL canvas to settle without
+            // querying the renderer's potentially busy JavaScript event loop.
+            await page.waitForTimeout(3500);
             await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
             await page.waitForTimeout(1500);
             await page.screenshot({
