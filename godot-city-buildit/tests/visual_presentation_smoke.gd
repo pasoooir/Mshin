@@ -130,6 +130,22 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Mountain crown must rise at least 25 m above the tunnel crown cap")
 		get_tree().quit(1)
 		return
+
+	# Verify the actual generated near/far ridge meshes retain the crown at both
+	# portal radii, not merely the height helper's theoretical return value.
+	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge"]:
+		for lod_suffix in ["", "FarLOD"]:
+			var crown_ridge := backdrop.get_node(ridge_name + lod_suffix) as MeshInstance3D
+			var crown_vertices: PackedVector3Array = crown_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+			for portal_radius in [DistantMountainBackdropScript.RIDGE_INNER_RADIUS, DistantMountainBackdropScript.RIDGE_OUTER_RADIUS]:
+				var sampled_minimum := INF
+				for crown_vertex in crown_vertices:
+					if absf(crown_vertex.x - DistantMountainBackdropScript.TUNNEL_CENTER_X) <= DistantMountainBackdropScript.TUNNEL_CROWN_PLATEAU_HALF_WIDTH and absf(absf(crown_vertex.z) - portal_radius) < 0.01:
+						sampled_minimum = minf(sampled_minimum, crown_vertex.y)
+				if sampled_minimum < DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT - 0.01:
+					push_error("[VisualPresentationSmoke] Generated " + ridge_name + lod_suffix + " mesh loses the mountain crown at portal radius %.1f m (height %.2f m)" % [portal_radius, sampled_minimum])
+					get_tree().quit(1)
+					return
 	if backdrop.get_node_or_null("NorthHighwayTunnel") == null or backdrop.get_node_or_null("SouthHighwayTunnel") == null:
 		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
 		get_tree().quit(1)
