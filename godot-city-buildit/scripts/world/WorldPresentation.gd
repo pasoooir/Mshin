@@ -1731,7 +1731,7 @@ func _create_warm_fill_light() -> DirectionalLight3D:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "MeadowLivestock", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "PacificCoastalPromenade", "PacificPalmTrunks", "PacificPalmCrowns", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)
