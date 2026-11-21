@@ -895,7 +895,7 @@ for visual_contract in [
     "PacificCoastalPromenade",
     "PacificPalmTrunks",
     "PacificPalmCrowns",
-    "const COASTAL_GREEN_PALETTE :="
+    "const COASTAL_GREEN_PALETTE :=",
     "func _add_highway_lane_dashes(",
     "HighwayConcreteMedian",
     "HighwayGuardrails",
