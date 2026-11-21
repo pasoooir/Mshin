@@ -1150,6 +1150,22 @@ func _test_camera_inertia_math() -> void:
 	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinch distance changes must produce opposite zoom directions.")
 	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
 	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
+	var seam_twist := CameraControllerScript.touch_orbit_delta(deg_to_rad(179.0), deg_to_rad(-179.0))
+	_check(is_equal_approx(seam_twist, deg_to_rad(2.0)), "Two-finger twist crossing the -180/180 angle seam must not produce a full-turn camera jump.")
+	var full_turn_yaw := 0.0
+	for _step in range(36):
+		full_turn_yaw = CameraControllerScript.apply_orbit_delta(full_turn_yaw, deg_to_rad(10.0))
+	_check(absf(full_turn_yaw) < 0.001, "Repeated two-finger twists must complete a continuous 360-degree orbit and wrap to the starting heading.")
+	var reverse_turn_yaw := 0.0
+	for _step in range(36):
+		reverse_turn_yaw = CameraControllerScript.apply_orbit_delta(reverse_turn_yaw, deg_to_rad(-10.0))
+	_check(absf(reverse_turn_yaw) < 0.001, "Two-finger orbit must complete a continuous 360-degree turn in either direction.")
+	var touch_order_rig := CameraControllerScript.new()
+	touch_order_rig.touch_points[9] = Vector2(300.0, 100.0)
+	touch_order_rig.touch_points[2] = Vector2(100.0, 100.0)
+	var ordered_touch_positions: Array = touch_order_rig._ordered_touch_positions()
+	_check(ordered_touch_positions.size() == 2 and ordered_touch_positions[0].is_equal_approx(Vector2(100.0, 100.0)) and ordered_touch_positions[1].is_equal_approx(Vector2(300.0, 100.0)), "Two-finger gestures must use stable pointer-ID ordering so centroid, pinch and twist baselines do not swap.")
+	touch_order_rig.free()
 	var pan_scale_720 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 720.0)
 	var pan_scale_1440 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 1440.0)
 	_check(pan_scale_720 > 0.0 and is_equal_approx(pan_scale_720, pan_scale_1440 * 2.0), "Camera pan sensitivity must scale with viewport height rather than raw device pixels.")
