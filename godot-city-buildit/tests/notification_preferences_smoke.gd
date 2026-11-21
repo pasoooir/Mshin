@@ -259,12 +259,14 @@ func _run() -> void:
 		return
 
 	# Wallet must display current balances without a dead, disabled purchase button.
+	categories.current_tab = 0
+	await process_frame
 	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
 	if wallet_button == null:
 		push_error("[NotificationPreferencesSmoke] Wallet action button is missing.")
 		quit(1)
 		return
-	await _tap_control(wallet_button)
+	wallet_button.pressed.emit()
 	await process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
 	var wallet_overlay := hud.find_child("SettingsWalletDialogOverlay", true, false) as Control
