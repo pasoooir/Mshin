@@ -389,6 +389,38 @@ func _test_building_notification_grouping() -> void:
 	_check(world_anchor.get_visible_notification_count() == 1, "Each building must expose its priority-ranked world-space notification state.")
 	world_anchor.free()
 
+	# Exercise the production path that attaches a 3D anchor to the live
+	# building node, rather than testing a detached anchor in isolation.
+	var notification_layer := BuildingNotificationLayerScript.new()
+	add_child(notification_layer)
+	var fixture := FireHazardTestBuilding.new()
+	fixture.building_id = "notification-anchor-integration"
+	fixture.upgrade_stage = 2
+	fixture.global_position = Vector3(6.0, 0.0, 8.0)
+	add_child(fixture)
+	var wanted := {
+		"notification-anchor-integration|product|nails": {
+			"building": fixture,
+			"kind": "product",
+			"item_id": "nails",
+			"slots": [{}, {}, {}],
+			"missing_text": "",
+			"priority": BuildingNotificationLayerScript.get_notification_priority("product")
+		}
+	}
+	notification_layer.call("_sync_world_anchors", wanted)
+	var attached_anchor := fixture.get_node_or_null("WorldNotificationAnchor") as Node3D
+	_check(attached_anchor != null, "Refreshing a live building notification must attach its world-space anchor beneath that building.")
+	if attached_anchor != null:
+		_check(attached_anchor.get_parent() == fixture, "World-space notification anchor must follow the owning building through camera orbit and city movement.")
+		_check(attached_anchor.position.y > 0.0, "World-space notification anchor must be positioned above the building roof, not at ground level.")
+		_check(attached_anchor.get("notification_pressed") != null, "World-space notification anchor must expose its actionable tap signal.")
+		_check(attached_anchor.has_method("get_visible_notification_count") and attached_anchor.get_visible_notification_count() == 1, "The attached world-space anchor must render the same live notification state as its screen-space fallback.")
+		_check(attached_anchor.notification_pressed.is_connected(Callable(notification_layer, "_on_world_notification_pressed")), "World-space notification taps must route back into the existing building action handlers.")
+	notification_layer.queue_free()
+	fixture.queue_free()
+	await get_tree().process_frame
+
 func _test_live_production_queue_eta() -> void:
 	var queue_probe = ProductionComponentScript.new()
 	queue_probe.shop_id = "building_supplies"
