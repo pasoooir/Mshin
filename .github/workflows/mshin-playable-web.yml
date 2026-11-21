@@ -171,11 +171,9 @@ jobs:
             const currentSrc = await gameFrame.getAttribute('src');
             const targetUrl = new URL(currentSrc, 'http://127.0.0.1:4173/');
             targetUrl.searchParams.set('visual_camera', preset);
+            const navigated = page.waitForEvent('framenavigated', frame => frame.url().includes('visual_camera=' + preset), { timeout: 20000 });
             await gameFrame.evaluate((frame, src) => { frame.src = src; }, targetUrl.toString());
-            await page.waitForFunction(value => {
-              const frame = document.getElementById('game-frame');
-              return !!frame?.contentWindow?.location.search.includes('visual_camera=' + value);
-            }, preset, { timeout: 20000 });
+            await navigated;
             await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
             await page.waitForTimeout(1500);
             await page.screenshot({
