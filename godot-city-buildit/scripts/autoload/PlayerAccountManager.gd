@@ -404,8 +404,8 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 			}
 			let loader = document.getElementById("mshin-google-identity-script");
 			if (loader) {
-				const loadState = loader.dataset.mshinLoadState || "loading";
-				if (loadState === "loaded" || loadState === "failed") {
+				const loadState = loader.dataset.mshinLoadState || "unknown";
+				if (loadState !== "loading") {
 					// A previous failed/partial load must not poison every later retry.
 					loader.remove();
 					loader = null;
