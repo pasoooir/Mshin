@@ -331,14 +331,15 @@ func logout() -> void:
 				cloud_sync_ok = false
 		else:
 			cloud_sync_ok = false
+	if not cloud_sync_ok:
+		authentication_feedback.emit("Cloud sync failed. You are still signed in and your local account save is safe; retry sign-out when the connection is restored.", false)
+		return
 	_set_google_auto_sign_in(false)
 	_google_pending_nonces.clear()
 	_clear_session_state()
 	if has_node("/root/SaveManager") and SaveManager.persistence_ready and get_tree().current_scene != null:
 		# Return to the guest save instead of leaving another Mayor's city in memory.
 		SaveManager.load_game()
-	if not cloud_sync_ok:
-		authentication_feedback.emit("Signed out. Your account save is kept locally; cloud sync needs a retry.", false)
 
 
 func _clear_session_state() -> void:
