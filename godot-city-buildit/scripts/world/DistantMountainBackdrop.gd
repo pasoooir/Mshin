@@ -161,6 +161,12 @@ func _is_tunnel_portal_vegetation_exclusion(side: int, along: float, depth: floa
 		return false
 	return depth <= 0.12 or depth >= 0.88
 
+
+func _is_tunnel_road_detail_exclusion(side: int, along: float) -> bool:
+	# Keep all loose mountain props clear of the full north/south highway bore,
+	# not only the visible portal rims. The ridge/crown geometry remains intact.
+	return side < 2 and absf(along - TUNNEL_CENTER_X) <= TUNNEL_OPENING_WIDTH * 0.5 + 6.0
+
 func _hidden_multimesh_instance_transform() -> Transform3D:
 	# Unwritten MultiMesh slots default to identity and would appear in the city.
 	return Transform3D(Basis.IDENTITY, Vector3(0.0, -10000.0, 0.0))
@@ -675,7 +681,7 @@ func _build_mountain_rock_outcrops() -> void:
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.86 + fposmod(float(row) * 47.3 + float(side) * 17.0, RIDGE_HALF_LENGTH * 1.72)
 		var depth := 0.28 + float((row * 17 + side * 9) % 42) / 100.0
-		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+		if _is_tunnel_portal_vegetation_exclusion(side, along, depth) or _is_tunnel_road_detail_exclusion(side, along):
 			batch.set_instance_transform(index, _hidden_multimesh_instance_transform())
 			continue
 		var point := _ridge_point(side, along, depth)
