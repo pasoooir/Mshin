@@ -14,17 +14,24 @@ var _notifications: Array = []
 var _icons: Array[Sprite3D] = []
 var _count_labels: Array[Label3D] = []
 var _base_y := 0.0
+var _signature := ""
 
 func _ready() -> void:
 	_base_y = position.y
 
 func set_notifications(notifications: Array) -> void:
 	var ordered := notifications.duplicate()
-	ordered.sort_custom(func(a: BuildingNotification, b: BuildingNotification) -> bool:
+	ordered.sort_custom(func(a, b) -> bool:
 		return a.priority > b.priority
 	)
 	if ordered.size() > MAX_VISIBLE:
 		ordered.resize(MAX_VISIBLE)
+	var next_signature := ""
+	for data in ordered:
+		next_signature += "%d:%s:%d:%d:%s|" % [data.type, data.item_id, data.quantity, data.priority, data.detail]
+	if next_signature == _signature:
+		return
+	_signature = next_signature
 	_notifications = ordered
 	_rebuild_visuals()
 
@@ -40,7 +47,7 @@ func _rebuild_visuals() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	for index in range(_notifications.size()):
-		var data: BuildingNotification = _notifications[index]
+		var data = _notifications[index]
 		var root := Node3D.new()
 		root.name = "WorldNotification_%d" % index
 		root.position = Vector3((float(index) - float(_notifications.size() - 1) * 0.5) * 1.0, 0.0, 0.0)
@@ -66,7 +73,7 @@ func _rebuild_visuals() -> void:
 		root.add_child(count)
 		_count_labels.append(count)
 
-func _icon_for(data: BuildingNotification) -> Texture2D:
+func _icon_for(data) -> Texture2D:
 	match data.type:
 		NotificationData.Type.PRODUCTION_READY:
 			return Icons.get_icon_tex(data.item_id)
