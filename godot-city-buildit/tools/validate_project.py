@@ -1115,7 +1115,7 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
 for contract in [
     "func _process(delta: float) -> void:",
     "_pan(pan_velocity * step_delta)",
-    "rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(orbit_velocity * step_delta)",
+    "rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, orbit_velocity * step_delta)",
     "static func decay_pan_velocity(",
     "static func decay_orbit_velocity(",
     "pan_inertia_damping",
@@ -1127,6 +1127,8 @@ for contract in [
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",
     "static func touch_centroid(",
+    "static func touch_orbit_delta(",
+    "static func apply_orbit_delta(",
     "func _ordered_touch_positions() -> Array:",
     "last_pinch_centroid",
     "TWO_FINGER_PAN_DEADZONE",
