@@ -66,16 +66,39 @@ func _build_backdrop_land() -> void:
 shader_type spatial;
 render_mode cull_disabled;
 varying vec3 world_position;
+
+float field_noise(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+	float b = fract(sin(dot(cell + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+	float c = fract(sin(dot(cell + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+	float d = fract(sin(dot(cell + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
+
 void fragment() {
-	// Keep the existing coastal water visible through the green backdrop.
-	if (world_position.x >= 49.0 && world_position.x <= 159.0 && abs(world_position.z) <= 95.0) {
+	float coastline = 51.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	// Match the water opening to the same curved shoreline used by the sea mesh.
+	if (world_position.x >= coastline - 0.1 && world_position.x <= 159.0 && abs(world_position.z) <= 95.0) {
 		discard;
 	}
-	float grain = sin(world_position.x * 0.12 + world_position.z * 0.08) * cos(world_position.z * 0.11 - world_position.x * 0.06);
-	ALBEDO = vec3(0.14, 0.30, 0.17) + vec3(grain * 0.014);
+	vec2 p = world_position.xz;
+	float broad = field_noise(p * 0.018);
+	float patch = field_noise(p * 0.071 + vec2(13.7, 4.2));
+	float fine = field_noise(p * 0.82 + vec2(7.1, 19.3));
+	float dry_soil = smoothstep(0.48, 0.76, broad * 0.62 + patch * 0.38);
+	float exposed_rock = smoothstep(0.70, 0.91, field_noise(p * 0.12 + vec2(31.0, 8.0))) * smoothstep(0.46, 0.82, abs(broad - 0.5) * 2.0);
+	vec3 meadow = mix(vec3(0.105, 0.235, 0.115), vec3(0.245, 0.335, 0.16), patch);
+	meadow = mix(meadow, vec3(0.37, 0.315, 0.205), dry_soil * 0.72);
+	meadow = mix(meadow, vec3(0.31, 0.30, 0.255), exposed_rock * 0.58);
+	float grain = (fine - 0.5) * 0.055;
+	ALBEDO = max(meadow + vec3(grain, grain * 0.92, grain * 0.72), vec3(0.0));
 	ROUGHNESS = 1.0;
 }
 """
