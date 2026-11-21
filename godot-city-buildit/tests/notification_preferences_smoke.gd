@@ -488,7 +488,7 @@ func _run() -> void:
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
-	var original_signout_persistence_ready := save_manager.persistence_ready
+	var original_signout_persistence_ready: bool = save_manager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	save_manager.persistence_ready = true
 	await _tap_control(google_action)
@@ -549,7 +549,7 @@ func _run() -> void:
 		quit(1)
 		return
 	var logout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
-	var logout_persistence_ready := save_manager.persistence_ready
+	var logout_persistence_ready: bool = save_manager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	save_manager.persistence_ready = false
 	await account_manager.logout()
