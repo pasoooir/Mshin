@@ -142,7 +142,11 @@ func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
 			_last_auth_error = "Your current account city could not be saved before sign-in."
 			return false
 		var previous_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
-		if not previous_state is Dictionary or not await save_profile_now(previous_state):
+		if not previous_state is Dictionary:
+			_last_auth_error = "Your current account save could not be read before changing the sign-in session."
+			return false
+		var previous_snapshot: Dictionary = previous_state
+		if not await save_profile_now(previous_snapshot):
 			_last_auth_error = "Your current account could not sync before changing the sign-in session."
 			return false
 	var response := await _request_json(
@@ -368,7 +372,8 @@ func logout() -> void:
 		if SaveManager.save_game(false):
 			var current_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
 			if current_state is Dictionary:
-				cloud_sync_ok = await save_profile_now(current_state)
+				var current_snapshot: Dictionary = current_state
+				cloud_sync_ok = await save_profile_now(current_snapshot)
 			else:
 				cloud_sync_ok = false
 		else:
