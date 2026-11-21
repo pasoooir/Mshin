@@ -96,6 +96,15 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
 		quit(1)
 		return
+	var cancel_nonce := "smoke-google-cancel-nonce-0123456789abcdef"
+	account_manager._google_pending_nonces[cancel_nonce] = false
+	google_action.disabled = true
+	await account_manager._complete_google_sign_in("", cancel_nonce)
+	await process_frame
+	if google_action.disabled or account_manager._google_pending_nonces.has(cancel_nonce) or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("cancelled"):
+		push_error("[NotificationPreferencesSmoke] A cancelled Google prompt must release the sign-in button and clear its one-time pending nonce.")
+		quit(1)
+		return
 	var original_music_enabled := bool(audio_manager.music_enabled)
 	var original_sfx_enabled := bool(audio_manager.sfx_enabled)
 	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
