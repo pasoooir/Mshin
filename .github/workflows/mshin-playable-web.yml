@@ -113,8 +113,10 @@ jobs:
           python3 -m http.server 4173 --directory site >/tmp/mshin-web-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
+          mkdir -p artifacts/visual-acceptance
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
+          import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
           const errors = [];
@@ -137,7 +139,30 @@ jobs:
             console.log('[desktop diagnostics] page errors=' + errors.join(' | '));
             throw error;
           }
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(4000);
+          const gameCanvas = page.frameLocator('#game-frame').locator('canvas');
+          const canvasBox = await gameCanvas.boundingBox();
+          if (!canvasBox || canvasBox.width < 640 || canvasBox.height < 360) {
+            throw new Error('Desktop WebGL canvas is not at the expected playable size: ' + JSON.stringify(canvasBox));
+          }
+          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-entry.png', animations: 'disabled' });
+          // Exercise the actual Godot wheel-zoom path and capture a near view.
+          await gameCanvas.hover();
+          for (let i = 0; i < 7; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1200);
+          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-near.png', animations: 'disabled' });
+          // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
+          for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
+          await page.waitForTimeout(1400);
+          await gameCanvas.screenshot({ path: 'artifacts/visual-acceptance/desktop-mountain-far.png', animations: 'disabled' });
+          await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
+            build: process.env.GITHUB_SHA,
+            viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+            canvas: { width: canvasBox.width, height: canvasBox.height },
+            captures: ['desktop-entry.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
+            zoomInteraction: 'Godot mouse wheel: 7 steps in, 15 steps out',
+            note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
+          }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
 
@@ -170,6 +195,14 @@ jobs:
           }
           await browser.close();
           NODE
+      - name: Upload real WebGL visual acceptance captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-webgl-visual-acceptance-${{ github.sha }}
+          path: artifacts/visual-acceptance/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
