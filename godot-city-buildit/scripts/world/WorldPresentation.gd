@@ -191,7 +191,7 @@ func _build_terrain() -> void:
 	var terrain_material := _create_natural_ground_material()
 	terrain.material_override = terrain_material
 	_request_ground_texture("grass", "https://cdn.meshy.ai/landing-assets/textures/grass/wild-meadow-grass/wild-meadow-grass-2k.jpg", terrain_material)
-	_request_ground_texture("sand", "https://cdn.meshy.ai/landing-assets/textures/grass/pitted-sandy-ground/pitted-sandy-ground-2k.jpg", terrain_material)
+	_request_ground_texture("sand", "https://cdn.meshy.ai/landing-assets/textures/ground/pitted-sandy-ground/pitted-sandy-ground-2k.jpg", terrain_material)
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
@@ -482,7 +482,7 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.meshy.ai/landing-assets/textures/stone/dark-asphalt/dark-asphalt-2k.jpg") != OK:
+	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
 		request.queue_free()
 
 
