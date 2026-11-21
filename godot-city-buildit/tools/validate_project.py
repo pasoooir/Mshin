@@ -278,6 +278,11 @@ epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").
 achievement_manager_source = (ROOT / "scripts/autoload/AchievementManager.gd").read_text(encoding="utf-8")
 region_manager_source = (ROOT / "scripts/autoload/RegionManager.gd").read_text(encoding="utf-8")
 for contract in [
+    "Sign-out must keep the session active when its final cloud save fails.",
+]:
+    if contract not in notification_preferences_smoke_source:
+        errors.append(f"Notification sign-out regression test is missing: {contract}")
+for contract in [
     "Sign-out must be blocked while the local save system is not ready.",
     "Sign-out must keep the session active when its final cloud save fails.",
 ]:
