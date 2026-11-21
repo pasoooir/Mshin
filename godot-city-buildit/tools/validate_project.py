@@ -270,6 +270,7 @@ for contract in [
 ]:
     if contract not in world_presentation_source:
         errors.append(f"Coastal continuity and road-clearance contract is missing: {contract}")
+camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 for contract in [
     "var _multi_touch_gesture_active: bool = false",
     "if _multi_touch_gesture_active:",
