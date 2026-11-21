@@ -720,6 +720,7 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	instance.visibility_range_end = TREE_BELT_DETAIL_END
 	instance.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
+	instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	return instance
 
 
@@ -762,6 +763,7 @@ func _create_tree_shadow_multimesh(positions: Array[Vector3]) -> MultiMeshInstan
 	shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	shadows.visibility_range_end = TREE_BELT_DETAIL_END
 	shadows.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
+	shadows.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	return shadows
 
 
@@ -948,6 +950,7 @@ func _build_grass_detail() -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
 	grass.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	grass.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(grass)
 
 
@@ -1142,6 +1145,7 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = TREE_BELT_DETAIL_END
 	rocks.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
+	rocks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(rocks)
 
 func _build_dirt_tracks() -> void:
@@ -1338,6 +1342,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	shrubs.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
 	shrubs.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	shrubs.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(shrubs)
 
 	var stone_mesh := SphereMesh.new()
@@ -1383,6 +1388,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	stones.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	stones.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
 	stones.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	stones.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(stones)
 
 func _create_meadow_shrub_mesh() -> ArrayMesh:
@@ -1434,6 +1440,7 @@ func _create_shoreline_pebble_multimesh() -> MultiMeshInstance3D:
 	pebbles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	pebbles.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
 	pebbles.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	pebbles.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	return pebbles
 
 
