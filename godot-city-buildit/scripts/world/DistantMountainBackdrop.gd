@@ -69,7 +69,7 @@ void fragment() {
 		discard;
 	}
 	float grain = sin(world_position.x * 0.12 + world_position.z * 0.08) * cos(world_position.z * 0.11 - world_position.x * 0.06);
-	ALBEDO = vec3(0.22, 0.43, 0.24) + vec3(grain * 0.018);
+	ALBEDO = vec3(0.14, 0.30, 0.17) + vec3(grain * 0.014);
 	ROUGHNESS = 1.0;
 }
 """
