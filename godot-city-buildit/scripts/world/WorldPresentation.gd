@@ -3,7 +3,6 @@ extends Node3D
 var _road_system_cache: Node
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
-const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -120.0
@@ -19,8 +18,6 @@ const HIGHWAY_LENGTH := 700.0
 const HIGHWAY_LANE_COUNT := 6
 const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
-const MEADOW_SHEEP_COUNT := 12
-const MEADOW_CATTLE_COUNT := 3
 const ENVIRONMENT_SMALL_DETAIL_END := 190.0
 const ENVIRONMENT_SMALL_DETAIL_MARGIN := 18.0
 const TREE_BELT_DETAIL_END := 280.0
@@ -52,7 +49,6 @@ func _ready() -> void:
 	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
-	_build_meadow_shrubs_and_stones()
 	_build_coastal_promenade()
 	_build_beach_palms()
 	_build_shoreline_details()
@@ -120,7 +116,7 @@ func _apply_region_climate(sky_material: ProceduralSkyMaterial, environment: Env
 			sky_material.ground_horizon_color = Color("#A9A078")
 			environment.fog_light_color = Color("#D9D0B7")
 		"temperate":
-			# Australian coastal grassland: clear blue sky with a warm, green horizon.
+			# Pacific coastal climate: clear blue sky, luminous horizon and rich green land.
 			sky_material.sky_top_color = Color("#287BB0")
 			sky_material.sky_horizon_color = Color("#B8D9D1")
 			sky_material.ground_bottom_color = Color("#245A35")
@@ -210,7 +206,6 @@ func _build_terrain() -> void:
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
-	_build_creek_channel()
 
 
 func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int, columns: int, water_y: float) -> ArrayMesh:
