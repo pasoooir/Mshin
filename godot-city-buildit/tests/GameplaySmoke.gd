@@ -396,8 +396,11 @@ func _test_building_notification_grouping() -> void:
 	var fixture := FireHazardTestBuilding.new()
 	fixture.building_id = "notification-anchor-integration"
 	fixture.upgrade_stage = 2
-	fixture.global_position = Vector3(6.0, 0.0, 8.0)
+	fixture.position = Vector3(6.0, 0.0, 8.0)
 	add_child(fixture)
+	# The production sync path resolves owners through BuildManager's live registry.
+	var previous_registered_fixture = BuildManager.buildings.get(fixture.building_id)
+	BuildManager.buildings[fixture.building_id] = fixture
 	var wanted := {
 		"notification-anchor-integration|product|nails": {
 			"building": fixture,
@@ -418,6 +421,10 @@ func _test_building_notification_grouping() -> void:
 		_check(attached_anchor.has_method("get_visible_notification_count") and int(attached_anchor.call("get_visible_notification_count")) == 1, "The attached world-space anchor must render the same live notification state as its screen-space fallback.")
 		_check(attached_anchor.is_connected("notification_pressed", Callable(notification_layer, "_on_world_notification_pressed")), "World-space notification taps must route back into the existing building action handlers.")
 	notification_layer.queue_free()
+	if is_instance_valid(previous_registered_fixture):
+		BuildManager.buildings[fixture.building_id] = previous_registered_fixture
+	else:
+		BuildManager.buildings.erase(fixture.building_id)
 	fixture.queue_free()
 	await get_tree().process_frame
 
