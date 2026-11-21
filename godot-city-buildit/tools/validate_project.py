@@ -1173,6 +1173,7 @@ for contract in [
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 for contract in [
     "func save_game(sync_profile: bool = true) -> bool:",
+    "\"saved_at\": Time.get_datetime_string_from_system(true)",
     "if sync_profile and has_node",
 ]:
     if contract not in save_manager_source:
