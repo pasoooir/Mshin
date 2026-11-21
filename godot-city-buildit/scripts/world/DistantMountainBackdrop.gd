@@ -479,7 +479,7 @@ func _create_rock_surface_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode diffuse_burley, specular_schlick_ggx;
+render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
 varying vec3 rock_world_position;
 varying vec3 rock_world_normal;
 varying float rock_local_height;
