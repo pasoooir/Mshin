@@ -631,7 +631,7 @@ func _build_tree_belts() -> void:
 		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0 or _is_city_road_footprint(x, z):
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 
@@ -984,6 +984,13 @@ void fragment() {
 	material.shader = shader
 	return material
 
+
+func _is_city_road_footprint(x: float, z: float) -> bool:
+	# Environmental scatter must never occupy a live asphalt tile. The same
+	# guard is shared by grass, scrub and tree placement.
+	var cell := Vector2i(floori(x / BuildManager.GRID_SIZE), floori(z / BuildManager.GRID_SIZE))
+	return RoadSystem.has_road(cell)
+
 func _build_grass_detail() -> void:
 	# Each instance is a multi-blade tussock, not a single rectangular stalk.
 	var blade_mesh := _create_meadow_grass_clump_mesh()
@@ -997,7 +1004,7 @@ func _build_grass_detail() -> void:
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 14.0:
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or _is_city_road_footprint(x, z):
 			continue
 		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 5.0 or x > _coastline(z) - 13.0:
@@ -1396,7 +1403,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		var radius := 27.5 + sin(float(index) * 2.7) * 1.3
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
-		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0:
+		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0 or _is_city_road_footprint(x, z):
 			continue
 		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 6.0:
