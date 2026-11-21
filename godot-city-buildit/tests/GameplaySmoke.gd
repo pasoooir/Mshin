@@ -203,10 +203,9 @@ func _test_construction_cancellation_ui() -> void:
 	building.building_type = "residential_1"
 	building.grid_pos = grid
 	building.status = "constructing"
-	building.definition = {"name": "Refund Test Site", "category": "residential", "size": Vector2i.ONE}
-	building.construction_reserved_bom = {"nails": 1}
-	building.construction_reserved_cost_batches = construction_removal.get("cost_batches", {}).duplicate(true)
-	building.construction_reserved_simoleons = 75
+	# Keep the fixture alive long enough to exercise cancellation rather than
+	# allowing its default ten-second construction timer to finish mid-test.
+	building.definition = {"name": "Refund Test Site", "category": "residential", "size": Vector2i.ONE, "build_time": 120.0}
 	world.add_child(building)
 	BuildManager.buildings[building_id] = building
 	BuildManager.building_cells[grid] = building
@@ -218,6 +217,12 @@ func _test_construction_cancellation_ui() -> void:
 		"status": "constructing",
 		"build_time": 120.0
 	})
+	# setup() owns the construction lifecycle; attach the paid reservation only
+	# after setup so the test mirrors the live BuildManager placement sequence.
+	building.construction_reserved_bom = {"nails": 1}
+	building.construction_reserved_cost_batches = construction_removal.get("cost_batches", {}).duplicate(true)
+	building.construction_reserved_simoleons = 75
+	_check(building.construction_reserved_simoleons == 75, "Construction setup must preserve the exact 75-Simoleon cancellation reservation.")
 	var construction_snapshot := SaveManager.capture_region_snapshot()
 	var saved_construction: Dictionary = {}
 	for saved_building in construction_snapshot.get("buildings", []):
