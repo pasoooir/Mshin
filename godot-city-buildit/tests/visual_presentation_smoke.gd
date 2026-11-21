@@ -87,8 +87,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	shadow_scene.free()
-	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
-		push_error("[VisualPresentationSmoke] Rock shadows must be enabled only inside the bounded near-detail range")
+	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
+		push_error("[VisualPresentationSmoke] Rock contact occlusion must stay shader-based; individual outcrop shadow casting is disabled for mobile")
 		get_tree().quit(1)
 		return
 	if absf(backdrop._ridge_radial_offset(83.0, 0.48, 0)) < 0.5 or absf(backdrop._ridge_radial_offset(-217.0, 0.63, 2)) < 0.5:
@@ -130,6 +130,28 @@ func _ready() -> void:
 		return
 	if backdrop._ridge_color(-120.0, 0.52, 0).is_equal_approx(backdrop._ridge_color(110.0, 0.52, 0)):
 		push_error("[VisualPresentationSmoke] Mountain ridge vertex palette must vary across sediment bands and grassy slopes")
+		get_tree().quit(1)
+		return
+	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required_visual_feature in [
+		"func _terrain_height(",
+		"func _build_dirt_tracks(",
+		"func _build_creek_channel(",
+		"func _build_creek_rock_edges(",
+		"func _build_meadow_shrubs_and_stones(",
+		"func _create_meadow_shrub_mesh(",
+		"AustralianMeadowScrub",
+		"MeadowFieldstoneBatch",
+		"NaturalDirtTracks",
+		"ErodedCreekBanksAndBed",
+		"MeadowCreekWater"
+	]:
+		if not world_visual_source.contains(required_visual_feature):
+			push_error("[VisualPresentationSmoke] Living Australian ground is missing a required near-camera feature: " + required_visual_feature)
+			get_tree().quit(1)
+			return
+	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
+		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
 		get_tree().quit(1)
 		return
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
