@@ -6,7 +6,7 @@ const DistantMountainBackdropScript = preload("res://scripts/world/DistantMounta
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -90.0
-const TERRAIN_DIVISIONS := 48
+const TERRAIN_DIVISIONS := 96
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -25,8 +25,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 18.0
 const TREE_BELT_DETAIL_END := 280.0
 const TREE_BELT_DETAIL_MARGIN := 24.0
 const AUSTRALIAN_GRASSLAND_PALETTE := [
-	Color("#3F6F37"), Color("#507B3E"), Color("#628548"),
-	Color("#345F31"), Color("#7C9251"), Color("#466F3A")
+	Color("#244D27"), Color("#326334"), Color("#46763A"),
+	Color("#1D4525"), Color("#597B3B"), Color("#2D582C")
 ]
 
 func _ready() -> void:
@@ -225,9 +225,9 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	# Stable world-space texture scale plus restrained relief outside the build grid.
 	surface.set_uv(Vector2(point.x * 0.16, point.z * 0.16))
 	var coast := _coastline(point.z)
-	var broad_noise := sin(point.x * 0.31 + point.z * 0.17) * cos(point.z * 0.23 - point.x * 0.11)
-	var fine_noise := sin(point.x * 1.7 + point.z * 2.3) * cos(point.z * 1.35 - point.x * 0.8)
-	var blend := clampf((broad_noise * 0.72 + fine_noise * 0.28 + 1.0) * 0.5, 0.0, 1.0)
+	var broad_noise := sin(point.x * 0.071 + point.z * 0.047) * cos(point.z * 0.083 - point.x * 0.052)
+	var fine_noise := sin(point.x * 0.73 + point.z * 0.91) * cos(point.z * 0.67 - point.x * 0.58)
+	var blend := clampf((broad_noise * 0.78 + fine_noise * 0.22 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
 	if point.x > coast - 7.0:
 		color = Color("#927B59").lerp(Color("#D0B987"), blend)
@@ -275,10 +275,11 @@ func _terrain_height(x: float, z: float) -> float:
 		return 0.0
 	var distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)
 	var relief_mask := smoothstep(-1.0, 9.0, distance_from_city)
-	var broad := sin(x * 0.105 + z * 0.073) * 0.46
-	var cross := cos(z * 0.16 - x * 0.12) * 0.23
-	var fine := sin(x * 0.39 + z * 0.27) * 0.075
-	return (broad + cross + fine) * relief_mask
+	var broad := sin(x * 0.071 + z * 0.049) * 1.15
+	var cross := cos(z * 0.113 - x * 0.087) * 0.58
+	var rolling := sin(x * 0.19 - z * 0.16) * cos(z * 0.21 + x * 0.13) * 0.24
+	var fine := sin(x * 0.61 + z * 0.47) * 0.10
+	return (broad + cross + rolling + fine) * relief_mask
 
 func _coastline(z: float) -> float:
 	return 51.0 + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
@@ -449,13 +450,13 @@ func _build_coastal_highway() -> void:
 	var access_road := MeshInstance3D.new()
 	access_road.name = "HighwayCityConnector"
 	var access_mesh := BoxMesh.new()
-	access_mesh.size = Vector3(27.5, 0.16, 4.6)
+	access_mesh.size = Vector3(52.5, 0.16, 8.0)
 	access_mesh.subdivide_width = 4
 	access_mesh.subdivide_depth = 2
 	access_road.mesh = access_mesh
-	access_road.position = Vector3(-30.25, 0.095, 0.0)
+	access_road.position = Vector3(-42.75, 0.095, 0.0)
 	var connector_asphalt := highway_asphalt.duplicate() as StandardMaterial3D
-	connector_asphalt.uv1_scale = Vector3(14.0, 3.0, 1.0)
+	connector_asphalt.uv1_scale = Vector3(24.0, 5.0, 1.0)
 	access_road.material_override = connector_asphalt
 	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
@@ -802,12 +803,12 @@ func _create_grass_texture() -> Texture2D:
 			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * cos(angle_y * 2.0 - sin(angle_x * 3.0))
 			var fine := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
 			var speckle := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
-			var value := clampf(0.93 + broad * 0.025 + fine * 0.018, 0.86, 1.0)
-			var green := clampf(value + 0.025, 0.0, 1.0)
-			var blue := clampf(value - 0.055, 0.0, 1.0)
-			var texel := Color(value, green, blue, 1.0)
-			if speckle > 0.992:
-				texel = texel.lerp(Color("#C0B276"), 0.30)
+			var value := clampf(0.66 + broad * 0.10 + fine * 0.055, 0.42, 0.82)
+			var green := clampf(value * 1.16 + 0.035, 0.0, 1.0)
+			var blue := clampf(value * 0.72, 0.0, 1.0)
+			var texel := Color(value * 0.88, green, blue, 1.0)
+			if speckle > 0.975:
+				texel = texel.lerp(Color("#B0A16A"), 0.18)
 			image.set_pixel(x, y, texel)
 	image.generate_mipmaps()
 	return ImageTexture.create_from_image(image)
