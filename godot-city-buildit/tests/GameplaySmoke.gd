@@ -4119,7 +4119,7 @@ func _test_tutorial_guide_contract() -> void:
 			guide.current_step = 0
 			guide.completed = false
 			guide._refresh_guide()
-			_check(name_input.is_visible_in_tree() and finger.is_visible_in_tree(), "The city-name field and its finger pointer must both be visible during the first step.")
+			_check(name_input.is_visible_in_tree() and not finger.is_visible_in_tree(), "The compact first-step coach must show the real city-name field without an animated pointer covering the scene.")
 			guide.current_step = previous_step
 			guide.completed = previous_completed
 			if guide.completed:
