@@ -30,7 +30,7 @@ func _ready() -> void:
 			return
 		var near_vertices: PackedVector3Array = near_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var far_vertices: PackedVector3Array = far_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-		if near_ridge.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or far_ridge.visibility_range_begin_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or DistantMountainBackdropScript.RIDGE_LOD_OVERLAP < DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
+		if near_ridge.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or far_ridge.visibility_range_begin_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or near_ridge.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or far_ridge.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or DistantMountainBackdropScript.RIDGE_LOD_OVERLAP < DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
 			push_error("[VisualPresentationSmoke] Mountain LOD cross-fade margins must fit inside the overlap")
 			get_tree().quit(1)
 			return
@@ -39,7 +39,7 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
-	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
+	if rock_outcrops == null or rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or rock_outcrops.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF:
 		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with a bounded visibility range")
 		get_tree().quit(1)
 		return
