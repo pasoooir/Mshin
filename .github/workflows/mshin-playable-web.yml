@@ -142,16 +142,12 @@ jobs:
             throw error;
           }
           const gameCanvas = page.frameLocator('#game-frame').locator('canvas');
-          // Godot's responsive WebGL canvas can retain a zero backing-width
-          // attribute while CSS lays it out at the full iframe viewport size.
-          // Read layout dimensions (not Playwright boundingBox/compositor data)
-          // so this checks the visible canvas without triggering GPU readback.
-          const canvasSize = await gameCanvas.evaluate(canvas => ({
-            width: canvas.clientWidth,
-            height: canvas.clientHeight
-          }));
-          const canvasWidth = Number(canvasSize.width);
-          const canvasHeight = Number(canvasSize.height);
+          // Read the exported canvas backing dimensions from DOM attributes.
+          // Avoid page-side evaluate/clientWidth: under software WebGL the
+          // renderer can stall the iframe main thread after startup, causing
+          // an otherwise healthy visible canvas to time out during evaluation.
+          const canvasWidth = Number(await gameCanvas.getAttribute('width'));
+          const canvasHeight = Number(await gameCanvas.getAttribute('height'));
           if (canvasWidth < 640 || canvasHeight < 360) {
             throw new Error('Desktop WebGL canvas display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
