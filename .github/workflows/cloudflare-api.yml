@@ -82,5 +82,31 @@ jobs:
           if (typeof nonceBody.nonce !== 'string' || !/^[A-Za-z0-9_-]{40,60}$/.test(nonceBody.nonce) || nonceBody.expires_in !== 300) {
             throw new Error('Nonce endpoint returned an invalid challenge');
           }
-          console.log('PASS: deployed Worker health, CORS preflight and D1-backed login nonce endpoint');
+
+          // Exercise the live Google-auth route without creating an identity:
+          // malformed credentials must be rejected before D1 identity allocation.
+          const invalidLogin = await fetch(base + '/v1/auth/google', {
+            method: 'POST',
+            headers: { Origin: origin, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_token: 'not-a-google-id-token', nonce: nonceBody.nonce })
+          });
+          const invalidLoginBody = await invalidLogin.json();
+          if (invalidLogin.status !== 401 || invalidLoginBody.error !== 'invalid_id_token') {
+            throw new Error('Google auth route did not reject a malformed ID token safely: HTTP ' + invalidLogin.status);
+          }
+
+          const unauthorizedProfile = await fetch(base + '/v1/profile', { headers: { Origin: origin } });
+          const unauthorizedProfileBody = await unauthorizedProfile.json();
+          if (unauthorizedProfile.status !== 401 || unauthorizedProfileBody.error !== 'unauthorized') {
+            throw new Error('Profile API did not enforce a signed-in player session: HTTP ' + unauthorizedProfile.status);
+          }
+
+          const rejectedOrigin = await fetch(base + '/v1/auth/nonce', {
+            headers: { Origin: 'https://mshin-untrusted-origin.example' }
+          });
+          if (rejectedOrigin.status !== 403) {
+            throw new Error('Worker accepted an untrusted browser origin: HTTP ' + rejectedOrigin.status);
+          }
+
+          console.log('PASS: deployed Worker health, CORS, D1 nonce, malformed Google-token rejection, bearer-session gate and origin isolation');
           NODE
