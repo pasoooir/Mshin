@@ -4322,8 +4322,8 @@ func _run_gameplay_test() -> void:
 	# Assert the real entry overview, then move the test camera into a close city view
 	# so touch/building interaction fixtures remain inside the mobile viewport.
 	var entry_camera_rig := get_node_or_null("CameraRig")
-	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 128.0), "The opening camera must frame the Pacific coast and green city overview.")
-	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(25.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
+	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 150.0), "The opening camera must frame the Pacific coast and green city overview.")
+	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(38.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
 	if entry_camera_rig != null:
 		entry_camera_rig.current_zoom = 38.0
 		entry_camera_rig.global_position = Vector3(-9.0, 0.0, 2.5)
