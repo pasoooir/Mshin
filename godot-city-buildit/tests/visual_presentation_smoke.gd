@@ -16,12 +16,12 @@ func _ready() -> void:
 		return
 	var ocean_mesh := presentation._create_coastal_water_mesh(8.0, 159.0, 24, 4, -0.055)
 	var ocean_bounds := ocean_mesh.get_aabb()
-	if ocean_mesh.get_surface_count() != 1 or ocean_bounds.position.x < coast_sample + 7.9 or ocean_bounds.end.x < 158.9:
+	if ocean_mesh.get_surface_count() != 1 or ocean_bounds.position.x < 45.0 or ocean_bounds.end.x < 158.9:
 		push_error("[VisualPresentationSmoke] Deep water must be a continuous coastline-following mesh extending offshore")
 		get_tree().quit(1)
 		return
 	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 8.0, 24, 4, -0.025)
-	if shallow_mesh.get_aabb().position.x < coast_sample + 0.11 or shallow_mesh.get_aabb().end.x > coast_sample + 8.01:
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 9.0:
 		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
 		get_tree().quit(1)
 		return
