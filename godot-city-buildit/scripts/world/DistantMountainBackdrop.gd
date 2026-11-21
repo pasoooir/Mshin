@@ -11,7 +11,9 @@ const RIDGE_SEGMENTS := 96
 const RIDGE_DEPTH_STEPS := 20
 const RIDGE_FAR_SEGMENTS := 32
 const RIDGE_FAR_DEPTH_STEPS := 10
-const RIDGE_LOD_DISTANCE := 190.0
+const RIDGE_LOD_DISTANCE := 220.0
+const RIDGE_LOD_OVERLAP := 20.0
+const RIDGE_LOD_FADE_MARGIN := 16.0
 const RIDGE_DETAIL_DISTANCE := 215.0
 const RIDGE_ROCK_COUNT := 72
 const ROCK_FRACTURE_GROOVE_COUNT := 3
@@ -97,15 +99,17 @@ func _build_mountain_ridges() -> void:
 		near_ridge.material_override = material
 		near_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		near_ridge.visibility_range_end = RIDGE_LOD_DISTANCE
-		near_ridge.visibility_range_end_margin = 12.0
+		near_ridge.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+		near_ridge.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		add_child(near_ridge)
 		var far_ridge := MeshInstance3D.new()
 		far_ridge.name = names[side] + "FarLOD"
 		far_ridge.mesh = _create_ridge_mesh(side, RIDGE_FAR_SEGMENTS, RIDGE_FAR_DEPTH_STEPS)
 		far_ridge.material_override = material
 		far_ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		far_ridge.visibility_range_begin = RIDGE_LOD_DISTANCE
-		far_ridge.visibility_range_begin_margin = 12.0
+		far_ridge.visibility_range_begin = RIDGE_LOD_DISTANCE - RIDGE_LOD_OVERLAP
+		far_ridge.visibility_range_begin_margin = RIDGE_LOD_FADE_MARGIN
+		far_ridge.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		far_ridge.visibility_range_end = MIN_CAMERA_FAR_CLIP
 		add_child(far_ridge)
 
@@ -630,10 +634,16 @@ void fragment() {
 
 func _build_mountain_rock_outcrops() -> void:
 	var rock_mesh := _create_rock_outcrop_mesh()
+	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
+		push_error("[DistantMountainBackdrop] Refusing to register invalid near-rock mesh")
+		return
 	var batch := MultiMesh.new()
 	batch.transform_format = MultiMesh.TRANSFORM_3D
 	batch.use_colors = true
 	batch.mesh = rock_mesh
+	if batch.mesh == null:
+		push_error("[DistantMountainBackdrop] Near-rock MultiMesh mesh assignment failed")
+		return
 	batch.instance_count = RIDGE_ROCK_COUNT
 	var palette: Array[Color] = [Color("#777365"), Color("#8A806C"), Color("#665F53"), Color("#9A8D75")]
 	for index in range(RIDGE_ROCK_COUNT):
@@ -659,7 +669,8 @@ func _build_mountain_rock_outcrops() -> void:
 	# per-rock shadow casters are submitted to the mobile directional shadow map.
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
-	rocks.visibility_range_end_margin = 14.0
+	rocks.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	rocks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(rocks)
 
 
@@ -696,6 +707,9 @@ func _build_mountain_shrubs() -> void:
 	material.roughness = 1.0
 	shrubs.material_override = material
 	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shrubs.visibility_range_end = RIDGE_DETAIL_DISTANCE
+	shrubs.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	shrubs.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(shrubs)
 
 
@@ -730,6 +744,9 @@ func _build_mountain_grass() -> void:
 	material.roughness = 1.0
 	grass.material_override = material
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	grass.visibility_range_end = RIDGE_DETAIL_DISTANCE
+	grass.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	grass.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(grass)
 
 
@@ -791,12 +808,18 @@ func _build_mountain_eucalypts() -> void:
 	trunk_batch.multimesh = trunks
 	trunk_batch.material_override = trunk_material
 	trunk_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	trunk_batch.visibility_range_end = RIDGE_DETAIL_DISTANCE
+	trunk_batch.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	trunk_batch.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(trunk_batch)
 	var crown_batch := MultiMeshInstance3D.new()
 	crown_batch.name = "AustralianEucalyptCanopies"
 	crown_batch.multimesh = crowns
 	crown_batch.material_override = crown_material
 	crown_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	crown_batch.visibility_range_end = RIDGE_DETAIL_DISTANCE
+	crown_batch.visibility_range_end_margin = RIDGE_LOD_FADE_MARGIN
+	crown_batch.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(crown_batch)
 
 
