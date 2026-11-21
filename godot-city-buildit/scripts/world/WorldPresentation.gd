@@ -32,7 +32,7 @@ const COASTAL_GREEN_PALETTE := [
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 36.0
 const PROMENADE_OFFSET := 12.0
-const PALM_COUNT := 18
+const PALM_COUNT := 24
 
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
@@ -354,7 +354,7 @@ func _build_city_grid() -> void:
 		for cell_step in range(0, LandExpansionManager.TILE_CELLS + 1, 4):
 			var x := x0 + float(cell_step) * BuildManager.GRID_SIZE
 			var z := z0 + float(cell_step) * BuildManager.GRID_SIZE
-			lines.set_color(Color(0.72, 0.82, 0.68, 0.30))
+			lines.set_color(Color(0.57, 0.70, 0.55, 0.17))
 			lines.add_vertex(Vector3(x, 0.035, z0))
 			lines.add_vertex(Vector3(x, 0.035, z1))
 			lines.add_vertex(Vector3(x0, 0.035, z))
@@ -672,7 +672,7 @@ func _build_tree_belts() -> void:
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 	# A broader landscaped urban greenbelt replaces the old sparse rural fringe.
 	# Keep all foliage outside owned plots and away from roads and the beach.
-	for index in range(54):
+	for index in range(84):
 		var x := -116.0 + fposmod(float(index) * 31.73, 188.0)
 		var z := -86.0 + fposmod(float(index) * 47.17, 172.0)
 		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
@@ -741,7 +741,7 @@ func _create_clustered_canopy_mesh() -> ArrayMesh:
 
 func _tree_instance_transform(index: int, position: Vector3, height_offset: float) -> Transform3D:
 	# Gentle individual lean, variable trunk/crown proportions and asymmetry.
-	var scale := 0.88 + float((index * 7) % 7) * 0.095
+	var scale := 1.35 + float((index * 7) % 7) * 0.105
 	var width_variation := 0.82 + float((index * 3) % 6) * 0.085
 	var height_variation := 0.82 + float((index * 7) % 6) * 0.105
 	var depth_variation := 0.78 + float((index * 11) % 6) * 0.10
@@ -1572,9 +1572,9 @@ func _build_beach_palms() -> void:
 	# Palms form a loose landscaped edge between the green park and wide sand.
 	# Trunks and crowns each use one MultiMesh for mobile-friendly draw calls.
 	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.12
-	trunk_mesh.bottom_radius = 0.20
-	trunk_mesh.height = 5.2
+	trunk_mesh.top_radius = 0.14
+	trunk_mesh.bottom_radius = 0.24
+	trunk_mesh.height = 6.2
 	trunk_mesh.radial_segments = 7
 	var frond_mesh := _create_palm_frond_mesh()
 	var trunk_batch := MultiMesh.new()
@@ -1587,14 +1587,14 @@ func _build_beach_palms() -> void:
 	crown_batch.use_colors = true
 	crown_batch.instance_count = PALM_COUNT
 	for index in range(PALM_COUNT):
-		var z := -82.0 + float(index) * 9.65 + sin(float(index) * 1.7) * 2.0
+		var z := -83.0 + float(index) * 7.2 + sin(float(index) * 1.7) * 1.8
 		var x := _coastline(z) - BEACH_WIDTH - 12.0 + sin(float(index) * 2.3) * 2.4
 		var base := Vector3(x, _terrain_height(x, z), z)
 		var yaw := float(index * 47 % 360) * PI / 180.0
 		var trunk_basis := Basis(Vector3.UP, yaw).scaled(Vector3(1.0, 1.0 + float(index % 4) * 0.04, 1.0))
-		trunk_batch.set_instance_transform(index, Transform3D(trunk_basis, base + Vector3(0.0, 2.6, 0.0)))
-		var crown_basis := Basis(Vector3.UP, yaw).scaled(Vector3(0.82 + float(index % 3) * 0.08, 0.82, 0.82 + float(index % 2) * 0.1))
-		crown_batch.set_instance_transform(index, Transform3D(crown_basis, base + Vector3(0.0, 5.1, 0.0)))
+		trunk_batch.set_instance_transform(index, Transform3D(trunk_basis, base + Vector3(0.0, 3.1, 0.0)))
+		var crown_basis := Basis(Vector3.UP, yaw).scaled(Vector3(0.96 + float(index % 3) * 0.08, 0.96, 0.96 + float(index % 2) * 0.1))
+		crown_batch.set_instance_transform(index, Transform3D(crown_basis, base + Vector3(0.0, 6.1, 0.0)))
 		crown_batch.set_instance_color(index, Color("#397A43") if index % 3 == 0 else Color("#4D914B"))
 	var trunks := MultiMeshInstance3D.new()
 	trunks.name = "PacificPalmTrunks"
@@ -1628,11 +1628,11 @@ func _create_palm_frond_mesh() -> ArrayMesh:
 		for segment in range(7):
 			var t := float(segment) / 6.0
 			var next_t := float(segment + 1) / 6.0
-			var center := direction * (t * 3.15) + Vector3(0.0, -1.45 * t * t, 0.0)
-			var next_center := direction * (next_t * 3.15) + Vector3(0.0, -1.45 * next_t * next_t, 0.0)
+			var center := direction * (t * 4.0) + Vector3(0.0, -1.75 * t * t, 0.0)
+			var next_center := direction * (next_t * 4.0) + Vector3(0.0, -1.75 * next_t * next_t, 0.0)
 			var side := Vector3(-direction.z, 0.0, direction.x)
-			var width := sin(t * PI) * 0.20 + 0.025
-			var next_width := sin(next_t * PI) * 0.20 + 0.012
+			var width := sin(t * PI) * 0.24 + 0.03
+			var next_width := sin(next_t * PI) * 0.24 + 0.014
 			var left := center - side * width
 			var right := center + side * width
 			var next_left := next_center - side * next_width
