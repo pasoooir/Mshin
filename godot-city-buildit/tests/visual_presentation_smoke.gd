@@ -38,6 +38,16 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
 		return
+	var camera_source := FileAccess.get_file_as_string("res://scripts/systems/CameraController.gd")
+	if not camera_source.contains("var current_zoom: float = 68.0") or not camera_source.contains("global_position = Vector3(-3.0, 0.0, 0.0)"):
+		push_error("[VisualPresentationSmoke] First camera frame must include the starter plots, highway access and coastal environment")
+		get_tree().quit(1)
+		return
+	var tutorial_source := FileAccess.get_file_as_string("res://scripts/ui/TutorialGuide.gd")
+	if not tutorial_source.contains("var desired_height := 218.0 if current_step == 0") or not tutorial_source.contains("The name field is directly visible in the compact coach") or not tutorial_source.contains("_guide_scroll.visible = not is_name_step"):
+		push_error("[VisualPresentationSmoke] First-entry coach must stay compact and keep the city view unobstructed")
+		get_tree().quit(1)
+		return
 	var backdrop_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
 	if not backdrop_source.contains("float coastline = 51.0") or not backdrop_source.contains("field_noise(p * 0.071") or backdrop_source.contains("world_position.x >= 49.0 && world_position.x <= 159.0"):
 		push_error("[VisualPresentationSmoke] Distant ground must use natural terrain variation and the same curved ocean opening as the shoreline")
