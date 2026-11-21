@@ -152,35 +152,35 @@ jobs:
             throw new Error('Desktop WebGL canvas display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
           await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-entry.png',
+            path: 'artifacts/visual-acceptance/desktop-pacific-entry.png',
             animations: 'disabled',
             timeout: 60000
           });
           // The Godot canvas fills the 1280x720 game viewport. Move the pointer
           // directly instead of asking Playwright to calculate its bounding box.
           await page.mouse.move(640, 360);
-          // Capture a medium-distance view first: the playable meadow edge,
-          // near-city outcrops and the distant ridge should share the frame.
-          for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -100);
+          // Pull back slightly from the opening overview to frame the wide beach,
+          // timber promenade, palms and inland green edge together.
+          for (let i = 0; i < 10; i++) await page.mouse.wheel(0, -100);
           await page.waitForTimeout(1000);
           await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-medium.png',
+            path: 'artifacts/visual-acceptance/desktop-pacific-medium.png',
             animations: 'disabled',
             timeout: 60000
           });
-          // Continue into a close view to inspect the fractured rock silhouettes.
-          for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
+          // Move closer to inspect the beach texture, palm geometry and promenade.
+          for (let i = 0; i < 22; i++) await page.mouse.wheel(0, -100);
           await page.waitForTimeout(1200);
           await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-near.png',
+            path: 'artifacts/visual-acceptance/desktop-pacific-near.png',
             animations: 'disabled',
             timeout: 60000
           });
-          // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
-          for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
+          // Return to a wide coastal overview with the city and Pacific edge in view.
+          for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 100);
           await page.waitForTimeout(1400);
           await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-far.png',
+            path: 'artifacts/visual-acceptance/desktop-pacific-overview.png',
             animations: 'disabled',
             timeout: 60000
           });
@@ -188,8 +188,8 @@ jobs:
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-entry.png', 'desktop-mountain-medium.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
-            zoomInteraction: 'Godot mouse wheel: 3 steps to medium, 4 additional steps to near, 15 steps out',
+            captures: ['desktop-pacific-entry.png', 'desktop-pacific-medium.png', 'desktop-pacific-near.png', 'desktop-pacific-overview.png'],
+            zoomInteraction: 'Godot mouse wheel: 10 steps to medium, 22 additional steps to near, 20 steps out',
             note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
