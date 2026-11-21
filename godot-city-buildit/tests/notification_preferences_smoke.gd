@@ -349,7 +349,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google-authenticated players must be able to register their city.")
 		quit(1)
 		return
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null or city_dialog.get_parent() != hud:
@@ -391,7 +391,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
@@ -456,7 +456,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	city_name_input = city_dialog.find_child("CityNameInput", true, false) as LineEdit
