@@ -148,7 +148,12 @@ export class MshinApiCoordinator {
               // A successful first authenticated profile read must create the
               // player's private JSON file, even if the app closes before its
               // first gameplay save or reward claim.
-              const initialProfile = profileDefault(playerId);
+              const initializedAt = new Date().toISOString();
+              const initialProfile = {
+                ...profileDefault(playerId),
+                created_at: initializedAt,
+                updated_at: initializedAt
+              };
               await writeProfile(playerId, initialProfile);
               return jsonResponse(200, initialProfile, { etag: '"0"' });
             }
