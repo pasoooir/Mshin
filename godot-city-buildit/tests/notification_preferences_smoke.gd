@@ -330,7 +330,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] City registration must remain locked until Google sign-in succeeds.")
 		quit(1)
 		return
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Guest users must not be able to open city registration.")
