@@ -171,20 +171,8 @@ jobs:
           // Capture a medium-distance view first: the playable meadow edge,
           // near-city outcrops and the distant ridge should share the frame.
           for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(1000);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-medium.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
           // Continue into a close view to inspect the fractured rock silhouettes.
           for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(1200);
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-mountain-near.png',
-            animations: 'disabled',
-            timeout: 60000
-          });
           // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
           for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
           await page.waitForTimeout(1400);
@@ -252,7 +240,7 @@ jobs:
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-entry.png', 'desktop-mountain-medium.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
+            captures: ['desktop-entry.png', 'desktop-mountain-far.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
             zoomInteraction: 'Godot mouse wheel at multiple distances plus diagonal orbit-target drags to coastline and motorway corridor',
             note: 'Desktop WebGL canvas captures are real rendered game frames. Coastline, deep/shallow water, asphalt and tunnel are captured at near/far scales. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
