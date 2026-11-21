@@ -225,12 +225,14 @@ jobs:
             animations: 'disabled',
             timeout: 60000
           });
+          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1000);
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-tunnel-near.png',
             animations: 'disabled',
             timeout: 60000
           });
-          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 100);
+          for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 100);
           await page.waitForTimeout(1000);
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-tunnel-far.png',
