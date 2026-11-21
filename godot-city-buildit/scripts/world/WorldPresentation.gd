@@ -41,6 +41,8 @@ func _ready() -> void:
 		return
 	RegionManager.region_changed.connect(_on_region_changed)
 	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
+	if not BuildManager.placement_mode_changed.is_connected(_on_placement_mode_changed):
+		BuildManager.placement_mode_changed.connect(_on_placement_mode_changed)
 	_build_environment()
 	_build_terrain()
 	var mountain_backdrop := DistantMountainBackdropScript.new()
@@ -370,7 +372,15 @@ func _build_city_grid() -> void:
 	grid_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	grid_material.no_depth_test = false
 	grid_instance.material_override = grid_material
+	# Plot guides are a construction aid, never the default city surface.
+	grid_instance.visible = BuildManager.is_placing
 	add_child(grid_instance)
+
+
+func _on_placement_mode_changed(active: bool) -> void:
+	var grid_instance := get_node_or_null("BuildablePlotGrid") as MeshInstance3D
+	if is_instance_valid(grid_instance):
+		grid_instance.visible = active
 
 
 func _build_coastal_highway() -> void:
@@ -881,6 +891,31 @@ shader_type spatial;
 render_mode cull_back;
 uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
 uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float value_noise(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = hash21(cell);
+	float b = hash21(cell + vec2(1.0, 0.0));
+	float c = hash21(cell + vec2(0.0, 1.0));
+	float d = hash21(cell + vec2(1.0, 1.0));
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+float meadow_fbm(vec2 p) {
+	float sum = 0.0;
+	float weight = 0.5;
+	for (int octave = 0; octave < 4; octave++) {
+		sum += value_noise(p) * weight;
+		p = p * 2.03 + vec2(17.1, 9.2);
+		weight *= 0.5;
+	}
+	return sum;
+}
 varying vec3 world_position;
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -890,7 +925,15 @@ void fragment() {
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
-	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb;
+	float broad = meadow_fbm(world_position.xz * 0.055);
+	float patch = meadow_fbm(world_position.xz * 0.24 + vec2(13.0, 7.0));
+	float fine = value_noise(world_position.xz * 1.75);
+	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
+	vec3 meadow = sampled_grass * COLOR.rgb * mix(0.70, 1.12, broad);
+	float dry_patch = smoothstep(0.67, 0.88, patch + fine * 0.12);
+	meadow = mix(meadow, vec3(0.19, 0.16, 0.095), dry_patch * 0.18);
+	float sunlit_tufts = smoothstep(0.72, 0.94, fine) * 0.10;
+	meadow += vec3(0.10, 0.12, 0.045) * sunlit_tufts;
 	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
 	ALBEDO = mix(meadow, sand, sand_mask);
 	ROUGHNESS = 1.0;
@@ -1448,7 +1491,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	shrub_batch.use_colors = true
 	shrub_batch.mesh = shrub_mesh
 	var shrub_positions: Array[Vector3] = []
-	for index in range(260):
+	for index in range(150):
 		var x := -87.0 + fposmod(float(index) * 23.71, 130.0)
 		var z := -86.0 + fposmod(float(index) * 37.19, 172.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
@@ -1460,9 +1503,9 @@ func _build_meadow_shrubs_and_stones() -> void:
 			continue
 		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.85, z))
 	# A deterministic broken ring keeps larger scrub visible from the city camera.
-	for index in range(72):
+	for index in range(20):
 		var angle := TAU * float(index) / 72.0
-		var radius := 27.5 + sin(float(index) * 2.7) * 1.3
+		var radius := 34.0 + sin(float(index) * 2.7) * 2.4
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0 or _is_city_road_footprint(x, z):
@@ -1502,7 +1545,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	stone_batch.use_colors = true
 	stone_batch.mesh = stone_mesh
 	var stone_positions: Array[Vector3] = []
-	for index in range(220):
+	for index in range(110):
 		var x := -88.0 + fposmod(float(index) * 29.31, 134.0)
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
 		if absf(x) < 25.0 and absf(z) < 25.0:
@@ -1510,7 +1553,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0 or _is_city_road_footprint(x, z):
 			continue
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
-	for index in range(96):
+	for index in range(0):
 		var angle := TAU * float(index) / 96.0
 		var radius := 25.5 + float(index % 4) * 1.5
 		var x := cos(angle) * radius
