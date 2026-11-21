@@ -21,8 +21,8 @@ const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
 const AUSTRALIAN_GRASSLAND_PALETTE := [
-	Color("#4C963F"), Color("#63A64A"), Color("#78AD50"),
-	Color("#3E8439"), Color("#8BB65B"), Color("#579B45")
+	Color("#3F6F37"), Color("#507B3E"), Color("#628548"),
+	Color("#345F31"), Color("#7C9251"), Color("#466F3A")
 ]
 
 func _ready() -> void:
@@ -1194,8 +1194,8 @@ func _build_creek_channel() -> void:
 	for step in range(STEPS):
 		var z0 := -84.0 + float(step) / float(STEPS - 1) * 168.0
 		var z1 := -84.0 + float(step + 1) / float(STEPS - 1) * 168.0
-		var x0 := 29.0 + sin(z0 * 0.045) * 4.0
-		var x1 := 29.0 + sin(z1 * 0.045) * 4.0
+		var x0 := 46.0 + sin(z0 * 0.045) * 1.25
+		var x1 := 46.0 + sin(z1 * 0.045) * 1.25
 		var heights: Array[float] = [0.01, -0.18, -0.73, -0.73, -0.18, 0.01]
 		for band in range(offsets.size() - 1):
 			var p00 := Vector3(x0 + offsets[band], _terrain_height(x0 + offsets[band], z0) + heights[band], z0)
