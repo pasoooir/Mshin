@@ -9,8 +9,8 @@ const STEP_DATA: Array[Dictionary] = [
 	{
 		"id": "city_name",
 		"title": "Name your city",
-		"description": "Type your city name in the field below, then tap SAVE CITY. The moving finger points directly to the field.",
-		"hint": "👆 TAP THE FIELD  →  Enter a name  →  SAVE CITY",
+		"description": "Give your new city a name to begin.",
+		"hint": "Enter a name, then tap SAVE CITY.",
 		"result": "YOU SHOULD SEE  Your city name is saved with your city."
 	},
 	{
@@ -88,6 +88,7 @@ var _later_button: Button
 var _dismissed := false
 var _city_name_input: LineEdit
 var _city_name_row: HBoxContainer
+var _guide_scroll: ScrollContainer
 var _city_name_button: Button
 var _finger_pointer: Label
 var _finger_elapsed := 0.0
@@ -210,7 +211,7 @@ func _build_guide_panel() -> void:
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(header)
 	var eyebrow := Label.new()
-	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
+	eyebrow.text = "CITY COACH"
 	eyebrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
@@ -263,7 +264,8 @@ func _build_guide_panel() -> void:
 	_city_name_button.pressed.connect(_submit_city_name)
 	_city_name_row.add_child(_city_name_button)
 
-	var scroll := ScrollContainer.new()
+	_guide_scroll = ScrollContainer.new()
+	var scroll := _guide_scroll
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -386,8 +388,8 @@ func _layout_guide_panel() -> void:
 	if not is_instance_valid(_panel):
 		return
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(430.0, maxf(280.0, viewport_size.x - 24.0))
-	var desired_height := 300.0 if current_step == 0 and not completed else 205.0
+	var panel_width := minf(360.0, maxf(270.0, viewport_size.x - 24.0))
+	var desired_height := 218.0 if current_step == 0 and not completed else 205.0
 	var panel_height := minf(desired_height, maxf(220.0, viewport_size.y - 100.0))
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 0.0
@@ -425,6 +427,8 @@ func _update_city_name_controls() -> void:
 		_icon_legend.visible = not is_name_step
 	if is_instance_valid(_result):
 		_result.visible = not is_name_step
+	if is_instance_valid(_guide_scroll):
+		_guide_scroll.visible = not is_name_step
 	if is_instance_valid(_icon_legend) and not GameManager.city_name.is_empty():
 		_icon_legend.text = "🏙 " + GameManager.city_name + "    🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
 
@@ -456,10 +460,9 @@ func _update_finger_pointer() -> void:
 		return
 	var step_id := str(STEP_DATA[current_step].get("id", ""))
 	if current_step == 0:
-		if is_instance_valid(_city_name_input) and _city_name_input.is_visible_in_tree():
-			_point_to_control(_city_name_input)
-		else:
-			_finger_pointer.hide()
+		# The name field is directly visible in the compact coach; no animated
+		# finger or emoji glyph should obstruct the calm first city view.
+		_finger_pointer.hide()
 		return
 
 	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
