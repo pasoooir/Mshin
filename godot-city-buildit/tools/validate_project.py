@@ -933,6 +933,14 @@ if livestock_body is None or "SheepWoolBodies" not in livestock_body.group(0) or
 if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-55, 56)" not in lane_body.group(0):
     errors.append("Highway lane markings must be batched and repeated along the full road")
 
+starter_world_builder = re.search(r"func _ready\(\).*?(?=\nfunc |\Z)", world_source, re.S)
+if starter_world_builder is None:
+    errors.append("WorldPresentation must expose its starter-scene composition builder")
+else:
+    for rural_feature in ["_build_dirt_tracks()", "_build_creek_channel()", "_build_meadow_livestock()", "_build_meadow_shrubs_and_stones()"]:
+        if rural_feature in starter_world_builder.group(0):
+            errors.append(f"Rural feature must not appear in the Pacific coastal starter scene: {rural_feature}")
+
 build_icon_paths = {
     "services": ("ui", "services"),
     "parks": ("ui", "parks"),
