@@ -43,6 +43,22 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Near rocks must keep three layered fractures and four fused foot stones per shared mesh")
 		get_tree().quit(1)
 		return
+	var hidden_transform: Transform3D = backdrop._hidden_multimesh_instance_transform()
+	if hidden_transform.origin.y > -1000.0:
+		push_error("[VisualPresentationSmoke] Excluded MultiMesh slots must be moved away from the playable city origin")
+		get_tree().quit(1)
+		return
+	var mountain_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
+	for hidden_assignment in [
+		"batch.set_instance_transform(index, _hidden_multimesh_instance_transform())",
+		"multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())",
+		"trunks.set_instance_transform(index, hidden_transform)",
+		"crowns.set_instance_transform(index, hidden_transform)"
+	]:
+		if not mountain_source.contains(hidden_assignment):
+			push_error("[VisualPresentationSmoke] Every excluded mountain batch slot must receive an explicit hidden transform: " + hidden_assignment)
+			get_tree().quit(1)
+			return
 	var rock_mesh := backdrop._create_rock_outcrop_mesh() as ArrayMesh
 	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Chipped near rocks must stay one reusable mesh surface")
