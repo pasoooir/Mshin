@@ -237,6 +237,7 @@ func _test_construction_cancellation_ui() -> void:
 	_check(BuildManager.buildings.get(building_id) == building and building.status == "constructing", "A storage-blocked construction cancellation must leave the site registered and intact.")
 	if filler_amount > 0:
 		_check(StorageManager.remove_item("wood", filler_amount), "Could not free storage space for the construction refund.")
+	var refund_ledger_sequence_before := EconomyManager.transaction_sequence
 	var hud = scene_root.get_node_or_null("HUD")
 	_check(is_instance_valid(hud), "Construction cancellation smoke test requires the live HUD.")
 	if is_instance_valid(hud):
@@ -251,7 +252,16 @@ func _test_construction_cancellation_ui() -> void:
 	_check(StorageManager.get_count("nails") == int(inventory_before_payment.get("nails", 0)), "Canceling construction must return the exact reserved material quantity.")
 	var restored_construction_cost_basis: Dictionary = StorageManager.get_cost_basis({"nails": 1})
 	_check(bool(restored_construction_cost_basis.get("known", false)) == bool(expected_construction_cost_basis.get("known", false)) and int(restored_construction_cost_basis.get("total_cost", -1)) == int(expected_construction_cost_basis.get("total_cost", -2)), "Canceling construction must restore the exact FIFO acquisition-cost basis.")
-	_check(EconomyManager.simoleons == funded_money, "Canceling construction must refund the exact reserved Simoleon cost.")
+	# Other gameplay events (for example a level-up reward) may legitimately
+	# change the global balance during this UI test. Assert the exact refund as
+	# its own ledger transaction instead of assuming the entire balance is static.
+	var exact_refund_recorded := false
+	for transaction in EconomyManager.transaction_ledger:
+		var transaction_id := int(str(transaction.get("id", "econ-0")).trim_prefix("econ-"))
+		if transaction_id > refund_ledger_sequence_before and str(transaction.get("type", "")) == "simoleons_gain" and str(transaction.get("currency", "")) == "simoleons" and int(transaction.get("amount", 0)) == 75:
+			exact_refund_recorded = true
+			break
+	_check(exact_refund_recorded, "Canceling construction must record the exact 75-Simoleon refund transaction.")
 	if is_instance_valid(building):
 		building.queue_free()
 	await get_tree().process_frame
