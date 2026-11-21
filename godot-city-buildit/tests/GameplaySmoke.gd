@@ -3685,8 +3685,7 @@ func _test_settings_panel_contract() -> void:
 	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Authenticated Change City Name must open a scrollable HUD-root editable form.")
 	if rename_dialog != null and city_name_input != null:
 		city_name_input.text = original_city_name
-		rename_dialog.hide()
-		rename_dialog.queue_free()
+		hud._close_city_registration_modal(rename_dialog)
 	PlayerAccountManager.player_id = original_player_id
 	PlayerAccountManager.access_token = original_access_token
 	PlayerAccountManager.google_display_name = original_google_name
