@@ -863,8 +863,25 @@ void fragment() {
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter("grass_texture", _create_grass_texture())
-	material.set_shader_parameter("sand_texture", _create_grass_texture())
+	material.set_shader_parameter("sand_texture", _create_sand_texture())
 	return material
+
+
+func _create_sand_texture() -> Texture2D:
+	const TEXTURE_SIZE := 256
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			# Periodic multi-scale grain keeps the fallback seamless at tile edges.
+			var dune := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * 0.5 + cos(angle_y * 2.0 - sin(angle_x * 3.0)) * 0.5
+			var grain := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
+			var fine := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
+			var value := clampf(0.68 + dune * 0.055 + grain * 0.035 + fine * 0.018, 0.54, 0.82)
+			image.set_pixel(x, y, Color(value * 1.0, value * 0.91, value * 0.73, 1.0))
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
 
 
 func _request_ground_texture(slot: String, url: String, material: ShaderMaterial) -> void:
