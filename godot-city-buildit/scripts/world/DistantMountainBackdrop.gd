@@ -131,6 +131,13 @@ func _is_tunnel_portal_vegetation_exclusion(side: int, along: float, depth: floa
 	return depth <= 0.12 or depth >= 0.88
 
 
+func _hidden_multimesh_instance_transform() -> Transform3D:
+	# MultiMesh instances default to identity transforms. Excluded placements
+	# must be explicitly moved outside the camera frustum or they render at the
+	# world origin (the playable city center).
+	return Transform3D(Basis.IDENTITY, Vector3(0.0, -10000.0, 0.0))
+
+
 func _add_ridge_vertex(surface: SurfaceTool, side: int, along: float, depth: float) -> void:
 	var point := _ridge_point(side, along, depth)
 	surface.set_color(_ridge_color(along, depth, side))
@@ -594,6 +601,7 @@ func _build_mountain_rock_outcrops() -> void:
 		var along := -RIDGE_HALF_LENGTH * 0.86 + fposmod(float(row) * 47.3 + float(side) * 17.0, RIDGE_HALF_LENGTH * 1.72)
 		var depth := 0.28 + float((row * 17 + side * 9) % 42) / 100.0
 		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			batch.set_instance_transform(index, _hidden_multimesh_instance_transform())
 			continue
 		var point := _ridge_point(side, along, depth)
 		var size := 1.6 + float((index * 11) % 13) * 0.32
@@ -632,6 +640,7 @@ func _build_mountain_shrubs() -> void:
 		var along := -RIDGE_HALF_LENGTH * 0.88 + fposmod(float(row) * 37.17, RIDGE_HALF_LENGTH * 1.76)
 		var depth := 0.18 + float((row * 7) % 58) / 100.0
 		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())
 			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 1.0 + float((index * 13) % 11) * 0.13
@@ -664,6 +673,7 @@ func _build_mountain_grass() -> void:
 		var along := -RIDGE_HALF_LENGTH * 0.91 + fposmod(float(row) * 19.73, RIDGE_HALF_LENGTH * 1.82)
 		var depth := 0.12 + float((row * 11) % 72) / 100.0
 		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())
 			continue
 		var point := _ridge_point(side, along, depth)
 		var scale := 0.55 + float((index * 5) % 9) * 0.12
@@ -718,6 +728,9 @@ func _build_mountain_eucalypts() -> void:
 		var along := -RIDGE_HALF_LENGTH * 0.84 + fposmod(float(row) * 53.7 + float(side) * 29.0, RIDGE_HALF_LENGTH * 1.68)
 		var depth := 0.24 + float((row * 13 + side * 7) % 48) / 100.0
 		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			var hidden_transform := _hidden_multimesh_instance_transform()
+			trunks.set_instance_transform(index, hidden_transform)
+			crowns.set_instance_transform(index, hidden_transform)
 			continue
 		var point := _ridge_point(side, along, depth)
 		var tree_scale := 0.82 + float((index * 7) % 8) * 0.075
