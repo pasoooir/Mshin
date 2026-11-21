@@ -1106,7 +1106,8 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	var rock_material := backdrop.call("_create_rock_surface_material") as ShaderMaterial
 	var anchors: Array[Vector2] = [
 		Vector2(-32.0, -42.5), Vector2(-12.0, -42.5), Vector2(12.0, -42.5), Vector2(32.0, -42.5),
-		Vector2(-32.0, 42.5), Vector2(-12.0, 42.5), Vector2(12.0, 42.5), Vector2(32.0, 42.5)
+		Vector2(-32.0, 42.5), Vector2(-12.0, 42.5), Vector2(12.0, 42.5), Vector2(32.0, 42.5),
+		Vector2(42.5, -24.0), Vector2(42.5, -8.0), Vector2(42.5, 8.0), Vector2(42.5, 24.0)
 	]
 	var batch := MultiMesh.new()
 	batch.transform_format = MultiMesh.TRANSFORM_3D
