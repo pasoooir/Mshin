@@ -1148,6 +1148,12 @@ for contract in [
     'loader.dataset.mshinLoadState = "failed";',
     "loader.remove();",
     "window.google.accounts.id.renderButton",
+    "func _wait_for_save_manager_ready() -> bool:",
+    "func _restore_authenticated_profile_game_state() -> bool:",
+    "if not await fetch_remote_profile():",
+    "if not _restore_authenticated_profile_game_state():",
+    "func _clear_failed_session() -> void:",
+    "await save_profile_now(current_state)",
 ]:
     if contract not in player_account_manager_source:
         errors.append(f"Retryable Google Identity loader contract is missing: {contract}")
@@ -1206,6 +1212,9 @@ for contract in [
         errors.append(f"Camera building-focus regression test is missing: {contract}")
 
 for contract in [
+    "func _test_account_profile_restore_isolation() -> void:",
+    "Returning Google accounts must load their own remote city before any post-login save can overwrite it.",
+    "A first-time Google account with no remote game_state must keep the guest city for one-time account migration.",
     "func _test_camera_inertia_math()",
     "func _test_camera_touch_gesture_integration()",
     "Real two-finger touch events moving inward must zoom the live camera in.",
