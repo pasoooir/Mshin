@@ -136,7 +136,7 @@ static func screen_pan_scale(zoom: float, fov_degrees: float, viewport_height: f
 	return (2.0 * maxf(0.0, zoom) * tan(deg_to_rad(clampf(fov_degrees, 1.0, 179.0)) * 0.5) / viewport_height) * clampf(sensitivity, 0.1, 1.0)
 
 static func pinch_zoom_delta(previous_distance: float, current_distance: float, sensitivity: float) -> float:
-	return (previous_distance - current_distance) * maxf(0.0, sensitivity)
+	return (current_distance - previous_distance) * maxf(0.0, sensitivity)
 
 static func touch_centroid(first: Vector2, second: Vector2) -> Vector2:
 	return (first + second) * 0.5
