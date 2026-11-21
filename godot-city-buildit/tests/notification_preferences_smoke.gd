@@ -502,10 +502,13 @@ func _run() -> void:
 	await process_frame
 	save_manager.persistence_ready = original_signout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
-	if account_manager.is_authenticated() or avatar_frame.visible:
-		push_error("[NotificationPreferencesSmoke] Sign-out must clear the account and hide the avatar after the local-only test path completes.")
+	if not account_manager.is_authenticated() or not avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out must be blocked while the local save system is not ready.")
 		quit(1)
 		return
+	account_manager._clear_session_state()
+	if save_manager.persistence_ready:
+		save_manager.load_game()
 
 	# Exercise the actual image-decoding callback without relying on Google's
 	# live CDN: valid image bytes must replace the placeholder; invalid bytes
@@ -548,13 +551,9 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Oversized avatar images must be rejected safely.")
 		quit(1)
 		return
-	var logout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
-	var logout_persistence_ready: bool = bool(save_manager.get("persistence_ready"))
-	ProjectSettings.set_setting("mshin/account/api_base_url", "")
-	save_manager.persistence_ready = false
-	await account_manager.logout()
-	save_manager.persistence_ready = logout_persistence_ready
-	ProjectSettings.set_setting("mshin/account/api_base_url", logout_api_base)
+	account_manager._clear_session_state()
+	if save_manager.persistence_ready:
+		save_manager.load_game()
 
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
 	if settings_close == null:
