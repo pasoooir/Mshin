@@ -50,7 +50,7 @@ jobs:
         run: python godot-city-buildit/tools/validate_project.py
 
       - name: Import and parse project
-        run: godot --headless --editor --path godot-city-buildit --quit
+        run: godot --headless --editor --path godot-city-buildit --import
 
       - name: Headless startup smoke test
         run: |
@@ -113,12 +113,16 @@ jobs:
           python3 -m http.server 4173 --directory site >/tmp/mshin-web-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
+          mkdir -p artifacts/visual-acceptance
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
+          import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
+          page.on('crash', () => console.log('[desktop diagnostics] page crashed'));
+          page.on('close', () => console.log('[desktop diagnostics] page closed'));
           page.on('console', message => console.log('[desktop console:' + message.type() + '] ' + message.text()));
           page.on('requestfailed', request => console.log('[desktop request failed] ' + request.url() + ' ' + (request.failure()?.errorText ?? 'unknown')));
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
@@ -137,7 +141,48 @@ jobs:
             console.log('[desktop diagnostics] page errors=' + errors.join(' | '));
             throw error;
           }
-          await page.waitForTimeout(2000);
+          const gameCanvas = page.frameLocator('#game-frame').locator('canvas');
+          // Do not call locator.boundingBox()/hover() here: Chromium can stall
+          // those geometry queries while Godot WebGL is presenting frames.
+          // Canvas backing dimensions are stable DOM attributes and provide the
+          // required size assertion without forcing a compositor readback.
+          const canvasWidth = Number(await gameCanvas.getAttribute('width'));
+          const canvasHeight = Number(await gameCanvas.getAttribute('height'));
+          if (canvasWidth < 640 || canvasHeight < 360) {
+            throw new Error('Desktop WebGL canvas backing size is too small: ' + canvasWidth + 'x' + canvasHeight);
+          }
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-entry.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          // The Godot canvas fills the 1280x720 game viewport. Move the pointer
+          // directly instead of asking Playwright to calculate its bounding box.
+          await page.mouse.move(640, 360);
+          // Exercise the actual Godot wheel-zoom path and capture a near view.
+          for (let i = 0; i < 7; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1200);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-mountain-near.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          // Return to a wider view so the full ridge ring and tunnel portals can be assessed.
+          for (let i = 0; i < 15; i++) await page.mouse.wheel(0, 100);
+          await page.waitForTimeout(1400);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-mountain-far.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
+            build: process.env.GITHUB_SHA,
+            viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+            canvas: { width: canvasWidth, height: canvasHeight },
+            captures: ['desktop-entry.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
+            zoomInteraction: 'Godot mouse wheel: 7 steps in, 15 steps out',
+            note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
+          }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
 
@@ -170,6 +215,14 @@ jobs:
           }
           await browser.close();
           NODE
+      - name: Upload real WebGL visual acceptance captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: mshin-webgl-visual-acceptance-${{ github.sha }}
+          path: artifacts/visual-acceptance/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
