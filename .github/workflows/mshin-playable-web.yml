@@ -184,13 +184,66 @@ jobs:
             animations: 'disabled',
             timeout: 60000
           });
+
+          // Inspect the coastline and shallow/deep water at both scales.
+          // A diagonal drag moves the orbit target along world X without changing its Z.
+          await page.mouse.move(800, 520);
+          await page.mouse.down();
+          await page.mouse.move(650, 370, { steps: 12 });
+          await page.mouse.up();
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-coast-far.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-coast-near.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 100);
+
+          // Move west to the motorway corridor to inspect the clean asphalt,
+          // city connector and tunnel portals without overlaying the HUD.
+          await page.mouse.move(500, 150);
+          await page.mouse.down();
+          await page.mouse.move(915, 565, { steps: 18 });
+          await page.mouse.up();
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-asphalt-far.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-asphalt-near.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-tunnel-near.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
+          for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 100);
+          await page.waitForTimeout(1000);
+          await page.screenshot({
+            path: 'artifacts/visual-acceptance/desktop-tunnel-far.png',
+            animations: 'disabled',
+            timeout: 60000
+          });
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-entry.png', 'desktop-mountain-medium.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png'],
-            zoomInteraction: 'Godot mouse wheel: 3 steps to medium, 4 additional steps to near, 15 steps out',
-            note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
+            captures: ['desktop-entry.png', 'desktop-mountain-medium.png', 'desktop-mountain-near.png', 'desktop-mountain-far.png', 'desktop-coast-far.png', 'desktop-coast-near.png', 'desktop-asphalt-far.png', 'desktop-asphalt-near.png', 'desktop-tunnel-far.png', 'desktop-tunnel-near.png'],
+            zoomInteraction: 'Godot mouse wheel at multiple distances plus diagonal orbit-target drags to coastline and motorway corridor',
+            note: 'Desktop WebGL canvas captures are real rendered game frames. Coastline, deep/shallow water, asphalt and tunnel are captured at near/far scales. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
