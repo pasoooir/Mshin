@@ -283,6 +283,11 @@ for contract in [
     if contract not in notification_preferences_smoke_source:
         errors.append(f"Notification sign-out regression test is missing: {contract}")
 for contract in [
+    "Sign-out must keep the session active when its final cloud save fails.",
+]:
+    if contract not in notification_preferences_smoke_source:
+        errors.append(f"Notification sign-out regression test is missing: {contract}")
+for contract in [
     "Sign-out must be blocked while the local save system is not ready.",
     "Sign-out must keep the session active when its final cloud save fails.",
 ]:
@@ -1161,7 +1166,6 @@ for contract in [
     "loader.remove();",
     "window.google.accounts.id.renderButton",
     "func logout() -> bool:",
-    "Sign-out must be blocked while the local save system is not ready.",
     "func _wait_for_save_manager_ready() -> bool:",
     "func _restore_authenticated_profile_game_state() -> bool:",
     "static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:",
