@@ -3819,12 +3819,17 @@ func _test_settings_panel_contract() -> void:
 	_check(overlay != null and overlay.visible, "Settings shortcut must open a visible modal panel.")
 	var panel := hud.find_child("SettingsPanel", true, false) as PanelContainer
 	_check(panel != null and panel.size.x > 0.0 and panel.size.y > 0.0, "Settings must render a measurable responsive panel.")
-	var content_scroll := hud.find_child("SettingsContentScroll", true, false) as ScrollContainer
+	var categories := hud.find_child("SettingsCategories", true, false) as TabContainer
 	var settings_content := hud.find_child("SettingsContent", true, false) as VBoxContainer
-	_check(content_scroll == null and settings_content != null, "The primary Settings screen must fit as a single non-scrolling page.")
 	var heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
-	_check(heading != null and settings_content != null and settings_content.get_parent() == heading.get_parent(), "Settings title, controls and actions must share one fixed page.")
-	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "Settings must use the reference-style two-column action grid.")
+	_check(categories != null and categories.get_tab_count() == 4, "Settings must visibly separate City, Sound, Account and More categories.")
+	if categories != null and categories.get_tab_count() == 4:
+		_check(categories.get_tab_title(0) == "City" and categories.get_tab_title(1) == "Sound" and categories.get_tab_title(2) == "Account" and categories.get_tab_title(3) == "More", "Settings category tabs must have clear, stable labels.")
+		_check(categories.get_tab_control(0).name == "CitySettingsScroll" and categories.get_tab_control(1).name == "SoundSettingsScroll" and categories.get_tab_control(2).name == "AccountSettingsScroll" and categories.get_tab_control(3).name == "MoreSettingsScroll", "Each settings category must have its own independently scrollable page.")
+	_check(settings_content != null and settings_content.get_parent().name == "CitySettingsScroll", "City actions must remain inside the City category.")
+	_check(heading != null and categories != null and heading.get_parent() == categories.get_parent(), "Settings heading and category tabs must share the same fixed modal layout.")
+	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "City settings must use the reference-style two-column action grid.")
+	_check(hud.find_child("SettingsMoreActions", true, false) is GridContainer, "More settings must expose the About and advanced settings action.")
 	var settings_title := hud.find_child("SettingsTitle", true, false) as Label
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
 	var music_control := hud.find_child("MusicToggle", true, false) as Button

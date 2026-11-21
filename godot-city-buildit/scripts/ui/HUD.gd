@@ -5492,12 +5492,64 @@ func _show_settings_panel() -> void:
 	close.pressed.connect(_close_settings_panel)
 	heading.add_child(close)
 
+	var tabs := TabContainer.new()
+	tabs.name = "SettingsCategories"
+	tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.add_theme_font_size_override("font_size", _settings_font_size(19))
+	layout.add_child(tabs)
+
+	var city_scroll := ScrollContainer.new()
+	city_scroll.name = "CitySettingsScroll"
+	city_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	city_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	city_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 7 * compact_scale)
-	layout.add_child(content)
+	content.add_theme_constant_override("separation", 9 * compact_scale)
+	city_scroll.add_child(content)
+	tabs.add_child(city_scroll)
+	tabs.set_tab_title(tabs.get_tab_count() - 1, "City")
+
+	var sound_scroll := ScrollContainer.new()
+	sound_scroll.name = "SoundSettingsScroll"
+	sound_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sound_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sound_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var audio_content := VBoxContainer.new()
+	audio_content.name = "SoundSettingsContent"
+	audio_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	audio_content.add_theme_constant_override("separation", 12 * compact_scale)
+	sound_scroll.add_child(audio_content)
+	tabs.add_child(sound_scroll)
+	tabs.set_tab_title(tabs.get_tab_count() - 1, "Sound")
+
+	var account_scroll := ScrollContainer.new()
+	account_scroll.name = "AccountSettingsScroll"
+	account_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	account_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	account_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var account_content := VBoxContainer.new()
+	account_content.name = "AccountSettingsContent"
+	account_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	account_content.add_theme_constant_override("separation", 12 * compact_scale)
+	account_scroll.add_child(account_content)
+	tabs.add_child(account_scroll)
+	tabs.set_tab_title(tabs.get_tab_count() - 1, "Account")
+
+	var more_scroll := ScrollContainer.new()
+	more_scroll.name = "MoreSettingsScroll"
+	more_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	more_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	more_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var more_content := VBoxContainer.new()
+	more_content.name = "MoreSettingsContent"
+	more_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	more_content.add_theme_constant_override("separation", 12 * compact_scale)
+	more_scroll.add_child(more_content)
+	tabs.add_child(more_scroll)
+	tabs.set_tab_title(tabs.get_tab_count() - 1, "More")
 
 	var audio_row := GridContainer.new()
 	audio_row.name = "SettingsAudioToggles"
@@ -5505,7 +5557,7 @@ func _show_settings_panel() -> void:
 	audio_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	audio_row.add_theme_constant_override("h_separation", 12 * compact_scale)
 	audio_row.add_theme_constant_override("v_separation", 8)
-	content.add_child(audio_row)
+	audio_content.add_child(audio_row)
 	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
 	_add_settings_switch(audio_row, "SfxToggle", "Sounds", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
 
@@ -5517,11 +5569,23 @@ func _show_settings_panel() -> void:
 	actions.add_theme_constant_override("h_separation", 12 * compact_scale)
 	actions.add_theme_constant_override("v_separation", 7 * compact_scale)
 	content.add_child(actions)
-	_add_settings_action(actions, "SettingsAboutButton", "About", _show_settings_about)
 	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
 	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
 	_add_settings_action(actions, "SettingsNotificationsButton", "Notification Settings", _show_notification_settings)
 	_add_settings_action(actions, "SettingsWalletButton", "Wallet", _show_wallet_panel)
+
+	var more_heading := Label.new()
+	more_heading.text = "MORE OPTIONS"
+	more_heading.add_theme_font_size_override("font_size", _settings_font_size(18))
+	more_heading.add_theme_color_override("font_color", Color("#A9E9FA"))
+	more_content.add_child(more_heading)
+	var more_actions := GridContainer.new()
+	more_actions.name = "SettingsMoreActions"
+	more_actions.columns = 1
+	more_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	more_actions.add_theme_constant_override("v_separation", 10 * compact_scale)
+	more_content.add_child(more_actions)
+	_add_settings_action(more_actions, "SettingsAboutButton", "About & Advanced Settings", _show_settings_about)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
@@ -5529,7 +5593,7 @@ func _show_settings_panel() -> void:
 	_settings_account_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_settings_account_status.add_theme_font_size_override("font_size", _settings_font_size(18))
 	_settings_account_status.add_theme_color_override("font_color", Color("#D3E9FA"))
-	content.add_child(_settings_account_status)
+	account_content.add_child(_settings_account_status)
 
 	_settings_account_action = Button.new()
 	_settings_account_action.name = "SettingsGoogleAccountAction"
@@ -5569,7 +5633,7 @@ func _show_settings_panel() -> void:
 	_settings_account_action.mouse_entered.connect(func() -> void: _settings_button_hover(_settings_account_action, true))
 	_settings_account_action.mouse_exited.connect(func() -> void: _settings_button_hover(_settings_account_action, false))
 	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
-	content.add_child(_settings_account_action)
+	account_content.add_child(_settings_account_action)
 	_refresh_settings_account_section()
 
 

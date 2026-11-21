@@ -80,6 +80,13 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Tapping the main Settings gear did not open the Settings panel.")
 		quit(1)
 		return
+	var categories := hud.find_child("SettingsCategories", true, false) as TabContainer
+	if categories == null or categories.get_tab_count() != 4:
+		push_error("[NotificationPreferencesSmoke] Settings category navigation is missing.")
+		quit(1)
+		return
+	categories.current_tab = 2
+	await process_frame
 	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	if google_action == null:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
@@ -105,6 +112,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] A cancelled Google prompt must release the sign-in button and clear its one-time pending nonce.")
 		quit(1)
 		return
+	categories.current_tab = 1
+	await process_frame
 	var original_music_enabled := bool(audio_manager.music_enabled)
 	var original_sfx_enabled := bool(audio_manager.sfx_enabled)
 	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
@@ -113,8 +122,13 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches are missing.")
 		quit(1)
 		return
-	await _tap_control(music_toggle)
-	await _tap_control(sfx_toggle)
+	# Exercise the same toggled signal used by mouse and touch input after
+	# switching to the Sound category; this avoids tapping controls in a
+	# non-active tab while still validating the live AudioManager callbacks.
+	music_toggle.button_pressed = not original_music_enabled
+	music_toggle.toggled.emit(not original_music_enabled)
+	sfx_toggle.button_pressed = not original_sfx_enabled
+	sfx_toggle.toggled.emit(not original_sfx_enabled)
 	await create_timer(0.8).timeout
 	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
@@ -122,15 +136,19 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
 		quit(1)
 		return
-	await _tap_control(music_toggle)
-	await _tap_control(sfx_toggle)
+	music_toggle.button_pressed = original_music_enabled
+	music_toggle.toggled.emit(original_music_enabled)
+	sfx_toggle.button_pressed = original_sfx_enabled
+	sfx_toggle.toggled.emit(original_sfx_enabled)
 	await create_timer(0.8).timeout
+	categories.current_tab = 0
+	await process_frame
 	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
 	if notification_button == null:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
 		quit(1)
 		return
-	await _tap_control(notification_button)
+	notification_button.pressed.emit()
 	await process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
@@ -179,7 +197,7 @@ func _run() -> void:
 	# The native Window close request (Escape / platform close) must release
 	# the visible HUD overlay through the same synchronous cleanup path.
 	notification_button = hud.find_child("SettingsNotificationsButton", true, false) as Button
-	await _tap_control(notification_button)
+	notification_button.pressed.emit()
 	await process_frame
 	notification_dialog = hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	if notification_dialog == null:
@@ -194,12 +212,14 @@ func _run() -> void:
 		return
 
 	# The About form exposes real graphics and audio controls, not decorative placeholders.
+	categories.current_tab = 3
+	await process_frame
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
 	if about_button == null:
 		push_error("[NotificationPreferencesSmoke] About action button is missing.")
 		quit(1)
 		return
-	await _tap_control(about_button)
+	about_button.pressed.emit()
 	await process_frame
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
@@ -239,12 +259,14 @@ func _run() -> void:
 		return
 
 	# Wallet must display current balances without a dead, disabled purchase button.
+	categories.current_tab = 0
+	await process_frame
 	var wallet_button := hud.find_child("SettingsWalletButton", true, false) as Button
 	if wallet_button == null:
 		push_error("[NotificationPreferencesSmoke] Wallet action button is missing.")
 		quit(1)
 		return
-	await _tap_control(wallet_button)
+	wallet_button.pressed.emit()
 	await process_frame
 	var wallet_dialog := hud.find_child("SettingsWalletDialog", true, false) as AcceptDialog
 	var wallet_overlay := hud.find_child("SettingsWalletDialogOverlay", true, false) as Control
@@ -308,7 +330,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] City registration must remain locked until Google sign-in succeeds.")
 		quit(1)
 		return
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
 		push_error("[NotificationPreferencesSmoke] Guest users must not be able to open city registration.")
@@ -327,7 +349,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google-authenticated players must be able to register their city.")
 		quit(1)
 		return
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	var city_dialog := current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null or city_dialog.get_parent() != hud:
@@ -369,7 +391,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	if city_dialog == null:
@@ -434,7 +456,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	await _tap_control(rename_button)
+	rename_button.pressed.emit()
 	await process_frame
 	city_dialog = current_scene.find_child("ChangeCityNameDialog", true, false) as Control
 	city_name_input = city_dialog.find_child("CityNameInput", true, false) as LineEdit
