@@ -3655,17 +3655,43 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# City rename is available in guest and authenticated modes; guests save locally.
-	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
+	# City registration is unavailable to guests and unlocks only after Google authentication.
+	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	_check(rename_button != null and rename_button.disabled, "Change City Name must remain disabled until Google sign-in succeeds.")
+	if rename_button != null:
+		rename_button.pressed.emit()
+		await get_tree().process_frame
+		_check(hud.find_child("ChangeCityNameDialog", true, false) == null, "Guest users must not be able to open city registration.")
+
+	# Simulate the authenticated session boundary; the signed Google OIDC flow is
+	# covered by the Cloudflare Worker integration test.
+	var original_player_id := PlayerAccountManager.player_id
+	var original_access_token := PlayerAccountManager.access_token
+	var original_google_name := PlayerAccountManager.google_display_name
+	var original_google_avatar := PlayerAccountManager.google_avatar_url
+	PlayerAccountManager.player_id = 987654
+	PlayerAccountManager.access_token = "gameplay-smoke-auth-token"
+	PlayerAccountManager.google_display_name = "Smoke Mayor"
+	PlayerAccountManager.google_avatar_url = ""
+	hud._refresh_settings_account_section()
+	rename_button = hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	_check(rename_button != null and not rename_button.disabled, "Google-authenticated players must be able to register or rename their city.")
+	if rename_button != null:
+		rename_button.pressed.emit()
 	await get_tree().process_frame
 	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as Control
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
 	var city_form_scroll := hud.find_child("CityNameFormScroll", true, false) as ScrollContainer
-	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Change City Name must open a scrollable HUD-root editable form for both guest and authenticated players.")
+	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Authenticated Change City Name must open a scrollable HUD-root editable form.")
 	if rename_dialog != null and city_name_input != null:
 		city_name_input.text = original_city_name
 		rename_dialog.hide()
 		rename_dialog.queue_free()
+	PlayerAccountManager.player_id = original_player_id
+	PlayerAccountManager.access_token = original_access_token
+	PlayerAccountManager.google_display_name = original_google_name
+	PlayerAccountManager.google_avatar_url = original_google_avatar
+	hud._refresh_settings_account_section()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
 	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
