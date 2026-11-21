@@ -6,8 +6,8 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
-const TERRAIN_LEFT := -90.0
-const TERRAIN_DIVISIONS := 96
+const TERRAIN_LEFT := -120.0
+const TERRAIN_DIVISIONS := 128
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -25,10 +25,14 @@ const ENVIRONMENT_SMALL_DETAIL_END := 190.0
 const ENVIRONMENT_SMALL_DETAIL_MARGIN := 18.0
 const TREE_BELT_DETAIL_END := 280.0
 const TREE_BELT_DETAIL_MARGIN := 24.0
-const AUSTRALIAN_GRASSLAND_PALETTE := [
-	Color("#244D27"), Color("#326334"), Color("#46763A"),
-	Color("#1D4525"), Color("#597B3B"), Color("#2D582C")
+const COASTAL_GREEN_PALETTE := [
+	Color("#245A35"), Color("#2F7040"), Color("#43834A"),
+	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
 ]
+const COASTLINE_BASE_X := 110.0
+const BEACH_WIDTH := 36.0
+const PROMENADE_OFFSET := 12.0
+const PALM_COUNT := 18
 
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
@@ -45,12 +49,12 @@ func _ready() -> void:
 	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
-	_build_dirt_tracks()
 	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
 	_build_meadow_shrubs_and_stones()
-	_build_meadow_livestock()
+	_build_coastal_promenade()
+	_build_beach_palms()
 	_build_shoreline_details()
 	_build_cargo_ship_visual()
 	_build_sunlight()
@@ -119,9 +123,9 @@ func _apply_region_climate(sky_material: ProceduralSkyMaterial, environment: Env
 			# Australian coastal grassland: clear blue sky with a warm, green horizon.
 			sky_material.sky_top_color = Color("#287BB0")
 			sky_material.sky_horizon_color = Color("#B8D9D1")
-			sky_material.ground_bottom_color = Color("#315B39")
-			sky_material.ground_horizon_color = Color("#83A96F")
-			environment.fog_light_color = Color("#C0D8C4")
+			sky_material.ground_bottom_color = Color("#245A35")
+			sky_material.ground_horizon_color = Color("#A4C98D")
+			environment.fog_light_color = Color("#C7E5D5")
 		_:
 			sky_material.sky_top_color = Color("#287BB0")
 			sky_material.sky_horizon_color = Color("#B8D9D1")
@@ -195,7 +199,7 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(8.0, 159.0, 96, 12, -0.055)
+	water.mesh = _create_coastal_water_mesh(8.0, 250.0, 120, 16, -0.055)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
@@ -255,21 +259,23 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var fine_noise := sin(point.x * 0.73 + point.z * 0.91) * cos(point.z * 0.67 - point.x * 0.58)
 	var blend := clampf((broad_noise * 0.78 + fine_noise * 0.22 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
-	if point.x > coast - 7.0:
-		color = Color("#927B59").lerp(Color("#D0B987"), blend)
-	elif point.x > coast - 13.0:
-		color = Color("#587744").lerp(Color("#B1A16C"), blend * 0.58)
+	if point.x > coast - 8.0:
+		color = Color("#B79A68").lerp(Color("#E7D2A2"), blend)
+	elif point.x > coast - BEACH_WIDTH:
+		color = Color("#C2AA78").lerp(Color("#E2CB98"), blend * 0.62)
+	elif point.x > coast - BEACH_WIDTH - 12.0:
+		color = Color("#6B9653").lerp(Color("#B1B978"), blend * 0.45)
 	else:
-		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % AUSTRALIAN_GRASSLAND_PALETTE.size()
-		color = AUSTRALIAN_GRASSLAND_PALETTE[palette_index].lerp(Color("#A0A15B"), blend * 0.12)
+		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
+		color = COASTAL_GREEN_PALETTE[palette_index].lerp(Color("#8EBB67"), blend * 0.12)
 		if fine_noise > 0.58:
 			color = color.lerp(Color("#315F31"), 0.13)
 		elif fine_noise < -0.62:
 			color = color.lerp(Color("#8E9C50"), 0.10)
 	# Exposed stony patches and dry sediment break up the former continuous green carpet.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
-	var scree_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(18.0, 52.0, absf(point.z))
-	color = color.lerp(Color("#777365"), scree_mask * 0.38)
+	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
+	color = color.lerp(Color("#A5A06C"), dry_patch_mask * 0.12)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -282,10 +288,9 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 			color = color.lerp(Color("#3E783C"), 0.42)
 		"mediterranean":
 			color = color.lerp(Color("#8C875B"), 0.38)
-	var in_east_pasture := point.x >= -42.0 and point.x <= 44.0
-	var in_west_pasture := point.x >= -90.0 and point.x <= -69.0
-	if absf(point.z) >= 80.0 and absf(point.z) <= 90.0 and (in_east_pasture or in_west_pasture):
-		color = color.lerp(Color("#B4A36F"), 0.24)
+	var park_edge := smoothstep(48.0, 82.0, absf(point.z))
+	if point.x < 58.0 and point.x > -112.0:
+		color = color.lerp(Color("#4E8B4C"), 0.12 + park_edge * 0.08)
 	if not LandExpansionManager.is_world_position_unlocked(point):
 		color = color.lerp(Color("#36523A"), 0.12)
 	var terrain_point := point
@@ -308,11 +313,11 @@ func _terrain_height(x: float, z: float) -> float:
 	var natural_relief := (broad + cross + rolling + fine) * relief_mask
 	# The last 14 m of beach gently settle to the sea datum. The water mesh
 	# begins just offshore, so neither land nor ocean floats above the other.
-	var beach_fade := smoothstep(0.0, 14.0, _coastline(z) - x)
+	var beach_fade := smoothstep(0.0, 30.0, _coastline(z) - x)
 	return natural_relief * beach_fade
 
 func _coastline(z: float) -> float:
-	return 51.0 + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
+	return COASTLINE_BASE_X + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
 
 
 func _build_land_expansion_markers() -> void:
@@ -881,9 +886,9 @@ void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 void fragment() {
-	float coastline = 51.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
+	float sand_mask = smoothstep(coastline - 36.0 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb;
 	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
@@ -1513,6 +1518,127 @@ func _create_meadow_shrub_mesh() -> ArrayMesh:
 	surface.append_from(sphere, 0, Transform3D(Basis.IDENTITY.scaled(Vector3(0.62, 0.68, 0.58)), Vector3(0.43, -0.08, -0.18)))
 	return surface.commit()
 
+
+
+func _build_coastal_promenade() -> void:
+	# A continuous timber promenade follows the curved Pacific shoreline.
+	# One vertex-colored mesh keeps this landmark to a single draw call.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SEGMENTS := 120
+	for step in range(SEGMENTS):
+		var z0 := lerpf(-89.0, 89.0, float(step) / float(SEGMENTS))
+		var z1 := lerpf(-89.0, 89.0, float(step + 1) / float(SEGMENTS))
+		var x0 := _coastline(z0) - PROMENADE_OFFSET
+		var x1 := _coastline(z1) - PROMENADE_OFFSET
+		var p00 := Vector3(x0 - 2.2, _terrain_height(x0 - 2.2, z0) + 0.22, z0)
+		var p01 := Vector3(x1 - 2.2, _terrain_height(x1 - 2.2, z1) + 0.22, z1)
+		var p10 := Vector3(x0 + 2.2, _terrain_height(x0 + 2.2, z0) + 0.22, z0)
+		var p11 := Vector3(x1 + 2.2, _terrain_height(x1 + 2.2, z1) + 0.22, z1)
+		var plank_tint := 0.90 + 0.08 * sin(float(step) * 0.73)
+		surface.set_color(Color(0.48, 0.31, 0.18) * plank_tint)
+		surface.add_vertex(p00)
+		surface.set_color(Color(0.58, 0.39, 0.23) * plank_tint)
+		surface.add_vertex(p01)
+		surface.set_color(Color(0.53, 0.35, 0.20) * plank_tint)
+		surface.add_vertex(p10)
+		surface.add_vertex(p10)
+		surface.add_vertex(p01)
+		surface.add_vertex(p11)
+	surface.generate_normals()
+	var promenade := MeshInstance3D.new()
+	promenade.name = "PacificCoastalPromenade"
+	promenade.mesh = surface.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.82
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	promenade.material_override = material
+	promenade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(promenade)
+
+
+func _build_beach_palms() -> void:
+	# Palms form a loose landscaped edge between the green park and wide sand.
+	# Trunks and crowns each use one MultiMesh for mobile-friendly draw calls.
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.12
+	trunk_mesh.bottom_radius = 0.20
+	trunk_mesh.height = 5.2
+	trunk_mesh.radial_segments = 7
+	var frond_mesh := _create_palm_frond_mesh()
+	var trunk_batch := MultiMesh.new()
+	trunk_batch.transform_format = MultiMesh.TRANSFORM_3D
+	trunk_batch.mesh = trunk_mesh
+	trunk_batch.instance_count = PALM_COUNT
+	var crown_batch := MultiMesh.new()
+	crown_batch.transform_format = MultiMesh.TRANSFORM_3D
+	crown_batch.mesh = frond_mesh
+	crown_batch.use_colors = true
+	crown_batch.instance_count = PALM_COUNT
+	for index in range(PALM_COUNT):
+		var z := -82.0 + float(index) * 9.65 + sin(float(index) * 1.7) * 2.0
+		var x := _coastline(z) - BEACH_WIDTH - 12.0 + sin(float(index) * 2.3) * 2.4
+		var base := Vector3(x, _terrain_height(x, z), z)
+		var yaw := float(index * 47 % 360) * PI / 180.0
+		var trunk_basis := Basis(Vector3.UP, yaw).scaled(Vector3(1.0, 1.0 + float(index % 4) * 0.04, 1.0))
+		trunk_batch.set_instance_transform(index, Transform3D(trunk_basis, base + Vector3(0.0, 2.6, 0.0)))
+		var crown_basis := Basis(Vector3.UP, yaw).scaled(Vector3(0.82 + float(index % 3) * 0.08, 0.82, 0.82 + float(index % 2) * 0.1))
+		crown_batch.set_instance_transform(index, Transform3D(crown_basis, base + Vector3(0.0, 5.1, 0.0)))
+		crown_batch.set_instance_color(index, Color("#397A43") if index % 3 == 0 else Color("#4D914B"))
+	var trunks := MultiMeshInstance3D.new()
+	trunks.name = "PacificPalmTrunks"
+	trunks.multimesh = trunk_batch
+	var bark := StandardMaterial3D.new()
+	bark.albedo_color = Color("#A77A4D")
+	bark.roughness = 0.95
+	trunks.material_override = bark
+	trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(trunks)
+	var crowns := MultiMeshInstance3D.new()
+	crowns.name = "PacificPalmCrowns"
+	crowns.multimesh = crown_batch
+	var leaves := StandardMaterial3D.new()
+	leaves.vertex_color_use_as_albedo = true
+	leaves.roughness = 0.88
+	leaves.cull_mode = BaseMaterial3D.CULL_DISABLED
+	crowns.material_override = leaves
+	crowns.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(crowns)
+
+
+func _create_palm_frond_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for leaf_index in range(9):
+		var angle := TAU * float(leaf_index) / 9.0
+		var direction := Vector3(cos(angle), 0.0, sin(angle))
+		var previous_left := Vector3.ZERO
+		var previous_right := Vector3.ZERO
+		for segment in range(7):
+			var t := float(segment) / 6.0
+			var next_t := float(segment + 1) / 6.0
+			var center := direction * (t * 3.15) + Vector3(0.0, -1.45 * t * t, 0.0)
+			var next_center := direction * (next_t * 3.15) + Vector3(0.0, -1.45 * next_t * next_t, 0.0)
+			var side := Vector3(-direction.z, 0.0, direction.x)
+			var width := sin(t * PI) * 0.20 + 0.025
+			var next_width := sin(next_t * PI) * 0.20 + 0.012
+			var left := center - side * width
+			var right := center + side * width
+			var next_left := next_center - side * next_width
+			var next_right := next_center + side * next_width
+			if segment > 0:
+				surface.set_color(Color("#4E914A"))
+				surface.add_vertex(previous_left)
+				surface.add_vertex(next_left)
+				surface.add_vertex(previous_right)
+				surface.add_vertex(previous_right)
+				surface.add_vertex(next_left)
+				surface.add_vertex(next_right)
+			previous_left = left
+			previous_right = right
+	surface.generate_normals()
+	return surface.commit()
 
 
 func _build_shoreline_details() -> void:
