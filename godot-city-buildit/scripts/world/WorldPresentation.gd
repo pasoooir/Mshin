@@ -70,9 +70,9 @@ func _build_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.82
+	environment.ambient_light_energy = 0.68
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.tonemap_exposure = 1.08
+	environment.tonemap_exposure = 0.96
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.72, 0.82, 0.82)
 	environment.fog_density = 0.00065
