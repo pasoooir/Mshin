@@ -2487,6 +2487,30 @@ func open_production_panel(building: Building) -> void:
 	for slot_index in range(component.get_slot_count()):
 		var slot: Dictionary = component.get_slot(slot_index)
 		if slot.is_empty():
+			var empty_card := PanelContainer.new()
+			empty_card.name = "QueueSlot%d" % slot_index
+			empty_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			empty_card.custom_minimum_size = Vector2(100.0, 68.0) * _ui_scale
+			var empty_style := StyleBoxFlat.new()
+			empty_style.bg_color = Color(0.025, 0.12, 0.19, 0.72)
+			empty_style.border_color = Color("#E7F7FF")
+			empty_style.set_border_width_all(2)
+			empty_style.set_corner_radius_all(15)
+			empty_style.content_margin_left = 8
+			empty_style.content_margin_right = 8
+			empty_style.content_margin_top = 5
+			empty_style.content_margin_bottom = 5
+			empty_card.add_theme_stylebox_override("panel", empty_style)
+			empty_card.mouse_filter = Control.MOUSE_FILTER_PASS
+			orders_list.add_child(empty_card)
+			var empty_label := Label.new()
+			empty_label.name = "EmptyQueueSlotLabel%d" % slot_index
+			empty_label.text = "EMPTY SLOT  ·  DROP HERE"
+			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			empty_label.add_theme_font_size_override("font_size", _popup_font_size(12))
+			empty_label.add_theme_color_override("font_color", Color("#D9F2FF"))
+			empty_card.add_child(empty_label)
 			continue
 		visible_order_count += 1
 		var queued_item_id := str(slot.get("item_id", ""))
@@ -2868,7 +2892,14 @@ func _input(event: InputEvent) -> void:
 				var target_building := _production_building
 				var target_item_id := str(button.get_meta("production_item_id", ""))
 				if not target_item_id.is_empty() and int(button.get_meta("production_building_id", 0)) == target_building.get_instance_id():
-					_on_production_item_pressed(target_building, target_item_id, -1, button)
+					_production_touch_drag_active = true
+					_production_touch_dragged = false
+					_production_touch_drag_index = event.index
+					_production_touch_drag_origin = event.position
+					_production_touch_drag_item_id = target_item_id
+					_production_touch_drag_building = target_building
+					_production_touch_drag_source_button = button
+					button.set_meta("touch_drag_consumed", false)
 					_native_ui_touch_excluded[event.index] = true
 					get_viewport().set_input_as_handled()
 					return
@@ -3036,7 +3067,8 @@ func _update_production_touch_drag_ghost(screen_position: Vector2) -> void:
 		var slot_card := production_panel.find_child("QueueSlot%d" % slot_index, true, false) as PanelContainer
 		if not is_instance_valid(slot_card):
 			continue
-		var hovered := slot_card.get_global_rect().has_point(screen_position)
+		var slot_local_position: Vector2 = slot_card.get_global_transform_with_canvas().affine_inverse() * screen_position
+		var hovered := Rect2(Vector2.ZERO, slot_card.size).has_point(slot_local_position)
 		var slot_available := component.get_slot(slot_index).is_empty()
 		if hovered and slot_available:
 			slot_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#245D70"), Color("#F3C94E")))
@@ -3079,7 +3111,11 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 		var slot_card: Control = null
 		if is_instance_valid(production_panel):
 			slot_card = production_panel.find_child("QueueSlot%d" % slot_index, true, false) as Control
-		if is_instance_valid(slot_card) and slot_card.get_global_rect().has_point(screen_position):
+		if is_instance_valid(slot_card):
+			var slot_local_position: Vector2 = slot_card.get_global_transform_with_canvas().affine_inverse() * screen_position
+			var inside_slot := Rect2(Vector2.ZERO, slot_card.size).has_point(slot_local_position)
+			if not inside_slot:
+				continue
 			if _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
 				_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
 			elif is_instance_valid(status_label):
