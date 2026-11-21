@@ -214,21 +214,25 @@ func _build_terrain() -> void:
 	_build_creek_channel()
 
 
-func _create_coastal_water_mesh(shore_offset: float, far_x: float, rows: int, columns: int, water_y: float) -> ArrayMesh:
+func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int, columns: int, water_y: float) -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for row in range(rows):
 		var z0 := lerpf(-95.0, 95.0, float(row) / float(rows))
 		var z1 := lerpf(-95.0, 95.0, float(row + 1) / float(rows))
-		var near_x0 := _coastline(z0) + shore_offset
-		var near_x1 := _coastline(z1) + shore_offset
+		var coast_x0 := _coastline(z0)
+		var coast_x1 := _coastline(z1)
+		var near_x0 := coast_x0 + shore_offset
+		var near_x1 := coast_x1 + shore_offset
+		var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge
+		var far_x1 := coast_x1 + far_edge if far_edge <= 20.0 else far_edge
 		for column in range(columns):
 			var u0 := float(column) / float(columns)
 			var u1 := float(column + 1) / float(columns)
 			var x00 := lerpf(near_x0, far_x, u0)
-			var x10 := lerpf(near_x0, far_x, u1)
+			var x10 := lerpf(near_x0, far_x0, u1)
 			var x01 := lerpf(near_x1, far_x, u0)
-			var x11 := lerpf(near_x1, far_x, u1)
+			var x11 := lerpf(near_x1, far_x1, u1)
 			var uv00 := Vector2(u0, float(row) / rows)
 			var uv10 := Vector2(u1, float(row) / rows)
 			var uv01 := Vector2(u0, float(row + 1) / rows)
