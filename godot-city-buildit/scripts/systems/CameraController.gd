@@ -43,10 +43,40 @@ func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
 	# Frame the starter highway and first adjacent build plots on entry.
 	global_position = Vector3(-3.0, 0.0, 0.0)
+	_apply_visual_acceptance_preset()
 	_update_camera_transform()
 	focus_target = global_position
 	# No idle per-frame camera work: wake only for touch, inertia or focus.
 	set_process(false)
+
+
+func _apply_visual_acceptance_preset() -> void:
+	# Deterministic camera presets are only enabled for explicit WebGL QA URLs.
+	# They let CI inspect shoreline, road and tunnel geometry without injecting
+	# high-velocity synthetic drag gestures into the live camera controller.
+	if not OS.has_feature("web"):
+		return
+	var preset := str(JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('visual_camera') || ''"))
+	match preset:
+		"coast_far":
+			global_position = Vector3(18.0, 0.0, 0.0)
+			current_zoom = 84.0
+		"coast_near":
+			global_position = Vector3(40.0, 0.0, 0.0)
+			current_zoom = 52.0
+		"asphalt_far":
+			global_position = Vector3(-40.0, 0.0, 0.0)
+			current_zoom = 84.0
+		"asphalt_near":
+			global_position = Vector3(-48.0, 0.0, 0.0)
+			current_zoom = 52.0
+		"tunnel_far":
+			global_position = Vector3(-55.0, 0.0, 68.0)
+			current_zoom = 84.0
+		"tunnel_near":
+			global_position = Vector3(-55.0, 0.0, 68.0)
+			current_zoom = 52.0
+
 
 func _process(delta: float) -> void:
 	if delta <= 0.0:
