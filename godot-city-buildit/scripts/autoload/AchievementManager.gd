@@ -61,7 +61,7 @@ func _collect_metrics() -> Dictionary:
 	var scene := get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	if is_instance_valid(road_system) and road_system.has_method("get_road_count"):
-		metrics["roads"] = int(road_system.get_road_count())
+		metrics["roads"] = int(road_system.get_player_built_road_count()) if road_system.has_method("get_player_built_road_count") else int(road_system.get_road_count())
 	return metrics
 
 func _check_achievements() -> void:
