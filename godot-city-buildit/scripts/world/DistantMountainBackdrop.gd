@@ -25,6 +25,9 @@ signal generation_completed
 const TUNNEL_CUTOUT_HALF_WIDTH := 28.0
 const TUNNEL_OPENING_WIDTH := 42.0
 const TUNNEL_WALL_HEIGHT := 15.0
+const TUNNEL_CROWN_MIN_HEIGHT := 58.0
+const TUNNEL_CROWN_PLATEAU_HALF_WIDTH := 42.0
+const TUNNEL_CROWN_FADE_DISTANCE := 118.0
 const MIN_CAMERA_FAR_CLIP := 720.0
 
 func _ready() -> void:
@@ -175,7 +178,19 @@ func _ridge_height(along: float, depth: float, side: int) -> float:
 	var broken_faces := sin(along * 0.137 + depth * 19.0 + float(side) * 1.9) * 3.2
 	var cross_gullies := cos(along * 0.047 - depth * 31.0 + float(side) * 0.8) * 2.1
 	var peak_height := 62.0 + rolling_peaks * 46.0 + sharp_crag + broken_faces + cross_gullies
-	return maxf(0.0, peak_height * slope_mask * end_fade)
+	var natural_ridge_height := maxf(0.0, peak_height * slope_mask * end_fade)
+
+	# The highway crosses the north/south ridges at TUNNEL_CENTER_X. The old
+	# sin(PI * depth) profile collapsed to zero at both portal edges (depth 0/1),
+	# leaving the inner and outer tunnel mouths exposed. Keep a broad, continuous
+	# mountain saddle above all four portals, then blend it into the natural ridge.
+	if side < 2:
+		var portal_distance := absf(along - TUNNEL_CENTER_X)
+		var crown_mask := 1.0 - smoothstep(TUNNEL_CROWN_PLATEAU_HALF_WIDTH, TUNNEL_CROWN_FADE_DISTANCE, portal_distance)
+		var crown_height := TUNNEL_CROWN_MIN_HEIGHT + sin(PI * clampf(depth, 0.0, 1.0)) * 5.0
+		var continuous_portal_crown := crown_height * crown_mask * end_fade
+		return maxf(natural_ridge_height, continuous_portal_crown)
+	return natural_ridge_height
 
 
 func _ridge_color(along: float, depth: float, side: int) -> Color:
