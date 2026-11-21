@@ -4,6 +4,7 @@ extends Control
 const Icons = preload("res://scripts/ui/Icons.gd")
 const NotificationData = preload("res://scripts/ui/BuildingNotification.gd")
 const NotificationVisualScript = preload("res://scripts/ui/NotificationVisual.gd")
+const WorldNotificationAnchorScript = preload("res://scripts/ui/BuildingNotificationAnchor.gd")
 
 const REFRESH_INTERVAL := 0.35
 const PRODUCT_BUTTON_SIZE := Vector2(82.0, 76.0)
@@ -12,6 +13,7 @@ const MAX_NOTIFICATIONS_PER_BUILDING := 2
 
 var _refresh_elapsed := 0.0
 var _entries: Dictionary = {}
+var _world_anchors: Dictionary = {}
 var _hud: Node
 var _building_alerts_enabled := true
 
@@ -53,6 +55,10 @@ func _clear_notification_entries() -> void:
 		if is_instance_valid(button):
 			button.queue_free()
 	_entries.clear()
+	for anchor in _world_anchors.values():
+		if is_instance_valid(anchor):
+			anchor.queue_free()
+	_world_anchors.clear()
 
 func refresh_now() -> void:
 	_sync_notifications()
@@ -138,6 +144,64 @@ func _sync_notifications() -> void:
 		var count_label := button.get_node_or_null("Count")
 		if count_label is Label:
 			count_label.text = "×%d" % data.slots.size()
+	_sync_world_anchors(wanted)
+
+func _sync_world_anchors(wanted: Dictionary) -> void:
+	var grouped: Dictionary = {}
+	for data_variant in wanted.values():
+		var data: Dictionary = data_variant
+		var building = data.get("building")
+		if not is_instance_valid(building):
+			continue
+		var building_id := str(building.building_id)
+		if not grouped.has(building_id):
+			grouped[building_id] = []
+		var kind := str(data.get("kind", "idle"))
+		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
+		notification.priority = int(data.get("priority", 0))
+		notification.detail = str(data.get("missing_text", ""))
+		grouped[building_id].append(notification)
+	for existing_id in _world_anchors.keys():
+		if not grouped.has(str(existing_id)):
+			var stale = _world_anchors[existing_id]
+			if is_instance_valid(stale):
+				stale.queue_free()
+			_world_anchors.erase(existing_id)
+	for building_id in grouped:
+		var building = BuildManager.buildings.get(str(building_id))
+		if not is_instance_valid(building):
+			continue
+		var anchor = _world_anchors.get(str(building_id))
+		if not is_instance_valid(anchor):
+			anchor = WorldNotificationAnchorScript.new()
+			anchor.name = "WorldNotificationAnchor"
+			building.add_child(anchor)
+			anchor.notification_pressed.connect(_on_world_notification_pressed)
+			_world_anchors[str(building_id)] = anchor
+		var roof_anchor := _get_roof_anchor(building)
+		anchor.set_anchor_position(Vector3(0.0, roof_anchor.y - building.global_position.y + 1.15, 0.0))
+		anchor.set_notifications(grouped[building_id])
+
+func _on_world_notification_pressed(notification) -> void:
+	if notification == null:
+		return
+	var building_id := str(notification.building_id)
+	var item_id := str(notification.item_id)
+	match int(notification.type):
+		NotificationData.Type.PRODUCTION_READY, NotificationData.Type.STORAGE_FULL:
+			_on_product_pressed(building_id, item_id)
+		NotificationData.Type.UPGRADE_READY:
+			_on_upgrade_pressed(building_id)
+		_:
+			_on_building_attention_pressed(building_id)
+
+func _notification_type(kind: String) -> int:
+	match kind:
+		"product": return NotificationData.Type.PRODUCTION_READY
+		"storage_full": return NotificationData.Type.STORAGE_FULL
+		"upgrade": return NotificationData.Type.UPGRADE_READY
+		"needs_materials": return NotificationData.Type.NEEDS_MATERIALS
+		_: return NotificationData.Type.IDLE
 
 func _make_entry(building: Node, kind: String, item_id: String, slots: Array, missing_text: String = "") -> Dictionary:
 	return {
