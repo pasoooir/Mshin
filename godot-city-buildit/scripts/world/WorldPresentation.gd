@@ -192,8 +192,8 @@ func _build_terrain() -> void:
 	terrain.mesh = surface.commit()
 	var terrain_material := _create_natural_ground_material()
 	terrain.material_override = terrain_material
-	_request_ground_texture("grass", "https://cdn.polyhaven.com/asset_img/primary/leafy_grass.png?height=512&quality=95&v=8866acdc", terrain_material)
-	_request_ground_texture("sand", "https://cdn.polyhaven.com/asset_img/primary/coast_sand_02.png?height=512&quality=95&v=7b305d92", terrain_material)
+	_request_ground_texture("grass", "https://cdn.polyhaven.com/asset_img/primary/leafy_grass.png?height=110&quality=95&v=8866acdc", terrain_material)
+	_request_ground_texture("sand", "https://cdn.polyhaven.com/asset_img/primary/coast_sand_02.png?height=110&quality=95&v=7b305d92", terrain_material)
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
@@ -531,7 +531,7 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=512&quality=95&v=547f00f6") != OK:
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
 		request.queue_free()
 
 
@@ -1016,7 +1016,7 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=512&quality=95&v=547f00f6") != OK:
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
 		request.queue_free()
 
 
