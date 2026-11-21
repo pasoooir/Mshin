@@ -192,8 +192,8 @@ func _build_terrain() -> void:
 	terrain.mesh = surface.commit()
 	var terrain_material := _create_natural_ground_material()
 	terrain.material_override = terrain_material
-	_request_ground_texture("grass", "https://cdn.meshy.ai/landing-assets/textures/grass/wild-meadow-grass/wild-meadow-grass-2k.jpg", terrain_material)
-	_request_ground_texture("sand", "https://cdn.meshy.ai/landing-assets/textures/ground/pitted-sandy-ground/pitted-sandy-ground-2k.jpg", terrain_material)
+	_request_ground_texture("grass", "https://cdn.polyhaven.com/asset_img/primary/leafy_grass.png?height=110&quality=95&v=8866acdc", terrain_material)
+	_request_ground_texture("sand", "https://cdn.polyhaven.com/asset_img/primary/coast_sand_02.png?height=110&quality=95&v=7b305d92", terrain_material)
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
@@ -517,8 +517,11 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
 			var image := Image.new()
-			if image.load_jpg_from_buffer(body) == OK:
-				image.generate_mipmaps()
+			var image_error := image.load_png_from_buffer(body)
+				if image_error != OK:
+					image_error = image.load_jpg_from_buffer(body)
+				if image_error == OK:
+					image.generate_mipmaps()
 				var texture := ImageTexture.create_from_image(image)
 				highway_material.albedo_texture = texture
 				connector_material.albedo_texture = texture
@@ -528,7 +531,7 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
 		request.queue_free()
 
 
@@ -978,9 +981,11 @@ func _request_ground_texture(slot: String, url: String, material: ShaderMaterial
 func _on_ground_texture_received(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, material: ShaderMaterial, slot: String, request: HTTPRequest) -> void:
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
 		var image := Image.new()
-		var error := image.load_jpg_from_buffer(body)
-		if error == OK:
-			image.generate_mipmaps()
+		var error := image.load_png_from_buffer(body)
+			if error != OK:
+				error = image.load_jpg_from_buffer(body)
+			if error == OK:
+				image.generate_mipmaps()
 			material.set_shader_parameter(slot + "_texture", ImageTexture.create_from_image(image))
 		else:
 			push_warning("[WorldPresentation] Invalid CDN image for " + slot + "; procedural fallback retained")
