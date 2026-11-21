@@ -337,61 +337,65 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 			}
 		};
 		const initialize = function () {
-			if (!window.google || !window.google.accounts || !window.google.accounts.id) {
-				callback(null);
-				return;
-			}
-			window.google.accounts.id.initialize({
-				client_id: clientId,
-				nonce: nonce,
-				auto_select: shouldAutoSelect,
-				cancel_on_tap_outside: true,
-				callback: function (response) {
-					callback(response && response.credential ? response.credential : null);
+			try {
+				if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+					callback(null);
+					return;
 				}
-			});
-			if (shouldAutoSelect) {
-				window.google.accounts.id.prompt(function (moment) {
-					if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment())) {
-						window.mshinGoogleCredentialCallback(null, nonce);
+				window.google.accounts.id.initialize({
+					client_id: clientId,
+					nonce: nonce,
+					auto_select: shouldAutoSelect,
+					cancel_on_tap_outside: true,
+					callback: function (response) {
+						callback(response && response.credential ? response.credential : null);
 					}
 				});
-				return;
+				if (shouldAutoSelect) {
+					window.google.accounts.id.prompt(function (moment) {
+						if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment())) {
+							window.mshinGoogleCredentialCallback(null, nonce);
+						}
+					});
+					return;
+				}
+				let overlay = document.getElementById("mshin-google-signin-overlay");
+				if (overlay) overlay.remove();
+				overlay = document.createElement("div");
+				overlay.id = "mshin-google-signin-overlay";
+				overlay.setAttribute("role", "dialog");
+				overlay.setAttribute("aria-label", "Sign in with Google");
+				overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.78);backdrop-filter:blur(9px);";
+				const card = document.createElement("div");
+				card.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);";
+				const heading = document.createElement("div");
+				heading.textContent = "Connect your city";
+				heading.style.cssText = "font:700 22px system-ui,sans-serif;color:#f5fbff;letter-spacing:.3px;";
+				const subtitle = document.createElement("div");
+				subtitle.textContent = "Sign in securely to save and sync your progress";
+				subtitle.style.cssText = "font:14px system-ui,sans-serif;color:#c8dced;text-align:center;max-width:290px;";
+				const button = document.createElement("div");
+				button.id = "mshin-google-render-button";
+				const close = document.createElement("button");
+				close.type = "button";
+				close.textContent = "Cancel";
+				close.style.cssText = "border:0;border-radius:12px;padding:9px 20px;background:rgba(255,255,255,.10);color:#d8ebf7;font:600 14px system-ui,sans-serif;cursor:pointer;";
+				close.addEventListener("click", function () { callback(null); });
+				card.append(heading, subtitle, button, close);
+				overlay.appendChild(card);
+				document.body.appendChild(overlay);
+				window.google.accounts.id.renderButton(button, {
+					type: "standard",
+					theme: "outline",
+					size: "large",
+					text: "continue_with",
+					shape: "pill",
+					logo_alignment: "left",
+					width: Math.min(300, Math.floor(window.innerWidth * .78))
+				});
+			} catch (_) {
+				callback(null);
 			}
-			let overlay = document.getElementById("mshin-google-signin-overlay");
-			if (overlay) overlay.remove();
-			overlay = document.createElement("div");
-			overlay.id = "mshin-google-signin-overlay";
-			overlay.setAttribute("role", "dialog");
-			overlay.setAttribute("aria-label", "Sign in with Google");
-			overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.78);backdrop-filter:blur(9px);";
-			const card = document.createElement("div");
-			card.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);";
-			const heading = document.createElement("div");
-			heading.textContent = "Connect your city";
-			heading.style.cssText = "font:700 22px system-ui,sans-serif;color:#f5fbff;letter-spacing:.3px;";
-			const subtitle = document.createElement("div");
-			subtitle.textContent = "Sign in securely to save and sync your progress";
-			subtitle.style.cssText = "font:14px system-ui,sans-serif;color:#c8dced;text-align:center;max-width:290px;";
-			const button = document.createElement("div");
-			button.id = "mshin-google-render-button";
-			const close = document.createElement("button");
-			close.type = "button";
-			close.textContent = "Cancel";
-			close.style.cssText = "border:0;border-radius:12px;padding:9px 20px;background:rgba(255,255,255,.10);color:#d8ebf7;font:600 14px system-ui,sans-serif;cursor:pointer;";
-			close.addEventListener("click", function () { callback(null); });
-			card.append(heading, subtitle, button, close);
-			overlay.appendChild(card);
-			document.body.appendChild(overlay);
-			window.google.accounts.id.renderButton(button, {
-				type: "standard",
-				theme: "outline",
-				size: "large",
-				text: "continue_with",
-				shape: "pill",
-				logo_alignment: "left",
-				width: Math.min(300, Math.floor(window.innerWidth * .78))
-			});
 		};
 		const loadIdentity = function () {
 			if (window.google && window.google.accounts && window.google.accounts.id) {
@@ -399,18 +403,39 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 				return;
 			}
 			let loader = document.getElementById("mshin-google-identity-script");
-			if (!loader) {
-				loader = document.createElement("script");
-				loader.id = "mshin-google-identity-script";
-				loader.src = "https://accounts.google.com/gsi/client";
-				loader.async = true;
-				loader.defer = true;
-				loader.onload = initialize;
-				loader.onerror = function () { callback(null); };
-				document.head.appendChild(loader);
-			} else {
-				loader.addEventListener("load", initialize, { once: true });
+			if (loader) {
+				const loadState = loader.dataset.mshinLoadState || "loading";
+				if (loadState === "loaded" || loadState === "failed") {
+					// A previous failed/partial load must not poison every later retry.
+					loader.remove();
+					loader = null;
+				} else {
+					loader.addEventListener("load", function () {
+						loader.dataset.mshinLoadState = "loaded";
+						initialize();
+					}, { once: true });
+					loader.addEventListener("error", function () {
+						loader.dataset.mshinLoadState = "failed";
+						callback(null);
+					}, { once: true });
+					return;
+				}
 			}
+			loader = document.createElement("script");
+			loader.id = "mshin-google-identity-script";
+			loader.dataset.mshinLoadState = "loading";
+			loader.src = "https://accounts.google.com/gsi/client";
+			loader.async = true;
+			loader.defer = true;
+			loader.addEventListener("load", function () {
+				loader.dataset.mshinLoadState = "loaded";
+				initialize();
+			}, { once: true });
+			loader.addEventListener("error", function () {
+				loader.dataset.mshinLoadState = "failed";
+				callback(null);
+			}, { once: true });
+			document.head.appendChild(loader);
 		};
 		loadIdentity();
 	})();
