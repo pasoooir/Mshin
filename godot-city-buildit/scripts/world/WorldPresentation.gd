@@ -195,30 +195,62 @@ func _build_terrain() -> void:
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
+	# Both water bands follow the exact sampled coastline instead of using
+	# fixed rectangles. This prevents the new mountain/backdrop geometry from
+	# exposing green slivers, burying the beach or cutting the sea at the edges.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	var water_mesh := PlaneMesh.new()
-	water_mesh.size = Vector2(110.0, 190.0)
-	water_mesh.subdivide_width = 48
-	water_mesh.subdivide_depth = 48
-	water.mesh = water_mesh
-	water.position = Vector3(104.0, -0.18, 0.0)
+	water.mesh = _create_coastal_water_mesh(8.0, 159.0, 96, 12, -0.055)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	var shallow_mesh := PlaneMesh.new()
-	shallow_mesh.size = Vector2(8.0, 190.0)
-	shallow_mesh.subdivide_width = 8
-	shallow_mesh.subdivide_depth = 48
-	shallow_water.mesh = shallow_mesh
-	shallow_water.position = Vector3(54.0, -0.12, 0.0)
+	shallow_water.mesh = _create_coastal_water_mesh(0.12, 8.0, 96, 4, -0.025)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
 	_build_creek_channel()
+
+
+func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int, columns: int, water_y: float) -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in range(rows):
+		var z0 := lerpf(-95.0, 95.0, float(row) / float(rows))
+		var z1 := lerpf(-95.0, 95.0, float(row + 1) / float(rows))
+		var coast_x0 := _coastline(z0)
+		var coast_x1 := _coastline(z1)
+		var near_x0 := coast_x0 + shore_offset
+		var near_x1 := coast_x1 + shore_offset
+		var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge
+		var far_x1 := coast_x1 + far_edge if far_edge <= 20.0 else far_edge
+		for column in range(columns):
+			var u0 := float(column) / float(columns)
+			var u1 := float(column + 1) / float(columns)
+			var x00 := lerpf(near_x0, far_x0, u0)
+			var x10 := lerpf(near_x0, far_x0, u1)
+			var x01 := lerpf(near_x1, far_x1, u0)
+			var x11 := lerpf(near_x1, far_x1, u1)
+			var uv00 := Vector2(u0, float(row) / rows)
+			var uv10 := Vector2(u1, float(row) / rows)
+			var uv01 := Vector2(u0, float(row + 1) / rows)
+			var uv11 := Vector2(u1, float(row + 1) / rows)
+			surface.set_uv(uv00)
+			surface.add_vertex(Vector3(x00, water_y, z0))
+			surface.set_uv(uv01)
+			surface.add_vertex(Vector3(x01, water_y, z1))
+			surface.set_uv(uv10)
+			surface.add_vertex(Vector3(x10, water_y, z0))
+			surface.set_uv(uv10)
+			surface.add_vertex(Vector3(x10, water_y, z0))
+			surface.set_uv(uv01)
+			surface.add_vertex(Vector3(x01, water_y, z1))
+			surface.set_uv(uv11)
+			surface.add_vertex(Vector3(x11, water_y, z1))
+	surface.generate_normals()
+	return surface.commit()
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	# Stable world-space texture scale plus restrained relief outside the build grid.
@@ -278,7 +310,11 @@ func _terrain_height(x: float, z: float) -> float:
 	var cross := cos(z * 0.113 - x * 0.087) * 0.58
 	var rolling := sin(x * 0.19 - z * 0.16) * cos(z * 0.21 + x * 0.13) * 0.24
 	var fine := sin(x * 0.61 + z * 0.47) * 0.10
-	return (broad + cross + rolling + fine) * relief_mask
+	var natural_relief := (broad + cross + rolling + fine) * relief_mask
+	# The last 14 m of beach gently settle to the sea datum. The water mesh
+	# begins just offshore, so neither land nor ocean floats above the other.
+	var beach_fade := smoothstep(0.0, 14.0, _coastline(z) - x)
+	return natural_relief * beach_fade
 
 func _coastline(z: float) -> float:
 	return 51.0 + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
@@ -1420,7 +1456,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
 			continue
 		var creek_x := 36.0 + sin(z * 0.045) * 2.0
-		if absf(x - creek_x) < 6.0:
+		if absf(x - creek_x) < 6.0 or _is_city_road_footprint(x, z):
 			continue
 		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.85, z))
 	# A deterministic broken ring keeps larger scrub visible from the city camera.
@@ -1471,7 +1507,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
 		if absf(x) < 25.0 and absf(z) < 25.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0 or _is_city_road_footprint(x, z):
 			continue
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
 	for index in range(96):
@@ -1479,7 +1515,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		var radius := 25.5 + float(index % 4) * 1.5
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
-		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0 or _is_city_road_footprint(x, z):
 			continue
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
 	stone_batch.instance_count = stone_positions.size()

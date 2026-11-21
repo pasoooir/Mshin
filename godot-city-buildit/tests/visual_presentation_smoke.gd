@@ -7,6 +7,34 @@ const DistantMountainBackdropScript = preload("res://scripts/world/DistantMounta
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
+	# Coastline regression: water geometry must follow the curved beach edge,
+	# and the terrain must taper to the sea datum instead of overlapping it.
+	var coast_sample := presentation._coastline(0.0)
+	if absf(presentation._terrain_height(coast_sample, 0.0)) > 0.01:
+		push_error("[VisualPresentationSmoke] Beach terrain must meet the ocean at the sea datum")
+		get_tree().quit(1)
+		return
+	var ocean_mesh := presentation._create_coastal_water_mesh(8.0, 159.0, 24, 4, -0.055)
+	var ocean_bounds := ocean_mesh.get_aabb()
+	if ocean_mesh.get_surface_count() != 1 or ocean_bounds.position.x < 45.0 or ocean_bounds.end.x < 158.9:
+		push_error("[VisualPresentationSmoke] Deep water must be a continuous coastline-following mesh extending offshore")
+		get_tree().quit(1)
+		return
+	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 8.0, 24, 4, -0.025)
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 16.0:
+		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
+		get_tree().quit(1)
+		return
+	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	if world_source.count("_is_city_road_footprint(x, z)") < 6:
+		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
+		get_tree().quit(1)
+		return
+	var backdrop_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
+	if not backdrop_source.contains("float coastline = 51.0") or not backdrop_source.contains("field_noise(p * 0.071") or backdrop_source.contains("world_position.x >= 49.0 && world_position.x <= 159.0"):
+		push_error("[VisualPresentationSmoke] Distant ground must use natural terrain variation and the same curved ocean opening as the shoreline")
+		get_tree().quit(1)
+		return
 	var backdrop := DistantMountainBackdropScript.new()
 	presentation.add_child(backdrop)
 	# Mountain generation is intentionally staged across frames at runtime.
@@ -160,6 +188,10 @@ func _ready() -> void:
 		return
 	if not backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.05) or not backdrop._is_tunnel_portal_vegetation_exclusion(1, -55.0, 0.95) or backdrop._is_tunnel_portal_vegetation_exclusion(2, -55.0, 0.05) or backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.5):
 		push_error("[VisualPresentationSmoke] Only the actual north/south tunnel mouths must exclude obstructing vegetation; the mountain crown stays continuous")
+		get_tree().quit(1)
+		return
+	if not backdrop._is_tunnel_road_detail_exclusion(0, -55.0) or not backdrop._is_tunnel_road_detail_exclusion(1, -55.0) or backdrop._is_tunnel_road_detail_exclusion(0, -27.0) or backdrop._is_tunnel_road_detail_exclusion(2, -55.0):
+		push_error("[VisualPresentationSmoke] Mountain rocks, shrubs and trees must stay outside the complete highway tunnel clearance")
 		get_tree().quit(1)
 		return
 	if not is_equal_approx(WorldPresentationScript.HIGHWAY_LENGTH, 700.0) or not is_equal_approx(WorldPresentationScript.HIGHWAY_CENTER_X, -55.0):

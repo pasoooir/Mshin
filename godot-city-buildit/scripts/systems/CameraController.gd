@@ -21,6 +21,7 @@ var current_zoom: float = 38.0
 var is_mouse_panning: bool = false
 var last_mouse_position: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
+var _multi_touch_gesture_active: bool = false
 var last_pinch_distance: float = 0.0
 var last_pinch_angle: float = 0.0
 var last_pinch_centroid: Vector2 = Vector2.ZERO
@@ -194,8 +195,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_refresh_processing()
 	elif event is InputEventScreenTouch:
 		if event.pressed:
-			pan_velocity = Vector2.ZERO
-			orbit_velocity = 0.0
+			# A multi-touch session is direct manipulation, not an inertial fling.
+			# Never carry velocity from a two-finger pinch/twist into the release.
+			if not touch_points.is_empty():
+				_multi_touch_gesture_active = true
+				pan_velocity = Vector2.ZERO
+				orbit_velocity = 0.0
 			is_focus_animating = false
 			touch_points[event.index] = event.position
 			if touch_points.size() >= 2:
@@ -203,6 +208,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_refresh_processing()
 		else:
 			touch_points.erase(event.index)
+			if _multi_touch_gesture_active:
+				pan_velocity = Vector2.ZERO
+				orbit_velocity = 0.0
+				if touch_points.size() < 2:
+					_multi_touch_gesture_active = false
 			last_pinch_distance = 0.0
 			last_pinch_angle = 0.0
 			last_pinch_centroid = Vector2.ZERO
@@ -256,16 +266,16 @@ func _update_pinch() -> void:
 		var centroid_delta := centroid - last_pinch_centroid
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
 			_pan(centroid_delta)
-			var pan_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			pan_velocity = clamp_pan_velocity(centroid_delta / pan_frame_delta)
+			# Two-finger translation is applied only while fingers are down.
+			pan_velocity = Vector2.ZERO
 		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
 		if absf(distance_delta) >= PINCH_DEADZONE:
 			_zoom(distance_delta)
 		var angle_delta: float = touch_orbit_delta(last_pinch_angle, angle)
 		if absf(angle_delta) >= TWIST_DEADZONE:
 			rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, angle_delta)
-			var orbit_frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-			orbit_velocity = angle_delta / orbit_frame_delta
+			# Two-finger twist must stop exactly on release; no angular fling.
+			orbit_velocity = 0.0
 	last_pinch_distance = distance
 	last_pinch_angle = angle
 	last_pinch_centroid = centroid
