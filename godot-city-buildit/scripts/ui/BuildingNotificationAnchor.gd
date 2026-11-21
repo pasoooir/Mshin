@@ -3,6 +3,7 @@ extends Node3D
 ## remain as reliable touch targets; these billboards provide the in-world cue.
 const Icons = preload("res://scripts/ui/Icons.gd")
 const NotificationData = preload("res://scripts/ui/BuildingNotification.gd")
+signal notification_pressed(notification: RefCounted)
 
 const MAX_VISIBLE := 2
 const BOB_HEIGHT := 0.13
@@ -76,6 +77,18 @@ func _rebuild_visuals() -> void:
 		count.modulate = Color("#FFF6D4")
 		root.add_child(count)
 		_count_labels.append(count)
+		var tap_area := Area3D.new()
+		tap_area.name = "NotificationTapArea"
+		tap_area.input_ray_pickable = true
+		tap_area.collision_layer = 1
+		tap_area.collision_mask = 0
+		var hit_shape := CollisionShape3D.new()
+		var hit_sphere := SphereShape3D.new()
+		hit_sphere.radius = 0.62
+		hit_shape.shape = hit_sphere
+		tap_area.add_child(hit_shape)
+		tap_area.input_event.connect(_on_area_input_event.bind(index))
+		root.add_child(tap_area)
 
 func _icon_for(data) -> Texture2D:
 	match data.type:
@@ -121,3 +134,14 @@ func _process(_delta: float) -> void:
 			icon.show()
 			icon.modulate.a = 1.0
 	scale = Vector3.ONE * scale_factor
+
+func _on_area_input_event(_camera: Camera3D, event: InputEvent, _hit_position: Vector3, _normal: Vector3, _shape_index: int, index: int) -> void:
+	var activated := false
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		activated = mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
+	elif event is InputEventScreenTouch:
+		activated = (event as InputEventScreenTouch).pressed
+	if activated and index >= 0 and index < _notifications.size():
+		get_viewport().set_input_as_handled()
+		notification_pressed.emit(_notifications[index])
