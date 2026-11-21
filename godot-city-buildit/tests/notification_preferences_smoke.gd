@@ -488,8 +488,11 @@ func _run() -> void:
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	var original_signout_persistence_ready := SaveManager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
+	SaveManager.persistence_ready = false
 	await _tap_control(google_action)
+	SaveManager.persistence_ready = original_signout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
 	await process_frame
 	if account_manager.is_authenticated() or avatar_frame.visible:
@@ -539,8 +542,11 @@ func _run() -> void:
 		quit(1)
 		return
 	var logout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	var logout_persistence_ready := SaveManager.persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", "")
+	SaveManager.persistence_ready = false
 	await account_manager.logout()
+	SaveManager.persistence_ready = logout_persistence_ready
 	ProjectSettings.set_setting("mshin/account/api_base_url", logout_api_base)
 
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
