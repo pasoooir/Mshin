@@ -267,6 +267,7 @@ traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(
 road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+notification_preferences_smoke_source = (ROOT / "tests/notification_preferences_smoke.gd").read_text(encoding="utf-8")
 haptics_manager_source = (ROOT / "scripts/autoload/HapticsManager.gd").read_text(encoding="utf-8")
 production_component_source = (ROOT / "scripts/production/ProductionComponent.gd").read_text(encoding="utf-8")
 trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(encoding="utf-8")
@@ -276,6 +277,12 @@ citizen_feedback_source = (ROOT / "scripts/ui/CitizenFeedbackBubbles.gd").read_t
 epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").read_text(encoding="utf-8")
 achievement_manager_source = (ROOT / "scripts/autoload/AchievementManager.gd").read_text(encoding="utf-8")
 region_manager_source = (ROOT / "scripts/autoload/RegionManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "Sign-out must be blocked while the local save system is not ready.",
+    "Sign-out must keep the session active when its final cloud save fails.",
+]:
+    if contract not in notification_preferences_smoke_source:
+        errors.append(f"Notification sign-out regression test is missing: {contract}")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
 
 for contract in [
@@ -1149,7 +1156,6 @@ for contract in [
     "loader.remove();",
     "window.google.accounts.id.renderButton",
     "func logout() -> bool:",
-    "if not has_node(\"/root/SaveManager\") or not SaveManager.persistence_ready:",
     "Sign-out must be blocked while the local save system is not ready.",
     "func _wait_for_save_manager_ready() -> bool:",
     "func _restore_authenticated_profile_game_state() -> bool:",
