@@ -1148,6 +1148,7 @@ for contract in [
     'loader.dataset.mshinLoadState = "failed";',
     "loader.remove();",
     "window.google.accounts.id.renderButton",
+    "func logout() -> bool:",
     "func _wait_for_save_manager_ready() -> bool:",
     "func _restore_authenticated_profile_game_state() -> bool:",
     "static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:",
@@ -1166,7 +1167,7 @@ for contract in [
     "func _show_change_city_name() -> void:",
     "func _save_city_name_from_form(",
     "SaveManager.save_game(false)",
-    "await PlayerAccountManager.logout()",
+    "var logout_ok: bool = await PlayerAccountManager.logout()",
 ]:
     if contract not in hud_settings_source:
         errors.append(f"Google-authenticated city registration contract is missing: {contract}")
