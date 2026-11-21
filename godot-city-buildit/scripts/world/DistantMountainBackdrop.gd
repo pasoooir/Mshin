@@ -516,14 +516,14 @@ void fragment() {
 	vec3 tri_weights = pow(max(n, vec3(0.001)), vec3(4.0));
 	tri_weights /= max(dot(tri_weights, vec3(1.0)), 0.001);
 
-	float grain_x = stone_fbm(p.yz * 1.75);
-	float grain_y = stone_fbm(p.xz * 1.75);
-	float grain_z = stone_fbm(p.xy * 1.75);
+	float grain_x = stone_fbm(vec3(p.yz * 1.75, 0.0));
+	float grain_y = stone_fbm(vec3(p.xz * 1.75, 0.0));
+	float grain_z = stone_fbm(vec3(p.xy * 1.75, 0.0));
 	float grain = dot(vec3(grain_x, grain_y, grain_z), tri_weights);
 	float fine_grain = dot(vec3(
-		stone_fbm(p.yz * 5.8),
-		stone_fbm(p.xz * 5.8),
-		stone_fbm(p.xy * 5.8)
+		stone_fbm(vec3(p.yz * 5.8, 0.0)),
+		stone_fbm(vec3(p.xz * 5.8, 0.0)),
+		stone_fbm(vec3(p.xy * 5.8, 0.0))
 	), tri_weights);
 
 	// Three axis projections hide stretching on steep and horizontal faces.
