@@ -1,7 +1,6 @@
 extends Node
 
 const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.gd")
-const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
 
 
 func _ready() -> void:
@@ -30,197 +29,12 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
 		return
-	var backdrop_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
-	if not backdrop_source.contains("float coastline = 51.0") or not backdrop_source.contains("field_noise(p * 0.071") or backdrop_source.contains("world_position.x >= 49.0 && world_position.x <= 159.0"):
-		push_error("[VisualPresentationSmoke] Distant ground must use natural terrain variation and the same curved ocean opening as the shoreline")
+	if presentation.get_node_or_null("DistantMountainBackdrop") != null:
+		push_error("[VisualPresentationSmoke] The starter coastal city must not spawn any mountain backdrop")
 		get_tree().quit(1)
 		return
-	var backdrop := DistantMountainBackdropScript.new()
-	presentation.add_child(backdrop)
-	# Mountain generation is intentionally staged across frames at runtime.
-	# Wait for the same completion signal in this smoke test before inspecting
-	# the generated perimeter, LOD meshes, tunnels and vegetation batches.
-	await backdrop.generation_completed
-	if backdrop.get_node_or_null("NorthMountainRidge") == null or backdrop.get_node_or_null("SouthMountainRidge") == null or backdrop.get_node_or_null("WestMountainRidge") == null or backdrop.get_node_or_null("EastMountainRidge") == null:
-		push_error("[VisualPresentationSmoke] Mountain perimeter must render all four overlapping ridge walls")
-		get_tree().quit(1)
-		return
-	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]:
-		var near_ridge := backdrop.get_node_or_null(ridge_name) as MeshInstance3D
-		var far_ridge := backdrop.get_node_or_null(ridge_name + "FarLOD") as MeshInstance3D
-		if near_ridge == null or far_ridge == null or near_ridge.mesh == null or far_ridge.mesh == null:
-			push_error("[VisualPresentationSmoke] Each mountain wall must provide near and far geometry LODs")
-			get_tree().quit(1)
-			return
-		if near_ridge.visibility_range_end != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE or far_ridge.visibility_range_begin != DistantMountainBackdropScript.RIDGE_LOD_DISTANCE - DistantMountainBackdropScript.RIDGE_LOD_OVERLAP or far_ridge.visibility_range_end != DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
-			push_error("[VisualPresentationSmoke] Mountain LOD visibility ranges must retain the configured overlap without a gap")
-			get_tree().quit(1)
-			return
-		var near_vertices: PackedVector3Array = near_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-		var far_vertices: PackedVector3Array = far_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-		if near_ridge.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or far_ridge.visibility_range_begin_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or near_ridge.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or far_ridge.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or DistantMountainBackdropScript.RIDGE_LOD_OVERLAP < DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN:
-			push_error("[VisualPresentationSmoke] Mountain LOD cross-fade margins must fit inside the overlap")
-			get_tree().quit(1)
-			return
-		if near_vertices.size() <= far_vertices.size() * 3:
-			push_error("[VisualPresentationSmoke] Near mountain geometry must carry materially more silhouette detail than far LOD")
-			get_tree().quit(1)
-			return
-	var rock_outcrops := backdrop.get_node_or_null("MountainNearRockOutcrops") as MultiMeshInstance3D
-	if rock_outcrops == null or rock_outcrops.multimesh == null or rock_outcrops.multimesh.mesh == null:
-		push_error("[VisualPresentationSmoke] Near rock outcrops must register one initialized MultiMesh with a valid shared mesh")
-		get_tree().quit(1)
-		return
-	if rock_outcrops.multimesh.instance_count != DistantMountainBackdropScript.RIDGE_ROCK_COUNT or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE or not is_finite(rock_outcrops.visibility_range_end) or rock_outcrops.visibility_range_end_margin != DistantMountainBackdropScript.RIDGE_LOD_FADE_MARGIN or rock_outcrops.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF:
-		push_error("[VisualPresentationSmoke] Near rock outcrops must be one fixed-size MultiMesh with finite self-faded visibility bounds")
-		get_tree().quit(1)
-		return
-	if DistantMountainBackdropScript.ROCK_FRACTURE_GROOVE_COUNT != 3 or DistantMountainBackdropScript.ROCK_FOOT_PEBBLE_COUNT != 4:
-		push_error("[VisualPresentationSmoke] Near rocks must keep three layered fractures and four fused foot stones per shared mesh")
-		get_tree().quit(1)
-		return
-	var hidden_transform: Transform3D = backdrop._hidden_multimesh_instance_transform()
-	if hidden_transform.origin.y > -1000.0:
-		push_error("[VisualPresentationSmoke] Excluded MultiMesh slots must be moved away from the playable city origin")
-		get_tree().quit(1)
-		return
-	var mountain_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
-	if not mountain_source.contains("render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;"):
-		push_error("[VisualPresentationSmoke] Fractured rock material must render its chipped facets from both sides")
-		get_tree().quit(1)
-		return
-	for hidden_assignment in [
-		"batch.set_instance_transform(index, _hidden_multimesh_instance_transform())",
-		"multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())",
-		"trunks.set_instance_transform(index, hidden_transform)",
-		"crowns.set_instance_transform(index, hidden_transform)"
-	]:
-		if not mountain_source.contains(hidden_assignment):
-			push_error("[VisualPresentationSmoke] Every excluded mountain batch slot must receive an explicit hidden transform: " + hidden_assignment)
-			get_tree().quit(1)
-			return
-	var rock_mesh := backdrop._create_rock_outcrop_mesh() as ArrayMesh
-	if rock_mesh == null or rock_mesh.get_surface_count() != 1:
-		push_error("[VisualPresentationSmoke] Chipped near rocks must stay one reusable mesh surface")
-		get_tree().quit(1)
-		return
-	var rock_arrays := rock_mesh.surface_get_arrays(0)
-	var rock_vertices: PackedVector3Array = rock_arrays[Mesh.ARRAY_VERTEX]
-	var rock_normals: PackedVector3Array = rock_arrays[Mesh.ARRAY_NORMAL]
-	var rock_bounds := rock_mesh.get_aabb()
-	if rock_vertices.size() < 500 or rock_normals.size() != rock_vertices.size() or rock_bounds.size.x < 1.25 or rock_bounds.size.y < 2.0 or rock_bounds.size.z < 1.25:
-		push_error("[VisualPresentationSmoke] Near rock mesh must contain dense multi-peak fracture geometry, attached talus and complete normals")
-		get_tree().quit(1)
-		return
-	var view_directions: Array[Vector3] = [
-		Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK,
-		Vector3.UP, Vector3.DOWN
-	]
-	for direction in view_directions:
-		var facing_count := 0
-		for normal in rock_normals:
-			if normal.dot(direction) > 0.24:
-				facing_count += 1
-		if facing_count < 3:
-			push_error("[VisualPresentationSmoke] Rock facets must expose readable surfaces from all six camera-side directions")
-			get_tree().quit(1)
-			return
-	var rock_material := rock_outcrops.material_override as ShaderMaterial
-	if rock_material == null or rock_material.shader == null or not rock_material.shader.code.contains("cellular_edge") or not rock_material.shader.code.contains("stone_fbm") or not rock_material.shader.code.contains("fracture_core") or not rock_material.shader.code.contains("tri_weights") or not rock_material.shader.code.contains("contact_occlusion") or not rock_material.shader.code.contains("rock_local_height") or not rock_material.shader.code.contains("stone_fbm(vec3(p.yz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xz") or not rock_material.shader.code.contains("stone_fbm(vec3(p.xy"):
-		push_error("[VisualPresentationSmoke] Near rocks must use triplanar mineral grain, cellular fracture edges and controlled roughness")
-		get_tree().quit(1)
-		return
-	var main_scene_for_shadows := load("res://scenes/main.tscn") as PackedScene
-	if main_scene_for_shadows == null:
-		push_error("[VisualPresentationSmoke] Main scene must load for rock shadow validation")
-		get_tree().quit(1)
-		return
-	var shadow_scene := main_scene_for_shadows.instantiate()
-	var key_light := shadow_scene.get_node_or_null("World/DirectionalLight3D") as DirectionalLight3D
-	if key_light == null or not key_light.shadow_enabled or key_light.shadow_opacity < 0.25 or key_light.shadow_blur < 0.5 or absf(key_light.directional_shadow_max_distance - DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE) > 0.01:
-		push_error("[VisualPresentationSmoke] Main directional shadow map must cover near rocks with controlled softness and opacity")
-		shadow_scene.free()
-		get_tree().quit(1)
-		return
-	shadow_scene.free()
-	if rock_outcrops.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or rock_outcrops.visibility_range_end != DistantMountainBackdropScript.RIDGE_DETAIL_DISTANCE:
-		push_error("[VisualPresentationSmoke] Rock contact occlusion must stay shader-based; individual outcrop shadow casting is disabled for mobile")
-		get_tree().quit(1)
-		return
-	if absf(backdrop._ridge_radial_offset(83.0, 0.48, 0)) < 0.5 or absf(backdrop._ridge_radial_offset(-217.0, 0.63, 2)) < 0.5:
-		push_error("[VisualPresentationSmoke] Mountain ridge silhouette must contain deterministic lateral erosion and irregular rock shoulders")
-		get_tree().quit(1)
-		return
-
-	# All four tunnel mouths must sit beneath a continuous mountain crown.
-	# The portal cap tops out at 17.5 m; 58 m gives at least 40.5 m of rock above it.
-	for ridge_side in [0, 1]:
-		for portal_depth in [0.0, 1.0]:
-			for portal_x in [DistantMountainBackdropScript.TUNNEL_CENTER_X - 21.0, DistantMountainBackdropScript.TUNNEL_CENTER_X, DistantMountainBackdropScript.TUNNEL_CENTER_X + 21.0]:
-				var crown_height := backdrop._ridge_height(portal_x, portal_depth, ridge_side)
-				if crown_height < DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT:
-					push_error("[VisualPresentationSmoke] Mountain crown must cover every north/south inner/outer tunnel opening; got %.2f m at side %d, x %.1f, depth %.1f" % [crown_height, ridge_side, portal_x, portal_depth])
-					get_tree().quit(1)
-					return
-	if DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT - (DistantMountainBackdropScript.TUNNEL_WALL_HEIGHT + 2.5) < 25.0:
-		push_error("[VisualPresentationSmoke] Mountain crown must rise at least 25 m above the tunnel crown cap")
-		get_tree().quit(1)
-		return
-
-	# Verify the actual generated near/far ridge meshes retain the crown at both
-	# portal radii, not merely the height helper's theoretical return value.
-	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge"]:
-		for lod_suffix in ["", "FarLOD"]:
-			var crown_ridge := backdrop.get_node(ridge_name + lod_suffix) as MeshInstance3D
-			var crown_vertices: PackedVector3Array = crown_ridge.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-			for portal_radius in [DistantMountainBackdropScript.RIDGE_INNER_RADIUS, DistantMountainBackdropScript.RIDGE_OUTER_RADIUS]:
-				var sampled_minimum := INF
-				for crown_vertex in crown_vertices:
-					if absf(crown_vertex.x - DistantMountainBackdropScript.TUNNEL_CENTER_X) <= DistantMountainBackdropScript.TUNNEL_CROWN_PLATEAU_HALF_WIDTH and absf(absf(crown_vertex.z) - portal_radius) < 0.01:
-						sampled_minimum = minf(sampled_minimum, crown_vertex.y)
-				if sampled_minimum < DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT - 0.01:
-					push_error("[VisualPresentationSmoke] Generated " + ridge_name + lod_suffix + " mesh loses the mountain crown at portal radius %.1f m (height %.2f m)" % [portal_radius, sampled_minimum])
-					get_tree().quit(1)
-					return
-	if backdrop.get_node_or_null("NorthHighwayTunnel") == null or backdrop.get_node_or_null("SouthHighwayTunnel") == null:
-		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
-		get_tree().quit(1)
-		return
-	if not backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.05) or not backdrop._is_tunnel_portal_vegetation_exclusion(1, -55.0, 0.95) or backdrop._is_tunnel_portal_vegetation_exclusion(2, -55.0, 0.05) or backdrop._is_tunnel_portal_vegetation_exclusion(0, -55.0, 0.5):
-		push_error("[VisualPresentationSmoke] Only the actual north/south tunnel mouths must exclude obstructing vegetation; the mountain crown stays continuous")
-		get_tree().quit(1)
-		return
-	if not backdrop._is_tunnel_road_detail_exclusion(0, -55.0) or not backdrop._is_tunnel_road_detail_exclusion(1, -55.0) or backdrop._is_tunnel_road_detail_exclusion(0, -27.0) or backdrop._is_tunnel_road_detail_exclusion(2, -55.0):
-		push_error("[VisualPresentationSmoke] Mountain rocks, shrubs and trees must stay outside the complete highway tunnel clearance")
-		get_tree().quit(1)
-		return
-	if not is_equal_approx(WorldPresentationScript.HIGHWAY_LENGTH, 700.0) or not is_equal_approx(WorldPresentationScript.HIGHWAY_CENTER_X, -55.0):
-		push_error("[VisualPresentationSmoke] The continuous regional road must span both tunnel portals on the existing highway axis")
-		get_tree().quit(1)
-		return
-	var north_tunnel := backdrop.get_node("NorthHighwayTunnel")
-	var south_tunnel := backdrop.get_node("SouthHighwayTunnel")
-	if north_tunnel.get_child_count() < 9 or south_tunnel.get_child_count() < 9:
-		push_error("[VisualPresentationSmoke] Both tunnels must include a roof, side walls and framed inner/outer portals")
-		get_tree().quit(1)
-		return
-	for tunnel in [north_tunnel, south_tunnel]:
-		if tunnel.get_node_or_null("InnerPortalCrownCap") == null or tunnel.get_node_or_null("InnerPortalRetainingWing") == null or tunnel.get_node_or_null("InnerPortalAmberReflector") == null or tunnel.get_node_or_null("TunnelCeilingRibs") == null or tunnel.get_node_or_null("TunnelCenterlineDashes") == null:
-			push_error("[VisualPresentationSmoke] Tunnel portals must include layered crowns, retaining wings, amber markers, ceiling ribs and lane dashes")
-			get_tree().quit(1)
-			return
-	if backdrop.get_node_or_null("AustralianEucalyptTrunks") == null or backdrop.get_node_or_null("AustralianEucalyptCanopies") == null:
-		push_error("[VisualPresentationSmoke] Australian eucalypts must render as two batched trunk/canopy meshes")
-		get_tree().quit(1)
-		return
-	var trunk_batch := backdrop.get_node("AustralianEucalyptTrunks") as MultiMeshInstance3D
-	var canopy_batch := backdrop.get_node("AustralianEucalyptCanopies") as MultiMeshInstance3D
-	if trunk_batch.multimesh.instance_count != DistantMountainBackdropScript.EUCALYPT_COUNT or canopy_batch.multimesh.instance_count != DistantMountainBackdropScript.EUCALYPT_COUNT or trunk_batch.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or canopy_batch.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
-		push_error("[VisualPresentationSmoke] Eucalypts must stay in fixed-size mobile batches without distant-tree shadows")
-		get_tree().quit(1)
-		return
-	if backdrop._ridge_color(-120.0, 0.52, 0).is_equal_approx(backdrop._ridge_color(110.0, 0.52, 0)):
-		push_error("[VisualPresentationSmoke] Mountain ridge vertex palette must vary across sediment bands and grassy slopes")
+	if world_source.contains("DistantMountainBackdrop") or world_source.contains("_build_near_city_rock_outcrops"):
+		push_error("[VisualPresentationSmoke] Mountain and near-city rock generation must be fully removed from the world presentation")
 		get_tree().quit(1)
 		return
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
@@ -231,12 +45,7 @@ func _ready() -> void:
 		"func _build_creek_rock_edges(",
 		"func _build_meadow_shrubs_and_stones(",
 		"func _create_meadow_shrub_mesh(",
-		"func _build_near_city_rock_outcrops(",
 		"func _create_meadow_grass_clump_mesh(",
-		"NearCityFracturedRockBatch",
-		"Vector2(-18.0, -27.0)",
-		"distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)",
-		"absf(x) < 26.0 and absf(z) < 26.0",
 		"AustralianMeadowScrub",
 		"MeadowFieldstoneBatch",
 		"NaturalDirtTracks",
@@ -258,13 +67,8 @@ func _ready() -> void:
 		return
 	var main_instance := main_scene.instantiate()
 	var city_camera := main_instance.get_node_or_null("CameraRig/Camera3D") as Camera3D
-	if city_camera == null or city_camera.far < DistantMountainBackdropScript.MIN_CAMERA_FAR_CLIP:
-		push_error("[VisualPresentationSmoke] Camera far clip must include both distant mountain ridges and outer tunnel portals")
-		main_instance.free()
-		get_tree().quit(1)
-		return
-	if DistantMountainBackdropScript.RIDGE_INNER_RADIUS < 60.0 or DistantMountainBackdropScript.RIDGE_OUTER_RADIUS > city_camera.far:
-		push_error("[VisualPresentationSmoke] Mountain ring must remain inside the camera visible world distance")
+	if city_camera == null:
+		push_error("[VisualPresentationSmoke] Main scene must expose its playable city camera")
 		main_instance.free()
 		get_tree().quit(1)
 		return
@@ -368,7 +172,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	warm_fill_light.free()
-	print("[VisualPresentationSmoke] PASS: Australian grassland palette, visible mountain/tunnel range, clustered canopy geometry, tree batching and shoreline detail")
+	print("[VisualPresentationSmoke] PASS: coastal city without mountain backdrop, shoreline continuity, clustered canopy geometry, tree batching and beach detail")
 	tree_batch.free()
 	presentation.free()
 	get_tree().quit(0)

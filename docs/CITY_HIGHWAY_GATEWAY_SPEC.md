@@ -5,9 +5,9 @@
 
 ## Current implementation status
 
-- [x] Four procedural mountain ridge strips overlap at the world corners; the playable world no longer relies on isolated short ridge ends.
-- [x] The regional highway is rendered continuously for 700 m and crosses the north and south mountain ridges through dedicated tunnel openings with interior walls/ceiling and framed portals on both ends.
-- [x] The mountain crown remains continuous above both tunnels; portal-mouth vegetation is excluded so the inner and outer entrances stay readable.
+- [x] The starter city presentation contains no surrounding mountain ridges, mountain backdrop, or near-city rock outcrops.
+- [x] The 700 m regional highway remains a separate city-access feature; it no longer depends on mountain tunnels or mountain portal scenery.
+- [x] The coastal terrain, beach and offshore water remain continuous and visible after removing the mountain perimeter.
 - [x] One original lightweight 3D car is spawned at the permanent city Gateway, routed by BFS through Gateway-connected road tiles to the farthest reachable tile, then returned to and removed at the Gateway.
 - [x] The active route is cancelled if a road change disconnects any route tile from the Gateway graph.
 - [ ] The current Gateway remains the city-side root rather than a fully modeled highway source/sink in the authoritative road graph. Physical tunnel scenery does not by itself implement motorway entry/exit routing. One-way edges, lane direction, turn restrictions, congestion-weighted routing, segment-level traffic, and delivery/construction vehicle classes remain open.
@@ -18,7 +18,7 @@
 - A permanent regional highway already exists along one outer edge of the playable city.
 - Exactly one initial highway interchange/access connection leads from the highway into the new city.
 - The access road joins the city's primary arterial/collector road, which becomes the first spine of the internal road network.
-- The highway and its interchange are part of the 3D world, not a flat background image or decorative prop. The current north/south highway continuation is carried through the mountain perimeter by visible tunnel geometry.
+- The highway and its interchange are part of the 3D world, not a flat background image or decorative prop. It remains a distinct city-access feature and is not framed by mountain scenery.
 - The city terrain, road shoulders, embankments, barriers, and ground cover must meet cleanly. Camera zoom/pan bounds must never reveal white or unrendered space outside the playable world.
 
 ## Road hierarchy and geometry
@@ -67,8 +67,8 @@ All geometry must use the project world scale (1 world unit = 1 metre), remain r
 ### Browser/mobile acceptance
 - Fresh city starts with empty plots, a visible highway on the map edge, and one clearly visible access connection.
 - At least one simulated vehicle enters from the highway, traverses the city network, and exits via the gateway.
-- The interchange and both north/south tunnel passages remain visually continuous at normal zoom and at the minimum permitted zoom.
-- Both mountain portal openings expose the same continuous highway asphalt and do not contain shrubs, grass or ridge triangles across the road.
+- The highway access road remains visually continuous at normal zoom and at the minimum permitted zoom.
+- No mountain ridge, tunnel portal, mountain rock outcrop or mountain vegetation may appear around the starter city.
 - Landscape mobile viewport shows only the playable world; no white exterior or missing terrain is exposed during pinch zoom and pan.
 - No console errors, missing assets, or frame-blocking work during initial city entry.
 
