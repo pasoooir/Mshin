@@ -185,6 +185,7 @@ var _regional_trade_item_id := ""
 var _regional_trade_amount := 1
 var service_warning_label: Label
 var _catalog_selected_type := ""
+var _starter_more_actions_open := false
 
 func _ready() -> void:
 	# Keep the existing gameplay signal wiring intact.
@@ -243,8 +244,79 @@ func _ready() -> void:
 	_build_service_warning_banner()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_apply_responsive_layout()
+	_apply_calm_first_entry_presentation()
 	_update_all()
-	status_label.text = "Tap Build, choose Residential, then place your first house beside a road."
+	status_label.text = ""
+
+
+func _apply_calm_first_entry_presentation() -> void:
+	# Progressive disclosure: a brand-new mayor sees the city first, not every
+	# management control at once. Existing cities retain the full HUD.
+	if not BuildManager.buildings.is_empty():
+		return
+	var happiness_row := get_node_or_null("TopHUD/TopLeftStats/HappinessStatRow") as Control
+	var experience_row := get_node_or_null("TopHUD/TopLeftStats/ExperienceRow") as Control
+	var xp_panel := get_node_or_null("TopHUD/MayorLevelInfoPanel") as Control
+	if is_instance_valid(happiness_row):
+		happiness_row.hide()
+	if is_instance_valid(experience_row):
+		experience_row.hide()
+	if is_instance_valid(xp_panel):
+		xp_panel.hide()
+	var left_stack := get_node_or_null("TopHUD/TopLeftStats") as Control
+	if is_instance_valid(left_stack):
+		left_stack.custom_minimum_size = Vector2(300.0, 94.0) * _ui_scale
+	var toolbar_items := get_node_or_null("RightToolbar/CategoryScroll/RightToolbarItems") as VBoxContainer
+	if is_instance_valid(toolbar_items):
+		for child in toolbar_items.get_children():
+			if child is Control:
+				child.visible = child.name == "Tool_Residential"
+	var land_button := get_node_or_null("Tool_LandExpansion") as Control
+	if is_instance_valid(land_button):
+		land_button.hide()
+	var residential_button := get_node_or_null("RightToolbar/CategoryScroll/RightToolbarItems/Tool_Residential") as Button
+	if is_instance_valid(residential_button):
+		residential_button.tooltip_text = "Build your first home"
+		residential_button.pressed.connect(_reveal_starter_build_categories)
+	var actions := get_node_or_null("BottomActions") as HBoxContainer
+	if is_instance_valid(actions):
+		for child in actions.get_children():
+			if child is Control:
+				child.visible = child.name == "SettingsAction"
+		var more_button := Button.new()
+		more_button.name = "MoreActionsButton"
+		more_button.text = "•••"
+		more_button.tooltip_text = "More city options"
+		more_button.custom_minimum_size = Vector2(70.0, 76.0) * _ui_scale
+		more_button.focus_mode = Control.FOCUS_NONE
+		more_button.pressed.connect(_toggle_starter_more_actions)
+		actions.add_child(more_button)
+		more_button.visible = true
+
+func _reveal_starter_build_categories() -> void:
+	var toolbar_items := get_node_or_null("RightToolbar/CategoryScroll/RightToolbarItems") as VBoxContainer
+	if not is_instance_valid(toolbar_items):
+		return
+	for child in toolbar_items.get_children():
+		if child is Control:
+			child.show()
+	var land_button := get_node_or_null("Tool_LandExpansion") as Control
+	if is_instance_valid(land_button):
+		land_button.show()
+
+func _toggle_starter_more_actions() -> void:
+	var actions := get_node_or_null("BottomActions") as HBoxContainer
+	if not is_instance_valid(actions):
+		return
+	_starter_more_actions_open = not _starter_more_actions_open
+	for child in actions.get_children():
+		if child is Control:
+			child.visible = _starter_more_actions_open or child.name in ["SettingsAction", "MoreActionsButton"]
+	var more_button := get_node_or_null("BottomActions/MoreActionsButton") as Button
+	if is_instance_valid(more_button):
+		more_button.text = "×" if _starter_more_actions_open else "•••"
+		more_button.tooltip_text = "Close city options" if _starter_more_actions_open else "More city options"
+
 
 func _on_land_expansion_pressed() -> void:
 	var panel := get_node_or_null("LandExpansionPanel")

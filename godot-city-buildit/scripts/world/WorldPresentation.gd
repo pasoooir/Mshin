@@ -1,5 +1,7 @@
 extends Node3D
 
+var _road_system_cache: Node
+
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
@@ -186,13 +188,10 @@ func _build_terrain() -> void:
 	var terrain := MeshInstance3D.new()
 	terrain.name = "NaturalTerrain"
 	terrain.mesh = surface.commit()
-	var terrain_material := StandardMaterial3D.new()
-	terrain_material.vertex_color_use_as_albedo = true
-	terrain_material.albedo_texture = _create_grass_texture()
-	terrain_material.roughness = 1.0
-	terrain_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var terrain_material := _create_natural_ground_material()
 	terrain.material_override = terrain_material
+	_request_ground_texture("grass", "https://cdn.meshy.ai/landing-assets/textures/grass/wild-meadow-grass/wild-meadow-grass-2k.jpg", terrain_material)
+	_request_ground_texture("sand", "https://cdn.meshy.ai/landing-assets/textures/ground/pitted-sandy-ground/pitted-sandy-ground-2k.jpg", terrain_material)
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
@@ -461,6 +460,30 @@ func _build_coastal_highway() -> void:
 	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 	add_child(access_road)
+	_request_matching_asphalt_texture(highway_asphalt, connector_asphalt)
+
+
+func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, connector_material: StandardMaterial3D) -> void:
+	var request := HTTPRequest.new()
+	request.name = "SharedAsphaltTextureRequest"
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+			var image := Image.new()
+			if image.load_jpg_from_buffer(body) == OK:
+				image.generate_mipmaps()
+				var texture := ImageTexture.create_from_image(image)
+				highway_material.albedo_texture = texture
+				connector_material.albedo_texture = texture
+			else:
+				push_warning("[WorldPresentation] Asphalt CDN image invalid; matching local fallback retained")
+		else:
+			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
+		request.queue_free()
+	)
+	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
+		request.queue_free()
 
 
 func _build_highway_lighting() -> void:
@@ -610,7 +633,7 @@ func _build_tree_belts() -> void:
 		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0 or _is_city_road_footprint(x, z):
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 
@@ -814,6 +837,78 @@ func _create_grass_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
+
+func _create_natural_ground_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_back;
+uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
+uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
+varying vec3 world_position;
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	float coastline = 51.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
+	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
+	vec2 ground_uv = UV * 0.62;
+	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb;
+	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
+	ALBEDO = mix(meadow, sand, sand_mask);
+	ROUGHNESS = 1.0;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("grass_texture", _create_grass_texture())
+	material.set_shader_parameter("sand_texture", _create_sand_texture())
+	return material
+
+
+func _create_sand_texture() -> Texture2D:
+	const TEXTURE_SIZE := 256
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			# Periodic multi-scale grain keeps the fallback seamless at tile edges.
+			var dune := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * 0.5 + cos(angle_y * 2.0 - sin(angle_x * 3.0)) * 0.5
+			var grain := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
+			var fine := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
+			var value := clampf(0.68 + dune * 0.055 + grain * 0.035 + fine * 0.018, 0.54, 0.82)
+			image.set_pixel(x, y, Color(value * 1.0, value * 0.91, value * 0.73, 1.0))
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
+func _request_ground_texture(slot: String, url: String, material: ShaderMaterial) -> void:
+	var request := HTTPRequest.new()
+	request.name = "GroundTextureRequest_" + slot
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(_on_ground_texture_received.bind(material, slot, request))
+	var error := request.request(url)
+	if error != OK:
+		request.queue_free()
+		push_warning("[WorldPresentation] CDN texture request could not start for " + slot)
+
+
+func _on_ground_texture_received(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, material: ShaderMaterial, slot: String, request: HTTPRequest) -> void:
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+		var image := Image.new()
+		var error := image.load_jpg_from_buffer(body)
+		if error == OK:
+			image.generate_mipmaps()
+			material.set_shader_parameter(slot + "_texture", ImageTexture.create_from_image(image))
+		else:
+			push_warning("[WorldPresentation] Invalid CDN image for " + slot + "; procedural fallback retained")
+	else:
+		push_warning("[WorldPresentation] CDN unavailable for " + slot + "; procedural fallback retained")
+	request.queue_free()
+
 func _create_asphalt_material() -> StandardMaterial3D:
 	# Medium charcoal-gray asphalt with several scales of aggregate grain.
 	# Periodic noise layers keep the texture seamless across the long motorway.
@@ -908,6 +1003,20 @@ void fragment() {
 	material.shader = shader
 	return material
 
+
+func _is_city_road_footprint(x: float, z: float) -> bool:
+	# RoadSystem is a scene node, not an autoload singleton. Resolve it from
+	# the active scene once, then reuse the reference for scatter placement.
+	var cell := Vector2i(floori(x / BuildManager.GRID_SIZE), floori(z / BuildManager.GRID_SIZE))
+	if not is_instance_valid(_road_system_cache):
+		var scene := get_tree().current_scene
+		if scene == null:
+			return false
+		_road_system_cache = scene.find_child("RoadSystem", true, false)
+	if not is_instance_valid(_road_system_cache) or not _road_system_cache.has_method("has_road"):
+		return false
+	return bool(_road_system_cache.call("has_road", cell))
+
 func _build_grass_detail() -> void:
 	# Each instance is a multi-blade tussock, not a single rectangular stalk.
 	var blade_mesh := _create_meadow_grass_clump_mesh()
@@ -921,7 +1030,7 @@ func _build_grass_detail() -> void:
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 14.0:
+		if absf(x - HIGHWAY_CENTER_X) < 14.0 or _is_city_road_footprint(x, z):
 			continue
 		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 5.0 or x > _coastline(z) - 13.0:
@@ -1320,7 +1429,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 		var radius := 27.5 + sin(float(index) * 2.7) * 1.3
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
-		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0:
+		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0 or _is_city_road_footprint(x, z):
 			continue
 		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 6.0:
