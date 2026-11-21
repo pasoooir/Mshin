@@ -14,6 +14,8 @@ const RIDGE_FAR_DEPTH_STEPS := 10
 const RIDGE_LOD_DISTANCE := 190.0
 const RIDGE_DETAIL_DISTANCE := 215.0
 const RIDGE_ROCK_COUNT := 72
+const ROCK_FRACTURE_GROOVE_COUNT := 3
+const ROCK_FOOT_PEBBLE_COUNT := 4
 const SHRUB_COUNT := 320
 const GRASS_COUNT := 760
 const EUCALYPT_COUNT := 44
@@ -353,7 +355,7 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 		surface.add_vertex(ring_bottom[next_index])
 
 	# Three recessed fracture channels are actual inset triangles, not painted lines.
-	for crack_index in range(3):
+	for crack_index in range(ROCK_FRACTURE_GROOVE_COUNT):
 		var crack_angle := TAU * float(crack_index) / 3.0 + 0.31
 		_append_rock_fracture_groove(surface, crack_angle, 0.78 + float(crack_index) * 0.08)
 	# Four attached talus stones are fused into this same mesh and batch.
@@ -400,7 +402,7 @@ func _append_rock_fracture_groove(surface: SurfaceTool, angle: float, strength: 
 
 
 func _append_rock_foot_pebbles(surface: SurfaceTool) -> void:
-	for pebble_index in range(4):
+	for pebble_index in range(ROCK_FOOT_PEBBLE_COUNT):
 		var angle := TAU * float(pebble_index) / 4.0 + 0.42
 		var radial_distance := 0.62 + float(pebble_index % 2) * 0.075
 		var center := Vector3(cos(angle) * radial_distance, -0.005, sin(angle) * radial_distance)
