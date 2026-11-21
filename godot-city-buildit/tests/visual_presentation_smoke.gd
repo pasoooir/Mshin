@@ -79,7 +79,7 @@ func _ready() -> void:
 		"MeadowCreekWater"
 	]:
 		if not world_visual_source.contains(required_visual_feature):
-			push_error("[VisualPresentationSmoke] Living Australian ground is missing a required near-camera feature: " + required_visual_feature)
+			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
 	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
@@ -98,8 +98,8 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	if WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE.size() < 5 or WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].g <= WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].r:
-		push_error("[VisualPresentationSmoke] Starter temperate terrain must use a green grassland palette")
+	if WorldPresentationScript.COASTAL_GREEN_PALETTE.size() < 5 or WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].g <= WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].r:
+		push_error("[VisualPresentationSmoke] Starter coastal terrain must use a lush Pacific urban-green palette")
 		main_instance.free()
 		get_tree().quit(1)
 		return
