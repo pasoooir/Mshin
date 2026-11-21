@@ -283,10 +283,33 @@ func _run() -> void:
 		quit(1)
 		return
 
-	# Guest city registration must be a real, responsive HUD modal with working actions.
+	# City registration is locked for guests and becomes available only after Google authentication.
 	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
 	if rename_button == null:
 		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
+		quit(1)
+		return
+	if not rename_button.disabled:
+		push_error("[NotificationPreferencesSmoke] City registration must remain locked until Google sign-in succeeds.")
+		quit(1)
+		return
+	await _tap_control(rename_button)
+	await process_frame
+	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Guest users must not be able to open city registration.")
+		quit(1)
+		return
+
+	# Simulate the authenticated session boundary; the real Google-token path is
+	# covered independently by the signed OIDC Worker integration test.
+	account_manager.player_id = 987654
+	account_manager.access_token = "smoke-test-token"
+	account_manager.google_display_name = "Smoke Mayor"
+	account_manager.google_avatar_url = ""
+	hud._refresh_settings_account_section()
+	rename_button = hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	if rename_button == null or rename_button.disabled:
+		push_error("[NotificationPreferencesSmoke] Google-authenticated players must be able to register their city.")
 		quit(1)
 		return
 	await _tap_control(rename_button)
@@ -360,22 +383,31 @@ func _run() -> void:
 		quit(1)
 		return
 
+	# Force the offline branch for this UI smoke. The account-scoped local JSON
+	# write is asserted here; the online profile contract is tested by Worker tests.
+	var original_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	var save_events := [0]
 	save_manager.save_completed.connect(func(_path: String) -> void: save_events[0] += 1, CONNECT_ONE_SHOT)
 	await _tap_control(city_name_save)
 	await process_frame
 	await process_frame
+	ProjectSettings.set_setting("mshin/account/api_base_url", original_api_base)
 	if str(game_manager.city_name) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] Guest city name was not applied and trimmed.")
+		push_error("[NotificationPreferencesSmoke] Authenticated city name was not applied and trimmed.")
 		quit(1)
 		return
 	if save_events[0] != 1:
 		push_error("[NotificationPreferencesSmoke] Save City must trigger one successful local JSON save event.")
 		quit(1)
 		return
+	if save_manager.get_active_save_path() != "user://players/987654/pasoo_city_buildit_save.json":
+		push_error("[NotificationPreferencesSmoke] Registered city must save under the authenticated numeric player ID.")
+		quit(1)
+		return
 	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] City name was not persisted in the active player JSON.")
+		push_error("[NotificationPreferencesSmoke] City name was not persisted in the authenticated player's local JSON.")
 		quit(1)
 		return
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
