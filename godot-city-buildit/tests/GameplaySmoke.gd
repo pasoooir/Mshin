@@ -1181,6 +1181,57 @@ func _test_camera_inertia_math() -> void:
 	var normalized_pan_1440 := pan_scale_1440 * 200.0
 	_check(is_equal_approx(normalized_pan_720, normalized_pan_1440), "Equivalent normalized touch drags must move the same world distance on different resolutions.")
 
+func _test_account_profile_restore_isolation() -> void:
+	_check(SaveManager.persistence_ready, "Account profile restoration must wait until the local city save system is ready.")
+	if not SaveManager.persistence_ready:
+		return
+	var original_player_id: int = PlayerAccountManager.player_id
+	var original_access_token: String = PlayerAccountManager.access_token
+	var original_identity_label: String = PlayerAccountManager.identity_label
+	var original_avatar_url: String = PlayerAccountManager.google_avatar_url
+	var original_display_name: String = PlayerAccountManager.google_display_name
+	var original_remote_state_flag: bool = PlayerAccountManager._remote_profile_has_game_state
+	if not SaveManager.save_game(false):
+		_check(false, "Guest city must be preserved locally before an account profile switch.")
+		return
+
+	PlayerAccountManager.player_id = 987654
+	PlayerAccountManager.access_token = "profile-restore-smoke-token"
+	PlayerAccountManager.identity_label = "Profile Restore Mayor"
+	PlayerAccountManager._apply_player_scope()
+	GameManager.city_name = "Remote Mayor City"
+	if not SaveManager.save_game(false):
+		_check(false, "A returning Mayor's remote snapshot must be written to its isolated player path.")
+		PlayerAccountManager.player_id = original_player_id
+		PlayerAccountManager.access_token = original_access_token
+		PlayerAccountManager.identity_label = original_identity_label
+		PlayerAccountManager.google_avatar_url = original_avatar_url
+		PlayerAccountManager.google_display_name = original_display_name
+		PlayerAccountManager._remote_profile_has_game_state = original_remote_state_flag
+		PlayerAccountManager._apply_player_scope()
+		SaveManager.load_game()
+		return
+
+	GameManager.city_name = "Guest Session City"
+	PlayerAccountManager._remote_profile_has_game_state = true
+	var restored_remote_profile := PlayerAccountManager._restore_authenticated_profile_game_state()
+	_check(restored_remote_profile and str(GameManager.city_name) == "Remote Mayor City", "Returning Google accounts must load their own remote city before any post-login save can overwrite it.")
+
+	GameManager.city_name = "Guest Session City"
+	PlayerAccountManager._remote_profile_has_game_state = false
+	var new_profile_keeps_guest := PlayerAccountManager._restore_authenticated_profile_game_state()
+	_check(new_profile_keeps_guest and str(GameManager.city_name) == "Guest Session City", "A first-time Google account with no remote game_state must keep the guest city for one-time account migration.")
+
+	PlayerAccountManager.player_id = original_player_id
+	PlayerAccountManager.access_token = original_access_token
+	PlayerAccountManager.identity_label = original_identity_label
+	PlayerAccountManager.google_avatar_url = original_avatar_url
+	PlayerAccountManager.google_display_name = original_display_name
+	PlayerAccountManager._remote_profile_has_game_state = original_remote_state_flag
+	PlayerAccountManager._apply_player_scope()
+	SaveManager.load_game()
+
+
 func _test_camera_touch_gesture_integration() -> void:
 	var camera_rig = get_tree().current_scene.get_node_or_null("CameraRig")
 	_check(camera_rig != null, "The live city scene must expose its CameraRig for touch-input integration tests.")
@@ -4192,6 +4243,7 @@ func _run_gameplay_test() -> void:
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
+	_test_account_profile_restore_isolation()
 	_test_camera_touch_gesture_integration()
 	_test_camera_focus_math()
 	_test_traffic_manager_frame_budget()
