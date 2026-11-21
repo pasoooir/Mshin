@@ -1147,7 +1147,7 @@ func _test_camera_inertia_math() -> void:
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 	var pinch_in := CameraControllerScript.pinch_zoom_delta(180.0, 120.0, 0.045)
 	var pinch_out := CameraControllerScript.pinch_zoom_delta(120.0, 180.0, 0.045)
-	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinch distance changes must produce opposite zoom directions.")
+	_check(pinch_in < 0.0 and pinch_out > 0.0, "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).")
 	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
 	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
 	var seam_twist := CameraControllerScript.touch_orbit_delta(deg_to_rad(179.0), deg_to_rad(-179.0))
