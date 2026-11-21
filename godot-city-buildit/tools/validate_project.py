@@ -1155,7 +1155,7 @@ for contract in [
     "if not await fetch_remote_profile():",
     "if not _restore_authenticated_profile_game_state():",
     "func _clear_failed_session() -> void:",
-    "await save_profile_now(current_state)",
+    "await save_profile_now(current_snapshot)",
     "Cloud sync failed. You are still signed in and your local account save is safe;",
 ]:
     if contract not in player_account_manager_source:
