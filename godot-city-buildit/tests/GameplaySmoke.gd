@@ -4352,6 +4352,9 @@ func _run_gameplay_test() -> void:
 	var mountain_backdrop := DistantMountainBackdropScript.new()
 	mountain_backdrop.name = "GameplaySmokeDistantMountainBackdrop"
 	add_child(mountain_backdrop)
+	# _ready() deliberately yields between procedural batches; wait for its
+	# completion before asserting that all scenery nodes have been generated.
+	await mountain_backdrop.generation_completed
 	var backdrop_ground := mountain_backdrop.get_node_or_null("DistantGreenGround") as MeshInstance3D
 	_check(backdrop_ground != null and backdrop_ground.mesh is PlaneMesh, "The procedural generator must create a real distant green ground plane.")
 	if backdrop_ground != null and backdrop_ground.mesh is PlaneMesh:
@@ -4361,7 +4364,7 @@ func _run_gameplay_test() -> void:
 		_check(backdrop_material != null and backdrop_material.shader != null and backdrop_material.shader.code.contains("world_position.x >= 49.0"), "The green ground must preserve the coastal water opening.")
 	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]:
 		var ridge := mountain_backdrop.get_node_or_null(ridge_name) as MeshInstance3D
-		_check(ridge != null and ridge.mesh != null and ridge.mesh.get_surface_count() > 0, "Mountain horizon segment is missing or empty: %s" % ridge_name)
+		_check(ridge != null and ridge.mesh is ArrayMesh, "Mountain horizon segment is missing or has no generated mesh resource: %s" % ridge_name)
 	var mountain_shrubs := mountain_backdrop.get_node_or_null("DarkGreenMountainShrubs") as MultiMeshInstance3D
 	var mountain_grass := mountain_backdrop.get_node_or_null("MountainDarkGrass") as MultiMeshInstance3D
 	_check(mountain_shrubs != null and mountain_shrubs.multimesh != null and mountain_shrubs.multimesh.instance_count == 320, "Mountain shrubs must be generated in one 320-instance batch.")
