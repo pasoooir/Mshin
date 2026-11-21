@@ -265,13 +265,15 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 
 
 func _terrain_height(x: float, z: float) -> float:
-	# The buildable center stays level; the surrounding grassland rolls gently
-	# into shallow gullies and low stony rises instead of remaining a flat plane.
-	var distance_from_city := maxf(absf(x) - 38.0, absf(z) - 38.0)
-	var relief_mask := smoothstep(-1.0, 23.0, distance_from_city)
-	var broad := sin(x * 0.105 + z * 0.073) * 0.30
-	var cross := cos(z * 0.16 - x * 0.12) * 0.16
-	var fine := sin(x * 0.39 + z * 0.27) * 0.055
+	# The initial owned city is 48 x 48 m. Keep it level, then blend into
+	# visible rolling grassland immediately outside its true boundary.
+	if absf(x - HIGHWAY_CENTER_X) < 14.0:
+		return 0.0
+	var distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)
+	var relief_mask := smoothstep(-1.0, 9.0, distance_from_city)
+	var broad := sin(x * 0.105 + z * 0.073) * 0.46
+	var cross := cos(z * 0.16 - x * 0.12) * 0.23
+	var fine := sin(x * 0.39 + z * 0.27) * 0.075
 	return (broad + cross + fine) * relief_mask
 
 func _coastline(z: float) -> float:
@@ -601,7 +603,7 @@ func _build_tree_belts() -> void:
 	for index in range(20):
 		var x := -74.0 + fposmod(float(index) * 17.3, 116.0)
 		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
-		if absf(x) < 43.0 and absf(z) < 43.0:
+		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
 			continue
@@ -906,11 +908,11 @@ func _build_grass_detail() -> void:
 	for index in range(2400):
 		var x := -88.0 + fposmod(float(index) * 19.37, 132.0)
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
-		if absf(x) < 42.0 and absf(z) < 42.0:
+		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 14.0:
 			continue
-		var creek_x := 46.0 + sin(z * 0.045) * 1.25
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 5.0 or x > _coastline(z) - 13.0:
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z) + 0.025, z))
@@ -1100,14 +1102,14 @@ func _animal_leg_positions(origins: Array[Vector3], body_height: float) -> Array
 
 
 func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
-	# Reuse the fractured mountain rock mesh at the playable meadow edge so
-	# the signature geology is visible at the normal city camera distance.
+	# Twelve fractured sandstone outcrops sit just beyond the initial 48 m
+	# buildable square, inside the normal city-camera footprint.
 	var rock_mesh := backdrop.call("_create_rock_outcrop_mesh") as ArrayMesh
 	var rock_material := backdrop.call("_create_rock_surface_material") as ShaderMaterial
 	var anchors: Array[Vector2] = [
-		Vector2(-32.0, -42.5), Vector2(-12.0, -42.5), Vector2(12.0, -42.5), Vector2(32.0, -42.5),
-		Vector2(-32.0, 42.5), Vector2(-12.0, 42.5), Vector2(12.0, 42.5), Vector2(32.0, 42.5),
-		Vector2(42.5, -24.0), Vector2(42.5, -8.0), Vector2(42.5, 8.0), Vector2(42.5, 24.0)
+		Vector2(-18.0, -27.0), Vector2(-6.0, -27.0), Vector2(6.0, -27.0), Vector2(18.0, -27.0),
+		Vector2(-18.0, 27.0), Vector2(-6.0, 27.0), Vector2(6.0, 27.0), Vector2(18.0, 27.0),
+		Vector2(27.0, -18.0), Vector2(27.0, -6.0), Vector2(27.0, 6.0), Vector2(27.0, 18.0)
 	]
 	var batch := MultiMesh.new()
 	batch.transform_format = MultiMesh.TRANSFORM_3D
@@ -1117,7 +1119,7 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	var palette: Array[Color] = [Color("#827B69"), Color("#A09278"), Color("#69675D"), Color("#8D806B")]
 	for index in range(anchors.size()):
 		var anchor := anchors[index]
-		var size := 2.45 + float((index * 5) % 4) * 0.34
+		var size := 2.30 + float((index * 5) % 4) * 0.30
 		var scale := Vector3(size * 0.92, size * (1.10 + float(index % 3) * 0.12), size * 0.86)
 		var yaw := float(index * 47 % 360) * PI / 180.0
 		var position := Vector3(anchor.x, _terrain_height(anchor.x, anchor.y) + 0.12, anchor.y)
@@ -1129,8 +1131,6 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	rocks.material_override = rock_material
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(rocks)
-
-
 
 func _build_dirt_tracks() -> void:
 	# Three eroded dirt spurs peel away from the motorway into the outer meadow.
@@ -1195,8 +1195,8 @@ func _build_creek_channel() -> void:
 	for step in range(STEPS):
 		var z0 := -84.0 + float(step) / float(STEPS - 1) * 168.0
 		var z1 := -84.0 + float(step + 1) / float(STEPS - 1) * 168.0
-		var x0 := 46.0 + sin(z0 * 0.045) * 1.25
-		var x1 := 46.0 + sin(z1 * 0.045) * 1.25
+		var x0 := 36.0 + sin(z0 * 0.045) * 2.0
+		var x1 := 36.0 + sin(z1 * 0.045) * 2.0
 		var heights: Array[float] = [0.01, -0.18, -0.73, -0.73, -0.18, 0.01]
 		for band in range(offsets.size() - 1):
 			var p00 := Vector3(x0 + offsets[band], _terrain_height(x0 + offsets[band], z0) + heights[band], z0)
@@ -1256,7 +1256,7 @@ func _build_creek_rock_edges() -> void:
 	var palette: Array[Color] = [Color("#777568"), Color("#A09278"), Color("#5E625A"), Color("#88765D")]
 	for index in range(104):
 		var z := -82.0 + float(index) * 1.58
-		var center_x := 46.0 + sin(z * 0.045) * 1.25
+		var center_x := 36.0 + sin(z * 0.045) * 2.0
 		var side := -1.0 if index % 2 == 0 else 1.0
 		var size := 0.20 + float((index * 7) % 6) * 0.075
 		var x := center_x + side * (2.1 + float(index % 3) * 0.65)
@@ -1286,23 +1286,23 @@ func _build_meadow_shrubs_and_stones() -> void:
 	for index in range(260):
 		var x := -87.0 + fposmod(float(index) * 23.71, 130.0)
 		var z := -86.0 + fposmod(float(index) * 37.19, 172.0)
-		if absf(x) < 43.0 and absf(z) < 43.0:
+		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0:
 			continue
-		var creek_x := 46.0 + sin(z * 0.045) * 1.25
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 6.0:
 			continue
 		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.85, z))
 	# A deterministic broken ring keeps larger scrub visible from the city camera.
 	for index in range(72):
 		var angle := TAU * float(index) / 72.0
-		var radius := 43.5 + sin(float(index) * 2.7) * 1.6
+		var radius := 27.5 + sin(float(index) * 2.7) * 1.3
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - 15.0:
 			continue
-		var creek_x := 46.0 + sin(z * 0.045) * 1.25
+		var creek_x := 36.0 + sin(z * 0.045) * 2.0
 		if absf(x - creek_x) < 6.0:
 			continue
 		shrub_positions.append(Vector3(x, _terrain_height(x, z) + 0.9, z))
@@ -1337,14 +1337,14 @@ func _build_meadow_shrubs_and_stones() -> void:
 	for index in range(220):
 		var x := -88.0 + fposmod(float(index) * 29.31, 134.0)
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
-		if absf(x) < 41.0 and absf(z) < 41.0:
+		if absf(x) < 25.0 and absf(z) < 25.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
 			continue
 		stone_positions.append(Vector3(x, _terrain_height(x, z) + 0.12, z))
 	for index in range(96):
 		var angle := TAU * float(index) / 96.0
-		var radius := 42.5 + float(index % 4) * 1.8
+		var radius := 25.5 + float(index % 4) * 1.5
 		var x := cos(angle) * radius
 		var z := sin(angle) * radius
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or x > _coastline(z) - 10.0:
