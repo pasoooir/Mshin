@@ -291,105 +291,115 @@ func _make_tunnel_box(parent: Node3D, node_name: String, dimensions: Vector3, po
 
 
 func _create_rock_outcrop_mesh() -> ArrayMesh:
-	# A chipped, undercut 12-sector outcrop. Two irregular intermediate rings
-	# create real silhouette breaks, recessed facets and fractured ledges even
-	# when the procedural surface shader is disabled.
+	# A fractured sandstone mass built from four deliberately discontinuous
+	# height bands. Deep radial notches are part of the silhouette, not decals.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sectors := 12
-	var ring_bottom: Array[Vector3] = []
-	var ring_mid: Array[Vector3] = []
-	var ring_upper: Array[Vector3] = []
-	for index in range(sectors):
-		var angle := TAU * float(index) / float(sectors)
-		var wave_a := sin(float(index) * 2.17 + 0.43)
-		var wave_b := sin(float(index) * 3.71 + 1.26)
-		var wave_c := sin(float(index) * 1.37 + 2.04)
-		var lower_radius := 0.76 + wave_a * 0.105 + wave_b * 0.045
-		var mid_radius := 0.70 + wave_b * 0.105 + wave_c * 0.055
-		# Alternating inward cuts form visible notches and undercut shelves.
-		if index % 5 == 2:
-			mid_radius -= 0.17
-		if index % 7 == 4:
-			mid_radius -= 0.09
-		var upper_radius := 0.49 + wave_a * 0.095 - wave_c * 0.055
-		var lower_y := -0.035 + wave_b * 0.055
-		var mid_y := 0.52 + wave_a * 0.19
-		var upper_y := 1.12 + wave_c * 0.25
-		ring_bottom.append(Vector3(cos(angle) * lower_radius, lower_y, sin(angle) * lower_radius))
-		ring_mid.append(Vector3(cos(angle + 0.035) * mid_radius, mid_y, sin(angle + 0.035) * mid_radius))
-		ring_upper.append(Vector3(cos(angle - 0.045) * upper_radius, upper_y, sin(angle - 0.045) * upper_radius))
+	const SECTORS := 18
+	var ring_foot: Array[Vector3] = []
+	var ring_lower: Array[Vector3] = []
+	var ring_middle: Array[Vector3] = []
+	var ring_crown: Array[Vector3] = []
+	var fracture_sectors: Array[int] = [2, 8, 14]
+	for index in range(SECTORS):
+		var angle := TAU * float(index) / float(SECTORS)
+		var a := sin(float(index) * 2.31 + 0.7)
+		var b := cos(float(index) * 3.17 + 1.4)
+		var c := sin(float(index) * 4.73 + 0.2)
+		var notch := 0.0
+		for fracture_sector in fracture_sectors:
+			var distance := mini(absi(index - fracture_sector), SECTORS - absi(index - fracture_sector))
+			if distance == 0:
+				notch = 0.29
+			elif distance == 1:
+				notch = 0.13
+		var angle_jitter := angle + a * 0.055
+		var foot_radius := 0.82 + a * 0.13 + b * 0.055
+		var lower_radius := 0.73 + b * 0.15 + c * 0.06 - notch * 0.52
+		var middle_radius := 0.64 + c * 0.14 - a * 0.07 - notch
+		var crown_radius := 0.47 + a * 0.12 + b * 0.05 - notch * 0.72
+		var foot_y := -0.07 + b * 0.07
+		var lower_y := 0.30 + a * 0.16
+		var middle_y := 0.82 + b * 0.23
+		var crown_y := 1.30 + c * 0.24
+		ring_foot.append(Vector3(cos(angle_jitter) * foot_radius, foot_y, sin(angle_jitter) * foot_radius))
+		ring_lower.append(Vector3(cos(angle_jitter + 0.025) * lower_radius, lower_y, sin(angle_jitter + 0.025) * lower_radius))
+		ring_middle.append(Vector3(cos(angle_jitter - 0.035) * middle_radius, middle_y, sin(angle_jitter - 0.035) * middle_radius))
+		ring_crown.append(Vector3(cos(angle_jitter + 0.045) * crown_radius, crown_y, sin(angle_jitter + 0.045) * crown_radius))
 
-	var peak_a := Vector3(0.13, 1.82, -0.11)
-	var peak_b := Vector3(-0.22, 1.56, 0.19)
-	var bottom_center := Vector3(0.0, -0.075, 0.0)
-	for index in range(sectors):
-		var next_index := (index + 1) % sectors
-		var lower_tone := 0.82 + 0.12 * sin(float(index) * 2.31)
-		var middle_tone := 0.88 + 0.10 * sin(float(index) * 1.73 + 0.8)
-		var upper_tone := 0.91 + 0.08 * sin(float(index) * 2.83 + 1.4)
-		var lower_color := Color(0.47, 0.44, 0.37) * lower_tone
-		var middle_color := Color(0.55, 0.50, 0.41) * middle_tone
-		var upper_color := Color(0.61, 0.56, 0.46) * upper_tone
-
-		# Lower wall: a broken, non-planar band with alternating broad facets.
+	var peak_a := Vector3(0.30, 2.08, -0.22)
+	var peak_b := Vector3(-0.38, 1.72, 0.28)
+	var peak_c := Vector3(0.04, 1.91, 0.48)
+	var bottom_center := Vector3(0.0, -0.13, 0.0)
+	for index in range(SECTORS):
+		var next_index := (index + 1) % SECTORS
+		var variation := 0.82 + 0.16 * sin(float(index) * 2.07 + 0.6)
+		var lower_color := Color(0.36, 0.34, 0.29) * variation
+		var middle_color := Color(0.53, 0.46, 0.36) * (0.88 + 0.12 * cos(float(index) * 1.81))
+		var upper_color := Color(0.66, 0.58, 0.45) * (0.86 + 0.14 * sin(float(index) * 2.77))
+		# Foot and lower ledge: alternating triangulation creates sharp facets.
 		surface.set_color(lower_color)
-		surface.add_vertex(ring_bottom[index])
-		surface.add_vertex(ring_mid[index])
-		surface.add_vertex(ring_bottom[next_index])
-		surface.set_color(lower_color * 0.92)
-		surface.add_vertex(ring_bottom[next_index])
-		surface.add_vertex(ring_mid[index])
-		surface.add_vertex(ring_mid[next_index])
-
-		# Middle wall: inward ring cuts produce genuine concave pockets.
+		surface.add_vertex(ring_foot[index])
+		surface.add_vertex(ring_lower[index])
+		surface.add_vertex(ring_foot[next_index])
+		surface.set_color(lower_color * 0.78)
+		surface.add_vertex(ring_foot[next_index])
+		surface.add_vertex(ring_lower[index])
+		surface.add_vertex(ring_lower[next_index])
+		# Middle strata: radial insets form three deep, angular fracture gulfs.
 		surface.set_color(middle_color)
-		surface.add_vertex(ring_mid[index])
-		surface.add_vertex(ring_upper[index])
-		surface.add_vertex(ring_mid[next_index])
-		surface.set_color(middle_color * 0.88)
-		surface.add_vertex(ring_mid[next_index])
-		surface.add_vertex(ring_upper[index])
-		surface.add_vertex(ring_upper[next_index])
-
-		# Jagged crown with alternating high/low shoulders and a split peak.
+		surface.add_vertex(ring_lower[index])
+		surface.add_vertex(ring_middle[index])
+		surface.add_vertex(ring_lower[next_index])
+		surface.set_color(middle_color * 0.72)
+		surface.add_vertex(ring_lower[next_index])
+		surface.add_vertex(ring_middle[index])
+		surface.add_vertex(ring_middle[next_index])
+		# Upper broken shoulders are not a smooth cone; each facet terminates
+		# at one of three offset peaks, producing an unmistakable split crown.
+		var apex := peak_a if index < 6 else (peak_b if index < 12 else peak_c)
 		surface.set_color(upper_color)
-		surface.add_vertex(ring_upper[index])
-		surface.add_vertex(peak_a if index % 3 != 1 else peak_b)
-		surface.add_vertex(ring_upper[next_index])
-
-		# A faceted underside closes the mesh and keeps the rock readable
-		# from steep low camera angles; reverse winding points normals downward.
-		surface.set_color(lower_color * 0.76)
+		surface.add_vertex(ring_middle[index])
+		surface.add_vertex(ring_crown[index])
+		surface.add_vertex(ring_middle[next_index])
+		surface.set_color(upper_color * 0.88)
+		surface.add_vertex(ring_middle[next_index])
+		surface.add_vertex(ring_crown[index])
+		surface.add_vertex(ring_crown[next_index])
+		surface.set_color(upper_color * (0.88 if index % 2 == 0 else 0.68))
+		surface.add_vertex(ring_crown[index])
+		surface.add_vertex(apex)
+		surface.add_vertex(ring_crown[next_index])
+		# Dark, recessed V cuts continue from the upper fractures into the foot.
+		if fracture_sectors.has(index):
+			var angle := TAU * float(index) / float(SECTORS)
+			_append_rock_fracture_groove(surface, angle, 1.0 + float(index % 3) * 0.16)
+		# A darker basal facet gives the mesh a grounded, undercut foot.
+		surface.set_color(lower_color * 0.58)
 		surface.add_vertex(bottom_center)
-		surface.add_vertex(ring_bottom[index])
-		surface.add_vertex(ring_bottom[next_index])
+		surface.add_vertex(ring_foot[next_index])
+		surface.add_vertex(ring_foot[index])
 
-	# Three recessed fracture channels are actual inset triangles, not painted lines.
-	for crack_index in range(ROCK_FRACTURE_GROOVE_COUNT):
-		var crack_angle := TAU * float(crack_index) / 3.0 + 0.31
-		_append_rock_fracture_groove(surface, crack_angle, 0.78 + float(crack_index) * 0.08)
-	# Four attached talus stones are fused into this same mesh and batch.
+	# Broken talus is fused into the same surface and remains a single draw call.
 	_append_rock_foot_pebbles(surface)
-
 	surface.generate_normals()
 	return surface.commit()
 
-
 func _append_rock_fracture_groove(surface: SurfaceTool, angle: float, strength: float) -> void:
+	# A broad V-shaped inset: dark floor sits behind two lighter fractured lips.
 	var radial := Vector3(cos(angle), 0.0, sin(angle))
 	var tangent := Vector3(-radial.z, 0.0, radial.x)
-	var lower := radial * 0.455 + Vector3(0.0, 0.20, 0.0)
-	var middle := radial * 0.405 + Vector3(0.0, 0.69, 0.0)
-	var upper := radial * 0.355 + Vector3(0.0, 1.20, 0.0)
-	var width := 0.026 * strength
+	var lower := radial * 0.43 + Vector3(0.0, 0.18, 0.0)
+	var middle := radial * 0.34 + Vector3(0.0, 0.76, 0.0)
+	var upper := radial * 0.39 + Vector3(0.0, 1.34, 0.0)
+	var width := 0.095 * strength
 	var lower_left := lower - tangent * width
 	var lower_right := lower + tangent * width
-	var middle_left := middle - tangent * width * 0.72
-	var middle_right := middle + tangent * width * 0.72
-	var upper_left := upper - tangent * width * 0.38
-	var upper_right := upper + tangent * width * 0.38
-	surface.set_color(Color(0.105, 0.112, 0.105))
+	var middle_left := middle - tangent * width * 0.76
+	var middle_right := middle + tangent * width * 0.76
+	var upper_left := upper - tangent * width * 0.34
+	var upper_right := upper + tangent * width * 0.34
+	surface.set_color(Color(0.055, 0.062, 0.058))
 	surface.add_vertex(lower_left)
 	surface.add_vertex(middle_left)
 	surface.add_vertex(lower_right)
@@ -402,15 +412,14 @@ func _append_rock_fracture_groove(surface: SurfaceTool, angle: float, strength: 
 	surface.add_vertex(middle_right)
 	surface.add_vertex(upper_left)
 	surface.add_vertex(upper_right)
-	# Narrow exposed mineral lips catch the existing key light.
-	surface.set_color(Color(0.64, 0.59, 0.48) * strength)
-	surface.add_vertex(lower_left - tangent * 0.012)
-	surface.add_vertex(middle_left - tangent * 0.010)
+	# Thin mineral lips catch light on both sides of the inset.
+	surface.set_color(Color(0.76, 0.66, 0.49) * strength)
+	surface.add_vertex(lower_left - tangent * 0.025)
+	surface.add_vertex(middle_left - tangent * 0.020)
 	surface.add_vertex(lower_left)
-	surface.add_vertex(middle_left - tangent * 0.010)
-	surface.add_vertex(upper_left - tangent * 0.006)
-	surface.add_vertex(upper_left)
-
+	surface.add_vertex(middle_right)
+	surface.add_vertex(upper_right + tangent * 0.012)
+	surface.add_vertex(upper_right)
 
 func _append_rock_foot_pebbles(surface: SurfaceTool) -> void:
 	for pebble_index in range(ROCK_FOOT_PEBBLE_COUNT):
@@ -534,22 +543,22 @@ void fragment() {
 	float grain_z = stone_fbm(vec3(p.xy * 1.75, 0.0));
 	float grain = dot(vec3(grain_x, grain_y, grain_z), tri_weights);
 	float fine_grain = dot(vec3(
-		stone_fbm(vec3(p.yz * 5.8, 0.0)),
-		stone_fbm(vec3(p.xz * 5.8, 0.0)),
-		stone_fbm(vec3(p.xy * 5.8, 0.0))
+		stone_fbm(vec3(p.yz * 7.6, 0.0)),
+		stone_fbm(vec3(p.xz * 7.6, 0.0)),
+		stone_fbm(vec3(p.xy * 7.6, 0.0))
 	), tri_weights);
 
 	// Three axis projections hide stretching on steep and horizontal faces.
-	float crack_x = cellular_edge(p.yz * 1.35 + vec2(grain_x * 0.22));
-	float crack_y = cellular_edge(p.xz * 1.35 + vec2(grain_y * 0.22));
-	float crack_z = cellular_edge(p.xy * 1.35 + vec2(grain_z * 0.22));
+	float crack_x = cellular_edge(p.yz * 1.82 + vec2(grain_x * 0.34));
+	float crack_y = cellular_edge(p.xz * 1.82 + vec2(grain_y * 0.34));
+	float crack_z = cellular_edge(p.xy * 1.82 + vec2(grain_z * 0.34));
 	float crack_edge = dot(vec3(crack_x, crack_y, crack_z), tri_weights);
-	float fracture_core = 1.0 - smoothstep(0.018, 0.075, crack_edge);
-	float fracture_rim = smoothstep(0.075, 0.16, crack_edge) * (1.0 - smoothstep(0.16, 0.24, crack_edge));
+	float fracture_core = 1.0 - smoothstep(0.028, 0.125, crack_edge);
+	float fracture_rim = smoothstep(0.12, 0.22, crack_edge) * (1.0 - smoothstep(0.22, 0.34, crack_edge));
 
 	float strata_noise = stone_fbm(p * vec3(0.12, 0.20, 0.12));
-	float strata = sin(p.y * 0.72 + strata_noise * 3.2 + grain * 1.8);
-	float sediment = smoothstep(-0.52, 0.62, strata);
+	float strata = sin(p.y * 1.18 + strata_noise * 4.4 + grain * 2.6);
+	float sediment = smoothstep(-0.34, 0.46, strata);
 	float pores = smoothstep(0.68, 0.91, fine_grain);
 	float micro_weathering = mix(0.91, 1.08, fine_grain);
 
@@ -561,13 +570,13 @@ void fragment() {
 	base_stone *= mix(0.78, 1.13, sediment);
 	base_stone *= mix(vec3(0.72), vec3(1.0), COLOR.rgb);
 	base_stone *= micro_weathering;
-	base_stone *= 1.0 - fracture_core * 0.62;
+	base_stone *= 1.0 - fracture_core * 0.82;
 	base_stone *= 1.0 - pores * 0.10;
-	base_stone = mix(base_stone, base_stone * 1.22, fracture_rim * 0.32);
+	base_stone = mix(base_stone, base_stone * 1.38, fracture_rim * 0.48);
 
 	// Cheap contact occlusion: no extra light, shadow caster or render pass.
-	float contact_band = 1.0 - smoothstep(-0.015, 0.30, rock_local_height);
-	float contact_occlusion = mix(1.0, 0.58, contact_band);
+	float contact_band = 1.0 - smoothstep(-0.035, 0.52, rock_local_height);
+	float contact_occlusion = mix(1.0, 0.38, contact_band);
 	base_stone *= contact_occlusion;
 
 	ALBEDO = base_stone;
@@ -606,9 +615,9 @@ func _build_mountain_rock_outcrops() -> void:
 	rocks.name = "MountainNearRockOutcrops"
 	rocks.multimesh = batch
 	rocks.material_override = _create_rock_surface_material()
-	# Only the near-detail batch casts shadows. Its visibility range is the
-	# hard shadow budget: rocks disappear before they can add distant shadow work.
-	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# Rocks use shader-based basal occlusion and geometric recesses only; no
+	# per-rock shadow casters are submitted to the mobile directional shadow map.
+	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = RIDGE_DETAIL_DISTANCE
 	rocks.visibility_range_end_margin = 14.0
 	add_child(rocks)
@@ -684,21 +693,17 @@ func _build_mountain_grass() -> void:
 
 
 func _build_mountain_eucalypts() -> void:
-	# Australian gum trees: pale trunks and sparse blue-green crowns. Two
-	# shared meshes, each submitted as one MultiMesh batch for the whole rim.
+	# Silvery Australian gums: tapered leaning trunks and asymmetrical clustered
+	# crowns. Trunks and foliage remain two shared MultiMesh submissions.
 	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.16
-	trunk_mesh.bottom_radius = 0.28
-	trunk_mesh.height = 5.8
-	trunk_mesh.radial_segments = 6
+	trunk_mesh.top_radius = 0.105
+	trunk_mesh.bottom_radius = 0.30
+	trunk_mesh.height = 6.2
+	trunk_mesh.radial_segments = 7
 	var trunk_material := StandardMaterial3D.new()
-	trunk_material.albedo_color = Color("#B8AA87")
+	trunk_material.albedo_color = Color("#BDB39A")
 	trunk_material.roughness = 1.0
-	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 1.0
-	crown_mesh.height = 2.0
-	crown_mesh.radial_segments = 7
-	crown_mesh.rings = 4
+	var crown_mesh := _create_mountain_eucalypt_crown_mesh()
 	var crown_material := StandardMaterial3D.new()
 	crown_material.vertex_color_use_as_albedo = true
 	crown_material.roughness = 1.0
@@ -711,22 +716,33 @@ func _build_mountain_eucalypts() -> void:
 	crowns.use_colors = true
 	crowns.mesh = crown_mesh
 	crowns.instance_count = EUCALYPT_COUNT
-	var foliage: Array[Color] = [Color("#557A69"), Color("#668675"), Color("#78927A"), Color("#496D60")]
+	var foliage: Array[Color] = [
+		Color("#617F72"), Color("#7F9481"), Color("#526F68"),
+		Color("#8A9A83"), Color("#49685E"), Color("#708A78")
+	]
 	for index in range(EUCALYPT_COUNT):
 		var side := index % 4
 		var row := int(index / 4)
 		var along := -RIDGE_HALF_LENGTH * 0.84 + fposmod(float(row) * 53.7 + float(side) * 29.0, RIDGE_HALF_LENGTH * 1.68)
 		var depth := 0.24 + float((row * 13 + side * 7) % 48) / 100.0
 		if _is_tunnel_portal_vegetation_exclusion(side, along, depth):
+			var hidden_transform := _hidden_multimesh_instance_transform()
+			trunks.set_instance_transform(index, hidden_transform)
+			crowns.set_instance_transform(index, hidden_transform)
 			continue
 		var point := _ridge_point(side, along, depth)
-		var tree_scale := 0.82 + float((index * 7) % 8) * 0.075
+		var tree_scale := 0.78 + float((index * 7) % 11) * 0.105
 		var yaw := float((index * 41) % 360) * PI / 180.0
-		var rotation := Basis(Vector3.UP, yaw)
-		var trunk_origin := point + Vector3(0.0, 2.9 * tree_scale, 0.0)
-		var crown_origin := point + Vector3(0.0, 6.0 * tree_scale, 0.0)
-		trunks.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(tree_scale, tree_scale, tree_scale)), trunk_origin))
-		crowns.set_instance_transform(index, Transform3D(rotation.scaled(Vector3(0.82 * tree_scale, 1.55 * tree_scale, 0.82 * tree_scale)), crown_origin))
+		var lean := deg_to_rad(-10.0 + float((index * 17) % 23))
+		var yaw_basis := Basis(Vector3.UP, yaw)
+		var trunk_basis := yaw_basis * Basis(Vector3(0.0, 0.0, 1.0), lean)
+		var trunk_origin := point + Vector3(0.0, 3.05 * tree_scale, 0.0)
+		var crown_offset := yaw_basis * Vector3(sin(lean) * 1.1, 6.0 * tree_scale, cos(lean) * 0.12)
+		var crown_origin := point + crown_offset
+		var trunk_scale := Vector3(tree_scale * (0.82 + float(index % 3) * 0.12), tree_scale, tree_scale * (0.82 + float(index % 4) * 0.09))
+		var crown_scale := Vector3(0.76 + float(index % 4) * 0.10, 1.18 + float((index * 3) % 5) * 0.13, 0.70 + float((index * 7) % 4) * 0.12)
+		trunks.set_instance_transform(index, Transform3D(trunk_basis.scaled(trunk_scale), trunk_origin))
+		crowns.set_instance_transform(index, Transform3D(yaw_basis.scaled(crown_scale * tree_scale), crown_origin))
 		crowns.set_instance_color(index, foliage[index % foliage.size()])
 	var trunk_batch := MultiMeshInstance3D.new()
 	trunk_batch.name = "AustralianEucalyptTrunks"
@@ -740,3 +756,26 @@ func _build_mountain_eucalypts() -> void:
 	crown_batch.material_override = crown_material
 	crown_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(crown_batch)
+
+
+func _create_mountain_eucalypt_crown_mesh() -> ArrayMesh:
+	# Four offset leaf masses make the gum crown asymmetric without adding draw calls.
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	sphere.radial_segments = 9
+	sphere.rings = 6
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lobes := [
+		[Vector3(0.0, 0.0, 0.0), Vector3(0.72, 1.0, 0.72)],
+		[Vector3(-0.48, 0.16, 0.12), Vector3(0.58, 0.76, 0.62)],
+		[Vector3(0.44, -0.08, -0.18), Vector3(0.62, 0.82, 0.56)],
+		[Vector3(0.10, 0.36, 0.42), Vector3(0.52, 0.68, 0.54)]
+	]
+	for lobe in lobes:
+		var offset: Vector3 = lobe[0]
+		var scale: Vector3 = lobe[1]
+		surface.append_from(sphere, 0, Transform3D(Basis.IDENTITY.scaled(scale), offset))
+	return surface.commit()
+
