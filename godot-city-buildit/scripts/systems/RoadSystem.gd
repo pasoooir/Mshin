@@ -578,7 +578,7 @@ func _request_cc0_asphalt_texture(material: StandardMaterial3D) -> void:
 			push_warning("[RoadSystem] Asphalt CDN unavailable; local PBR fallback retained")
 		request.queue_free()
 	)
-	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=512&quality=95&v=547f00f6") != OK:
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
 		request.queue_free()
 
 func _create_asphalt_textures() -> Array[Texture2D]:
