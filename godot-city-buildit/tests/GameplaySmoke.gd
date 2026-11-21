@@ -1217,6 +1217,8 @@ func _test_account_profile_restore_isolation() -> void:
 		PlayerAccountManager._apply_player_scope()
 		SaveManager.load_game()
 		return
+	var remote_save_snapshot: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	_check(remote_save_snapshot is Dictionary and not str(remote_save_snapshot.get("saved_at", "")).is_empty(), "Every local account snapshot must include a UTC timestamp for offline/cloud conflict resolution.")
 
 	GameManager.city_name = "Guest Session City"
 	PlayerAccountManager._remote_profile_has_game_state = true
