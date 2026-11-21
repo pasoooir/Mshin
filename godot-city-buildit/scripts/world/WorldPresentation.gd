@@ -229,9 +229,9 @@ func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int,
 		for column in range(columns):
 			var u0 := float(column) / float(columns)
 			var u1 := float(column + 1) / float(columns)
-			var x00 := lerpf(near_x0, far_x, u0)
+			var x00 := lerpf(near_x0, far_x0, u0)
 			var x10 := lerpf(near_x0, far_x0, u1)
-			var x01 := lerpf(near_x1, far_x, u0)
+			var x01 := lerpf(near_x1, far_x1, u0)
 			var x11 := lerpf(near_x1, far_x1, u1)
 			var uv00 := Vector2(u0, float(row) / rows)
 			var uv10 := Vector2(u1, float(row) / rows)
