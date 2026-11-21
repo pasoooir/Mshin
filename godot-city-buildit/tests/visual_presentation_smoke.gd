@@ -48,6 +48,15 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] First-entry coach must stay compact and keep the city view unobstructed")
 		get_tree().quit(1)
 		return
+	if not world_source.contains("cdn.polyhaven.com/asset_img/primary/leafy_grass.png") or not world_source.contains("cdn.polyhaven.com/asset_img/primary/coast_sand_02.png") or not world_source.contains("load_png_from_buffer(body)"):
+		push_error("[VisualPresentationSmoke] Grass and coastal sand must use the verified CC0 Poly Haven CDN textures with PNG decoding")
+		get_tree().quit(1)
+		return
+	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
+	if not road_source.contains("cdn.polyhaven.com/asset_img/primary/clean_asphalt.png") or not road_source.contains("load_png_from_buffer(body)"):
+		push_error("[VisualPresentationSmoke] City streets and highway must share the same clean CC0 asphalt CDN source")
+		get_tree().quit(1)
+		return
 	var backdrop_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
 	if not backdrop_source.contains("float coastline = 51.0") or not backdrop_source.contains("field_noise(p * 0.071") or backdrop_source.contains("world_position.x >= 49.0 && world_position.x <= 159.0"):
 		push_error("[VisualPresentationSmoke] Distant ground must use natural terrain variation and the same curved ocean opening as the shoreline")
