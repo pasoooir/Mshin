@@ -18,6 +18,9 @@ var _last_profile_save_ok: bool = true
 var _google_pending_nonces: Dictionary = {}
 var _google_callback: Variant
 var _last_login_rewards: Dictionary = {}
+var _remote_profile_has_game_state: bool = false
+var _last_auth_error: String = ""
+var _last_login_reward_error: String = ""
 
 func _ready() -> void:
 	var preferences := ConfigFile.new()
@@ -102,8 +105,30 @@ func bootstrap() -> bool:
 	return true
 
 func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
+	_last_auth_error = ""
+	_last_login_reward_error = ""
+	_last_login_rewards.clear()
 	if id_token.is_empty() or nonce.is_empty() or _auth_url().is_empty():
+		_last_auth_error = "Google sign-in is not configured. Please retry from Settings."
 		return false
+	if not await _wait_for_save_manager_ready():
+		_last_auth_error = "The city save system is still starting. Please retry Google sign-in."
+		return false
+	# Preserve the guest city before switching the active save path to a Mayor ID.
+	# A returning account will load its own remote game state below; a new account
+	# inherits this guest state once, then receives its own isolated JSON profile.
+	if not is_authenticated():
+		if not SaveManager.save_game(false):
+			_last_auth_error = "Your current city could not be saved before Google sign-in."
+			return false
+	else:
+		if not SaveManager.save_game(false):
+			_last_auth_error = "Your current account city could not be saved before sign-in."
+			return false
+		var previous_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+		if not previous_state is Dictionary or not await save_profile_now(previous_state):
+			_last_auth_error = "Your current account could not sync before changing the sign-in session."
+			return false
 	var response := await _request_json(
 		_auth_url() + "/v1/auth/google",
 		HTTPClient.METHOD_POST,
@@ -111,13 +136,24 @@ func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
 		{"id_token": id_token, "nonce": nonce}
 	)
 	if not response.ok:
-		push_warning("Google sign-in failed: " + response.error)
+		_last_auth_error = "Google authentication failed: " + response.error
+		push_warning(_last_auth_error)
 		return false
 	_activate_session(response.body, "Google player")
 	if not is_authenticated():
+		_last_auth_error = "Mshin could not create a player session from the Google response."
 		return false
-	await fetch_remote_profile()
-	await claim_login_rewards()
+	if not await fetch_remote_profile():
+		_last_auth_error = "Google was verified, but the private player JSON profile could not be created or loaded. Check Cloudflare/GitHub storage and retry."
+		_clear_failed_session()
+		return false
+	if not _restore_authenticated_profile_game_state():
+		_last_auth_error = "The saved city for this Google account could not be restored. Your guest city has been preserved."
+		_clear_failed_session()
+		return false
+	var reward_result := await claim_login_rewards()
+	if not bool(reward_result.get("ok", false)):
+		_last_login_reward_error = str(reward_result.get("error", "reward_sync_unavailable"))
 	return true
 
 func claim_login_rewards() -> Dictionary:
@@ -168,6 +204,7 @@ func _apply_player_scope() -> void:
 			tutorial.set_player_scope(get_player_file_path("tutorial_progress.cfg"))
 
 func fetch_remote_profile() -> bool:
+	_remote_profile_has_game_state = false
 	if not is_authenticated() or _api_base().is_empty():
 		return false
 	var headers := PackedStringArray(["Authorization: Bearer " + access_token])
@@ -182,7 +219,10 @@ func fetch_remote_profile() -> bool:
 	profile_revision = maxi(0, int(data.get("revision", 0)))
 	var game_state: Variant = data.get("game_state")
 	if game_state is Dictionary:
-		_write_local_game_state(game_state)
+		if not _write_local_game_state(game_state):
+			push_error("Could not write the authenticated remote profile to its player-scoped local JSON save.")
+			return false
+		_remote_profile_has_game_state = true
 	elif player_id == 100001 and OS.get_environment("MSHIN_MIGRATE_LEGACY_SAVE") == "1":
 		_migrate_legacy_admin_save()
 	profile_loaded.emit(player_id, profile_revision)
@@ -281,17 +321,65 @@ func _flush_pending_save() -> void:
 	_save_in_flight = false
 
 func logout() -> void:
+	var cloud_sync_ok := true
+	if is_authenticated() and has_node("/root/SaveManager") and SaveManager.persistence_ready:
+		if SaveManager.save_game(false):
+			var current_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+			if current_state is Dictionary:
+				cloud_sync_ok = await save_profile_now(current_state)
+			else:
+				cloud_sync_ok = false
+		else:
+			cloud_sync_ok = false
 	_set_google_auto_sign_in(false)
+	_google_pending_nonces.clear()
+	_clear_session_state()
+	if has_node("/root/SaveManager") and SaveManager.persistence_ready and get_tree().current_scene != null:
+		# Return to the guest save instead of leaving another Mayor's city in memory.
+		SaveManager.load_game()
+	if not cloud_sync_ok:
+		authentication_feedback.emit("Signed out. Your account save is kept locally; cloud sync needs a retry.", false)
+
+
+func _clear_session_state() -> void:
 	google_avatar_url = ""
 	google_display_name = ""
-	_google_pending_nonces.clear()
 	player_id = 0
 	access_token = ""
 	profile_revision = 0
 	identity_label = ""
 	_pending_game_state.clear()
+	_last_login_rewards.clear()
+	_remote_profile_has_game_state = false
 	_apply_player_scope()
 	session_changed.emit(0, false)
+	profile_identity_changed.emit()
+
+
+func _clear_failed_session() -> void:
+	_clear_session_state()
+	if has_node("/root/SaveManager") and SaveManager.persistence_ready and get_tree().current_scene != null:
+		SaveManager.load_game()
+
+
+func _wait_for_save_manager_ready() -> bool:
+	if not has_node("/root/SaveManager"):
+		return false
+	for _frame in range(180):
+		if SaveManager.persistence_ready:
+			return true
+		await get_tree().process_frame
+	return SaveManager.persistence_ready
+
+
+func _restore_authenticated_profile_game_state() -> bool:
+	if not _remote_profile_has_game_state:
+		return true
+	if not has_node("/root/SaveManager") or not SaveManager.persistence_ready or get_tree().current_scene == null:
+		return false
+	# fetch_remote_profile wrote this account's remote game_state to the active
+	# player-specific path. Load it before the post-login autosave can run.
+	return SaveManager.load_game()
 
 
 func begin_google_sign_in(auto_select: bool = false) -> bool:
@@ -493,8 +581,11 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		if bool(daily.get("granted", false)):
 			reward_parts.append("+%d daily Simoleons" % int(daily.get("simoleons", 0)))
 		var reward_message := " · " + ", ".join(reward_parts) if not reward_parts.is_empty() else ""
+		if reward_parts.is_empty() and not _last_login_reward_error.is_empty():
+			reward_message = " · city saved; reward sync pending"
 		authentication_feedback.emit("Signed in as Mayor #%d%s" % [player_id, reward_message], true)
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
 			SaveManager.save_game()
 	elif not silent_attempt:
-		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
+		var failure_message := _last_auth_error if not _last_auth_error.is_empty() else "Google sign-in failed. Please try again."
+		authentication_feedback.emit(failure_message, false)
