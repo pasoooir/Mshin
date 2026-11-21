@@ -380,9 +380,10 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 			_append_rock_fracture_groove(surface, angle, 1.0 + float(index % 3) * 0.16)
 		# A darker basal facet gives the mesh a grounded, undercut foot.
 		surface.set_color(lower_color * 0.58)
+		# Reverse winding so the closed underside faces downward.
 		surface.add_vertex(bottom_center)
-		surface.add_vertex(ring_foot[next_index])
 		surface.add_vertex(ring_foot[index])
+		surface.add_vertex(ring_foot[next_index])
 
 	# Join the three offset crown peaks into a closed, fractured roof.
 	surface.set_color(Color(0.43, 0.39, 0.32))
