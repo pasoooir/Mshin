@@ -517,6 +517,488 @@ func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, con
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
 			var image := Image.new()
+			if image.load_jpg_from_buffer(body) == OK:
+				image.generate_mipmaps()
+				var texture := ImageTexture.create_from_image(image)
+				highway_material.albedo_texture = texture
+				connector_material.albedo_texture = texture
+			else:
+				push_warning("[WorldPresentation] Asphalt CDN image invalid; matching local fallback retained")
+		else:
+			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
+		request.queue_free()
+	)
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
+		request.queue_free()
+
+
+func _build_highway_lighting() -> void:
+	# Twelve full-size motorway luminaires, batched by geometry to keep the
+	# permanent landmark inexpensive on mobile GPUs.
+	var pole_positions: Array[Vector3] = []
+	var arm_positions: Array[Vector3] = []
+	var head_positions: Array[Vector3] = []
+	var emitter_positions: Array[Vector3] = []
+	for side in [-1.0, 1.0]:
+		var pole_x: float = HIGHWAY_CENTER_X + float(side) * 14.8
+		var inward: float = -float(side)
+		for z in [-70.0, -42.0, -14.0, 14.0, 42.0, 70.0]:
+			pole_positions.append(Vector3(pole_x, 4.2, z))
+			arm_positions.append(Vector3(pole_x + inward * 1.35, 7.95, z))
+			head_positions.append(Vector3(pole_x + inward * 2.55, 7.88, z))
+			emitter_positions.append(Vector3(pole_x + inward * 2.55, 7.77, z))
+
+	var pole_mesh := CylinderMesh.new()
+	pole_mesh.top_radius = 0.075
+	pole_mesh.bottom_radius = 0.14
+	pole_mesh.height = 8.4
+	var pole_material := StandardMaterial3D.new()
+	pole_material.albedo_color = Color("#59636A")
+	pole_material.metallic = 0.72
+	pole_material.roughness = 0.42
+	var poles := _make_world_multimesh("MotorwayLightPoles", pole_mesh, pole_positions, pole_material)
+	poles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	var arm_mesh := BoxMesh.new()
+	arm_mesh.size = Vector3(2.8, 0.13, 0.13)
+	var arm_material := StandardMaterial3D.new()
+	arm_material.albedo_color = Color("#69747A")
+	arm_material.metallic = 0.68
+	arm_material.roughness = 0.44
+	var arms := _make_world_multimesh("MotorwayLightArms", arm_mesh, arm_positions, arm_material)
+	var head_mesh := BoxMesh.new()
+	head_mesh.size = Vector3(0.95, 0.18, 0.52)
+	var head_material := StandardMaterial3D.new()
+	head_material.albedo_color = Color("#343D42")
+	head_material.metallic = 0.38
+	head_material.roughness = 0.5
+	var heads := _make_world_multimesh("MotorwayLuminaireHousings", head_mesh, head_positions, head_material)
+	var emitter_mesh := BoxMesh.new()
+	emitter_mesh.size = Vector3(0.70, 0.035, 0.34)
+	var emitter_material := StandardMaterial3D.new()
+	emitter_material.albedo_color = Color("#F7E9B7")
+	emitter_material.emission_enabled = true
+	emitter_material.emission = Color("#F4DFA2")
+	emitter_material.emission_energy_multiplier = 0.35
+	var emitters := _make_world_multimesh("MotorwayLuminairePanels", emitter_mesh, emitter_positions, emitter_material)
+
+	var lighting_root := Node3D.new()
+	lighting_root.name = "HighwayLighting"
+	add_child(lighting_root)
+	for component in [poles, arms, heads, emitters]:
+		lighting_root.add_child(component)
+
+
+func _make_world_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], material: Material) -> MultiMeshInstance3D:
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = mesh
+	multimesh.instance_count = positions.size()
+	for index in range(positions.size()):
+		multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, positions[index]))
+	var instance := MultiMeshInstance3D.new()
+	instance.name = node_name
+	instance.multimesh = multimesh
+	instance.material_override = material
+	return instance
+
+
+func _add_highway_lane_dashes() -> void:
+	var dash_mesh := BoxMesh.new()
+	dash_mesh.size = Vector3(0.09, 0.012, 3.0)
+	var lane_positions: Array[Vector3] = []
+	for lane_x in [
+		HIGHWAY_CENTER_X - 6.6, HIGHWAY_CENTER_X - 3.3,
+		HIGHWAY_CENTER_X + 3.3, HIGHWAY_CENTER_X + 6.6
+	]:
+		for segment in range(-55, 56):
+			lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = dash_mesh
+	multimesh.instance_count = lane_positions.size()
+	for index in range(lane_positions.size()):
+		multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, lane_positions[index]))
+	var markings := MultiMeshInstance3D.new()
+	markings.name = "HighwayLaneDashes"
+	markings.multimesh = multimesh
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color("#E9ECE8")
+	markings.material_override = material
+	add_child(markings)
+
+
+func _add_sidewalk_segment(center_z: float, length_z: float) -> void:
+	var sidewalk := MeshInstance3D.new()
+	sidewalk.name = "RoadsideSidewalk"
+	var sidewalk_mesh := BoxMesh.new()
+	sidewalk_mesh.size = Vector3(1.05, 0.12, length_z)
+	sidewalk.mesh = sidewalk_mesh
+	sidewalk.position = Vector3(-42.92, 0.075, center_z)
+	var concrete := StandardMaterial3D.new()
+	concrete.albedo_color = Color(0.57, 0.59, 0.56)
+	concrete.roughness = 1.0
+	sidewalk.material_override = concrete
+	add_child(sidewalk)
+
+	var curb := MeshInstance3D.new()
+	curb.name = "RoadsideCurb"
+	var curb_mesh := BoxMesh.new()
+	curb_mesh.size = Vector3(0.18, 0.20, length_z)
+	curb.mesh = curb_mesh
+	curb.position = Vector3(-43.53, 0.12, center_z)
+	var curb_material := StandardMaterial3D.new()
+	curb_material.albedo_color = Color(0.73, 0.75, 0.70)
+	curb_material.roughness = 0.95
+	curb.material_override = curb_material
+	add_child(curb)
+
+func _add_road_marking(position: Vector3, size: Vector3, color: Color) -> void:
+	var marking := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	marking.mesh = mesh
+	marking.position = position
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	marking.material_override = material
+	add_child(marking)
+
+func _build_tree_belts() -> void:
+	var positions: Array[Vector3] = []
+	for x in [-84.0, -76.0, -62.0, -48.0, -30.0, -14.0, 8.0, 26.0, 42.0]:
+		positions.append(Vector3(x, _terrain_height(x, -68.0), -68.0 + sin(x * 0.1) * 4.0))
+		positions.append(Vector3(x + 3.0, _terrain_height(x, 68.0), 68.0 + cos(x * 0.12) * 4.0))
+	for z in [-78.0, -56.0, -34.0, 28.0, 52.0, 76.0]:
+		positions.append(Vector3(-78.0 + sin(z * 0.7) * 3.0, _terrain_height(-78.0, z), z))
+		positions.append(Vector3(43.0 + sin(z * 0.08) * 2.0, _terrain_height(43.0, z), z))
+	# Extra irregular gum trees create a broken, natural edge rather than a fence-like row.
+	for index in range(20):
+		var x := -74.0 + fposmod(float(index) * 17.3, 116.0)
+		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
+		if absf(x) < 26.0 and absf(z) < 26.0:
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0 or _is_city_road_footprint(x, z):
+			continue
+		positions.append(Vector3(x, _terrain_height(x, z), z))
+
+	var root_mesh := CylinderMesh.new()
+	root_mesh.top_radius = 0.24
+	root_mesh.bottom_radius = 0.34
+	root_mesh.height = 0.16
+	var bark_material := StandardMaterial3D.new()
+	bark_material.vertex_color_use_as_albedo = true
+	bark_material.albedo_texture = _create_bark_texture()
+	bark_material.roughness = 1.0
+	root_mesh.material = bark_material
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.13
+	trunk_mesh.bottom_radius = 0.25
+	trunk_mesh.height = 2.8
+	trunk_mesh.radial_segments = 8
+	trunk_mesh.material = bark_material
+	var canopy_mesh := _create_clustered_canopy_mesh()
+	var canopy_material := StandardMaterial3D.new()
+	canopy_material.vertex_color_use_as_albedo = true
+	canopy_material.albedo_texture = _create_foliage_texture()
+	canopy_material.roughness = 0.96
+	var tree_shadows := _create_tree_shadow_multimesh(positions)
+	add_child(tree_shadows)
+	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
+	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.40)
+	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.85)
+	crowns.material_override = canopy_material
+	add_child(roots)
+	add_child(trunks)
+	add_child(crowns)
+
+func _create_clustered_canopy_mesh() -> ArrayMesh:
+	# Low-poly ellipsoids intersect deliberately to form a single coherent
+	# broadleaf crown. The mesh is authored once and instanced across the belt.
+	var lobe := SphereMesh.new()
+	lobe.radius = 1.0
+	lobe.height = 1.9
+	lobe.radial_segments = 16
+	lobe.rings = 10
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lobes := [
+		[Vector3(0.0, 0.0, 0.0), Vector3(1.00, 0.82, 0.92)],
+		[Vector3(-0.68, -0.12, 0.02), Vector3(0.72, 0.70, 0.78)],
+		[Vector3(0.66, -0.08, 0.08), Vector3(0.76, 0.72, 0.82)],
+		[Vector3(0.02, 0.12, -0.66), Vector3(0.78, 0.74, 0.70)],
+		[Vector3(-0.04, 0.18, 0.64), Vector3(0.76, 0.76, 0.72)],
+		[Vector3(0.02, 0.68, -0.02), Vector3(0.66, 0.72, 0.66)]
+	]
+	for lobe_data in lobes:
+		var offset: Vector3 = lobe_data[0]
+		var scale: Vector3 = lobe_data[1]
+		var transform := Transform3D(Basis.IDENTITY.scaled(scale), offset)
+		surface.append_from(lobe, 0, transform)
+	return surface.commit()
+
+
+func _tree_instance_transform(index: int, position: Vector3, height_offset: float) -> Transform3D:
+	# Gentle individual lean, variable trunk/crown proportions and asymmetry.
+	var scale := 0.88 + float((index * 7) % 7) * 0.095
+	var width_variation := 0.82 + float((index * 3) % 6) * 0.085
+	var height_variation := 0.82 + float((index * 7) % 6) * 0.105
+	var depth_variation := 0.78 + float((index * 11) % 6) * 0.10
+	var yaw := float((index * 37) % 360) * PI / 180.0
+	var lean := deg_to_rad(-9.0 + float((index * 13) % 19))
+	var basis := Basis(Vector3.UP, yaw) * Basis(Vector3(0.0, 0.0, 1.0), lean)
+	basis = basis.scaled(Vector3(scale * width_variation, scale * height_variation, scale * depth_variation))
+	var origin := position + Vector3(0.0, height_offset * scale * height_variation, 0.0)
+	return Transform3D(basis, origin)
+
+func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vector3], height_offset: float) -> MultiMeshInstance3D:
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = mesh
+	multimesh.use_colors = true
+	multimesh.instance_count = positions.size()
+	var trunk_palette: Array[Color] = [
+		Color(0.43, 0.27, 0.16), Color(0.52, 0.34, 0.21),
+		Color(0.36, 0.23, 0.15), Color(0.58, 0.39, 0.25)
+	]
+	var root_palette: Array[Color] = [
+		Color(0.42, 0.29, 0.19), Color(0.50, 0.35, 0.23),
+		Color(0.36, 0.25, 0.17), Color(0.55, 0.39, 0.26)
+	]
+	var foliage_palette: Array[Color] = [
+		Color(0.39, 0.59, 0.43), Color(0.47, 0.64, 0.49),
+		Color(0.55, 0.66, 0.48), Color(0.31, 0.52, 0.43),
+		Color(0.62, 0.70, 0.54), Color(0.42, 0.57, 0.45)
+	]
+	for index in range(positions.size()):
+		multimesh.set_instance_transform(index, _tree_instance_transform(index, positions[index], height_offset))
+		if node_name == "TreeCanopies":
+			multimesh.set_instance_color(index, foliage_palette[index % foliage_palette.size()])
+		elif node_name == "TreeTrunks":
+			multimesh.set_instance_color(index, trunk_palette[index % trunk_palette.size()])
+		else:
+			multimesh.set_instance_color(index, root_palette[index % root_palette.size()])
+	var instance := MultiMeshInstance3D.new()
+	instance.name = node_name
+	instance.multimesh = multimesh
+	# The tree belt already has one batched, soft contact-shadow pass. Rendering
+	# every root/trunk/canopy into the directional shadow map multiplies shadow
+	# caster work without a visible quality gain at the camera's normal distance.
+	# Keep the detailed geometry and its baked-style contact shadows; skip only
+	# the three redundant real-time shadow-caster batches.
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	instance.visibility_range_end = TREE_BELT_DETAIL_END
+	instance.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
+	instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	return instance
+
+
+func _create_tree_shadow_multimesh(positions: Array[Vector3]) -> MultiMeshInstance3D:
+	# One batched radial alpha mesh gives each tree a soft, stable contact shadow.
+	# It is deliberately unlit and does not cast shadows, so the mobile cost is one draw.
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var p := Vector2((float(x) + 0.5) / 63.0 * 2.0 - 1.0, (float(y) + 0.5) / 63.0 * 2.0 - 1.0)
+			var radius := p.length()
+			var alpha := 0.0
+			if radius < 1.0:
+				alpha = pow(1.0 - radius * radius, 2.2) * 0.62
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	var shadow_texture := ImageTexture.create_from_image(image)
+	var shadow_material := StandardMaterial3D.new()
+	shadow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shadow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shadow_material.albedo_color = Color(0.13, 0.105, 0.075, 0.34)
+	shadow_material.albedo_texture = shadow_texture
+	shadow_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shadow_material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	shadow_material.no_depth_test = false
+	shadow_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	var shadow_mesh := PlaneMesh.new()
+	shadow_mesh.size = Vector2(3.8, 2.8)
+	shadow_mesh.material = shadow_material
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = shadow_mesh
+	multimesh.instance_count = positions.size()
+	for index in range(positions.size()):
+		var scale := 0.82 + float((index * 7) % 5) * 0.09
+		var basis := Basis.IDENTITY.scaled(Vector3(scale, scale, scale))
+		multimesh.set_instance_transform(index, Transform3D(basis, positions[index] + Vector3(0.0, 0.018, 0.0)))
+	var shadows := MultiMeshInstance3D.new()
+	shadows.name = "TreeContactShadows"
+	shadows.multimesh = multimesh
+	shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shadows.visibility_range_end = TREE_BELT_DETAIL_END
+	shadows.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
+	shadows.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	return shadows
+
+
+func _create_bark_texture() -> Texture2D:
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var grain := fposmod(sin(float(x) * 12.9898 + float(y) * 78.233) * 43758.5453, 1.0)
+			var ridge := 0.5 + 0.5 * sin(float(x) * 0.82 + sin(float(y) * 0.19) * 1.4)
+			var shade := clampf(0.70 + ridge * 0.20 + grain * 0.10, 0.0, 1.0)
+			image.set_pixel(x, y, Color(shade, shade, shade, 1.0))
+	return ImageTexture.create_from_image(image)
+
+
+func _create_foliage_texture() -> Texture2D:
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var broad := sin(float(x) * 0.31 + float(y) * 0.17) * cos(float(y) * 0.27 - float(x) * 0.13)
+			var fine := fposmod(sin(float(x) * 91.7 + float(y) * 37.3) * 19341.7, 1.0)
+			var shade := clampf(0.76 + broad * 0.12 + fine * 0.12, 0.0, 1.0)
+			image.set_pixel(x, y, Color(shade, shade, shade, 1.0))
+	return ImageTexture.create_from_image(image)
+
+
+# Procedural textures are generated locally at startup: no CDN, external asset or runtime download.
+func _create_grass_texture() -> Texture2D:
+	# Subtle green/olive mottling and sparse dry-grass flecks modulate the
+	# vertex palette. This is a small local tile, not a flat green overlay.
+	const TEXTURE_SIZE := 128
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * cos(angle_y * 2.0 - sin(angle_x * 3.0))
+			var fine := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
+			var speckle := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
+			var value := clampf(0.66 + broad * 0.10 + fine * 0.055, 0.42, 0.82)
+			var green := clampf(value * 1.16 + 0.035, 0.0, 1.0)
+			var blue := clampf(value * 0.72, 0.0, 1.0)
+			var texel := Color(value * 0.88, green, blue, 1.0)
+			if speckle > 0.975:
+				texel = texel.lerp(Color("#B0A16A"), 0.18)
+			image.set_pixel(x, y, texel)
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
+
+func _create_natural_ground_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_back;
+uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
+uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float value_noise(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = hash21(cell);
+	float b = hash21(cell + vec2(1.0, 0.0));
+	float c = hash21(cell + vec2(0.0, 1.0));
+	float d = hash21(cell + vec2(1.0, 1.0));
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+float meadow_fbm(vec2 p) {
+	float sum = 0.0;
+	float weight = 0.5;
+	for (int octave = 0; octave < 3; octave++) {
+		sum += value_noise(p) * weight;
+		p = p * 2.03 + vec2(17.1, 9.2);
+		weight *= 0.5;
+	}
+	return sum;
+}
+varying vec3 world_position;
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	float coastline = 51.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
+	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
+	vec2 ground_uv = UV * 0.62;
+	float broad = meadow_fbm(world_position.xz * 0.055);
+	float patch = meadow_fbm(world_position.xz * 0.24 + vec2(13.0, 7.0));
+	float fine = value_noise(world_position.xz * 1.75);
+	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
+	vec3 meadow = sampled_grass * COLOR.rgb * mix(0.70, 1.12, broad);
+	float dry_patch = smoothstep(0.67, 0.88, patch + fine * 0.12);
+	meadow = mix(meadow, vec3(0.19, 0.16, 0.095), dry_patch * 0.18);
+	float sunlit_tufts = smoothstep(0.72, 0.94, fine) * 0.10;
+	meadow += vec3(0.10, 0.12, 0.045) * sunlit_tufts;
+	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
+	ALBEDO = mix(meadow, sand, sand_mask);
+	ROUGHNESS = 1.0;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("grass_texture", _create_grass_texture())
+	material.set_shader_parameter("sand_texture", _create_sand_texture())
+	return material
+
+
+func _create_sand_texture() -> Texture2D:
+	const TEXTURE_SIZE := 256
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			# Periodic multi-scale grain keeps the fallback seamless at tile edges.
+			var dune := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * 0.5 + cos(angle_y * 2.0 - sin(angle_x * 3.0)) * 0.5
+			var grain := sin(angle_x * 31.0 + angle_y * 23.0) * 0.5 + cos(angle_x * 43.0 - angle_y * 37.0) * 0.5
+			var fine := sin(angle_x * 79.0 + cos(angle_y * 67.0)) * cos(angle_y * 71.0 - sin(angle_x * 83.0))
+			var value := clampf(0.68 + dune * 0.055 + grain * 0.035 + fine * 0.018, 0.54, 0.82)
+			image.set_pixel(x, y, Color(value * 1.0, value * 0.91, value * 0.73, 1.0))
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
+func _request_ground_texture(slot: String, url: String, material: ShaderMaterial) -> void:
+	var request := HTTPRequest.new()
+	request.name = "GroundTextureRequest_" + slot
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(_on_ground_texture_received.bind(material, slot, request))
+	var error := request.request(url)
+	if error != OK:
+		request.queue_free()
+		push_warning("[WorldPresentation] CDN texture request could not start for " + slot)
+
+
+func _on_ground_texture_received(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, material: ShaderMaterial, slot: String, request: HTTPRequest) -> void:
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+		var image := Image.new()
+		var error := image.load_png_from_buffer(body)
+		if error != OK:
+			error = image.load_jpg_from_buffer(body)
+		if error == OK:
+			image.generate_mipmaps()
+			material.set_shader_parameter(slot + "_texture", ImageTexture.create_from_image(image))
+		else:
+			push_warning("[WorldPresentation] Invalid CDN image for " + slot + "; procedural fallback retained")
+	else:
+		push_warning("[WorldPresentation] CDN unavailable for " + slot + "; procedural fallback retained")
+	request.queue_free()
+
+
+func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, connector_material: StandardMaterial3D) -> void:
+	var request := HTTPRequest.new()
+	request.name = "SharedAsphaltTextureRequest"
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+			var image := Image.new()
 			var image_error := image.load_png_from_buffer(body)
 			if image_error != OK:
 				image_error = image.load_jpg_from_buffer(body)
