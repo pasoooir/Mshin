@@ -14,6 +14,8 @@ var type: int = Type.IDLE
 var item_id: String = ""
 var quantity: int = 0
 var missing_text: String = ""
+var priority: int = 0
+var detail: String = ""
 
 func _init(p_building_id: String = "", p_type: int = Type.IDLE, p_item_id: String = "", p_quantity: int = 0, p_missing_text: String = "") -> void:
 	building_id = p_building_id
