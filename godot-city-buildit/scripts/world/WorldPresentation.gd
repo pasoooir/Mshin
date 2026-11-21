@@ -3,6 +3,7 @@ extends Node3D
 var _road_system_cache: Node
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
+const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 
 const TERRAIN_HALF_DEPTH := 90.0
 const TERRAIN_LEFT := -120.0
@@ -18,6 +19,8 @@ const HIGHWAY_LENGTH := 700.0
 const HIGHWAY_LANE_COUNT := 6
 const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
+const MEADOW_SHEEP_COUNT := 12
+const MEADOW_CATTLE_COUNT := 3
 const ENVIRONMENT_SMALL_DETAIL_END := 190.0
 const ENVIRONMENT_SMALL_DETAIL_MARGIN := 18.0
 const TREE_BELT_DETAIL_END := 280.0
