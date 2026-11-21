@@ -115,6 +115,21 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Mountain ridge silhouette must contain deterministic lateral erosion and irregular rock shoulders")
 		get_tree().quit(1)
 		return
+
+	# All four tunnel mouths must sit beneath a continuous mountain crown.
+	# The portal cap tops out at 17.5 m; 58 m gives at least 40.5 m of rock above it.
+	for ridge_side in [0, 1]:
+		for portal_depth in [0.0, 1.0]:
+			for portal_x in [DistantMountainBackdropScript.TUNNEL_CENTER_X - 21.0, DistantMountainBackdropScript.TUNNEL_CENTER_X, DistantMountainBackdropScript.TUNNEL_CENTER_X + 21.0]:
+				var crown_height := backdrop._ridge_height(portal_x, portal_depth, ridge_side)
+				if crown_height < DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT:
+					push_error("[VisualPresentationSmoke] Mountain crown must cover every north/south inner/outer tunnel opening; got %.2f m at side %d, x %.1f, depth %.1f" % [crown_height, ridge_side, portal_x, portal_depth])
+					get_tree().quit(1)
+					return
+	if DistantMountainBackdropScript.TUNNEL_CROWN_MIN_HEIGHT - (DistantMountainBackdropScript.TUNNEL_WALL_HEIGHT + 2.5) < 25.0:
+		push_error("[VisualPresentationSmoke] Mountain crown must rise at least 25 m above the tunnel crown cap")
+		get_tree().quit(1)
+		return
 	if backdrop.get_node_or_null("NorthHighwayTunnel") == null or backdrop.get_node_or_null("SouthHighwayTunnel") == null:
 		push_error("[VisualPresentationSmoke] The regional highway must pass through north and south mountain tunnels")
 		get_tree().quit(1)
