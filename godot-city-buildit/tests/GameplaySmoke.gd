@@ -4859,8 +4859,8 @@ func _run_gameplay_test() -> void:
 		get_viewport().push_input(metal_touch_down, true)
 		await get_tree().process_frame
 		_check(production_hud._production_touch_drag_active and factory_component.get_slot(0).is_empty(), "Touch-down must capture the product finger without prematurely starting production.")
-		var queue_target := production_hud.production_panel.find_child("QueueSlot0", true, false) as Control
-		_check(is_instance_valid(queue_target), "Mobile drag test must find the visible EMPTY queue slot.")
+		var queue_target := production_hud.production_panel.find_child("ProductionOrdersEmptyState", true, false) as Control
+		_check(is_instance_valid(queue_target), "Mobile drag test must find the existing friendly empty-state drop target.")
 		if is_instance_valid(queue_target):
 			var queue_position: Vector2 = queue_target.get_global_transform_with_canvas() * (queue_target.size * 0.5)
 			var metal_touch_drag := InputEventScreenDrag.new()
@@ -4875,7 +4875,7 @@ func _run_gameplay_test() -> void:
 			metal_touch_up.position = queue_position
 			get_viewport().push_input(metal_touch_up, true)
 			await get_tree().process_frame
-		_check(not factory_component.get_slot(0).is_empty(), "Dragging a product to the visible EMPTY queue slot must start production.")
+		_check(not factory_component.get_slot(0).is_empty(), "Dragging a product to the friendly empty-state drop target must start production.")
 		_check(factory_component.get_slot(1).is_empty(), "One mobile product drag must enqueue exactly one order.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
