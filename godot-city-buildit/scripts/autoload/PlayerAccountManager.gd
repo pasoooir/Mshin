@@ -239,8 +239,9 @@ func fetch_remote_profile() -> bool:
 		if should_prefer_local_profile_state(local_state, game_state):
 			# Preserve a newer offline snapshot instead of replacing it with an
 			# older cloud revision; sync it before exposing the restored session.
+			var local_snapshot: Dictionary = local_state
 			_remote_profile_has_game_state = true
-			if not await save_profile_now(local_state):
+			if not await save_profile_now(local_snapshot):
 				push_error("Could not sync the newer player-scoped local save before profile restore.")
 				return false
 		else:
@@ -251,8 +252,9 @@ func fetch_remote_profile() -> bool:
 	elif local_state is Dictionary:
 		# The cloud profile may have been initialized before a previous offline
 		# session could upload its first save. Keep and sync that local snapshot.
+		var local_snapshot: Dictionary = local_state
 		_remote_profile_has_game_state = true
-		if not await save_profile_now(local_state):
+		if not await save_profile_now(local_snapshot):
 			push_error("Could not sync the existing player-scoped local save to its new profile.")
 			return false
 	elif player_id == 100001 and OS.get_environment("MSHIN_MIGRATE_LEGACY_SAVE") == "1":
