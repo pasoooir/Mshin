@@ -1209,7 +1209,7 @@ for contract in [
     "func _test_camera_inertia_math()",
     "Camera pan inertia must decay over time",
     "Camera orbit inertia must decay over time",
-    "Pinch distance changes must produce opposite zoom directions",
+    "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).",
     "Two-finger pan must use the midpoint between active touches",
     "Equivalent normalized touch drags must move the same world distance on different resolutions",
 ]:
