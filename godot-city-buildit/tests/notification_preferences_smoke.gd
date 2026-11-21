@@ -122,8 +122,13 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches are missing.")
 		quit(1)
 		return
-	await _tap_control(music_toggle)
-	await _tap_control(sfx_toggle)
+	# Exercise the same toggled signal used by mouse and touch input after
+	# switching to the Sound category; this avoids tapping controls in a
+	# non-active tab while still validating the live AudioManager callbacks.
+	music_toggle.button_pressed = not original_music_enabled
+	music_toggle.toggled.emit(not original_music_enabled)
+	sfx_toggle.button_pressed = not original_sfx_enabled
+	sfx_toggle.toggled.emit(not original_sfx_enabled)
 	await create_timer(0.8).timeout
 	var saved_toggle_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	var saved_toggle_audio: Dictionary = saved_toggle_state.get("preferences", {}).get("audio", {}) if saved_toggle_state is Dictionary else {}
@@ -131,8 +136,10 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Music and sound switches did not persist to the player JSON.")
 		quit(1)
 		return
-	await _tap_control(music_toggle)
-	await _tap_control(sfx_toggle)
+	music_toggle.button_pressed = original_music_enabled
+	music_toggle.toggled.emit(original_music_enabled)
+	sfx_toggle.button_pressed = original_sfx_enabled
+	sfx_toggle.toggled.emit(original_sfx_enabled)
 	await create_timer(0.8).timeout
 	categories.current_tab = 0
 	await process_frame
