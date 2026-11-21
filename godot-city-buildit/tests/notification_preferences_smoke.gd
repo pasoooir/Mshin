@@ -85,6 +85,12 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
 		quit(1)
 		return
+	var gmail_button_content := google_action.get_node_or_null("GmailButtonContent") as Control
+	var gmail_icon := google_action.find_child("GmailIcon", true, false) as TextureRect
+	if gmail_button_content == null or not gmail_button_content.visible or gmail_icon == null or gmail_icon.texture == null or gmail_icon.custom_minimum_size.x < 40.0:
+		push_error("[NotificationPreferencesSmoke] Guest sign-in button must show a large, visible Gmail icon beside the Google action.")
+		quit(1)
+		return
 	await _tap_control(google_action)
 	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
@@ -465,8 +471,10 @@ func _run() -> void:
 	await process_frame
 	var avatar_frame := hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
 	var avatar_texture := hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
-	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null:
-		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the circular Gmail profile avatar in its header.")
+	var settings_heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
+	var settings_title := hud.find_child("SettingsTitle", true, false) as Label
+	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null or settings_heading == null or settings_title == null or avatar_frame.get_parent() != settings_heading or avatar_frame.get_index() >= settings_title.get_index():
+		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the large circular Gmail avatar at the upper-left of its header.")
 		quit(1)
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
