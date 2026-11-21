@@ -669,7 +669,19 @@ func _build_tree_belts() -> void:
 		var z := -58.0 + fposmod(float(index) * 29.1, 116.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
-		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - 14.0 or _is_city_road_footprint(x, z):
+		if absf(x - HIGHWAY_CENTER_X) < 15.0 or x > _coastline(z) - BEACH_WIDTH - 8.0 or _is_city_road_footprint(x, z):
+			continue
+		positions.append(Vector3(x, _terrain_height(x, z), z))
+	# A broader landscaped urban greenbelt replaces the old sparse rural fringe.
+	# Keep all foliage outside owned plots and away from roads and the beach.
+	for index in range(54):
+		var x := -116.0 + fposmod(float(index) * 31.73, 188.0)
+		var z := -86.0 + fposmod(float(index) * 47.17, 172.0)
+		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - BEACH_WIDTH - 8.0:
+			continue
+		if _is_city_road_footprint(x, z):
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 
@@ -1062,7 +1074,7 @@ func _build_grass_detail() -> void:
 	blade_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var positions: Array[Vector3] = []
 	for index in range(2400):
-		var x := -88.0 + fposmod(float(index) * 19.37, 132.0)
+		var x := -118.0 + fposmod(float(index) * 19.37, 194.0)
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
@@ -1415,7 +1427,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	shrub_batch.mesh = shrub_mesh
 	var shrub_positions: Array[Vector3] = []
 	for index in range(260):
-		var x := -87.0 + fposmod(float(index) * 23.71, 130.0)
+		var x := -118.0 + fposmod(float(index) * 23.71, 190.0)
 		var z := -86.0 + fposmod(float(index) * 37.19, 172.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
@@ -1469,7 +1481,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	stone_batch.mesh = stone_mesh
 	var stone_positions: Array[Vector3] = []
 	for index in range(220):
-		var x := -88.0 + fposmod(float(index) * 29.31, 134.0)
+		var x := -118.0 + fposmod(float(index) * 29.31, 190.0)
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
 		if absf(x) < 25.0 and absf(z) < 25.0:
 			continue
