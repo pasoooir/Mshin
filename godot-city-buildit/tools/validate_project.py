@@ -265,7 +265,7 @@ for contract in [
     "func _create_coastal_water_mesh(",
     "var near_x0 := coast_x0 + shore_offset",
     "var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge",
-    "var beach_fade := smoothstep(0.0, 14.0, _coastline(z) - x)",
+    "var beach_fade := smoothstep(0.0, 30.0, _coastline(z) - x)",
     "_is_city_road_footprint(x, z)",
 ]:
     if contract not in world_presentation_source:
@@ -886,7 +886,7 @@ for visual_contract in [
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
-    "const TERRAIN_DIVISIONS := 96",
+    "const TERRAIN_DIVISIONS := 128",
     "func _add_highway_lane_dashes(",
     "HighwayConcreteMedian",
     "HighwayGuardrails",
@@ -895,8 +895,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#244D27\")",
-    "Color(\"#46763A\")",
+    "Color(\"#245A35\")",
+    "Color(\"#43834A\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
