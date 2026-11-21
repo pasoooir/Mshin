@@ -80,6 +80,13 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Tapping the main Settings gear did not open the Settings panel.")
 		quit(1)
 		return
+	var categories := hud.find_child("SettingsCategories", true, false) as TabContainer
+	if categories == null or categories.get_tab_count() != 4:
+		push_error("[NotificationPreferencesSmoke] Settings category navigation is missing.")
+		quit(1)
+		return
+	categories.current_tab = 2
+	await process_frame
 	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
 	if google_action == null:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
@@ -105,6 +112,8 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] A cancelled Google prompt must release the sign-in button and clear its one-time pending nonce.")
 		quit(1)
 		return
+	categories.current_tab = 1
+	await process_frame
 	var original_music_enabled := bool(audio_manager.music_enabled)
 	var original_sfx_enabled := bool(audio_manager.sfx_enabled)
 	var music_toggle := hud.find_child("MusicToggle", true, false) as Button
@@ -125,6 +134,8 @@ func _run() -> void:
 	await _tap_control(music_toggle)
 	await _tap_control(sfx_toggle)
 	await create_timer(0.8).timeout
+	categories.current_tab = 0
+	await process_frame
 	var notification_button := hud.find_child("SettingsNotificationsButton", true, false) as Button
 	if notification_button == null:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
@@ -194,6 +205,8 @@ func _run() -> void:
 		return
 
 	# The About form exposes real graphics and audio controls, not decorative placeholders.
+	categories.current_tab = 3
+	await process_frame
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
 	if about_button == null:
 		push_error("[NotificationPreferencesSmoke] About action button is missing.")
