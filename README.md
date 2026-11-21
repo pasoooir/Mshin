@@ -1834,3 +1834,17 @@ The camera change must be assessed together with the city renderer. The followin
 - [ ] Inspect close-up stone shading and shadow stability on a physical Android device; collect frame-time, GPU/memory and thermal measurements before claiming device-performance improvements.
 
 **Rendering budget:** the rock material is one shared ShaderMaterial on one existing MultiMesh draw. Fracture and mineral patterns are evaluated procedurally in world space. Only the already range-culled near rock batch casts shadows; the four mountain ridge LOD meshes and distant environment props remain non-shadow-casting.
+
+
+## Pacific coastal city foundation — Los Angeles-inspired rebuild — 2026-11-22
+
+- [x] Move the Pacific shoreline beyond the complete starter build grid and widen the sandy beach to a 36 m coastal band.
+- [x] Extend the offshore ocean mesh and retain a continuous shallow turquoise-water transition.
+- [x] Add a curved timber coastal promenade as one mesh and 18 palm trees using batched trunk/crown MultiMeshes.
+- [x] Replace the starter grassland palette with a lush Pacific-green palette and expand the inland tree belt.
+- [x] Remove rural livestock, dirt-track, creek and fieldstone presentation from the active starter-scene composition; keep the underlying systems/scripts available for later regional use.
+- [x] Reframe the entry camera to show the open city, green edge and Pacific beach together.
+- [x] Add the detailed direction and acceptance criteria in `godot-city-buildit/docs/PACIFIC_COASTAL_CITY_FOUNDATION.md`.
+- [ ] Pass exact-branch Godot 4.3 import/parse, visual smoke, GameplaySmoke, Android APK and desktop/mobile Chromium CI.
+- [ ] Review actual rendered captures for coastline/beach proportions and first-entry composition; perform physical Android acceptance before claiming device visual quality.
+
