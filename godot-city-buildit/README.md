@@ -187,3 +187,17 @@ Popup/detail-window typography now has a 16 px minimum after UI scaling, rather 
 - [x] Godot Validation, GameplaySmoke and Android Debug APK export passed on main: [run 43848134141](https://github.com/pasoooir/Mshin/actions/runs/43848134141).
 - [x] Playable Web desktop/mobile Chromium verification and GitHub Pages deployment passed on main: [run 43848134338](https://github.com/pasoooir/Mshin/actions/runs/43848134338).
 - [ ] Physical Android landscape testing remains outstanding; automated touch simulation and Chromium mobile viewport do not replace testing on the phone.
+
+
+## Pacific coastal city foundation — Los Angeles-inspired rebuild — 2026-11-22
+
+- [x] Reposition the starter Pacific shoreline beyond the buildable city and widen the beach to 36 m.
+- [x] Extend offshore water to the horizon-facing side of the map and retain the shallow turquoise shoreline band.
+- [x] Add a curved single-mesh timber promenade and 18 palms in two mobile-friendly MultiMeshes.
+- [x] Expand the lush inland greenbelt and use a Southern California coastal-green palette.
+- [x] Remove rural livestock, dirt tracks, creek and fieldstone dressing from the active starter scene.
+- [x] Set the initial camera to reveal the empty city grid, green inland edge and wide beach together.
+- [x] Add `docs/PACIFIC_COASTAL_CITY_FOUNDATION.md` with the design scope and follow-up slices.
+- [ ] Exact-branch Godot import/parse, visual/gameplay smoke, Android export and web deployment checks.
+- [ ] Inspect actual captures and test the opening composition on a physical Android device.
+
