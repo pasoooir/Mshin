@@ -138,7 +138,7 @@ test("completes Google OIDC nonce, signature, identity allocation and issued-ses
   const jwk = { ...publicKey.export({ format: "jwk" }), kid: "mshin-ci-google-key", alg: "RS256", use: "sig" };
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async url => {
-    assert.match(String(url), /googleapis\\.com\\/oauth2\\/v3\\/certs/);
+    assert.match(String(url), /googleapis\.com\/oauth2\/v3\/certs/);
     return Response.json({ keys: [jwk] });
   };
 
