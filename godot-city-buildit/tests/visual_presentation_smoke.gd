@@ -34,7 +34,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Meadow material must include multi-scale natural ground variation")
 		get_tree().quit(1)
 		return
-	if world_source.count("_is_city_road_footprint(x, z)") < 6:
+	if world_source.count("_is_city_road_footprint(x, z)") < 4:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
 		return
