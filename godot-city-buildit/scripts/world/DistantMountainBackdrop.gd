@@ -7,10 +7,10 @@ const LAND_SIZE := Vector2(1000.0, 1000.0)
 const RIDGE_INNER_RADIUS := 68.0
 const RIDGE_OUTER_RADIUS := 205.0
 const RIDGE_HALF_LENGTH := 470.0
-const RIDGE_SEGMENTS := 96
-const RIDGE_DEPTH_STEPS := 20
-const RIDGE_FAR_SEGMENTS := 32
-const RIDGE_FAR_DEPTH_STEPS := 10
+const RIDGE_SEGMENTS := 160
+const RIDGE_DEPTH_STEPS := 32
+const RIDGE_FAR_SEGMENTS := 56
+const RIDGE_FAR_DEPTH_STEPS := 16
 const RIDGE_LOD_DISTANCE := 220.0
 const RIDGE_LOD_OVERLAP := 20.0
 const RIDGE_LOD_FADE_MARGIN := 16.0
@@ -169,20 +169,21 @@ func _ridge_radial_offset(along: float, depth: float, side: int) -> float:
 	# shallow gullies and exposed rock ribs. The same deterministic field is
 	# sampled by both LOD meshes, so the silhouette does not morph at the switch.
 	var slope_mask := pow(maxf(0.0, sin(PI * depth)), 1.15)
-	var broad_shoulder := sin(along * 0.038 + float(side) * 2.1) * 8.0
-	var broken_spur := sin(along * 0.091 - depth * 8.0 + float(side) * 1.37) * 3.8
-	var erosion_cut := cos(along * 0.153 + depth * 17.0 - float(side)) * 1.65
-	return (broad_shoulder + broken_spur + erosion_cut) * slope_mask
+	var broad_shoulder := sin(along * 0.021 + float(side) * 2.1) * 13.0
+	var broken_spur := sin(along * 0.057 - depth * 7.0 + float(side) * 1.37) * 6.2
+	var erosion_cut := cos(along * 0.119 + depth * 13.0 - float(side)) * 2.8
+	var ravine := pow(maxf(0.0, cos(along * 0.031 + float(side) * 1.9)), 12.0) * 7.0
+	return (broad_shoulder + broken_spur + erosion_cut - ravine) * slope_mask
 
 
 func _ridge_height(along: float, depth: float, side: int) -> float:
 	var end_fade := smoothstep(0.0, 1.0, clampf((RIDGE_HALF_LENGTH - absf(along)) / 42.0, 0.0, 1.0))
 	var slope_mask := pow(maxf(0.0, sin(PI * depth)), 0.82)
-	var rolling_peaks := 0.5 + 0.5 * sin(along * 0.031 + float(side) * 1.7) + 0.16 * cos(along * 0.073 - float(side))
-	var sharp_crag := pow(maxf(0.0, sin(along * 0.067 + float(side) * 2.7)), 5.0) * 13.0
-	var broken_faces := sin(along * 0.137 + depth * 19.0 + float(side) * 1.9) * 3.2
-	var cross_gullies := cos(along * 0.047 - depth * 31.0 + float(side) * 0.8) * 2.1
-	var peak_height := 62.0 + rolling_peaks * 46.0 + sharp_crag + broken_faces + cross_gullies
+	var broad_massif := sin(along * 0.014 + float(side) * 1.83) * 0.5 + cos(along * 0.022 - float(side) * 0.91) * 0.32
+	var secondary_ridges := sin(along * 0.039 + float(side) * 2.7) * 0.20 + cos(along * 0.061 - float(side) * 1.3) * 0.12
+	var fractured_peaks := pow(maxf(0.0, sin(along * 0.052 + float(side) * 2.7)), 7.0) * 19.0
+	var eroded_faces := sin(along * 0.113 + depth * 13.0 + float(side) * 1.9) * 4.8 + cos(along * 0.173 - depth * 23.0 + float(side)) * 1.7
+	var peak_height := 76.0 + (broad_massif + secondary_ridges) * 34.0 + fractured_peaks + eroded_faces
 	var natural_ridge_height := maxf(0.0, peak_height * slope_mask * end_fade)
 
 	# North/South ridges only: keep solid mountain mass ABOVE all four tunnel portals.
