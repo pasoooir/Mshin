@@ -76,9 +76,12 @@ func _refresh() -> void:
 func _on_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
 		_action.disabled = true
-		await PlayerAccountManager.logout()
+		_status.text = "Saving your city before sign-out…"
+		var logout_ok: bool = await PlayerAccountManager.logout()
 		_refresh()
 		_action.disabled = false
+		if not logout_ok:
+			_status.text = "Cloud sync failed. You are still signed in; retry when online."
 		return
 	_action.disabled = true
 	var started := PlayerAccountManager.begin_google_sign_in()
