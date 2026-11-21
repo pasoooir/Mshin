@@ -3420,6 +3420,10 @@ func _test_region_city_snapshots() -> void:
 	GameManager.level_changed.emit(GameManager.level)
 
 func _test_achievements() -> void:
+	var scene := get_tree().current_scene
+	var achievement_road_system := scene.get_node_or_null("World/RoadSystem") if scene else null
+	if is_instance_valid(achievement_road_system) and achievement_road_system.has_method("get_player_built_road_count"):
+		_check(int(AchievementManager._collect_metrics().get("roads", -1)) == int(achievement_road_system.get_player_built_road_count()), "Achievement road progress must exclude the free starter Gateway connector.")
 	var previous_buildings: Dictionary = BuildManager.buildings.duplicate()
 	var previous_achievements: Dictionary = AchievementManager.to_save_dict()
 	var previous_level := GameManager.level
