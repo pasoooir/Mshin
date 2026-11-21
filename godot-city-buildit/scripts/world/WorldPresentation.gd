@@ -919,7 +919,7 @@ void fragment() {
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
-	# Two compact value-noise samples keep the material mobile-friendly.
+	// Two compact value-noise samples keep the material mobile-friendly.
 	float broad = value_noise(world_position.xz * 0.055);
 	float fine = value_noise(world_position.xz * 0.95 + vec2(13.0, 7.0));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
