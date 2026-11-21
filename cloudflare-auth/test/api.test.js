@@ -176,7 +176,7 @@ test("first-login eligibility survives an initial profile save before reward cla
   assert.equal(initializedProfile.game_state, null);
   assert.ok(Number.isFinite(Date.parse(initializedProfile.created_at)));
   assert.equal(initializedProfile.updated_at, initializedProfile.created_at, "initial profile timestamps must be consistent");
-  assert.ok(writes.includes("players/100004.json"), "first authenticated profile read must create the private player JSON file");
+  assert.ok(writes.some(batch => batch.includes("players/100004.json")), "first authenticated profile read must create the private player JSON file");
   const created = await call(coordinator, freshId, "/v1/profile", "PUT", {
     expected_revision: 0,
     game_state: { economy: { simoleons: 25000, sim_cash: 25 }, storage: { capacity: 30, items: {} } }
