@@ -259,7 +259,7 @@ build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="
 hud = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 if "const HIGHWAY_LENGTH := 700.0" not in world_presentation_source or "for segment in range(-55, 56):" not in world_presentation_source:
-    errors.append("Regional highway must remain visually continuous across both mountain tunnel exits")
+    errors.append("Regional highway must remain visually continuous along the city gateway edge")
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 for contract in [
     "func _create_coastal_water_mesh(",
@@ -855,8 +855,6 @@ for visual_contract in [
     "_create_bark_texture", "_create_foliage_texture",
     "SHADOW_CASTING_SETTING_ON", "sun.shadow_enabled = false",
     "sun.light_specular = 0.35",
-    "DistantMountainBackdropScript",
-    "mountain_backdrop.name = \"DistantMountainBackdrop\""
 ]:
     if visual_contract not in world_source:
         errors.append(f"World visual contract is missing: {visual_contract}")
@@ -899,8 +897,6 @@ for visual_contract in [
     "normal_image.generate_mipmaps()",
     "Color(\"#244D27\")",
     "Color(\"#46763A\")",
-    "func _build_near_city_rock_outcrops(",
-    "NearCityFracturedRockBatch",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
@@ -1136,10 +1132,6 @@ for fire_id, (expected_coverage, expected_size, expected_cost) in fire_contracts
 fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text(encoding="utf-8")
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
-mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var broad_massif := sin(along * 0.014 + float(side) * 1.83) * 0.5 + cos(along * 0.022 - float(side) * 0.91) * 0.32", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= coastline - 0.1", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "func _is_tunnel_road_detail_exclusion(", "or _is_tunnel_road_detail_exclusion(side, along)", "await get_tree().process_frame"]:
-    if contract not in mountain_backdrop_source:
-        errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
 for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_tiles", COVERAGE_TILES)', "ServiceManager.fire_served_ids.has(building_id)"]:
     if contract not in fire_manager_source:
@@ -1270,19 +1262,11 @@ for contract in [
     if contract not in gameplay_smoke_source:
         errors.append(f"Camera inertia regression test is missing: {contract}")
 
-for contract in [
-    "WorldPresentation/DistantMountainBackdrop",
-    "WorldPresentation must reserve the distant mountain horizon node.",
-    "The green ground backdrop must cover the complete camera travel area.",
-    "The green ground must preserve the coastal water opening.",
-    "NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge",
-    "Mountain shrubs must be generated in one 320-instance batch.",
-    "Mountain grass must be generated in one 760-instance batch.",
-    "The city camera must expose the expanded 150 m overview zoom.",
-    "The city camera travel boundary must remain inside the green world backdrop.",
-]:
-    if contract not in gameplay_smoke_source:
-        errors.append(f"City backdrop runtime regression test is missing: {contract}")
+if "DistantMountainBackdrop" in world_source or "_build_near_city_rock_outcrops" in world_source:
+    errors.append("Mountain backdrop and near-city rock formations must be removed from the starter coastal city")
+if (ROOT / "scripts/world/DistantMountainBackdrop.gd").exists():
+    errors.append("Obsolete mountain backdrop generator must be deleted")
+
 
 for contract in ["EmergencyCoveragePreview", "CoverageArea", "CoverageBoundary", "FireHazardManager.get_coverage_radius_world(definition)", 'int(definition.get("police", 0)) > 0', 'int(definition.get("health", 0)) > 0', "Color(0.18, 0.38, 0.98, 0.95)", "Color(0.20, 0.96, 0.62, 0.96)"]:
     if contract not in ghost_preview_source:
