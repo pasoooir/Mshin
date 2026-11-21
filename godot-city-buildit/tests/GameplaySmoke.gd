@@ -1368,6 +1368,8 @@ func _test_camera_touch_gesture_integration() -> void:
 	release_first.position = Vector2(120.0, 220.0)
 	release_first.pressed = false
 	camera_rig._unhandled_input(release_first)
+	_check(camera_rig.pan_velocity.length() < 0.001 and absf(camera_rig.orbit_velocity) < 0.001, "Releasing a two-finger zoom/pan gesture must stop inertial fling at the finger-release position.")
+	_check(not camera_rig._multi_touch_gesture_active, "The camera must close the multi-touch gesture state after the final finger is lifted.")
 
 	camera_rig.pan_velocity = Vector2.ZERO
 	camera_rig.orbit_velocity = 0.0
@@ -1412,8 +1414,10 @@ func _test_camera_touch_gesture_integration() -> void:
 	orbit_release_first.position = center - initial_axis
 	orbit_release_first.pressed = false
 	camera_rig._unhandled_input(orbit_release_first)
+	_check(absf(camera_rig.orbit_velocity) < 0.001 and camera_rig.pan_velocity.length() < 0.001, "Releasing a two-finger 360-degree orbit must not keep rotating or pan-flinging the camera.")
 
 	camera_rig.touch_points.clear()
+	camera_rig._multi_touch_gesture_active = false
 	camera_rig.pan_velocity = Vector2.ZERO
 	camera_rig.orbit_velocity = 0.0
 	camera_rig.is_focus_animating = false
