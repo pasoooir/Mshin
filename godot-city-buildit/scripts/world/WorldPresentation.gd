@@ -458,6 +458,30 @@ func _build_coastal_highway() -> void:
 	access_road.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 	add_child(access_road)
+	_request_matching_asphalt_texture(highway_asphalt, connector_asphalt)
+
+
+func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, connector_material: StandardMaterial3D) -> void:
+	var request := HTTPRequest.new()
+	request.name = "SharedAsphaltTextureRequest"
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+			var image := Image.new()
+			if image.load_jpg_from_buffer(body) == OK:
+				image.generate_mipmaps()
+				var texture := ImageTexture.create_from_image(image)
+				highway_material.albedo_texture = texture
+				connector_material.albedo_texture = texture
+			else:
+				push_warning("[WorldPresentation] Asphalt CDN image invalid; matching local fallback retained")
+		else:
+			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
+		request.queue_free()
+	)
+	if request.request("https://cdn.meshy.ai/landing-assets/textures/stone/dark-asphalt/dark-asphalt-2k.jpg") != OK:
+		request.queue_free()
 
 
 func _build_highway_lighting() -> void:
