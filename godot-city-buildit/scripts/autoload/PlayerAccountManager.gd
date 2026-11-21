@@ -43,6 +43,22 @@ func get_local_save_path() -> String:
 		return "user://pasoo_city_buildit_save.json"
 	return "user://players/%d/pasoo_city_buildit_save.json" % player_id
 
+
+static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:
+	if not local_state is Dictionary:
+		return false
+	if not remote_state is Dictionary:
+		return true
+	var local_saved_at := str(local_state.get("saved_at", ""))
+	var remote_saved_at := str(remote_state.get("saved_at", ""))
+	if local_saved_at.is_empty():
+		return false
+	if remote_saved_at.is_empty():
+		return true
+	var local_timestamp := Time.get_unix_time_from_datetime_string(local_saved_at)
+	var remote_timestamp := Time.get_unix_time_from_datetime_string(remote_saved_at)
+	return local_timestamp > remote_timestamp
+
 func get_player_file_path(file_name: String) -> String:
 	if not is_authenticated():
 		return "user://" + file_name
@@ -218,15 +234,39 @@ func fetch_remote_profile() -> bool:
 		return false
 	profile_revision = maxi(0, int(data.get("revision", 0)))
 	var game_state: Variant = data.get("game_state")
+	var local_state: Variant = _read_local_game_state()
 	if game_state is Dictionary:
-		if not _write_local_game_state(game_state):
-			push_error("Could not write the authenticated remote profile to its player-scoped local JSON save.")
-			return false
+		if should_prefer_local_profile_state(local_state, game_state):
+			# Preserve a newer offline snapshot instead of replacing it with an
+			# older cloud revision; sync it before exposing the restored session.
+			_remote_profile_has_game_state = true
+			if not await save_profile_now(local_state):
+				push_error("Could not sync the newer player-scoped local save before profile restore.")
+				return false
+		else:
+			if not _write_local_game_state(game_state):
+				push_error("Could not write the authenticated remote profile to its player-scoped local JSON save.")
+				return false
+			_remote_profile_has_game_state = true
+	elif local_state is Dictionary:
+		# The cloud profile may have been initialized before a previous offline
+		# session could upload its first save. Keep and sync that local snapshot.
 		_remote_profile_has_game_state = true
+		if not await save_profile_now(local_state):
+			push_error("Could not sync the existing player-scoped local save to its new profile.")
+			return false
 	elif player_id == 100001 and OS.get_environment("MSHIN_MIGRATE_LEGACY_SAVE") == "1":
 		_migrate_legacy_admin_save()
 	profile_loaded.emit(player_id, profile_revision)
 	return true
+
+func _read_local_game_state() -> Variant:
+	var save_path := get_local_save_path()
+	if not FileAccess.file_exists(save_path):
+		return null
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	return parsed if parsed is Dictionary else null
+
 
 func _write_local_game_state(game_state: Dictionary) -> bool:
 	var file_path := get_local_save_path()
