@@ -19,6 +19,10 @@ var _signature := ""
 func _ready() -> void:
 	_base_y = position.y
 
+func set_anchor_position(value: Vector3) -> void:
+	position = value
+	_base_y = value.y
+
 func set_notifications(notifications: Array) -> void:
 	var ordered := notifications.duplicate()
 	ordered.sort_custom(func(a, b) -> bool:
