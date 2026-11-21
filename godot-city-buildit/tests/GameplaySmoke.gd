@@ -1,7 +1,6 @@
 extends Node3D
 
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
-const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
 
 const IconAtlas = preload("res://scripts/ui/IconAtlas.gd")
 const Icons = preload("res://scripts/ui/Icons.gd")
@@ -4364,35 +4363,13 @@ func _run_gameplay_test() -> void:
 	var input_node = get_node("CityInput")
 	var world = get_node_or_null("World")
 	_check(world != null and world.get_node_or_null("WorldPresentation/NaturalTerrain") != null, "Natural terrain was not generated.")
-	# WorldPresentation intentionally replaces all expensive scenery with lightweight
-	# markers in headless mode. Test the actual procedural generator as an isolated
-	# runtime instance instead of incorrectly expecting render meshes on that marker.
-	var backdrop_marker := world.get_node_or_null("WorldPresentation/DistantMountainBackdrop") if world != null else null
-	_check(backdrop_marker != null, "WorldPresentation must reserve the distant mountain horizon node.")
-	var mountain_backdrop := DistantMountainBackdropScript.new()
-	mountain_backdrop.name = "GameplaySmokeDistantMountainBackdrop"
-	add_child(mountain_backdrop)
-	# _ready() deliberately yields between procedural batches; wait for its
-	# completion before asserting that all scenery nodes have been generated.
-	await mountain_backdrop.generation_completed
-	var backdrop_ground := mountain_backdrop.get_node_or_null("DistantGreenGround") as MeshInstance3D
-	_check(backdrop_ground != null and backdrop_ground.mesh is PlaneMesh, "The procedural generator must create a real distant green ground plane.")
-	if backdrop_ground != null and backdrop_ground.mesh is PlaneMesh:
-		var backdrop_plane := backdrop_ground.mesh as PlaneMesh
-		_check(backdrop_plane.size.x >= 900.0 and backdrop_plane.size.y >= 900.0, "The green ground backdrop must cover the complete camera travel area.")
-		var backdrop_material := backdrop_ground.material_override as ShaderMaterial
-		_check(backdrop_material != null and backdrop_material.shader != null and backdrop_material.shader.code.contains("float coastline = 51.0") and backdrop_material.shader.code.contains("world_position.x >= coastline - 0.1"), "The green ground must preserve the coastal water opening.")
-	for ridge_name in ["NorthMountainRidge", "SouthMountainRidge", "WestMountainRidge", "EastMountainRidge"]:
-		var ridge := mountain_backdrop.get_node_or_null(ridge_name) as MeshInstance3D
-		_check(ridge != null and ridge.mesh is ArrayMesh, "Mountain horizon segment is missing or has no generated mesh resource: %s" % ridge_name)
-	var mountain_shrubs := mountain_backdrop.get_node_or_null("DarkGreenMountainShrubs") as MultiMeshInstance3D
-	var mountain_grass := mountain_backdrop.get_node_or_null("MountainDarkGrass") as MultiMeshInstance3D
-	_check(mountain_shrubs != null and mountain_shrubs.multimesh != null and mountain_shrubs.multimesh.instance_count == 320, "Mountain shrubs must be generated in one 320-instance batch.")
-	_check(mountain_grass != null and mountain_grass.multimesh != null and mountain_grass.multimesh.instance_count == 760, "Mountain grass must be generated in one 760-instance batch.")
-	mountain_backdrop.queue_free()
+	# The starter coastal map intentionally has no mountain perimeter or near-city rock formations.
+	var world_presentation_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	_check(world != null and world.get_node_or_null("WorldPresentation/DistantMountainBackdrop") == null, "The starter city must not instantiate a mountain backdrop.")
+	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 150.0), "The city camera must expose the expanded 150 m overview zoom.")
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera travel boundary must remain inside the green world backdrop.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalHighway") != null, "Coastal highway was not generated.")
