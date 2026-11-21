@@ -1181,6 +1181,117 @@ func _test_camera_inertia_math() -> void:
 	var normalized_pan_1440 := pan_scale_1440 * 200.0
 	_check(is_equal_approx(normalized_pan_720, normalized_pan_1440), "Equivalent normalized touch drags must move the same world distance on different resolutions.")
 
+func _test_camera_touch_gesture_integration() -> void:
+	var camera_rig = get_tree().current_scene.get_node_or_null("CameraRig")
+	_check(camera_rig != null, "The live city scene must expose its CameraRig for touch-input integration tests.")
+	if camera_rig == null:
+		return
+	var original_position: Vector3 = camera_rig.global_position
+	var original_yaw: float = camera_rig.rotation_degrees.y
+	var original_zoom: float = camera_rig.current_zoom
+	camera_rig.touch_points.clear()
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.last_pinch_distance = 0.0
+
+	var first_touch := InputEventScreenTouch.new()
+	first_touch.index = 1
+	first_touch.position = Vector2(150.0, 200.0)
+	first_touch.pressed = true
+	camera_rig._unhandled_input(first_touch)
+	var second_touch := InputEventScreenTouch.new()
+	second_touch.index = 2
+	second_touch.position = Vector2(250.0, 200.0)
+	second_touch.pressed = true
+	camera_rig._unhandled_input(second_touch)
+
+	var inward_second := InputEventScreenDrag.new()
+	inward_second.index = 2
+	inward_second.position = Vector2(230.0, 200.0)
+	camera_rig._unhandled_input(inward_second)
+	var inward_first := InputEventScreenDrag.new()
+	inward_first.index = 1
+	inward_first.position = Vector2(170.0, 200.0)
+	camera_rig._unhandled_input(inward_first)
+	var zoomed_in_distance: float = camera_rig.current_zoom
+	_check(zoomed_in_distance < original_zoom, "Real two-finger touch events moving inward must zoom the live camera in.")
+
+	var outward_second := InputEventScreenDrag.new()
+	outward_second.index = 2
+	outward_second.position = Vector2(300.0, 200.0)
+	camera_rig._unhandled_input(outward_second)
+	var outward_first := InputEventScreenDrag.new()
+	outward_first.index = 1
+	outward_first.position = Vector2(100.0, 200.0)
+	camera_rig._unhandled_input(outward_first)
+	_check(camera_rig.current_zoom > zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera out.")
+
+	var release_second := InputEventScreenTouch.new()
+	release_second.index = 2
+	release_second.position = Vector2(300.0, 200.0)
+	release_second.pressed = false
+	camera_rig._unhandled_input(release_second)
+	var release_first := InputEventScreenTouch.new()
+	release_first.index = 1
+	release_first.position = Vector2(100.0, 200.0)
+	release_first.pressed = false
+	camera_rig._unhandled_input(release_first)
+
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.touch_points.clear()
+	camera_rig.last_pinch_distance = 0.0
+	camera_rig.last_pinch_angle = 0.0
+	camera_rig.last_pinch_centroid = Vector2.ZERO
+	var center := Vector2(400.0, 300.0)
+	var initial_axis := Vector2(50.0, 0.0)
+	var orbit_first := InputEventScreenTouch.new()
+	orbit_first.index = 1
+	orbit_first.position = center - initial_axis
+	orbit_first.pressed = true
+	camera_rig._unhandled_input(orbit_first)
+	var orbit_second := InputEventScreenTouch.new()
+	orbit_second.index = 2
+	orbit_second.position = center + initial_axis
+	orbit_second.pressed = true
+	camera_rig._unhandled_input(orbit_second)
+	var yaw_before_full_turn: float = camera_rig.rotation_degrees.y
+	for step in range(1, 37):
+		var angle := deg_to_rad(float(step) * 10.0)
+		var axis := Vector2(cos(angle), sin(angle)) * 50.0
+		var move_second := InputEventScreenDrag.new()
+		move_second.index = 2
+		move_second.position = center + axis
+		camera_rig._unhandled_input(move_second)
+		var move_first := InputEventScreenDrag.new()
+		move_first.index = 1
+		move_first.position = center - axis
+		camera_rig._unhandled_input(move_first)
+	var full_turn_difference := wrapf(camera_rig.rotation_degrees.y - yaw_before_full_turn, -180.0, 180.0)
+	_check(absf(full_turn_difference) < 0.1, "Live two-finger touch input must complete a full 360-degree orbit without clamping or losing the gesture.")
+
+	var orbit_release_second := InputEventScreenTouch.new()
+	orbit_release_second.index = 2
+	orbit_release_second.position = center + initial_axis
+	orbit_release_second.pressed = false
+	camera_rig._unhandled_input(orbit_release_second)
+	var orbit_release_first := InputEventScreenTouch.new()
+	orbit_release_first.index = 1
+	orbit_release_first.position = center - initial_axis
+	orbit_release_first.pressed = false
+	camera_rig._unhandled_input(orbit_release_first)
+
+	camera_rig.touch_points.clear()
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.is_focus_animating = false
+	camera_rig.global_position = original_position
+	camera_rig.rotation_degrees.y = original_yaw
+	camera_rig.current_zoom = original_zoom
+	camera_rig._update_camera_transform()
+	camera_rig._refresh_processing()
+
+
 func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")
 	_check(not road_system.remove_road(RoadSystemScript.GATEWAY_ROAD_CELL), "The permanent highway gateway tile must not be removable.")
@@ -4070,6 +4181,7 @@ func _run_gameplay_test() -> void:
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
+	_test_camera_touch_gesture_integration()
 	_test_camera_focus_math()
 	_test_traffic_manager_frame_budget()
 	_test_placement_rotation_contract()
