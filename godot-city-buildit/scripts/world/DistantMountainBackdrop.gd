@@ -384,6 +384,19 @@ func _create_rock_outcrop_mesh() -> ArrayMesh:
 		surface.add_vertex(ring_foot[next_index])
 		surface.add_vertex(ring_foot[index])
 
+	# Join the three offset crown peaks into a closed, fractured roof.
+	surface.set_color(Color(0.43, 0.39, 0.32))
+	surface.add_vertex(peak_a)
+	surface.add_vertex(peak_b)
+	surface.add_vertex(ring_crown[6])
+	surface.set_color(Color(0.36, 0.34, 0.29))
+	surface.add_vertex(peak_b)
+	surface.add_vertex(peak_c)
+	surface.add_vertex(ring_crown[12])
+	surface.set_color(Color(0.48, 0.42, 0.34))
+	surface.add_vertex(peak_c)
+	surface.add_vertex(peak_a)
+	surface.add_vertex(ring_crown[0])
 	# Broken talus is fused into the same surface and remains a single draw call.
 	_append_rock_foot_pebbles(surface)
 	surface.generate_normals()
