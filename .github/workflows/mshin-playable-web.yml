@@ -142,14 +142,18 @@ jobs:
             throw error;
           }
           const gameCanvas = page.frameLocator('#game-frame').locator('canvas');
-          // Do not call locator.boundingBox()/hover() here: Chromium can stall
-          // those geometry queries while Godot WebGL is presenting frames.
-          // Canvas backing dimensions are stable DOM attributes and provide the
-          // required size assertion without forcing a compositor readback.
-          const canvasWidth = Number(await gameCanvas.getAttribute('width'));
-          const canvasHeight = Number(await gameCanvas.getAttribute('height'));
+          // Godot's responsive WebGL canvas can retain a zero backing-width
+          // attribute while CSS lays it out at the full iframe viewport size.
+          // Read layout dimensions (not Playwright boundingBox/compositor data)
+          // so this checks the visible canvas without triggering GPU readback.
+          const canvasSize = await gameCanvas.evaluate(canvas => ({
+            width: canvas.clientWidth,
+            height: canvas.clientHeight
+          }));
+          const canvasWidth = Number(canvasSize.width);
+          const canvasHeight = Number(canvasSize.height);
           if (canvasWidth < 640 || canvasHeight < 360) {
-            throw new Error('Desktop WebGL canvas backing size is too small: ' + canvasWidth + 'x' + canvasHeight);
+            throw new Error('Desktop WebGL canvas display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-entry.png',
