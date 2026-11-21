@@ -910,16 +910,6 @@ float value_noise(vec2 p) {
 	float d = hash21(cell + vec2(1.0, 1.0));
 	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
 }
-float meadow_fbm(vec2 p) {
-	float sum = 0.0;
-	float weight = 0.5;
-	for (int octave = 0; octave < 3; octave++) {
-		sum += value_noise(p) * weight;
-		p = p * 2.03 + vec2(17.1, 9.2);
-		weight *= 0.5;
-	}
-	return sum;
-}
 varying vec3 world_position;
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -929,14 +919,14 @@ void fragment() {
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
-	float broad = meadow_fbm(world_position.xz * 0.055);
-	float patch = meadow_fbm(world_position.xz * 0.24 + vec2(13.0, 7.0));
-	float fine = value_noise(world_position.xz * 1.75);
+	# Two compact value-noise samples keep the material mobile-friendly.
+	float broad = value_noise(world_position.xz * 0.055);
+	float fine = value_noise(world_position.xz * 0.95 + vec2(13.0, 7.0));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
 	vec3 meadow = sampled_grass * COLOR.rgb * mix(0.70, 1.12, broad);
-	float dry_patch = smoothstep(0.67, 0.88, patch + fine * 0.12);
-	meadow = mix(meadow, vec3(0.19, 0.16, 0.095), dry_patch * 0.18);
-	float sunlit_tufts = smoothstep(0.72, 0.94, fine) * 0.10;
+	float dry_patch = smoothstep(0.72, 0.90, broad * 0.78 + fine * 0.22);
+	meadow = mix(meadow, vec3(0.19, 0.16, 0.095), dry_patch * 0.16);
+	float sunlit_tufts = smoothstep(0.82, 0.97, fine) * 0.08;
 	meadow += vec3(0.10, 0.12, 0.045) * sunlit_tufts;
 	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
 	ALBEDO = mix(meadow, sand, sand_mask);
