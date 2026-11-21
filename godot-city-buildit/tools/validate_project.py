@@ -869,17 +869,17 @@ for visual_contract in [
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
-    "const TERRAIN_DIVISIONS := 48",
+    "const TERRAIN_DIVISIONS := 96",
     "func _add_highway_lane_dashes(",
     "HighwayConcreteMedian",
     "HighwayGuardrails",
     "highway_asphalt.uv1_scale = Vector3(12.0, 96.0, 1.0)",
-    "connector_asphalt.uv1_scale = Vector3(14.0, 3.0, 1.0)",
+    "connector_asphalt.uv1_scale = Vector3(24.0, 5.0, 1.0)",
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#3F6F37\")",
-    "Color(\"#628548\")",
+    "Color(\"#244D27\")",
+    "Color(\"#46763A\")",
     "func _build_near_city_rock_outcrops(",
     "NearCityFracturedRockBatch",
     "func _build_creek_channel(",
@@ -1118,7 +1118,7 @@ fire_manager_source = (ROOT / "scripts/autoload/FireHazardManager.gd").read_text
 ghost_preview_source = (ROOT / "scripts/systems/GhostPreview.gd").read_text(encoding="utf-8")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 mountain_backdrop_source = (ROOT / "scripts/world/DistantMountainBackdrop.gd").read_text(encoding="utf-8")
-for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var peak_height := 62.0 + rolling_peaks * 46.0", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "await get_tree().process_frame"]:
+for contract in ["RIDGE_INNER_RADIUS := 68.0", "RIDGE_OUTER_RADIUS := 205.0", "RIDGE_HALF_LENGTH := 470.0", "var broad_massif := sin(along * 0.014 + float(side) * 1.83) * 0.5 + cos(along * 0.022 - float(side) * 0.91) * 0.32", "MIN_CAMERA_FAR_CLIP := 720.0", "DistantGreenGround", "world_position.x >= 49.0", "NorthMountainRidge", "DarkGreenMountainShrubs", "MountainDarkGrass", "MultiMeshInstance3D", "TUNNEL_CENTER_X := -55.0", "func _build_highway_tunnels()", "NorthHighwayTunnel", "SouthHighwayTunnel", "func _is_tunnel_portal_vegetation_exclusion(", "await get_tree().process_frame"]:
     if contract not in mountain_backdrop_source:
         errors.append(f"Natural mountain horizon contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
