@@ -157,7 +157,7 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 		if not grouped.has(building_id):
 			grouped[building_id] = []
 		var kind := str(data.get("kind", "idle"))
-		var notification := NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
+		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
 		notification.priority = int(data.get("priority", 0))
 		notification.detail = str(data.get("missing_text", ""))
 		grouped[building_id].append(notification)
