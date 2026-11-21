@@ -548,7 +548,7 @@ void fragment() {
 	vec3 base_stone = mix(dark_mineral, warm_sandstone, grain);
 	base_stone = mix(base_stone, cool_slate, smoothstep(0.56, 0.88, grain_x) * 0.24);
 	base_stone *= mix(0.78, 1.13, sediment);
-	base_stone *= mix(0.72, 1.0, COLOR.rgb);
+	base_stone *= mix(vec3(0.72), vec3(1.0), COLOR.rgb);
 	base_stone *= micro_weathering;
 	base_stone *= 1.0 - fracture_core * 0.62;
 	base_stone *= 1.0 - pores * 0.10;
