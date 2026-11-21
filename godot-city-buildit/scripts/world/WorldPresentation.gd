@@ -20,6 +20,10 @@ const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
+const ENVIRONMENT_SMALL_DETAIL_END := 190.0
+const ENVIRONMENT_SMALL_DETAIL_MARGIN := 18.0
+const TREE_BELT_DETAIL_END := 280.0
+const TREE_BELT_DETAIL_MARGIN := 24.0
 const AUSTRALIAN_GRASSLAND_PALETTE := [
 	Color("#3F6F37"), Color("#507B3E"), Color("#628548"),
 	Color("#345F31"), Color("#7C9251"), Color("#466F3A")
@@ -714,6 +718,8 @@ func _create_tree_multimesh(node_name: String, mesh: Mesh, positions: Array[Vect
 	# Keep the detailed geometry and its baked-style contact shadows; skip only
 	# the three redundant real-time shadow-caster batches.
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	instance.visibility_range_end = TREE_BELT_DETAIL_END
+	instance.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
 	return instance
 
 
@@ -754,6 +760,8 @@ func _create_tree_shadow_multimesh(positions: Array[Vector3]) -> MultiMeshInstan
 	shadows.name = "TreeContactShadows"
 	shadows.multimesh = multimesh
 	shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shadows.visibility_range_end = TREE_BELT_DETAIL_END
+	shadows.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
 	return shadows
 
 
@@ -938,6 +946,8 @@ func _build_grass_detail() -> void:
 	grass.multimesh = multimesh
 	grass.material_override = blade_material
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	grass.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
+	grass.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
 	add_child(grass)
 
 
@@ -1130,6 +1140,8 @@ func _build_near_city_rock_outcrops(backdrop: Node3D) -> void:
 	rocks.multimesh = batch
 	rocks.material_override = rock_material
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rocks.visibility_range_end = TREE_BELT_DETAIL_END
+	rocks.visibility_range_end_margin = TREE_BELT_DETAIL_MARGIN
 	add_child(rocks)
 
 func _build_dirt_tracks() -> void:
@@ -1272,6 +1284,8 @@ func _build_creek_rock_edges() -> void:
 	material.roughness = 1.0
 	rocks.material_override = material
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rocks.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
+	rocks.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
 	add_child(rocks)
 
 
@@ -1322,6 +1336,8 @@ func _build_meadow_shrubs_and_stones() -> void:
 	shrub_material.roughness = 1.0
 	shrubs.material_override = shrub_material
 	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shrubs.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
+	shrubs.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
 	add_child(shrubs)
 
 	var stone_mesh := SphereMesh.new()
@@ -1365,6 +1381,8 @@ func _build_meadow_shrubs_and_stones() -> void:
 	stone_material.roughness = 1.0
 	stones.material_override = stone_material
 	stones.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	stones.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
+	stones.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
 	add_child(stones)
 
 func _create_meadow_shrub_mesh() -> ArrayMesh:
@@ -1414,6 +1432,8 @@ func _create_shoreline_pebble_multimesh() -> MultiMeshInstance3D:
 	pebbles.material_override = pebble_material
 	# Small ground stones add no useful cast shadows; disabling them saves mobile shadow work.
 	pebbles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pebbles.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
+	pebbles.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
 	return pebbles
 
 
