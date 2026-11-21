@@ -982,16 +982,44 @@ func _on_ground_texture_received(result: int, response_code: int, _headers: Pack
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
 		var image := Image.new()
 		var error := image.load_png_from_buffer(body)
-			if error != OK:
-				error = image.load_jpg_from_buffer(body)
-			if error == OK:
-				image.generate_mipmaps()
+		if error != OK:
+			error = image.load_jpg_from_buffer(body)
+		if error == OK:
+			image.generate_mipmaps()
 			material.set_shader_parameter(slot + "_texture", ImageTexture.create_from_image(image))
 		else:
 			push_warning("[WorldPresentation] Invalid CDN image for " + slot + "; procedural fallback retained")
 	else:
 		push_warning("[WorldPresentation] CDN unavailable for " + slot + "; procedural fallback retained")
 	request.queue_free()
+
+
+func _request_matching_asphalt_texture(highway_material: StandardMaterial3D, connector_material: StandardMaterial3D) -> void:
+	var request := HTTPRequest.new()
+	request.name = "SharedAsphaltTextureRequest"
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+			var image := Image.new()
+			var image_error := image.load_png_from_buffer(body)
+			if image_error != OK:
+				image_error = image.load_jpg_from_buffer(body)
+			if image_error == OK:
+				image.generate_mipmaps()
+				var texture := ImageTexture.create_from_image(image)
+				highway_material.albedo_texture = texture
+				connector_material.albedo_texture = texture
+			else:
+				push_warning("[WorldPresentation] Asphalt CDN image invalid; matching local fallback retained")
+		else:
+			push_warning("[WorldPresentation] Asphalt CDN unavailable; matching local fallback retained")
+		request.queue_free()
+	)
+	if request.request("https://cdn.polyhaven.com/asset_img/primary/clean_asphalt.png?height=110&quality=95&v=547f00f6") != OK:
+		request.queue_free()
+
+
 
 func _create_asphalt_material() -> StandardMaterial3D:
 	# Medium charcoal-gray asphalt with several scales of aggregate grain.
