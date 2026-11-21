@@ -49,6 +49,10 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var mountain_source := FileAccess.get_file_as_string("res://scripts/world/DistantMountainBackdrop.gd")
+	if not mountain_source.contains("render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;"):
+		push_error("[VisualPresentationSmoke] Fractured rock material must render its chipped facets from both sides")
+		get_tree().quit(1)
+		return
 	for hidden_assignment in [
 		"batch.set_instance_transform(index, _hidden_multimesh_instance_transform())",
 		"multimesh.set_instance_transform(index, _hidden_multimesh_instance_transform())",
