@@ -1,5 +1,7 @@
 extends Node3D
 
+var _road_system_cache: Node
+
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const DistantMountainBackdropScript = preload("res://scripts/world/DistantMountainBackdrop.gd")
@@ -986,10 +988,17 @@ void fragment() {
 
 
 func _is_city_road_footprint(x: float, z: float) -> bool:
-	# Environmental scatter must never occupy a live asphalt tile. The same
-	# guard is shared by grass, scrub and tree placement.
+	# RoadSystem is a scene node, not an autoload singleton. Resolve it from
+	# the active scene once, then reuse the reference for scatter placement.
 	var cell := Vector2i(floori(x / BuildManager.GRID_SIZE), floori(z / BuildManager.GRID_SIZE))
-	return RoadSystem.has_road(cell)
+	if not is_instance_valid(_road_system_cache):
+		var scene := get_tree().current_scene
+		if scene == null:
+			return false
+		_road_system_cache = scene.find_child("RoadSystem", true, false)
+	if not is_instance_valid(_road_system_cache) or not _road_system_cache.has_method("has_road"):
+		return false
+	return bool(_road_system_cache.call("has_road", cell))
 
 func _build_grass_detail() -> void:
 	# Each instance is a multi-blade tussock, not a single rectangular stalk.
