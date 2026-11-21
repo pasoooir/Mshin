@@ -1804,12 +1804,22 @@ func _refresh_factory_ready_icons() -> void:
 	for building in BuildManager.buildings.values():
 		if not is_instance_valid(building):
 			continue
-		if is_instance_valid(building.ready_item_sprite):
-			building.ready_item_sprite.visible = false
-		if is_instance_valid(building.action_notification_label):
-			building.action_notification_label.visible = false
-		if is_instance_valid(building.production_icon):
-			building.production_icon.visible = false
+		# Some simulation/test fixtures are lightweight Node3D objects and do
+		# not expose the optional visual properties used by full building scenes.
+		_hide_optional_building_visual(building, &"ready_item_sprite")
+		_hide_optional_building_visual(building, &"action_notification_label")
+		_hide_optional_building_visual(building, &"production_icon")
+
+
+func _hide_optional_building_visual(building: Object, property_name: StringName) -> void:
+	for property_info in building.get_property_list():
+		if StringName(property_info.get("name", "")) != property_name:
+			continue
+		var visual: Variant = building.get(property_name)
+		if visual is VisualInstance3D or visual is CanvasItem:
+			visual.visible = false
+		return
+
 
 func _on_building_notification_collected(building_id: String, item_id: String, collected_count: int, blocked: bool) -> void:
 	var item_name := str(ProductionManager.get_item_definition(item_id).get("name", item_id.capitalize()))
