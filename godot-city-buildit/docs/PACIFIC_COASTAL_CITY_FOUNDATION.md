@@ -26,7 +26,7 @@ The opening camera is framed to show the undeveloped city, coastal park edge and
 
 - Promenade geometry is one mesh.
 - Palm trunks and crowns are two MultiMeshes, not per-tree nodes.
-- Small grass details remain range-culled and do not cast shadows.
+- Small grass and shoreline pebble details fade out by 95 m and do not cast shadows, keeping the overview composition light on mobile.
 - Palm shadows are disabled; the existing single directional key light remains the only shadow-map owner.
 - No additional external texture or model download is required for this foundation.
 
