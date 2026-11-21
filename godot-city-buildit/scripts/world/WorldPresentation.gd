@@ -1290,6 +1290,7 @@ func _build_creek_rock_edges() -> void:
 	rocks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rocks.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END
 	rocks.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	rocks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(rocks)
 
 
