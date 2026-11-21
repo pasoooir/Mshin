@@ -75,12 +75,18 @@ func _refresh() -> void:
 
 func _on_action_pressed() -> void:
 	if PlayerAccountManager.is_authenticated():
-		PlayerAccountManager.logout()
-		_status.text = "Signed out · Guest mode"
+		_action.disabled = true
+		_status.text = "Saving your city before sign-out…"
+		var logout_ok: bool = await PlayerAccountManager.logout()
+		_refresh()
+		_action.disabled = false
+		if not logout_ok:
+			_status.text = "Cloud sync failed. You are still signed in; retry when online."
 		return
 	_action.disabled = true
-	PlayerAccountManager.begin_google_sign_in()
-	_action.disabled = false
+	var started := PlayerAccountManager.begin_google_sign_in()
+	if not started:
+		_action.disabled = false
 
 func _on_session_changed(_player_id: int, _authenticated: bool) -> void:
 	_refresh()

@@ -85,9 +85,24 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Google sign-in action is missing.")
 		quit(1)
 		return
+	var gmail_button_content := google_action.get_node_or_null("GmailButtonContent") as Control
+	var gmail_icon := google_action.find_child("GmailIcon", true, false) as TextureRect
+	if gmail_button_content == null or not gmail_button_content.visible or gmail_icon == null or gmail_icon.texture == null or gmail_icon.custom_minimum_size.x < 40.0:
+		push_error("[NotificationPreferencesSmoke] Guest sign-in button must show a large, visible Gmail icon beside the Google action.")
+		quit(1)
+		return
 	await _tap_control(google_action)
 	if google_action.disabled or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("web version"):
 		push_error("[NotificationPreferencesSmoke] Google sign-in button did not return a useful platform-specific result.")
+		quit(1)
+		return
+	var cancel_nonce := "smoke-google-cancel-nonce-0123456789abcdef"
+	account_manager._google_pending_nonces[cancel_nonce] = false
+	google_action.disabled = true
+	await account_manager._complete_google_sign_in("", cancel_nonce)
+	await process_frame
+	if google_action.disabled or account_manager._google_pending_nonces.has(cancel_nonce) or not str(hud.find_child("SettingsAccountStatus", true, false).text).contains("cancelled"):
+		push_error("[NotificationPreferencesSmoke] A cancelled Google prompt must release the sign-in button and clear its one-time pending nonce.")
 		quit(1)
 		return
 	var original_music_enabled := bool(audio_manager.music_enabled)
@@ -283,10 +298,33 @@ func _run() -> void:
 		quit(1)
 		return
 
-	# Guest city registration must be a real, responsive HUD modal with working actions.
+	# City registration is locked for guests and becomes available only after Google authentication.
 	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
 	if rename_button == null:
 		push_error("[NotificationPreferencesSmoke] Change City Name action button is missing.")
+		quit(1)
+		return
+	if not rename_button.disabled:
+		push_error("[NotificationPreferencesSmoke] City registration must remain locked until Google sign-in succeeds.")
+		quit(1)
+		return
+	await _tap_control(rename_button)
+	await process_frame
+	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
+		push_error("[NotificationPreferencesSmoke] Guest users must not be able to open city registration.")
+		quit(1)
+		return
+
+	# Simulate the authenticated session boundary; the real Google-token path is
+	# covered independently by the signed OIDC Worker integration test.
+	account_manager.player_id = 987654
+	account_manager.access_token = "smoke-test-token"
+	account_manager.google_display_name = "Smoke Mayor"
+	account_manager.google_avatar_url = ""
+	hud._refresh_settings_account_section()
+	rename_button = hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	if rename_button == null or rename_button.disabled:
+		push_error("[NotificationPreferencesSmoke] Google-authenticated players must be able to register their city.")
 		quit(1)
 		return
 	await _tap_control(rename_button)
@@ -360,22 +398,31 @@ func _run() -> void:
 		quit(1)
 		return
 
+	# Force the offline branch for this UI smoke. The account-scoped local JSON
+	# write is asserted here; the online profile contract is tested by Worker tests.
+	var original_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	var save_events := [0]
 	save_manager.save_completed.connect(func(_path: String) -> void: save_events[0] += 1, CONNECT_ONE_SHOT)
 	await _tap_control(city_name_save)
 	await process_frame
 	await process_frame
+	ProjectSettings.set_setting("mshin/account/api_base_url", original_api_base)
 	if str(game_manager.city_name) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] Guest city name was not applied and trimmed.")
+		push_error("[NotificationPreferencesSmoke] Authenticated city name was not applied and trimmed.")
 		quit(1)
 		return
 	if save_events[0] != 1:
 		push_error("[NotificationPreferencesSmoke] Save City must trigger one successful local JSON save event.")
 		quit(1)
 		return
+	if save_manager.get_active_save_path() != "user://players/987654/pasoo_city_buildit_save.json":
+		push_error("[NotificationPreferencesSmoke] Registered city must save under the authenticated numeric player ID.")
+		quit(1)
+		return
 	var saved_city: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_manager.get_active_save_path()))
 	if not saved_city is Dictionary or str(saved_city.get("game", {}).get("city_name", "")) != "Test Harbor":
-		push_error("[NotificationPreferencesSmoke] City name was not persisted in the active player JSON.")
+		push_error("[NotificationPreferencesSmoke] City name was not persisted in the authenticated player's local JSON.")
 		quit(1)
 		return
 	if current_scene.find_child("ChangeCityNameDialog", true, false) != null:
@@ -433,16 +480,35 @@ func _run() -> void:
 	await process_frame
 	var avatar_frame := hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
 	var avatar_texture := hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
-	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null:
-		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the circular Gmail profile avatar in its header.")
+	var settings_heading := hud.find_child("SettingsHeading", true, false) as HBoxContainer
+	var settings_title := hud.find_child("SettingsTitle", true, false) as Label
+	if avatar_frame == null or not avatar_frame.visible or avatar_frame.custom_minimum_size.x < 70.0 or avatar_texture == null or settings_heading == null or settings_title == null or avatar_frame.get_parent() != settings_heading or avatar_frame.get_index() >= settings_title.get_index():
+		push_error("[NotificationPreferencesSmoke] Authenticated Settings must show the large circular Gmail avatar at the upper-left of its header.")
 		quit(1)
 		return
 	google_action = hud.find_child("SettingsGoogleAccountAction", true, false) as Button
+	var original_signout_api_base := str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	var original_signout_persistence_ready: bool = bool(save_manager.get("persistence_ready"))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
+	save_manager.persistence_ready = true
 	await _tap_control(google_action)
-	if account_manager.is_authenticated() or avatar_frame.visible:
-		push_error("[NotificationPreferencesSmoke] Sign-out action did not clear the account and hide its avatar.")
+	await process_frame
+	if not account_manager.is_authenticated() or not avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out must keep the session active when its final cloud save fails.")
 		quit(1)
 		return
+	save_manager.persistence_ready = false
+	await _tap_control(google_action)
+	await process_frame
+	save_manager.persistence_ready = original_signout_persistence_ready
+	ProjectSettings.set_setting("mshin/account/api_base_url", original_signout_api_base)
+	if not account_manager.is_authenticated() or not avatar_frame.visible:
+		push_error("[NotificationPreferencesSmoke] Sign-out must be blocked while the local save system is not ready.")
+		quit(1)
+		return
+	account_manager._clear_session_state()
+	if save_manager.persistence_ready:
+		save_manager.load_game()
 
 	# Exercise the actual image-decoding callback without relying on Google's
 	# live CDN: valid image bytes must replace the placeholder; invalid bytes
@@ -485,7 +551,9 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Oversized avatar images must be rejected safely.")
 		quit(1)
 		return
-	account_manager.logout()
+	account_manager._clear_session_state()
+	if save_manager.persistence_ready:
+		save_manager.load_game()
 
 	var settings_close := hud.find_child("SettingsClose", true, false) as Button
 	if settings_close == null:

@@ -125,6 +125,10 @@ jobs:
           await page.getByRole('button', { name: /PLAY MSHIN/i }).click();
           const gameFrame = page.locator('#game-frame');
           await gameFrame.waitFor({ state: 'attached', timeout: 10000 });
+          const desktopFramePermissions = (await gameFrame.getAttribute('allow') || '').split(';').map(value => value.trim());
+          if (!desktopFramePermissions.includes('identity-credentials-get')) {
+            throw new Error('Desktop game iframe must delegate Google FedCM identity-credentials-get permission');
+          }
           try {
             await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
           } catch (error) {
@@ -151,6 +155,10 @@ jobs:
           await mobilePage.getByRole('button', { name: /PLAY MSHIN/i }).click();
           const mobileFrame = mobilePage.locator('#game-frame');
           await mobileFrame.waitFor({ state: 'attached', timeout: 10000 });
+          const mobileFramePermissions = (await mobileFrame.getAttribute('allow') || '').split(';').map(value => value.trim());
+          if (!mobileFramePermissions.includes('identity-credentials-get')) {
+            throw new Error('Mobile game iframe must delegate Google FedCM identity-credentials-get permission');
+          }
           await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
           // The mobile acceptance gate is functional (launcher + live canvas);
           // avoid a second WebGL screenshot because software-rendered mobile

@@ -178,4 +178,4 @@ export default {
 };
 
 
-export { MshinApiCoordinator, createLoginNonce, consumeLoginNonce };
+export { MshinApiCoordinator, createLoginNonce, consumeLoginNonce, verifyGoogleIdToken };

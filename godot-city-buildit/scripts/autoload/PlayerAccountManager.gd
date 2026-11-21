@@ -18,6 +18,9 @@ var _last_profile_save_ok: bool = true
 var _google_pending_nonces: Dictionary = {}
 var _google_callback: Variant
 var _last_login_rewards: Dictionary = {}
+var _remote_profile_has_game_state: bool = false
+var _last_auth_error: String = ""
+var _last_login_reward_error: String = ""
 
 func _ready() -> void:
 	var preferences := ConfigFile.new()
@@ -39,6 +42,22 @@ func get_local_save_path() -> String:
 	if not is_authenticated():
 		return "user://pasoo_city_buildit_save.json"
 	return "user://players/%d/pasoo_city_buildit_save.json" % player_id
+
+
+static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:
+	if not local_state is Dictionary:
+		return false
+	if not remote_state is Dictionary:
+		return true
+	var local_saved_at := str(local_state.get("saved_at", ""))
+	var remote_saved_at := str(remote_state.get("saved_at", ""))
+	if local_saved_at.is_empty():
+		return false
+	if remote_saved_at.is_empty():
+		return true
+	var local_timestamp := Time.get_unix_time_from_datetime_string(local_saved_at)
+	var remote_timestamp := Time.get_unix_time_from_datetime_string(remote_saved_at)
+	return local_timestamp > remote_timestamp
 
 func get_player_file_path(file_name: String) -> String:
 	if not is_authenticated():
@@ -102,7 +121,26 @@ func bootstrap() -> bool:
 	return true
 
 func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
+	_last_auth_error = ""
+	_last_login_reward_error = ""
+	_last_login_rewards.clear()
 	if id_token.is_empty() or nonce.is_empty() or _auth_url().is_empty():
+		_last_auth_error = "Google sign-in is not configured. Please retry from Settings."
+		return false
+	if not await _wait_for_save_manager_ready():
+		_last_auth_error = "The city save system is still starting. Please retry Google sign-in."
+		return false
+	# The Settings action is a sign-out while a Mayor is authenticated. Refuse
+	# a second sign-in here so one account can never inherit another account's
+	# in-memory city; logout first saves the old account and restores guest state.
+	if is_authenticated():
+		_last_auth_error = "Sign out of the current Mayor before switching Google accounts."
+		return false
+	# Preserve the guest city before switching the active save path to a Mayor ID.
+	# A first-time account inherits this state once; returning accounts load their
+	# own remote game_state before any post-login autosave can run.
+	if not SaveManager.save_game(false):
+		_last_auth_error = "Your current city could not be saved before Google sign-in."
 		return false
 	var response := await _request_json(
 		_auth_url() + "/v1/auth/google",
@@ -111,13 +149,24 @@ func sign_in_with_google_id_token(id_token: String, nonce: String) -> bool:
 		{"id_token": id_token, "nonce": nonce}
 	)
 	if not response.ok:
-		push_warning("Google sign-in failed: " + response.error)
+		_last_auth_error = "Google authentication failed: " + response.error
+		push_warning(_last_auth_error)
 		return false
 	_activate_session(response.body, "Google player")
 	if not is_authenticated():
+		_last_auth_error = "Mshin could not create a player session from the Google response."
 		return false
-	await fetch_remote_profile()
-	await claim_login_rewards()
+	if not await fetch_remote_profile():
+		_last_auth_error = "Google was verified, but the private player JSON profile could not be created or loaded. Check Cloudflare/GitHub storage and retry."
+		_clear_failed_session()
+		return false
+	if not _restore_authenticated_profile_game_state():
+		_last_auth_error = "The saved city for this Google account could not be restored. Your guest city has been preserved."
+		_clear_failed_session()
+		return false
+	var reward_result := await claim_login_rewards()
+	if not bool(reward_result.get("ok", false)):
+		_last_login_reward_error = str(reward_result.get("error", "reward_sync_unavailable"))
 	return true
 
 func claim_login_rewards() -> Dictionary:
@@ -168,6 +217,7 @@ func _apply_player_scope() -> void:
 			tutorial.set_player_scope(get_player_file_path("tutorial_progress.cfg"))
 
 func fetch_remote_profile() -> bool:
+	_remote_profile_has_game_state = false
 	if not is_authenticated() or _api_base().is_empty():
 		return false
 	var headers := PackedStringArray(["Authorization: Bearer " + access_token])
@@ -181,12 +231,41 @@ func fetch_remote_profile() -> bool:
 		return false
 	profile_revision = maxi(0, int(data.get("revision", 0)))
 	var game_state: Variant = data.get("game_state")
+	var local_state: Variant = _read_local_game_state()
 	if game_state is Dictionary:
-		_write_local_game_state(game_state)
+		if should_prefer_local_profile_state(local_state, game_state):
+			# Preserve a newer offline snapshot instead of replacing it with an
+			# older cloud revision; sync it before exposing the restored session.
+			var newer_local_snapshot: Dictionary = local_state
+			_remote_profile_has_game_state = true
+			if not await save_profile_now(newer_local_snapshot):
+				push_error("Could not sync the newer player-scoped local save before profile restore.")
+				return false
+		else:
+			if not _write_local_game_state(game_state):
+				push_error("Could not write the authenticated remote profile to its player-scoped local JSON save.")
+				return false
+			_remote_profile_has_game_state = true
+	elif local_state is Dictionary:
+		# The cloud profile may have been initialized before a previous offline
+		# session could upload its first save. Keep and sync that local snapshot.
+		var existing_local_snapshot: Dictionary = local_state
+		_remote_profile_has_game_state = true
+		if not await save_profile_now(existing_local_snapshot):
+			push_error("Could not sync the existing player-scoped local save to its new profile.")
+			return false
 	elif player_id == 100001 and OS.get_environment("MSHIN_MIGRATE_LEGACY_SAVE") == "1":
 		_migrate_legacy_admin_save()
 	profile_loaded.emit(player_id, profile_revision)
 	return true
+
+func _read_local_game_state() -> Variant:
+	var save_path := get_local_save_path()
+	if not FileAccess.file_exists(save_path):
+		return null
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	return parsed if parsed is Dictionary else null
+
 
 func _write_local_game_state(game_state: Dictionary) -> bool:
 	var file_path := get_local_save_path()
@@ -280,18 +359,72 @@ func _flush_pending_save() -> void:
 			break
 	_save_in_flight = false
 
-func logout() -> void:
+func logout() -> bool:
+	var cloud_sync_ok := true
+	if is_authenticated():
+		if not has_node("/root/SaveManager") or not SaveManager.persistence_ready:
+			authentication_feedback.emit("Your city save system is not ready. You are still signed in; retry sign-out when the city is ready.", false)
+			return false
+		if SaveManager.save_game(false):
+			var current_state: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+			if current_state is Dictionary:
+				var current_snapshot: Dictionary = current_state
+				cloud_sync_ok = await save_profile_now(current_snapshot)
+			else:
+				cloud_sync_ok = false
+		else:
+			cloud_sync_ok = false
+	if not cloud_sync_ok:
+		authentication_feedback.emit("Cloud sync failed. You are still signed in and your local account save is safe; retry sign-out when the connection is restored.", false)
+		return false
 	_set_google_auto_sign_in(false)
+	_google_pending_nonces.clear()
+	_clear_session_state()
+	if has_node("/root/SaveManager") and SaveManager.persistence_ready and get_tree().current_scene != null:
+		# Return to the guest save instead of leaving another Mayor's city in memory.
+		SaveManager.load_game()
+	return true
+
+
+func _clear_session_state() -> void:
 	google_avatar_url = ""
 	google_display_name = ""
-	_google_pending_nonces.clear()
 	player_id = 0
 	access_token = ""
 	profile_revision = 0
 	identity_label = ""
 	_pending_game_state.clear()
+	_last_login_rewards.clear()
+	_remote_profile_has_game_state = false
 	_apply_player_scope()
 	session_changed.emit(0, false)
+	profile_identity_changed.emit()
+
+
+func _clear_failed_session() -> void:
+	_clear_session_state()
+	if has_node("/root/SaveManager") and SaveManager.persistence_ready and get_tree().current_scene != null:
+		SaveManager.load_game()
+
+
+func _wait_for_save_manager_ready() -> bool:
+	if not has_node("/root/SaveManager"):
+		return false
+	for _frame in range(180):
+		if SaveManager.persistence_ready:
+			return true
+		await get_tree().process_frame
+	return SaveManager.persistence_ready
+
+
+func _restore_authenticated_profile_game_state() -> bool:
+	if not _remote_profile_has_game_state:
+		return true
+	if not has_node("/root/SaveManager") or not SaveManager.persistence_ready or get_tree().current_scene == null:
+		return false
+	# fetch_remote_profile wrote this account's remote game_state to the active
+	# player-specific path. Load it before the post-login autosave can run.
+	return SaveManager.load_game()
 
 
 func begin_google_sign_in(auto_select: bool = false) -> bool:
@@ -337,61 +470,65 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 			}
 		};
 		const initialize = function () {
-			if (!window.google || !window.google.accounts || !window.google.accounts.id) {
-				callback(null);
-				return;
-			}
-			window.google.accounts.id.initialize({
-				client_id: clientId,
-				nonce: nonce,
-				auto_select: shouldAutoSelect,
-				cancel_on_tap_outside: true,
-				callback: function (response) {
-					callback(response && response.credential ? response.credential : null);
+			try {
+				if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+					callback(null);
+					return;
 				}
-			});
-			if (shouldAutoSelect) {
-				window.google.accounts.id.prompt(function (moment) {
-					if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment())) {
-						window.mshinGoogleCredentialCallback(null, nonce);
+				window.google.accounts.id.initialize({
+					client_id: clientId,
+					nonce: nonce,
+					auto_select: shouldAutoSelect,
+					cancel_on_tap_outside: true,
+					callback: function (response) {
+						callback(response && response.credential ? response.credential : null);
 					}
 				});
-				return;
+				if (shouldAutoSelect) {
+					window.google.accounts.id.prompt(function (moment) {
+						if (moment && (moment.isNotDisplayed() || moment.isSkippedMoment())) {
+							window.mshinGoogleCredentialCallback(null, nonce);
+						}
+					});
+					return;
+				}
+				let overlay = document.getElementById("mshin-google-signin-overlay");
+				if (overlay) overlay.remove();
+				overlay = document.createElement("div");
+				overlay.id = "mshin-google-signin-overlay";
+				overlay.setAttribute("role", "dialog");
+				overlay.setAttribute("aria-label", "Sign in with Google");
+				overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.78);backdrop-filter:blur(9px);";
+				const card = document.createElement("div");
+				card.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);";
+				const heading = document.createElement("div");
+				heading.textContent = "Connect your city";
+				heading.style.cssText = "font:700 22px system-ui,sans-serif;color:#f5fbff;letter-spacing:.3px;";
+				const subtitle = document.createElement("div");
+				subtitle.textContent = "Sign in securely to save and sync your progress";
+				subtitle.style.cssText = "font:14px system-ui,sans-serif;color:#c8dced;text-align:center;max-width:290px;";
+				const button = document.createElement("div");
+				button.id = "mshin-google-render-button";
+				const close = document.createElement("button");
+				close.type = "button";
+				close.textContent = "Cancel";
+				close.style.cssText = "border:0;border-radius:12px;padding:9px 20px;background:rgba(255,255,255,.10);color:#d8ebf7;font:600 14px system-ui,sans-serif;cursor:pointer;";
+				close.addEventListener("click", function () { callback(null); });
+				card.append(heading, subtitle, button, close);
+				overlay.appendChild(card);
+				document.body.appendChild(overlay);
+				window.google.accounts.id.renderButton(button, {
+					type: "standard",
+					theme: "outline",
+					size: "large",
+					text: "continue_with",
+					shape: "pill",
+					logo_alignment: "left",
+					width: Math.min(300, Math.floor(window.innerWidth * .78))
+				});
+			} catch (_) {
+				callback(null);
 			}
-			let overlay = document.getElementById("mshin-google-signin-overlay");
-			if (overlay) overlay.remove();
-			overlay = document.createElement("div");
-			overlay.id = "mshin-google-signin-overlay";
-			overlay.setAttribute("role", "dialog");
-			overlay.setAttribute("aria-label", "Sign in with Google");
-			overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.78);backdrop-filter:blur(9px);";
-			const card = document.createElement("div");
-			card.style.cssText = "position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);";
-			const heading = document.createElement("div");
-			heading.textContent = "Connect your city";
-			heading.style.cssText = "font:700 22px system-ui,sans-serif;color:#f5fbff;letter-spacing:.3px;";
-			const subtitle = document.createElement("div");
-			subtitle.textContent = "Sign in securely to save and sync your progress";
-			subtitle.style.cssText = "font:14px system-ui,sans-serif;color:#c8dced;text-align:center;max-width:290px;";
-			const button = document.createElement("div");
-			button.id = "mshin-google-render-button";
-			const close = document.createElement("button");
-			close.type = "button";
-			close.textContent = "Cancel";
-			close.style.cssText = "border:0;border-radius:12px;padding:9px 20px;background:rgba(255,255,255,.10);color:#d8ebf7;font:600 14px system-ui,sans-serif;cursor:pointer;";
-			close.addEventListener("click", function () { callback(null); });
-			card.append(heading, subtitle, button, close);
-			overlay.appendChild(card);
-			document.body.appendChild(overlay);
-			window.google.accounts.id.renderButton(button, {
-				type: "standard",
-				theme: "outline",
-				size: "large",
-				text: "continue_with",
-				shape: "pill",
-				logo_alignment: "left",
-				width: Math.min(300, Math.floor(window.innerWidth * .78))
-			});
 		};
 		const loadIdentity = function () {
 			if (window.google && window.google.accounts && window.google.accounts.id) {
@@ -399,18 +536,39 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 				return;
 			}
 			let loader = document.getElementById("mshin-google-identity-script");
-			if (!loader) {
-				loader = document.createElement("script");
-				loader.id = "mshin-google-identity-script";
-				loader.src = "https://accounts.google.com/gsi/client";
-				loader.async = true;
-				loader.defer = true;
-				loader.onload = initialize;
-				loader.onerror = function () { callback(null); };
-				document.head.appendChild(loader);
-			} else {
-				loader.addEventListener("load", initialize, { once: true });
+			if (loader) {
+				const loadState = loader.dataset.mshinLoadState || "unknown";
+				if (loadState !== "loading") {
+					// A previous failed/partial load must not poison every later retry.
+					loader.remove();
+					loader = null;
+				} else {
+					loader.addEventListener("load", function () {
+						loader.dataset.mshinLoadState = "loaded";
+						initialize();
+					}, { once: true });
+					loader.addEventListener("error", function () {
+						loader.dataset.mshinLoadState = "failed";
+						callback(null);
+					}, { once: true });
+					return;
+				}
 			}
+			loader = document.createElement("script");
+			loader.id = "mshin-google-identity-script";
+			loader.dataset.mshinLoadState = "loading";
+			loader.src = "https://accounts.google.com/gsi/client";
+			loader.async = true;
+			loader.defer = true;
+			loader.addEventListener("load", function () {
+				loader.dataset.mshinLoadState = "loaded";
+				initialize();
+			}, { once: true });
+			loader.addEventListener("error", function () {
+				loader.dataset.mshinLoadState = "failed";
+				callback(null);
+			}, { once: true });
+			document.head.appendChild(loader);
 		};
 		loadIdentity();
 	})();
@@ -468,8 +626,11 @@ func _complete_google_sign_in(id_token: String, nonce: String) -> void:
 		if bool(daily.get("granted", false)):
 			reward_parts.append("+%d daily Simoleons" % int(daily.get("simoleons", 0)))
 		var reward_message := " · " + ", ".join(reward_parts) if not reward_parts.is_empty() else ""
+		if reward_parts.is_empty() and not _last_login_reward_error.is_empty():
+			reward_message = " · city saved; reward sync pending"
 		authentication_feedback.emit("Signed in as Mayor #%d%s" % [player_id, reward_message], true)
 		if has_node("/root/SaveManager") and SaveManager.persistence_ready:
 			SaveManager.save_game()
 	elif not silent_attempt:
-		authentication_feedback.emit("Google sign-in failed. Please try again.", false)
+		var failure_message := _last_auth_error if not _last_auth_error.is_empty() else "Google sign-in failed. Please try again."
+		authentication_feedback.emit(failure_message, false)

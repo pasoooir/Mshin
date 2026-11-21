@@ -1147,15 +1147,220 @@ func _test_camera_inertia_math() -> void:
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 	var pinch_in := CameraControllerScript.pinch_zoom_delta(180.0, 120.0, 0.045)
 	var pinch_out := CameraControllerScript.pinch_zoom_delta(120.0, 180.0, 0.045)
-	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinch distance changes must produce opposite zoom directions.")
+	_check(pinch_in < 0.0 and pinch_out > 0.0, "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).")
+	var zoom_rig := CameraControllerScript.new()
+	zoom_rig.current_zoom = 30.0
+	zoom_rig._zoom(pinch_in)
+	var zoomed_in_distance := zoom_rig.current_zoom
+	_check(zoomed_in_distance < 30.0, "Inward pinch must move the camera closer to the city target.")
+	zoom_rig._zoom(pinch_out)
+	_check(zoom_rig.current_zoom > zoomed_in_distance, "Outward pinch must move the camera farther from the city target.")
+	zoom_rig.free()
 	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
 	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
+	var seam_twist := CameraControllerScript.touch_orbit_delta(deg_to_rad(179.0), deg_to_rad(-179.0))
+	_check(is_equal_approx(seam_twist, deg_to_rad(2.0)), "Two-finger twist crossing the -180/180 angle seam must not produce a full-turn camera jump.")
+	var full_turn_yaw := 0.0
+	for _step in range(36):
+		full_turn_yaw = CameraControllerScript.apply_orbit_delta(full_turn_yaw, deg_to_rad(10.0))
+	_check(absf(full_turn_yaw) < 0.001, "Repeated two-finger twists must complete a continuous 360-degree orbit and wrap to the starting heading.")
+	var reverse_turn_yaw := 0.0
+	for _step in range(36):
+		reverse_turn_yaw = CameraControllerScript.apply_orbit_delta(reverse_turn_yaw, deg_to_rad(-10.0))
+	_check(absf(reverse_turn_yaw) < 0.001, "Two-finger orbit must complete a continuous 360-degree turn in either direction.")
+	var touch_order_rig := CameraControllerScript.new()
+	touch_order_rig.touch_points[9] = Vector2(300.0, 100.0)
+	touch_order_rig.touch_points[2] = Vector2(100.0, 100.0)
+	var ordered_touch_positions: Array = touch_order_rig._ordered_touch_positions()
+	_check(ordered_touch_positions.size() == 2 and ordered_touch_positions[0].is_equal_approx(Vector2(100.0, 100.0)) and ordered_touch_positions[1].is_equal_approx(Vector2(300.0, 100.0)), "Two-finger gestures must use stable pointer-ID ordering so centroid, pinch and twist baselines do not swap.")
+	touch_order_rig.free()
 	var pan_scale_720 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 720.0)
 	var pan_scale_1440 := CameraControllerScript.screen_pan_scale(30.0, 46.0, 1440.0)
 	_check(pan_scale_720 > 0.0 and is_equal_approx(pan_scale_720, pan_scale_1440 * 2.0), "Camera pan sensitivity must scale with viewport height rather than raw device pixels.")
 	var normalized_pan_720 := pan_scale_720 * 100.0
 	var normalized_pan_1440 := pan_scale_1440 * 200.0
 	_check(is_equal_approx(normalized_pan_720, normalized_pan_1440), "Equivalent normalized touch drags must move the same world distance on different resolutions.")
+
+func _test_account_profile_restore_isolation() -> void:
+	_check(SaveManager.persistence_ready, "Account profile restoration must wait until the local city save system is ready.")
+	if not SaveManager.persistence_ready:
+		return
+	var newer_local_snapshot := {"saved_at": "2026-01-01T02:00:00"}
+	var older_remote_snapshot := {"saved_at": "2026-01-01T01:00:00"}
+	var older_local_snapshot := {"saved_at": "2026-01-01T00:30:00"}
+	_check(PlayerAccountManager.should_prefer_local_profile_state(newer_local_snapshot, older_remote_snapshot), "A newer offline local snapshot must win over an older cloud game_state.")
+	_check(not PlayerAccountManager.should_prefer_local_profile_state(older_local_snapshot, older_remote_snapshot), "A newer cloud game_state must replace an older local snapshot.")
+	_check(PlayerAccountManager.should_prefer_local_profile_state(newer_local_snapshot, null), "A local account save must be recovered when the cloud profile has no game_state yet.")
+	var original_player_id: int = PlayerAccountManager.player_id
+	var original_access_token: String = PlayerAccountManager.access_token
+	var original_identity_label: String = PlayerAccountManager.identity_label
+	var original_avatar_url: String = PlayerAccountManager.google_avatar_url
+	var original_display_name: String = PlayerAccountManager.google_display_name
+	var original_remote_state_flag: bool = PlayerAccountManager._remote_profile_has_game_state
+	if not SaveManager.save_game(false):
+		_check(false, "Guest city must be preserved locally before an account profile switch.")
+		return
+
+	PlayerAccountManager.player_id = 987654
+	PlayerAccountManager.access_token = "profile-restore-smoke-token"
+	PlayerAccountManager.identity_label = "Profile Restore Mayor"
+	PlayerAccountManager._apply_player_scope()
+	GameManager.city_name = "Remote Mayor City"
+	if not SaveManager.save_game(false):
+		_check(false, "A returning Mayor's remote snapshot must be written to its isolated player path.")
+		PlayerAccountManager.player_id = original_player_id
+		PlayerAccountManager.access_token = original_access_token
+		PlayerAccountManager.identity_label = original_identity_label
+		PlayerAccountManager.google_avatar_url = original_avatar_url
+		PlayerAccountManager.google_display_name = original_display_name
+		PlayerAccountManager._remote_profile_has_game_state = original_remote_state_flag
+		PlayerAccountManager._apply_player_scope()
+		SaveManager.load_game()
+		return
+	var remote_save_snapshot: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveManager.get_active_save_path()))
+	_check(remote_save_snapshot is Dictionary and not str(remote_save_snapshot.get("saved_at", "")).is_empty(), "Every local account snapshot must include a UTC timestamp for offline/cloud conflict resolution.")
+
+	GameManager.city_name = "Guest Session City"
+	PlayerAccountManager._remote_profile_has_game_state = true
+	var restored_remote_profile := PlayerAccountManager._restore_authenticated_profile_game_state()
+	_check(restored_remote_profile and str(GameManager.city_name) == "Remote Mayor City", "Returning Google accounts must load their own remote city before any post-login save can overwrite it.")
+
+	GameManager.city_name = "Guest Session City"
+	PlayerAccountManager._remote_profile_has_game_state = false
+	var new_profile_keeps_guest := PlayerAccountManager._restore_authenticated_profile_game_state()
+	_check(new_profile_keeps_guest and str(GameManager.city_name) == "Guest Session City", "A first-time Google account with no remote game_state must keep the guest city for one-time account migration.")
+
+	PlayerAccountManager.player_id = original_player_id
+	PlayerAccountManager.access_token = original_access_token
+	PlayerAccountManager.identity_label = original_identity_label
+	PlayerAccountManager.google_avatar_url = original_avatar_url
+	PlayerAccountManager.google_display_name = original_display_name
+	PlayerAccountManager._remote_profile_has_game_state = original_remote_state_flag
+	PlayerAccountManager._apply_player_scope()
+	SaveManager.load_game()
+
+
+func _test_camera_touch_gesture_integration() -> void:
+	var camera_rig = get_tree().current_scene.get_node_or_null("CameraRig")
+	_check(camera_rig != null, "The live city scene must expose its CameraRig for touch-input integration tests.")
+	if camera_rig == null:
+		return
+	var original_position: Vector3 = camera_rig.global_position
+	var original_yaw: float = camera_rig.rotation_degrees.y
+	var original_zoom: float = camera_rig.current_zoom
+	camera_rig.touch_points.clear()
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.last_pinch_distance = 0.0
+
+	var first_touch := InputEventScreenTouch.new()
+	first_touch.index = 1
+	first_touch.position = Vector2(150.0, 200.0)
+	first_touch.pressed = true
+	camera_rig._unhandled_input(first_touch)
+	var second_touch := InputEventScreenTouch.new()
+	second_touch.index = 2
+	second_touch.position = Vector2(250.0, 200.0)
+	second_touch.pressed = true
+	camera_rig._unhandled_input(second_touch)
+
+	var inward_second := InputEventScreenDrag.new()
+	inward_second.index = 2
+	inward_second.position = Vector2(230.0, 200.0)
+	camera_rig._unhandled_input(inward_second)
+	var inward_first := InputEventScreenDrag.new()
+	inward_first.index = 1
+	inward_first.position = Vector2(170.0, 200.0)
+	camera_rig._unhandled_input(inward_first)
+	var zoomed_in_distance: float = camera_rig.current_zoom
+	_check(zoomed_in_distance < original_zoom, "Real two-finger touch events moving inward must zoom the live camera in.")
+
+	var outward_second := InputEventScreenDrag.new()
+	outward_second.index = 2
+	outward_second.position = Vector2(300.0, 200.0)
+	camera_rig._unhandled_input(outward_second)
+	var outward_first := InputEventScreenDrag.new()
+	outward_first.index = 1
+	outward_first.position = Vector2(100.0, 200.0)
+	camera_rig._unhandled_input(outward_first)
+	_check(camera_rig.current_zoom > zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera out.")
+
+	var position_before_two_finger_pan: Vector3 = camera_rig.global_position
+	var pan_second := InputEventScreenDrag.new()
+	pan_second.index = 2
+	pan_second.position = Vector2(320.0, 220.0)
+	camera_rig._unhandled_input(pan_second)
+	var pan_first := InputEventScreenDrag.new()
+	pan_first.index = 1
+	pan_first.position = Vector2(120.0, 220.0)
+	camera_rig._unhandled_input(pan_first)
+	_check(camera_rig.global_position.distance_to(position_before_two_finger_pan) > 0.01, "Moving both active touches together must pan the live city camera without changing the two-finger baseline.")
+
+	var release_second := InputEventScreenTouch.new()
+	release_second.index = 2
+	release_second.position = Vector2(320.0, 220.0)
+	release_second.pressed = false
+	camera_rig._unhandled_input(release_second)
+	var release_first := InputEventScreenTouch.new()
+	release_first.index = 1
+	release_first.position = Vector2(120.0, 220.0)
+	release_first.pressed = false
+	camera_rig._unhandled_input(release_first)
+
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.touch_points.clear()
+	camera_rig.last_pinch_distance = 0.0
+	camera_rig.last_pinch_angle = 0.0
+	camera_rig.last_pinch_centroid = Vector2.ZERO
+	var center := Vector2(400.0, 300.0)
+	var initial_axis := Vector2(50.0, 0.0)
+	var orbit_first := InputEventScreenTouch.new()
+	orbit_first.index = 1
+	orbit_first.position = center - initial_axis
+	orbit_first.pressed = true
+	camera_rig._unhandled_input(orbit_first)
+	var orbit_second := InputEventScreenTouch.new()
+	orbit_second.index = 2
+	orbit_second.position = center + initial_axis
+	orbit_second.pressed = true
+	camera_rig._unhandled_input(orbit_second)
+	var yaw_before_full_turn: float = camera_rig.rotation_degrees.y
+	for step in range(1, 37):
+		var angle := deg_to_rad(float(step) * 10.0)
+		var axis := Vector2(cos(angle), sin(angle)) * 50.0
+		var move_second := InputEventScreenDrag.new()
+		move_second.index = 2
+		move_second.position = center + axis
+		camera_rig._unhandled_input(move_second)
+		var move_first := InputEventScreenDrag.new()
+		move_first.index = 1
+		move_first.position = center - axis
+		camera_rig._unhandled_input(move_first)
+	var full_turn_difference := wrapf(camera_rig.rotation_degrees.y - yaw_before_full_turn, -180.0, 180.0)
+	_check(absf(full_turn_difference) < 0.1, "Live two-finger touch input must complete a full 360-degree orbit without clamping or losing the gesture.")
+
+	var orbit_release_second := InputEventScreenTouch.new()
+	orbit_release_second.index = 2
+	orbit_release_second.position = center + initial_axis
+	orbit_release_second.pressed = false
+	camera_rig._unhandled_input(orbit_release_second)
+	var orbit_release_first := InputEventScreenTouch.new()
+	orbit_release_first.index = 1
+	orbit_release_first.position = center - initial_axis
+	orbit_release_first.pressed = false
+	camera_rig._unhandled_input(orbit_release_first)
+
+	camera_rig.touch_points.clear()
+	camera_rig.pan_velocity = Vector2.ZERO
+	camera_rig.orbit_velocity = 0.0
+	camera_rig.is_focus_animating = false
+	camera_rig.global_position = original_position
+	camera_rig.rotation_degrees.y = original_yaw
+	camera_rig.current_zoom = original_zoom
+	camera_rig._update_camera_transform()
+	camera_rig._refresh_processing()
+
 
 func _test_road_gateway_connectivity(road_system) -> void:
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")
@@ -3655,17 +3860,42 @@ func _test_settings_panel_contract() -> void:
 		about_dialog.queue_free()
 		await get_tree().process_frame
 
-	# City rename is available in guest and authenticated modes; guests save locally.
-	(hud.find_child("SettingsChangeCityNameButton", true, false) as Button).pressed.emit()
+	# City registration is unavailable to guests and unlocks only after Google authentication.
+	var rename_button := hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	_check(rename_button != null and rename_button.disabled, "Change City Name must remain disabled until Google sign-in succeeds.")
+	if rename_button != null:
+		rename_button.pressed.emit()
+		await get_tree().process_frame
+		_check(hud.find_child("ChangeCityNameDialog", true, false) == null, "Guest users must not be able to open city registration.")
+
+	# Simulate the authenticated session boundary; the signed Google OIDC flow is
+	# covered by the Cloudflare Worker integration test.
+	var original_player_id := PlayerAccountManager.player_id
+	var original_access_token := PlayerAccountManager.access_token
+	var original_google_name := PlayerAccountManager.google_display_name
+	var original_google_avatar := PlayerAccountManager.google_avatar_url
+	PlayerAccountManager.player_id = 987654
+	PlayerAccountManager.access_token = "gameplay-smoke-auth-token"
+	PlayerAccountManager.google_display_name = "Smoke Mayor"
+	PlayerAccountManager.google_avatar_url = ""
+	hud._refresh_settings_account_section()
+	rename_button = hud.find_child("SettingsChangeCityNameButton", true, false) as Button
+	_check(rename_button != null and not rename_button.disabled, "Google-authenticated players must be able to register or rename their city.")
+	if rename_button != null:
+		rename_button.pressed.emit()
 	await get_tree().process_frame
 	var rename_dialog := hud.find_child("ChangeCityNameDialog", true, false) as Control
 	var city_name_input := hud.find_child("CityNameInput", true, false) as LineEdit
 	var city_form_scroll := hud.find_child("CityNameFormScroll", true, false) as ScrollContainer
-	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Change City Name must open a scrollable HUD-root editable form for both guest and authenticated players.")
+	_check(rename_dialog != null and rename_dialog.get_parent() == hud and city_name_input != null and city_form_scroll != null, "Authenticated Change City Name must open a scrollable HUD-root editable form.")
 	if rename_dialog != null and city_name_input != null:
 		city_name_input.text = original_city_name
-		rename_dialog.hide()
-		rename_dialog.queue_free()
+		hud._close_city_registration_modal(rename_dialog)
+	PlayerAccountManager.player_id = original_player_id
+	PlayerAccountManager.access_token = original_access_token
+	PlayerAccountManager.google_display_name = original_google_name
+	PlayerAccountManager.google_avatar_url = original_google_avatar
+	hud._refresh_settings_account_section()
 
 	# Help: route to the interactive city coach rather than duplicating a static help panel.
 	var help_guide := get_tree().current_scene.get_node_or_null("TutorialGuide")
@@ -4021,6 +4251,8 @@ func _run_gameplay_test() -> void:
 	_test_power_water_coverage_preview()
 	_test_immigration_coefficients()
 	_test_camera_inertia_math()
+	_test_account_profile_restore_isolation()
+	_test_camera_touch_gesture_integration()
 	_test_camera_focus_math()
 	_test_traffic_manager_frame_budget()
 	_test_placement_rotation_contract()

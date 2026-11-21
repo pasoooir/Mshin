@@ -267,6 +267,7 @@ traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(
 road_system_source = (ROOT / "scripts/systems/RoadSystem.gd").read_text(encoding="utf-8")
 happiness_manager_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
 gameplay_smoke_source = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
+notification_preferences_smoke_source = (ROOT / "tests/notification_preferences_smoke.gd").read_text(encoding="utf-8")
 haptics_manager_source = (ROOT / "scripts/autoload/HapticsManager.gd").read_text(encoding="utf-8")
 production_component_source = (ROOT / "scripts/production/ProductionComponent.gd").read_text(encoding="utf-8")
 trade_manager_source = (ROOT / "scripts/autoload/TradeManager.gd").read_text(encoding="utf-8")
@@ -277,6 +278,13 @@ epic_project_manager_source = (ROOT / "scripts/autoload/EpicProjectManager.gd").
 achievement_manager_source = (ROOT / "scripts/autoload/AchievementManager.gd").read_text(encoding="utf-8")
 region_manager_source = (ROOT / "scripts/autoload/RegionManager.gd").read_text(encoding="utf-8")
 save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "Sign-out must be blocked while the local save system is not ready.",
+    "Sign-out must keep the session active when its final cloud save fails.",
+]:
+    if contract not in notification_preferences_smoke_source:
+        errors.append(f"Notification sign-out regression test is missing: {contract}")
+
 
 for contract in [
     "func pulse_for(event_name: String) -> bool:",
@@ -1115,7 +1123,7 @@ for contract in ["func get_coverage_radius_world(", 'definition.get("coverage_ti
 for contract in [
     "func _process(delta: float) -> void:",
     "_pan(pan_velocity * step_delta)",
-    "rotation_degrees.y = wrapf(rotation_degrees.y + rad_to_deg(orbit_velocity * step_delta)",
+    "rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, orbit_velocity * step_delta)",
     "static func decay_pan_velocity(",
     "static func decay_orbit_velocity(",
     "pan_inertia_damping",
@@ -1126,7 +1134,10 @@ for contract in [
     "static func interpolate_focus(",
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",
+    "return (current_distance - previous_distance) * maxf(0.0, sensitivity)",
     "static func touch_centroid(",
+    "static func touch_orbit_delta(",
+    "static func apply_orbit_delta(",
     "func _ordered_touch_positions() -> Array:",
     "last_pinch_centroid",
     "TWO_FINGER_PAN_DEADZONE",
@@ -1138,6 +1149,47 @@ for contract in [
 ]:
     if contract not in camera_controller_source:
         errors.append(f"Camera inertia implementation contract is missing: {contract}")
+player_account_manager_source = (ROOT / "scripts/autoload/PlayerAccountManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "const loadIdentity = function () {",
+    'loader.dataset.mshinLoadState = "loading";',
+    'loader.dataset.mshinLoadState = "failed";',
+    "loader.remove();",
+    "window.google.accounts.id.renderButton",
+    "func logout() -> bool:",
+    "func _wait_for_save_manager_ready() -> bool:",
+    "func _restore_authenticated_profile_game_state() -> bool:",
+    "static func should_prefer_local_profile_state(local_state: Variant, remote_state: Variant) -> bool:",
+    "func _read_local_game_state() -> Variant:",
+    "if not await fetch_remote_profile():",
+    "if not _restore_authenticated_profile_game_state():",
+    "func _clear_failed_session() -> void:",
+    "await save_profile_now(current_snapshot)",
+    "Cloud sync failed. You are still signed in and your local account save is safe;",
+]:
+    if contract not in player_account_manager_source:
+        errors.append(f"Retryable Google Identity loader contract is missing: {contract}")
+hud_settings_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+for contract in [
+    "city_name_action.disabled = not city_name_unlocked",
+    "func _show_change_city_name() -> void:",
+    "func _save_city_name_from_form(",
+    "SaveManager.save_game(false)",
+    "var logout_ok: bool = await PlayerAccountManager.logout()",
+]:
+    if contract not in hud_settings_source:
+        errors.append(f"Google-authenticated city registration contract is missing: {contract}")
+save_manager_source = (ROOT / "scripts/autoload/SaveManager.gd").read_text(encoding="utf-8")
+for contract in [
+    "func save_game(sync_profile: bool = true) -> bool:",
+    "\"saved_at\": Time.get_datetime_string_from_system(true)",
+    "if sync_profile and has_node",
+]:
+    if contract not in save_manager_source:
+        errors.append(f"Immediate player-profile save contract is missing: {contract}")
+launcher_source = (ROOT / "web/launcher.html").read_text(encoding="utf-8")
+if "identity-credentials-get" not in launcher_source:
+    errors.append("Google FedCM iframe permission is missing from the Web launcher.")
 for contract in [
     "func rotate_placement() -> bool:",
     "func get_building_size(type_id: String, rotation_quarters: int = 0) -> Vector2i:",
@@ -1174,10 +1226,20 @@ for contract in [
         errors.append(f"Camera building-focus regression test is missing: {contract}")
 
 for contract in [
+    "func _test_account_profile_restore_isolation() -> void:",
+    "Returning Google accounts must load their own remote city before any post-login save can overwrite it.",
+    "A first-time Google account with no remote game_state must keep the guest city for one-time account migration.",
+    "A newer offline local snapshot must win over an older cloud game_state.",
+    "A newer cloud game_state must replace an older local snapshot.",
     "func _test_camera_inertia_math()",
+    "func _test_camera_touch_gesture_integration()",
+    "Real two-finger touch events moving inward must zoom the live camera in.",
+    "Real two-finger touch events spreading outward must zoom the live camera out.",
+    "Moving both active touches together must pan the live city camera",
+    "Live two-finger touch input must complete a full 360-degree orbit",
     "Camera pan inertia must decay over time",
     "Camera orbit inertia must decay over time",
-    "Pinch distance changes must produce opposite zoom directions",
+    "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).",
     "Two-finger pan must use the midpoint between active touches",
     "Equivalent normalized touch drags must move the same world distance on different resolutions",
 ]:

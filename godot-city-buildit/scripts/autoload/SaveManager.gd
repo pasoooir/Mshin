@@ -250,7 +250,7 @@ func _capture_tutorial_state() -> Dictionary:
 		return tutorial.to_save_dict()
 	return {}
 
-func save_game() -> bool:
+func save_game(sync_profile: bool = true) -> bool:
 	var region_snapshot := capture_region_snapshot()
 	if region_snapshot.is_empty():
 		save_failed.emit("The active city scene is not ready for a JSON snapshot.")
@@ -260,6 +260,7 @@ func save_game() -> bool:
 	var building_data: Array = region_snapshot.get("buildings", [])
 	var payload: Dictionary = {
 		"version": SAVE_VERSION,
+		"saved_at": Time.get_datetime_string_from_system(true),
 		"starter_grant_claimed": true,
 		"game": {
 			"level": GameManager.level,
@@ -314,7 +315,7 @@ func save_game() -> bool:
 	autosave_elapsed = 0.0
 	if is_instance_valid(_save_debounce_timer):
 		_save_debounce_timer.stop()
-	if has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
+	if sync_profile and has_node("/root/PlayerAccountManager") and PlayerAccountManager.is_authenticated():
 		PlayerAccountManager.queue_profile_save(payload)
 	save_completed.emit(active_save_path)
 	return true

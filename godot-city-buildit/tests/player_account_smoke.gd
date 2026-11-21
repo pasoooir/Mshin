@@ -33,7 +33,9 @@ func _run() -> void:
 		push_error("[PlayerAccountSmoke] Player B reused Player A save path.")
 		quit(1)
 		return
-	account.logout()
+	# Exercise the session-scope reset independently; logout's network-save gate
+	# is covered by the notification/settings smoke with explicit failure cases.
+	account._clear_session_state()
 	if str(audio.get("settings_path")) != "user://audio_settings.cfg" or str(haptics.get("settings_path")) != "user://haptics_settings.cfg" or str(graphics.get("settings_path")) != "user://graphics_settings.cfg":
 		push_error("[PlayerAccountSmoke] Guest preference paths did not reset.")
 		quit(1)
