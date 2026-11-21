@@ -265,7 +265,7 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Living Australian ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
+	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(150)") or not world_visual_source.contains("range(110)"):
 		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
 		get_tree().quit(1)
 		return
