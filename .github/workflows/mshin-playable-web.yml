@@ -186,7 +186,7 @@ jobs:
           // A diagonal drag moves the orbit target along world X without changing its Z.
           await page.mouse.move(800, 520);
           await page.mouse.down();
-          await page.mouse.move(650, 370, { steps: 12 });
+          await page.mouse.move(650, 370, { steps: 1 });
           await page.mouse.up();
           await page.waitForTimeout(1000);
           await page.screenshot({
@@ -207,7 +207,7 @@ jobs:
           // city connector and tunnel portals without overlaying the HUD.
           await page.mouse.move(500, 150);
           await page.mouse.down();
-          await page.mouse.move(915, 565, { steps: 18 });
+          await page.mouse.move(915, 565, { steps: 1 });
           await page.mouse.up();
           await page.waitForTimeout(1000);
           await page.screenshot({
