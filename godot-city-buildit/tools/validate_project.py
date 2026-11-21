@@ -1154,6 +1154,7 @@ for contract in [
     "if not _restore_authenticated_profile_game_state():",
     "func _clear_failed_session() -> void:",
     "await save_profile_now(current_state)",
+    "Cloud sync failed. You are still signed in and your local account save is safe;",
 ]:
     if contract not in player_account_manager_source:
         errors.append(f"Retryable Google Identity loader contract is missing: {contract}")
@@ -1163,6 +1164,7 @@ for contract in [
     "func _show_change_city_name() -> void:",
     "func _save_city_name_from_form(",
     "SaveManager.save_game(false)",
+    "await PlayerAccountManager.logout()",
 ]:
     if contract not in hud_settings_source:
         errors.append(f"Google-authenticated city registration contract is missing: {contract}")
