@@ -176,10 +176,24 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 			anchor = WorldNotificationAnchorScript.new()
 			anchor.name = "WorldNotificationAnchor"
 			building.add_child(anchor)
+			anchor.notification_pressed.connect(_on_world_notification_pressed)
 			_world_anchors[str(building_id)] = anchor
 		var roof_anchor := _get_roof_anchor(building)
 		anchor.set_anchor_position(Vector3(0.0, roof_anchor.y - building.global_position.y + 1.15, 0.0))
 		anchor.set_notifications(grouped[building_id])
+
+func _on_world_notification_pressed(notification) -> void:
+	if notification == null:
+		return
+	var building_id := str(notification.building_id)
+	var item_id := str(notification.item_id)
+	match int(notification.type):
+		NotificationData.Type.PRODUCTION_READY, NotificationData.Type.STORAGE_FULL:
+			_on_product_pressed(building_id, item_id)
+		NotificationData.Type.UPGRADE_READY:
+			_on_upgrade_pressed(building_id)
+		_:
+			_on_building_attention_pressed(building_id)
 
 func _notification_type(kind: String) -> int:
 	match kind:
