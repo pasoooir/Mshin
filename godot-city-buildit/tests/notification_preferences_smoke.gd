@@ -148,7 +148,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] Notification Settings action button is missing.")
 		quit(1)
 		return
-	await _tap_control(notification_button)
+	notification_button.pressed.emit()
 	await process_frame
 	var notification_dialog := hud.find_child("NotificationSettingsDialog", true, false) as AcceptDialog
 	var building_toggle := hud.find_child("BuildingAlertsToggle", true, false) as CheckButton
@@ -219,7 +219,7 @@ func _run() -> void:
 		push_error("[NotificationPreferencesSmoke] About action button is missing.")
 		quit(1)
 		return
-	await _tap_control(about_button)
+	about_button.pressed.emit()
 	await process_frame
 	var about_dialog := hud.find_child("SettingsAboutDialog", true, false) as AcceptDialog
 	var graphics_select := hud.find_child("GraphicsQualitySelect", true, false) as OptionButton
