@@ -186,13 +186,10 @@ func _build_terrain() -> void:
 	var terrain := MeshInstance3D.new()
 	terrain.name = "NaturalTerrain"
 	terrain.mesh = surface.commit()
-	var terrain_material := StandardMaterial3D.new()
-	terrain_material.vertex_color_use_as_albedo = true
-	terrain_material.albedo_texture = _create_grass_texture()
-	terrain_material.roughness = 1.0
-	terrain_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var terrain_material := _create_natural_ground_material()
 	terrain.material_override = terrain_material
+	_request_ground_texture("grass", "https://cdn.meshy.ai/landing-assets/textures/grass/wild-meadow-grass/wild-meadow-grass-2k.jpg", terrain_material)
+	_request_ground_texture("sand", "https://cdn.meshy.ai/landing-assets/textures/grass/pitted-sandy-ground/pitted-sandy-ground-2k.jpg", terrain_material)
 	terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(terrain)
 
@@ -813,6 +810,61 @@ func _create_grass_texture() -> Texture2D:
 	image.generate_mipmaps()
 	return ImageTexture.create_from_image(image)
 
+
+
+func _create_natural_ground_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_back;
+uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
+uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
+varying vec3 world_position;
+void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	float coastline = 51.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
+	float sand_mask = smoothstep(coastline - 7.5 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
+	vec2 ground_uv = UV * 0.62;
+	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb;
+	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
+	ALBEDO = mix(meadow, sand, sand_mask);
+	ROUGHNESS = 1.0;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("grass_texture", _create_grass_texture())
+	material.set_shader_parameter("sand_texture", _create_grass_texture())
+	return material
+
+
+func _request_ground_texture(slot: String, url: String, material: ShaderMaterial) -> void:
+	var request := HTTPRequest.new()
+	request.name = "GroundTextureRequest_" + slot
+	request.timeout = 12.0
+	add_child(request)
+	request.request_completed.connect(_on_ground_texture_received.bind(material, slot, request))
+	var error := request.request(url)
+	if error != OK:
+		request.queue_free()
+		push_warning("[WorldPresentation] CDN texture request could not start for " + slot)
+
+
+func _on_ground_texture_received(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, material: ShaderMaterial, slot: String, request: HTTPRequest) -> void:
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
+		var image := Image.new()
+		var error := image.load_jpg_from_buffer(body)
+		if error == OK:
+			image.generate_mipmaps()
+			material.set_shader_parameter(slot + "_texture", ImageTexture.create_from_image(image))
+		else:
+			push_warning("[WorldPresentation] Invalid CDN image for " + slot + "; procedural fallback retained")
+	else:
+		push_warning("[WorldPresentation] CDN unavailable for " + slot + "; procedural fallback retained")
+	request.queue_free()
 
 func _create_asphalt_material() -> StandardMaterial3D:
 	# Medium charcoal-gray asphalt with several scales of aggregate grain.
