@@ -267,16 +267,22 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	elif point.x > coast - BEACH_WIDTH - 12.0:
 		color = Color("#6B9653").lerp(Color("#B1B978"), blend * 0.45)
 	else:
+		# Bake broad biome patches into the mesh vertex colors as well as the
+		# shader. This keeps terrain variation visible in WebGL/Compatibility.
+		var macro_patch := sin(point.x * 0.026 + point.z * 0.019) * cos(point.z * 0.034 - point.x * 0.021)
+		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
+		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		color = COASTAL_GREEN_PALETTE[palette_index].lerp(Color("#8EBB67"), blend * 0.12)
-		if fine_noise > 0.58:
-			color = color.lerp(Color("#315F31"), 0.13)
-		elif fine_noise < -0.62:
-			color = color.lerp(Color("#8E9C50"), 0.10)
-	# Exposed stony patches and dry sediment break up the former continuous green carpet.
+		var deep_grass := Color("#294F34")
+		var fresh_grass := Color("#718F4C")
+		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
+		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
+		var dry_patch_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
+		color = color.lerp(Color("#A18A5B"), dry_patch_mask * 0.38)
+	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
-	color = color.lerp(Color("#A5A06C"), dry_patch_mask * 0.12)
+	color = color.lerp(Color("#A5A06C"), dry_patch_mask * 0.16)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
