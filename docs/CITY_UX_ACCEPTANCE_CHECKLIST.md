@@ -186,6 +186,6 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 ## Responsive viewport and orientation audit
 
 - **AUDIT-010 — Responsive viewport and orientation matrix: IMPLEMENTED; CI PENDING.**
-  - PR #658 resizes one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
-  - The touch-enabled mobile browser is also resized 844x390 -> 390x844 -> 844x390. The canvas must remain visible through portrait fallback and landscape return.
+  - PR #658 uses CDP device-metric overrides to resize one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
+  - The touch-enabled mobile browser is also emulated through 844x390 -> 390x844 -> 844x390 using CDP screen-orientation metrics. The canvas must remain visible through portrait fallback and landscape return.
   - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.
