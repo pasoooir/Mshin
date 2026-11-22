@@ -32,10 +32,10 @@ Use a clean, sunny, premium stylized 3D look: warm key light, restrained cool fi
 
 ### VQ-02 — Vegetation silhouettes and density
 1. Keep the existing MultiMesh pipeline and soft contact-shadow batch.
-2. Add two additional broadleaf crown silhouettes (conical and umbrella/round) as separate shared meshes/batches; retain palms as their own species.
+2. Add two additional broadleaf crown silhouettes (conical and umbrella/round) as separate shared meshes/batches; retain palms as their own species. Implemented: the starter greenbelt now batches round broadleaf, conifer, umbrella and palm silhouettes separately.
 3. Cluster trees in designed groups and preserve road, plot, beach, and camera sightline exclusions.
 4. Add a distance tier: full geometry near, simplified crown farther away, then fade/cull. Do not add per-tree billboard nodes.
-5. Only one or two batches should cast real shadows; small foliage and distant LOD should not.
+5. Only one or two batches should cast real shadows; small foliage and distant LOD should not. Repeated city-road tile meshes also skip shadow casting while remaining shadow receivers.
 
 ### VQ-03 — Road presentation and draw-call budget
 1. Preserve the current connected-arm topology and tile connectivity.
@@ -104,7 +104,7 @@ Use a small finite-difference sample around each terrain vertex and multiply the
 - [ ] Vertex shading adds grounding without black halos or dark seams.
 
 ### Vegetation
-- [ ] At least three distinct tree silhouettes are visible in the starter region, including palms where appropriate.
+- [ ] At least three distinct tree silhouettes are visible in the starter region, including palms where appropriate. The procedural pipeline now creates separate broadleaf, conifer, umbrella and palm batches.
 - [ ] Scale, yaw, crown width, and color vary without obvious deterministic repetition.
 - [ ] Trees are clustered intentionally and never overlap roads, plots, buildings, or beach access.
 - [ ] Soft contact shadows remain stable and do not look like black discs.
@@ -114,6 +114,7 @@ Use a small finite-difference sample around each terrain vertex and multiply the
 - [ ] Asphalt width reads correctly at overview and close camera distances.
 - [ ] Sidewalks and curbs form continuous joins at straight, corner, T and cross intersections.
 - [ ] Lane markings do not float, flicker, or become visual noise.
+- [ ] Repeated road tiles do not cast redundant shadows; they still receive shadows from buildings and props.
 - [ ] Road-to-building access looks intentional.
 - [ ] Wear variation is subtle and shared; no per-tile seams.
 
