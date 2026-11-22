@@ -138,6 +138,10 @@ func _test_hud_touch_session_ownership() -> void:
 	hud_probe._native_ui_touch_excluded.clear()
 	hud_probe._production_touch_drag_active = true
 	_check(hud_probe.has_active_native_ui_touch(), "An active production drag must reserve the full touch session.")
+	hud_probe._native_ui_touch_targets[5] = hud_probe
+	hud_probe._native_ui_touch_excluded[6] = true
+	hud_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(not hud_probe.has_active_native_ui_touch(), "Application focus loss must release every HUD-owned and excluded touch.")
 	hud_probe.free()
 
 func _check(condition: bool, message: String) -> void:
