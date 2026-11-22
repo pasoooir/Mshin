@@ -400,7 +400,7 @@ func _make_button_style(color: Color) -> StyleBoxFlat:
 	return style
 
 static func get_panel_layout(viewport_size: Vector2, first_step: bool) -> Dictionary:
-	var compact_profile := viewport_size.x < 900.0 or viewport_size.y < 520.0
+	var compact_profile := viewport_size.x < 1024.0 or viewport_size.y < 600.0
 	var panel_top := 78.0
 	var panel_width := minf(380.0 if compact_profile else 430.0, maxf(260.0, viewport_size.x - 24.0))
 	var desired_height := (230.0 if compact_profile else 270.0) if first_step else (190.0 if compact_profile else 205.0)
