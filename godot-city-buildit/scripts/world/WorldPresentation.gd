@@ -31,7 +31,7 @@ const COASTAL_GREEN_PALETTE := [
 	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
 ]
 const COASTLINE_BASE_X := 110.0
-const BEACH_WIDTH := 44.0
+const BEACH_WIDTH := 56.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
@@ -202,14 +202,14 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)
+	water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	shallow_water.mesh = _create_coastal_water_mesh(0.12, 18.0, 220, 16, -0.025)
+	shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 280, 28, 0.008)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
@@ -1136,35 +1136,43 @@ func _create_water_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 uniform vec4 deep_color : source_color = vec4(0.008, 0.105, 0.29, 1.0);
 uniform vec4 blue_color : source_color = vec4(0.018, 0.29, 0.53, 1.0);
 uniform vec4 turquoise_color : source_color = vec4(0.035, 0.58, 0.68, 1.0);
-uniform float wave_height = 0.11;
+uniform float wave_height = 0.16;
 varying vec3 world_position;
 void vertex() {
 	vec3 p = VERTEX;
-	float wave_a = sin((p.x * 0.22) + (p.z * 0.12) + TIME * 1.15);
-	float wave_b = cos((p.x * 0.11) - (p.z * 0.19) + TIME * 0.82);
-	p.y += (wave_a * 0.55 + wave_b * 0.45) * wave_height;
+	float wave_a = sin((p.x * 0.075) + (p.z * 0.052) + TIME * 0.72);
+	float wave_b = cos((p.x * 0.031) - (p.z * 0.094) + TIME * 0.48);
+	float wave_c = sin((p.x * 0.24) + (p.z * 0.18) + TIME * 1.35) * 0.18;
+	p.y += (wave_a * 0.48 + wave_b * 0.42 + wave_c) * wave_height;
 	VERTEX = p;
 	world_position = (MODEL_MATRIX * vec4(p, 1.0)).xyz;
 }
 void fragment() {
 	float coast = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float offshore = max(0.0, world_position.x - coast);
-	float depth = smoothstep(10.0, 190.0, offshore);
-	float broad_wave = sin(world_position.x * 0.031 + world_position.z * 0.019 + TIME * 0.18);
-	float mid_wave = sin(world_position.x * 0.12 - world_position.z * 0.047 + TIME * 0.42);
-	float water_noise = sin(world_position.x * 0.27 + world_position.z * 0.16 + TIME * 0.31) * 0.035;
-	vec3 nearshore = turquoise_color.rgb * (0.92 + broad_wave * 0.055 + mid_wave * 0.025);
-	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.30, 1.0, depth));
-	vec3 water_color = mix(nearshore, offshore_blue, depth);
-	float glint = pow(max(0.0, sin(world_position.x * 0.38 + world_position.z * 0.13 + TIME * 0.75)), 24.0);
-	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.11));
-	ROUGHNESS = 0.19;
-	METALLIC = 0.035;
-	SPECULAR = 0.78;
+	float depth = smoothstep(12.0, 260.0, offshore);
+	float swell = sin(world_position.x * 0.027 + world_position.z * 0.018 + TIME * 0.24);
+	float cross_swell = cos(world_position.x * 0.061 - world_position.z * 0.033 + TIME * 0.39);
+	float fine_ripple = sin(world_position.x * 0.31 + world_position.z * 0.22 + TIME * 1.05) * 0.5;
+	float water_noise = swell * 0.035 + cross_swell * 0.018 + fine_ripple * 0.012;
+	vec3 lagoon = mix(vec3(0.035, 0.66, 0.69), vec3(0.018, 0.43, 0.62), smoothstep(0.0, 42.0, offshore));
+	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.26, 1.0, depth));
+	vec3 water_color = mix(lagoon, offshore_blue, depth);
+	float wave_dx = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0058;
+	float wave_dz = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0040;
+	NORMAL = normalize(vec3(-wave_dx, 1.0, -wave_dz));
+	float facing = max(dot(normalize(NORMAL), normalize(VIEW)), 0.0);
+	float fresnel = pow(1.0 - facing, 5.0);
+	float glint = pow(max(0.0, sin(world_position.x * 0.24 + world_position.z * 0.16 + TIME * 0.68)), 28.0);
+	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.12));
+	ALBEDO = mix(ALBEDO, vec3(0.55, 0.78, 0.84), fresnel * 0.16);
+	ROUGHNESS = mix(0.11, 0.27, depth);
+	METALLIC = 0.0;
+	SPECULAR = 0.94;
 }
 """
 	var material := ShaderMaterial.new()
@@ -1175,14 +1183,15 @@ func _create_shallow_water_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 void fragment() {
-	float ripple = sin(UV.x * 42.0 + TIME * 1.2) * cos(UV.y * 17.0 - TIME * 0.7);
-	float depth_bands = sin(UV.x * 5.0 + UV.y * 1.8 + TIME * 0.22) * 0.04;
-	vec3 lagoon = mix(vec3(0.035, 0.48, 0.61), vec3(0.16, 0.72, 0.72), ripple * 0.12 + 0.38);
-	ALBEDO = lagoon + vec3(depth_bands);
-	ROUGHNESS = 0.24;
-	SPECULAR = 0.72;
+	float broad = sin(UV.x * 31.0 + UV.y * 9.0 + TIME * 0.22);
+	float ripple = sin(UV.x * 118.0 + TIME * 1.35) * cos(UV.y * 47.0 - TIME * 0.82);
+	float caustic = pow(max(0.0, sin(UV.x * 37.0 + sin(UV.y * 23.0 + TIME * 0.28) * 2.2) * cos(UV.y * 31.0 - TIME * 0.31)), 5.0);
+	vec3 lagoon = mix(vec3(0.035, 0.52, 0.61), vec3(0.10, 0.78, 0.75), 0.42 + broad * 0.12 + ripple * 0.035);
+	ALBEDO = lagoon + vec3(caustic * 0.12);
+	ROUGHNESS = 0.18;
+	SPECULAR = 0.9;
 }
 """
 	var material := ShaderMaterial.new()
