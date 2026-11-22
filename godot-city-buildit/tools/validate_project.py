@@ -992,6 +992,7 @@ for road_contract in [
     "ROAD_TEXTURE_WORLD_SCALE", "func _add_road_markings(",
     "const ROAD_RENDER_CHUNK_SIZE: int = 8", "func _rebuild_road_render_chunk(",
     "func _refresh_road_render_chunks_for_cells(", "append_from(tile_node.mesh, surface_index, local_transform)",
+    "for x in range(chunk_key.x * ROAD_RENDER_CHUNK_SIZE", "for z in range(chunk_key.y * ROAD_RENDER_CHUNK_SIZE",
     "func _add_crosswalk(", "func _get_sidewalk_material(",
     "func _get_curb_material(", "road_placed.emit(grid_pos)",
     "road_removed.emit(grid_pos)", "EconomyManager.spend_simoleons(ROAD_COST)",
