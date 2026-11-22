@@ -362,16 +362,16 @@ func _build_meadow_biome_overlays() -> void:
 		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
 			continue
 		var in_starter_city := absf(center_x) < 34.0 and absf(center_z) < 34.0
-		var radius_x := rng.randf_range(2.4, 4.2) if in_starter_city else rng.randf_range(4.5, 8.8)
+		var radius_x := rng.randf_range(2.2, 3.8) if in_starter_city else rng.randf_range(4.0, 7.5)
 		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
 		var rotation := rng.randf_range(0.0, TAU)
-		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.38)
+		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.48)
 		if in_starter_city:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
 			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34)).lerp(base_edge, 0.48)
 		var ring_levels := [0.0, 0.34, 0.68, 1.0]
-		var segments := 20
+		var segments := 24
 		var ring_points: Array = []
 		for ring_value in ring_levels:
 			var ring: Array[Vector3] = []
@@ -391,11 +391,12 @@ func _build_meadow_biome_overlays() -> void:
 			var outer_ring: Array = ring_points[ring_index + 1]
 			var inner_mix := float(ring_index) / float(ring_levels.size() - 1)
 			var outer_mix := float(ring_index + 1) / float(ring_levels.size() - 1)
-			var tone := 1.0 + sin(float(patch_index) * 0.41 + float(ring_index) * 0.7) * 0.035
-			var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
-			var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
 			for segment in range(segments):
 				var next_segment := (segment + 1) % segments
+				var angle := TAU * float(segment) / float(segments)
+				var tone := 1.0 + sin(float(patch_index) * 0.41 + float(ring_index) * 0.7 + angle * 3.0) * 0.045 + cos(angle * 7.0 - float(patch_index) * 0.37) * 0.025
+				var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
+				var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
 				var p00: Vector3 = inner_ring[segment]
 				var p01: Vector3 = inner_ring[next_segment]
 				var p10: Vector3 = outer_ring[segment]
