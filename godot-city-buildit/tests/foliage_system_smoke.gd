@@ -63,7 +63,7 @@ func _run() -> void:
     system.set_season(2, 0.05)
     await create_timer(0.12).timeout
     var season_manager = system.get_node_or_null("SeasonManager")
-    if season_manager == null or int(season_manager.current_season) != 2:
+    if season_manager == null or int(season_manager.get("current_season")) != 2:
         _fail("Autumn season transition did not reach its requested state.")
         return
     print("[FoliageSystemSmoke] PASS trees=%d chunks=%d lod_instances=%d/%d/%d" % [
