@@ -127,10 +127,10 @@ For every finding record:
   - Automated coverage currently verifies the ownership predicate and its focus-loss reset, not the complete two-finger event sequence.
   - Required runtime regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
   - Do not mark F7 PASS until that full sequence is exercised in Chromium touch automation and on a physical Android device.
-- **AUDIT-002 — Cancelled touch event propagation across world input handlers: FIX IMPLEMENTED, CI PENDING.**
-  - Root cause: CameraController and CityInput both observed cancelled releases in `_unhandled_input`, but either handler could mark the event handled before the other cleared its pointer state.
-  - Fix in PR #655: each handler clears its own state without consuming the cancelled release, allowing the other world handler to observe the same event.
-  - Regression evidence: PR #654 GameplaySmoke verifies cancelled-release classification and camera/city focus cleanup; PR #655 CI must verify the propagation adjustment.
+- **AUDIT-002 — World pointer event propagation: FIX IMPLEMENTED, CI PENDING.**
+  - Root cause: CameraController and CityInput independently own pointer state; consuming a HUD-blocked or OS-cancelled pointer in the first `_unhandled_input` handler could prevent the sibling handler from clearing its state.
+  - Fix in PR #655: HUD-owned touch/drag, modal-blocked pointer events and cancelled releases are not consumed by either world handler. Both handlers clear their own state; non-pointer modal input remains consumable.
+  - Regression evidence: PR #655 GameplaySmoke tests the shared pointer-consumption rule for touch, drag and keyboard events. Full real mixed-finger interaction remains an open runtime test.
 - **AUDIT-003 — Camera gesture math and building selection: AUTOMATED COVERAGE, NOT FULL DEVICE ACCEPTANCE.**
   - Existing tests cover pinch direction/scale invariance, rotation across the +/-180-degree seam, focal-anchor correction, and facade/roof building selection.
   - Chromium touch emulation and physical-device gesture feel, edge behavior, and frame pacing remain separate acceptance requirements.
@@ -144,6 +144,10 @@ For every finding record:
   - Responsive UX standard requires Escape to close the current panel or cancel the active tool; prior HUD routing only used X for tool cancellation, while Escape was reserved for detail panels.
   - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
   - Physical keyboard and Android system-back behavior still require device/browser verification.
+- **AUDIT-007 — Mixed-pointer event fan-out: FIX IMPLEMENTED, CI PENDING.**
+  - Both CameraController and CityInput now let HUD-blocked touch/drag events reach the sibling handler after clearing their own state; this addresses stale pointers when the HUD finger starts after a world finger.
+  - Automated tests assert that pointer events are not consumed while non-pointer modal input remains consumable.
+  - End-to-end order permutations (HUD→world and world→HUD), including one finger held while the other releases, still need browser/device reproduction before F7 can pass.
 
 ## Area-level evidence ledger (2026-11-22)
 
