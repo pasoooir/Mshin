@@ -5730,6 +5730,45 @@ func _refresh_settings_profile_avatar() -> void:
 		_settings_avatar_placeholder.show()
 
 
+func _on_settings_profile_avatar_downloaded(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+	request: HTTPRequest,
+	avatar_url: String
+) -> void:
+	# Compatibility decoder only: normal HUD operation uses the bundled avatar
+	# artwork and deliberately does not initiate a remote profile-photo request.
+	if is_instance_valid(request):
+		request.queue_free()
+	if avatar_url.is_empty() or _settings_avatar_request_url != avatar_url:
+		return
+	_settings_avatar_request_url = ""
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200 or body.is_empty() or body.size() > 4 * 1024 * 1024:
+		return
+
+	var avatar_image := Image.new()
+	var decode_error := ERR_FILE_UNRECOGNIZED
+	if body.size() >= 8 and body.slice(0, 8) == PackedByteArray([137, 80, 78, 71, 13, 10, 26, 10]):
+		decode_error = avatar_image.load_png_from_buffer(body)
+	elif body.size() >= 3 and body[0] == 255 and body[1] == 216 and body[2] == 255:
+		decode_error = avatar_image.load_jpg_from_buffer(body)
+	elif body.size() >= 12 and body.slice(0, 4).get_string_from_ascii() == "RIFF" and body.slice(8, 12).get_string_from_ascii() == "WEBP":
+		decode_error = avatar_image.load_webp_from_buffer(body)
+	if decode_error != OK or avatar_image.is_empty():
+		return
+	if avatar_image.get_width() < 1 or avatar_image.get_height() < 1 or avatar_image.get_width() > 1024 or avatar_image.get_height() > 1024:
+		return
+	if not is_instance_valid(_settings_profile_avatar) or not is_instance_valid(_settings_avatar_placeholder):
+		return
+	_settings_profile_avatar.texture = ImageTexture.create_from_image(avatar_image)
+	_settings_avatar_placeholder.hide()
+	var avatar_frame := _settings_profile_avatar.get_parent() as Control
+	if is_instance_valid(avatar_frame):
+		avatar_frame.show()
+
+
 func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
