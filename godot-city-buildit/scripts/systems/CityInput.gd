@@ -209,7 +209,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		road_stroke_last_cell.clear()
 		move_pointer_id = -999
 		multi_touch_gesture = false
-		# CameraController must receive the same pointer event and clear its state.
+		# Both world handlers must observe a blocked pointer to clear their own state.
+		if should_consume_blocked_world_input(event):
+			get_viewport().set_input_as_handled()
 		return
 	if _has_building_detail_modal_open():
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
@@ -219,7 +221,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					detail_hud.call("_close_residential_panel")
 				elif detail_hud.has_method("_close_production_panel"):
 					detail_hud.call("_close_production_panel")
-		if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		if should_consume_blocked_world_input(event):
 			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and BuildManager.is_placing:
@@ -375,6 +377,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Touch indices are pointer identities, not a guarantee that the
 			# active finger is always index 0 after a prior multi-touch session.
 			_update_ghost(event.position)
+
+static func should_consume_blocked_world_input(event: InputEvent) -> bool:
+	return not (event is InputEventScreenTouch or event is InputEventScreenDrag)
 
 static func should_commit_city_touch_release(event: InputEvent) -> bool:
 	return event is InputEventScreenTouch and not event.pressed and not event.canceled
