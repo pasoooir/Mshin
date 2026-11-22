@@ -2403,6 +2403,57 @@ func _test_road_painting_drag(road_system) -> void:
 		_check(road_system.has_road(Vector2i(x, 0)), "Road drag skipped connected grid tile %d." % x)
 	_check(road_system.get_road_placement_error(Vector2i(20, 20)) != "", "Disconnected road placement should explain why it is blocked.")
 
+	# Exercise the real native touch event route, not only the private stroke helpers.
+	input_node.pointer_start.clear()
+	input_node.pointer_moved.clear()
+	input_node.pointer_hold_elapsed.clear()
+	input_node.pointer_last_position.clear()
+	input_node.road_stroke_active.clear()
+	input_node.road_stroke_last_cell.clear()
+	input_node.multi_touch_gesture = false
+	road_system.set_road_mode(true)
+	var touch_start_screen := active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(6, 0)))
+	var touch_end_screen := active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(9, 0)))
+	var road_touch_down := InputEventScreenTouch.new()
+	road_touch_down.index = 78
+	road_touch_down.pressed = true
+	road_touch_down.position = touch_start_screen
+	input_node._unhandled_input(road_touch_down)
+	_check(input_node.pointer_start.has(78) and input_node.road_stroke_active.has(78), "A real one-finger touch-down must begin a road stroke through CityInput._unhandled_input.")
+	var road_touch_drag := InputEventScreenDrag.new()
+	road_touch_drag.index = 78
+	road_touch_drag.position = touch_end_screen
+	input_node._unhandled_input(road_touch_drag)
+	var road_touch_release := InputEventScreenTouch.new()
+	road_touch_release.index = 78
+	road_touch_release.pressed = false
+	road_touch_release.position = touch_end_screen
+	input_node._unhandled_input(road_touch_release)
+	_check(road_system.has_road(Vector2i(6, 0)) and road_system.has_road(Vector2i(7, 0)) and road_system.has_road(Vector2i(8, 0)) and road_system.has_road(Vector2i(9, 0)), "A one-finger touch drag must paint every connected road tile between its start and end cells.")
+	_check(input_node.pointer_start.is_empty() and input_node.road_stroke_active.is_empty(), "A normal touch release must clear road-stroke and pointer state.")
+
+	# OS-cancelled release keeps only segments already committed by drag events.
+	var cancel_start_screen := active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(10, 0)))
+	var cancel_drag_screen := active_camera.unproject_position(BuildManager.grid_to_world(Vector2i(11, 0)))
+	var cancel_down := InputEventScreenTouch.new()
+	cancel_down.index = 79
+	cancel_down.pressed = true
+	cancel_down.position = cancel_start_screen
+	input_node._unhandled_input(cancel_down)
+	var cancel_drag := InputEventScreenDrag.new()
+	cancel_drag.index = 79
+	cancel_drag.position = cancel_drag_screen
+	input_node._unhandled_input(cancel_drag)
+	var cancelled_release := InputEventScreenTouch.new()
+	cancelled_release.index = 79
+	cancelled_release.pressed = false
+	cancelled_release.canceled = true
+	cancelled_release.position = cancel_drag_screen
+	input_node._unhandled_input(cancelled_release)
+	_check(road_system.has_road(Vector2i(10, 0)) and road_system.has_road(Vector2i(11, 0)) and not road_system.has_road(Vector2i(12, 0)), "A cancelled OS release must retain already painted road segments but must not add a segment beyond the last delivered drag.")
+	_check(input_node.pointer_start.is_empty() and input_node.road_stroke_active.is_empty() and input_node.road_stroke_last_cell.is_empty(), "A cancelled road touch must leave no stale pointer or stroke state.")
+	road_system.set_road_mode(false)
+
 func _simulate_building_drag(input_node, active_camera: Camera3D, type_id: String, target_grid: Vector2i) -> void:
 	BuildManager.select_building(type_id)
 	var target_screen: Vector2 = active_camera.unproject_position(BuildManager.grid_to_world(target_grid))
