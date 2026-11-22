@@ -78,6 +78,11 @@ func _test_camera_gesture_math() -> void:
 	var scale_a := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045, 50.0)
 	var scale_b := CameraControllerScript.pinch_zoom_delta(200.0, 300.0, 0.045, 50.0)
 	_check(is_equal_approx(scale_a, scale_b), "Equivalent pinch scale ratios must produce the same zoom change regardless of raw touch-pixel distances.")
+	var opening_zoom_probe := CameraControllerScript.new()
+	opening_zoom_probe.current_zoom = 150.0
+	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 150.0))
+	_check(opening_zoom_probe.current_zoom > 150.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
+	opening_zoom_probe.free()
 	var city_input_probe := CityInputScript.new()
 	city_input_probe.pointer_start[7] = Vector2(100.0, 100.0)
 	city_input_probe.pointer_last_position[7] = Vector2(100.0, 100.0)
