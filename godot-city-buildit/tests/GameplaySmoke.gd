@@ -93,6 +93,17 @@ func _test_camera_gesture_math() -> void:
 	_check(not city_input_probe.pointer_start.has(7) and not city_input_probe.pointer_hold_elapsed.has(7), "Camera takeover must clear the pending tap and long-press state.")
 	city_input_probe.free()
 
+	var normal_release := InputEventScreenTouch.new()
+	normal_release.pressed = false
+	_check(CityInputScript.should_commit_city_touch_release(normal_release), "A normal touch release must be eligible to finish a city edit.")
+	var cancelled_release := InputEventScreenTouch.new()
+	cancelled_release.pressed = false
+	cancelled_release.canceled = true
+	_check(not CityInputScript.should_commit_city_touch_release(cancelled_release), "An OS-cancelled touch must never finish a city edit.")
+	var pressed_touch := InputEventScreenTouch.new()
+	pressed_touch.pressed = true
+	_check(not CityInputScript.should_commit_city_touch_release(pressed_touch), "A touch press must never be mistaken for a release confirmation.")
+
 func _test_hud_touch_session_ownership() -> void:
 	var tap_release := InputEventScreenTouch.new()
 	tap_release.pressed = false
