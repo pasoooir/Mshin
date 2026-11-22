@@ -392,8 +392,8 @@ func _build_meadow_biome_overlays() -> void:
 			var inner_mix := float(ring_index) / float(ring_levels.size() - 1)
 			var outer_mix := float(ring_index + 1) / float(ring_levels.size() - 1)
 			var tone := 1.0 + sin(float(patch_index) * 0.41 + float(ring_index) * 0.7) * 0.035
-				var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
-				var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
+			var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
+			var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
 			for segment in range(segments):
 				var next_segment := (segment + 1) % segments
 				var p00: Vector3 = inner_ring[segment]
