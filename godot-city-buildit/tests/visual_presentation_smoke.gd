@@ -142,6 +142,10 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
 			get_tree().quit(1)
 			return
+	if not world_visual_source.contains("float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;"):
+		push_error("[VisualPresentationSmoke] Terrain sand mask must use the same curved coastline function as the shoreline mesh")
+		get_tree().quit(1)
+		return
 	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0 or absf(presentation._coastline(-120.0) - presentation._coastline(120.0)) < 4.0:
 		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
 		get_tree().quit(1)
