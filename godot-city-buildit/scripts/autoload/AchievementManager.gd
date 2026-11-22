@@ -4,12 +4,6 @@ signal achievement_unlocked(id: String, title: String, simoleons_reward: int, xp
 signal state_changed
 
 const SCAN_INTERVAL_SECONDS := 1.0
-const STARTER_ACCESS_ROAD_COUNT := 50
-
-static func count_player_built_road_tiles(total_road_tiles: int) -> int:
-	# The first 50 road tiles are a free, prebuilt highway connector. They are
-	# starter infrastructure, not roads the player has constructed.
-	return maxi(0, total_road_tiles - STARTER_ACCESS_ROAD_COUNT)
 const DEFINITIONS := [
 	{"id":"first_home", "title":"First Home", "description":"Complete your first residential building.", "metric":"homes", "target":1, "simoleons":100, "xp":10},
 	{"id":"home_builder", "title":"Growing Neighborhood", "description":"Complete five residential buildings.", "metric":"homes", "target":5, "simoleons":250, "xp":20},
@@ -19,7 +13,7 @@ const DEFINITIONS := [
 	{"id":"mayor_level_10", "title":"Veteran Mayor", "description":"Reach Mayor Level 10.", "metric":"level", "target":10, "simoleons":600, "xp":35},
 	{"id":"industrialist", "title":"Industrial District", "description":"Complete three factories.", "metric":"factories", "target":3, "simoleons":350, "xp":25},
 	{"id":"green_city", "title":"Green City", "description":"Complete three parks.", "metric":"parks", "target":3, "simoleons":300, "xp":25},
-	{"id":"road_network", "title":"Connected City", "description":"Build 50 road tiles.", "metric":"roads", "target":50, "simoleons":300, "xp":20},
+	{"id":"road_network", "title":"Connected City", "description":"Expand your connected road network to 75 tiles.", "metric":"roads", "target":75, "simoleons":300, "xp":20},
 	{"id":"trade_seller", "title":"First Sale", "description":"Collect your first Trade Depot sale.", "metric":"sales", "target":1, "simoleons":150, "xp":15},
 	{"id":"global_buyer", "title":"Global Shopper", "description":"Buy your first Global Trade offer.", "metric":"market_purchases", "target":1, "simoleons":150, "xp":15},
 	{"id":"cargo_captain", "title":"Cargo Captain", "description":"Send your first cargo ship.", "metric":"ship_departures", "target":1, "simoleons":400, "xp":30},
@@ -67,7 +61,7 @@ func _collect_metrics() -> Dictionary:
 	var scene := get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	if is_instance_valid(road_system) and road_system.has_method("get_road_count"):
-		metrics["roads"] = count_player_built_road_tiles(int(road_system.get_road_count()))
+		metrics["roads"] = int(road_system.get_road_count())
 	return metrics
 
 func _check_achievements() -> void:
