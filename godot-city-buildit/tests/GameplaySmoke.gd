@@ -4706,7 +4706,7 @@ func _run_gameplay_test() -> void:
 	var entry_camera_rig := get_node_or_null("CameraRig")
 	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 84.0), "The opening camera must frame the Pacific coast and green city overview.")
 	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.rotation_degrees.y), -45.0), "The opening camera must look from the landward side toward the Pacific ocean instead of placing the sea behind the camera.")
-	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(42.0, 0.0, -12.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
+	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(62.0, 0.0, -10.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
 	if entry_camera_rig != null:
 		entry_camera_rig.current_zoom = 38.0
 		entry_camera_rig.global_position = Vector3(-9.0, 0.0, 2.5)
@@ -4774,7 +4774,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/HighwayLighting") != null, "Permanent motorway lighting was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/MeadowLivestock") == null, "Rural livestock must not appear in the Los Angeles-inspired starter scene.")
 	_check(WorldPresentationScript.HIGHWAY_LAMP_COUNT == 12, "The permanent motorway must include twelve batched light poles.")
-	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 44.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
+	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 56.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificCoastalPromenade") != null, "Pacific coastal promenade was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificPalmTrunks") != null and world.get_node_or_null("WorldPresentation/PacificPalmCrowns") != null, "Batched coastal palm trees were not generated.")
 	_check(WorldPresentationScript.HIGHWAY_LANE_COUNT == 6, "Permanent entrance highway must provide three lanes in each direction.")
