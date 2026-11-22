@@ -346,7 +346,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_continue_road_stroke(event.index, event.position)
 		elif BuildManager.is_moving and move_pointer_id == event.index:
 			_update_move_from_screen(event.position)
-		elif BuildManager.is_placing and event.index == 0:
+		elif BuildManager.is_placing and pointer_start.size() == 1:
+			# Touch indices are pointer identities, not a guarantee that the
+			# active finger is always index 0 after a prior multi-touch session.
 			_update_ghost(event.position)
 
 func _is_road_mode() -> bool:
