@@ -3,6 +3,7 @@ extends Node3D
 signal road_placed(grid_pos: Vector2i)
 signal road_removed(grid_pos: Vector2i)
 signal road_upgraded(grid_pos: Vector2i, new_level: int)
+signal road_mode_changed(active: bool)
 
 const GRID_SIZE: float = 2.0
 const GRID_HALF: float = GRID_SIZE * 0.5
@@ -50,6 +51,7 @@ func _ready() -> void:
 func set_road_mode(active: bool) -> void:
 	is_road_mode = active
 	is_road_upgrade_mode = false
+	road_mode_changed.emit(is_road_mode or is_road_upgrade_mode)
 	if active:
 		BuildManager.cancel_placement()
 
@@ -57,6 +59,8 @@ func set_road_upgrade_mode(active: bool) -> void:
 	is_road_upgrade_mode = active
 	if active:
 		is_road_mode = false
+	road_mode_changed.emit(is_road_mode or is_road_upgrade_mode)
+	if active:
 		BuildManager.cancel_placement()
 
 func get_road_level(grid_pos: Vector2i) -> int:
