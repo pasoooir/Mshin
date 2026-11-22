@@ -31,7 +31,7 @@ const COASTAL_GREEN_PALETTE := [
 	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
 ]
 const COASTLINE_BASE_X := 110.0
-const BEACH_WIDTH := 36.0
+const BEACH_WIDTH := 44.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
@@ -57,7 +57,8 @@ func _ready() -> void:
 	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
-	_build_coastal_promenade()
+	# Retire the isolated timber strip; render a proper surf edge instead.
+	_build_shoreline_foam()
 	_build_beach_palms()
 	_build_shoreline_details()
 	_build_cargo_ship_visual()
@@ -201,14 +202,14 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(8.0, 680.0, 180, 36, -0.055)
+	water.mesh = _create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	shallow_water.mesh = _create_coastal_water_mesh(0.12, 8.0, 180, 8, -0.025)
+	shallow_water.mesh = _create_coastal_water_mesh(0.12, 18.0, 220, 16, -0.025)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
@@ -718,6 +719,21 @@ func _build_tree_belts() -> void:
 		if _is_city_road_footprint(x, z):
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z), z))
+	# Irregular woodland groves with open gaps between them, not a perimeter fence.
+	var grove_centers := [Vector2(-94.0, -112.0), Vector2(-28.0, -112.0), Vector2(54.0, -108.0), Vector2(-92.0, 112.0), Vector2(-18.0, 108.0), Vector2(62.0, 104.0)]
+	for grove_index in range(grove_centers.size()):
+		var center: Vector2 = grove_centers[grove_index]
+		for tree_index in range(22):
+			var angle := float(tree_index) * 2.399963 + float(grove_index) * 0.73
+			var radius := 5.0 + sqrt(float(tree_index) / 22.0) * 19.0
+			var x := center.x + cos(angle) * radius
+			var z := center.y + sin(angle) * radius * 0.82
+			var point := Vector3(x, 0.0, z)
+			if LandExpansionManager.is_world_position_unlocked(point) or absf(x - HIGHWAY_CENTER_X) < 17.0:
+				continue
+			if x > _coastline(z) - BEACH_WIDTH - 10.0 or _is_city_road_footprint(x, z):
+				continue
+			positions.append(Vector3(x, _terrain_height(x, z), z))
 
 	var root_mesh := CylinderMesh.new()
 	root_mesh.top_radius = 0.24
@@ -1014,7 +1030,7 @@ void vertex() {
 void fragment() {
 	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 36.0 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
+	float sand_mask = smoothstep(coastline - 44.0 + transition_noise, coastline + 0.8 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
 	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
@@ -1027,21 +1043,26 @@ void fragment() {
 	float lush_mask = smoothstep(0.38, 0.72, macro_noise);
 	float dry_mask = smoothstep(0.61, 0.83, terrain_fbm(world_xz * 0.19 + vec2(41.0, 13.0)));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
-	vec3 deep_meadow = vec3(0.105, 0.205, 0.105);
-	vec3 fresh_meadow = vec3(0.235, 0.335, 0.145);
-	vec3 olive_grass = vec3(0.315, 0.305, 0.145);
+	vec3 deep_meadow = vec3(0.13, 0.245, 0.105);
+	vec3 fresh_meadow = vec3(0.30, 0.43, 0.17);
+	vec3 olive_grass = vec3(0.39, 0.36, 0.17);
 	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
 	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.48);
 	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
 	meadow *= mix(0.84, 1.08, patch);
 	meadow = mix(meadow, meadow_palette * (0.82 + meadow_noise * 0.42), 0.68);
 	meadow *= 0.91 + micro_noise * 0.18;
-	vec3 soil = vec3(0.31, 0.245, 0.145) * (0.82 + meadow_noise * 0.38);
+	vec3 soil = vec3(0.39, 0.30, 0.18) * (0.82 + meadow_noise * 0.38);
 	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
 	meadow = mix(meadow, soil, exposed_soil * 0.24);
-	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
+	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
+	float wet_sand = 1.0 - smoothstep(coastline - 5.5, coastline - 0.6, world_position.x);
+	vec3 damp_sand = sand * vec3(0.78, 0.82, 0.83);
+	sand = mix(sand, damp_sand, wet_sand * 0.72);
+	float dune_ripple = sin(world_position.z * 0.42 + world_position.x * 0.16) * 0.018;
+	sand += vec3(dune_ripple);
 	ALBEDO = mix(meadow, sand, sand_mask);
-	ROUGHNESS = mix(0.98, 0.91, sand_mask);
+	ROUGHNESS = mix(0.98, 0.84, sand_mask);
 	SPECULAR = 0.12;
 }
 """
@@ -1116,9 +1137,9 @@ func _create_water_material() -> ShaderMaterial:
 	shader.code = """
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back;
-uniform vec4 deep_color : source_color = vec4(0.015, 0.20, 0.38, 1.0);
-uniform vec4 blue_color : source_color = vec4(0.035, 0.43, 0.62, 1.0);
-uniform vec4 turquoise_color : source_color = vec4(0.12, 0.67, 0.70, 1.0);
+uniform vec4 deep_color : source_color = vec4(0.008, 0.105, 0.29, 1.0);
+uniform vec4 blue_color : source_color = vec4(0.018, 0.29, 0.53, 1.0);
+uniform vec4 turquoise_color : source_color = vec4(0.035, 0.58, 0.68, 1.0);
 uniform float wave_height = 0.11;
 varying vec3 world_position;
 void vertex() {
@@ -1130,16 +1151,20 @@ void vertex() {
 	world_position = (MODEL_MATRIX * vec4(p, 1.0)).xyz;
 }
 void fragment() {
-	float bands = sin(world_position.x * 0.075 + world_position.z * 0.045 + TIME * 0.45);
-	float depth_mix = smoothstep(-0.9, 0.9, bands);
-	vec3 water_color = mix(deep_color.rgb, blue_color.rgb, depth_mix);
-	float turquoise = smoothstep(0.25, 0.95, sin(world_position.x * 0.035 + world_position.z * 0.018));
-	water_color = mix(water_color, turquoise_color.rgb, turquoise * 0.42);
-	float ripple = pow(max(0.0, sin(world_position.x * 0.62 + world_position.z * 0.18 + TIME * 1.8)), 18.0);
-	ALBEDO = water_color + vec3(ripple * 0.16);
-	ROUGHNESS = 0.22;
-	METALLIC = 0.08;
-	SPECULAR = 0.72;
+	float coast = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float offshore = max(0.0, world_position.x - coast);
+	float depth = smoothstep(10.0, 190.0, offshore);
+	float broad_wave = sin(world_position.x * 0.031 + world_position.z * 0.019 + TIME * 0.18);
+	float mid_wave = sin(world_position.x * 0.12 - world_position.z * 0.047 + TIME * 0.42);
+	float water_noise = sin(world_position.x * 0.27 + world_position.z * 0.16 + TIME * 0.31) * 0.035;
+	vec3 nearshore = turquoise_color.rgb * (0.92 + broad_wave * 0.055 + mid_wave * 0.025);
+	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.30, 1.0, depth));
+	vec3 water_color = mix(nearshore, offshore_blue, depth);
+	float glint = pow(max(0.0, sin(world_position.x * 0.38 + world_position.z * 0.13 + TIME * 0.75)), 24.0);
+	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.11));
+	ROUGHNESS = 0.19;
+	METALLIC = 0.035;
+	SPECULAR = 0.78;
 }
 """
 	var material := ShaderMaterial.new()
@@ -1153,10 +1178,11 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_opaque;
 void fragment() {
 	float ripple = sin(UV.x * 42.0 + TIME * 1.2) * cos(UV.y * 17.0 - TIME * 0.7);
-	vec3 lagoon = mix(vec3(0.10, 0.56, 0.62), vec3(0.25, 0.76, 0.73), ripple * 0.18 + 0.35);
-	ALBEDO = lagoon;
-	ROUGHNESS = 0.3;
-	SPECULAR = 0.65;
+	float depth_bands = sin(UV.x * 5.0 + UV.y * 1.8 + TIME * 0.22) * 0.04;
+	vec3 lagoon = mix(vec3(0.035, 0.48, 0.61), vec3(0.16, 0.72, 0.72), ripple * 0.12 + 0.38);
+	ALBEDO = lagoon + vec3(depth_bands);
+	ROUGHNESS = 0.24;
+	SPECULAR = 0.72;
 }
 """
 	var material := ShaderMaterial.new()
@@ -1763,6 +1789,46 @@ func _create_palm_frond_mesh() -> ArrayMesh:
 			previous_right = right
 	surface.generate_normals()
 	return surface.commit()
+
+
+
+func _build_shoreline_foam() -> void:
+	# Broken, naturally irregular surf line readable at mobile zoom levels.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const SEGMENTS := 220
+	for step in range(SEGMENTS):
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step) / float(SEGMENTS))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step + 1) / float(SEGMENTS))
+		var wave0 := sin(z0 * 0.31) * 0.62 + cos(z0 * 0.17) * 0.42
+		var wave1 := sin(z1 * 0.31) * 0.62 + cos(z1 * 0.17) * 0.42
+		var coast0 := _coastline(z0)
+		var coast1 := _coastline(z1)
+		var inner0 := Vector3(coast0 + 0.7 + wave0, -0.006, z0)
+		var outer0 := Vector3(coast0 + 3.1 + wave0 * 1.4, -0.006, z0)
+		var inner1 := Vector3(coast1 + 0.7 + wave1, -0.006, z1)
+		var outer1 := Vector3(coast1 + 3.1 + wave1 * 1.4, -0.006, z1)
+		var foam_strength := 0.38 + 0.24 * (0.5 + 0.5 * sin(float(step) * 0.73))
+		surface.set_color(Color(0.88, 0.96, 0.96, foam_strength))
+		surface.add_vertex(inner0)
+		surface.set_color(Color(0.96, 0.99, 1.0, 0.04))
+		surface.add_vertex(inner1)
+		surface.set_color(Color(0.94, 0.98, 0.98, foam_strength * 0.72))
+		surface.add_vertex(outer0)
+		surface.add_vertex(outer0)
+		surface.add_vertex(inner1)
+		surface.add_vertex(outer1)
+	var foam := MeshInstance3D.new()
+	foam.name = "PacificShoreFoam"
+	foam.mesh = surface.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	foam.material_override = material
+	foam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(foam)
 
 
 func _build_shoreline_details() -> void:
