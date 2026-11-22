@@ -212,8 +212,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_refresh_processing()
 		else:
 			touch_points.erase(event.index)
-			pan_velocity = Vector2.ZERO if _multi_touch_gesture_active else pan_velocity
-			orbit_velocity = 0.0
+			if _multi_touch_gesture_active:
+				pan_velocity = Vector2.ZERO
+				orbit_velocity = 0.0
 			_multi_touch_gesture_active = touch_points.size() >= 2
 			if touch_points.size() == 1:
 				var remaining_ids: Array = touch_points.keys()
@@ -228,8 +229,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		var previous_single_position := _last_single_touch_position
 		touch_points[event.index] = event.position
 		if touch_points.size() == 1:
-			# CityInput owns long-press building relocation and placement gestures.
-			if not _is_road_mode() and not BuildManager.is_moving and not _is_building_press_pending(event.index):
+			# A deliberate drag takes ownership from CityInput's pending tap/hold.
+			# This lets the map pan when the gesture starts on a building too.
+			if not _is_road_mode() and not BuildManager.is_moving and _city_input_allows_camera_drag(event.index, event.position):
 				_pan_between_screen_points(previous_single_position, event.position)
 				orbit_velocity = 0.0
 				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
@@ -238,6 +240,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif touch_points.size() >= 2:
 			_update_pinch()
 		_refresh_processing()
+
+func _city_input_allows_camera_drag(pointer_id: int, screen_position: Vector2) -> bool:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if is_instance_valid(scene) else null
+	if city_input == null:
+		return true
+	if city_input.has_method("take_over_camera_drag"):
+		return bool(city_input.take_over_camera_drag(pointer_id, screen_position))
+	return not _is_building_press_pending(pointer_id)
 
 func _is_building_press_pending(pointer_id: int) -> bool:
 	var scene = get_tree().current_scene
