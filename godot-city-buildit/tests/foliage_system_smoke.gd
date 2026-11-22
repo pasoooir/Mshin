@@ -1,6 +1,7 @@
 extends SceneTree
 
 const FoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
+const SeasonManagerScript = preload("res://scripts/world/FoliageSeasonManager.gd")
 
 
 func _initialize() -> void:
@@ -34,6 +35,11 @@ func _run() -> void:
             _fail("Every tree must have exactly one instance in each LOD tier.")
             return
 
+    var winter_density := float(SeasonManagerScript.new().call("_season_density", 3))
+    if winter_density < 0.48:
+        _fail("Winter foliage density is too low to survive the shader alpha-scissor threshold.")
+        return
+
     var shader_source := FileAccess.get_file_as_string("res://shaders/stylized_foliage.gdshader")
     for required in [
         "ALPHA_SCISSOR_THRESHOLD = 0.32",
@@ -66,12 +72,13 @@ func _run() -> void:
     if season_manager == null or int(season_manager.get("current_season")) != 2:
         _fail("Autumn season transition did not reach its requested state.")
         return
-    print("[FoliageSystemSmoke] PASS trees=%d chunks=%d lod_instances=%d/%d/%d" % [
+    print("[FoliageSystemSmoke] PASS trees=%d chunks=%d lod_instances=%d/%d/%d winter_density=%.2f" % [
         system.get_tree_count(),
         system.get_chunk_count(),
         system.get_lod_instance_count(0),
         system.get_lod_instance_count(1),
-        system.get_lod_instance_count(2)
+        system.get_lod_instance_count(2),
+        winter_density
     ])
     system.queue_free()
     quit(0)
