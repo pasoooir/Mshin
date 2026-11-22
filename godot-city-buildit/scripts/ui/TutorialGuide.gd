@@ -127,10 +127,52 @@ func _initialize_after_city_restore() -> void:
 	_connect_gameplay_events()
 	_sync_existing_city_state()
 	_build_guide_panel()
+	_build_coach_toggle_button()
 	if completed:
 		_show_completion()
 	else:
 		_refresh_guide()
+	# Keep the opening city view unobstructed. The complete coach remains one tap away.
+	_dismissed = true
+	_panel.hide()
+
+func _build_coach_toggle_button() -> void:
+	var coach_button := Button.new()
+	coach_button.name = "CityCoachToggle"
+	coach_button.text = "?"
+	coach_button.tooltip_text = "Open City Coach"
+	coach_button.custom_minimum_size = Vector2(54.0, 54.0)
+	coach_button.anchor_left = 0.0
+	coach_button.anchor_top = 1.0
+	coach_button.anchor_right = 0.0
+	coach_button.anchor_bottom = 1.0
+	coach_button.offset_left = 16.0
+	coach_button.offset_top = -74.0
+	coach_button.offset_right = 70.0
+	coach_button.offset_bottom = -20.0
+	coach_button.add_theme_font_size_override("font_size", 28)
+	coach_button.add_theme_color_override("font_color", Color("#F4FAFF"))
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#173B50")
+	style.border_color = Color("#73C7D9")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(27)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.32)
+	style.shadow_size = 6
+	coach_button.add_theme_stylebox_override("normal", style)
+	var hover_style := style.duplicate() as StyleBoxFlat
+	hover_style.bg_color = Color("#245A70")
+	coach_button.add_theme_stylebox_override("hover", hover_style)
+	coach_button.pressed.connect(_toggle_guide_panel)
+	add_child(coach_button)
+
+
+func _toggle_guide_panel() -> void:
+	if not is_instance_valid(_panel):
+		return
+	_dismissed = _panel.visible
+	_panel.visible = not _panel.visible
+
 
 func _connect_gameplay_events() -> void:
 	if not BuildManager.building_placed.is_connected(_on_building_placed):
