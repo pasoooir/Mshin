@@ -1124,7 +1124,7 @@ float terrain_cellular(vec2 p) {
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			vec2 neighbour = vec2(float(x), float(y));
-			vec2 feature = neighbour + vec2(
+			vec2 feature = vec2(
 				terrain_hash(cell + neighbour + vec2(17.0, 3.0)),
 				terrain_hash(cell + neighbour + vec2(41.0, 29.0))
 			) * 0.72 + 0.14;
