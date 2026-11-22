@@ -220,6 +220,57 @@ jobs:
           // emulation can stall Chromium's compositor.
           await mobilePage.waitForTimeout(2000);
 
+          // Exercise the actual browser touch-event path against the embedded
+          // Godot canvas. CDP dispatches touch points at page coordinates, so
+          // this covers iframe routing and the browser's multi-pointer input
+          // delivery (Godot GameplaySmoke remains the camera-math assertion).
+          const mobileCanvas = mobilePage.frameLocator('#game-frame').locator('canvas');
+          const canvasBounds = await mobileCanvas.boundingBox();
+          if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
+            throw new Error('Mobile canvas bounds are unavailable or too small for touch acceptance');
+          }
+          const touchSession = await mobilePage.context().newCDPSession(mobilePage);
+          const centerX = canvasBounds.x + canvasBounds.width * 0.5;
+          const centerY = canvasBounds.y + canvasBounds.height * 0.52;
+          const touch = (id, x, y) => ({ id, x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1 });
+
+          // Two-finger pinch-out: increase separation around a stable centroid.
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [touch(1, centerX - 42, centerY), touch(2, centerX + 42, centerY)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touch(1, centerX - 68, centerY), touch(2, centerX + 68, centerY)]
+          });
+          // Two-finger pan: translate both contacts without changing separation.
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touch(1, centerX - 48, centerY + 24), touch(2, centerX + 88, centerY + 24)]
+          });
+          // Two-finger twist: rotate the pair around its midpoint.
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touch(1, centerX - 48, centerY - 44), touch(2, centerX + 48, centerY + 44)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+          // Confirm a clean two-to-one transition followed by a fresh one-finger pan.
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [touch(3, centerX, centerY)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touch(3, centerX + 36, centerY + 22)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await touchSession.detach();
+          await mobilePage.waitForTimeout(500);
+          if (!(await mobileCanvas.isVisible())) {
+            throw new Error('Mobile canvas became hidden after single- and multi-touch gestures');
+          }
+
           if (errors.length || mobileErrors.length) {
             throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
           }
