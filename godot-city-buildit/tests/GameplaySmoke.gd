@@ -4536,7 +4536,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/DistantMountainBackdrop") == null, "The starter city must not instantiate a mountain backdrop.")
 	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 150.0), "The city camera must expose the expanded 150 m overview zoom.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 210.0), "The city camera must expose enough zoom-out range beyond its 150 m opening overview.")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
