@@ -826,12 +826,7 @@ func _build_tree_belts() -> void:
 	bark_material.albedo_texture = _create_bark_texture()
 	bark_material.roughness = 1.0
 	root_mesh.material = bark_material
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.13
-	trunk_mesh.bottom_radius = 0.25
-	trunk_mesh.height = 2.8
-	trunk_mesh.radial_segments = 8
-	trunk_mesh.material = bark_material
+	var trunk_mesh := _create_branched_tree_trunk_mesh(bark_material)
 	# Tree trunks and contact shadows remain separate, inexpensive shared batches.
 	# The old sphere-lobe crowns are replaced by a four-species crossed-card system
 	# with chunked MultiMeshes and three distance-based geometry tiers.
@@ -846,6 +841,35 @@ func _build_tree_belts() -> void:
 	add_child(foliage_system)
 	add_child(roots)
 	add_child(trunks)
+
+
+func _create_branched_tree_trunk_mesh(bark_material: Material) -> ArrayMesh:
+	# One reusable low-poly trunk mesh with four tapered primary branches.
+	# Branches are merged into the same surface to avoid extra draw calls.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	surface.set_material(bark_material)
+
+	var trunk := CylinderMesh.new()
+	trunk.top_radius = 0.13
+	trunk.bottom_radius = 0.25
+	trunk.height = 2.8
+	trunk.radial_segments = 8
+	surface.append_from(trunk, 0, Transform3D.IDENTITY)
+
+	for branch_index in range(4):
+		var yaw := TAU * float(branch_index) / 4.0 + 0.28
+		var branch := CylinderMesh.new()
+		branch.top_radius = 0.045
+		branch.bottom_radius = 0.095
+		branch.height = 1.25
+		branch.radial_segments = 6
+		var tilt := deg_to_rad(31.0 + float(branch_index % 2) * 7.0)
+		var basis := Basis(Vector3.UP, yaw) * Basis(Vector3(0.0, 0.0, 1.0), tilt)
+		var origin := Vector3(cos(yaw) * 0.20, 0.82 + float(branch_index % 2) * 0.25, sin(yaw) * 0.20)
+		surface.append_from(branch, 0, Transform3D(basis, origin))
+
+	return surface.commit()
 
 
 func _create_conifer_canopy_mesh() -> ArrayMesh:
