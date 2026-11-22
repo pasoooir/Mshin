@@ -52,6 +52,7 @@ func _ready() -> void:
 		_road_system_cache.connect("road_mode_changed", Callable(self, "_on_road_mode_changed"))
 	_build_environment()
 	_build_terrain()
+	_build_meadow_biome_overlays()
 	_build_sandy_beach()
 	_build_land_expansion_markers()
 	_build_city_grid()
@@ -149,21 +150,23 @@ func refresh_region_appearance() -> void:
 		var sky_material := world_environment.environment.sky.sky_material as ProceduralSkyMaterial
 		if is_instance_valid(sky_material):
 			_apply_region_climate(sky_material, world_environment.environment)
-	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
+	for node_name in ["NaturalTerrain", "MeadowBiomePatches", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
 			old_node.free()
 	_build_terrain()
+	_build_meadow_biome_overlays()
 	_build_land_expansion_markers()
 	_build_city_grid()
 
 
 func _on_land_expansion_changed() -> void:
-	for node_name in ["NaturalTerrain", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
+	for node_name in ["NaturalTerrain", "MeadowBiomePatches", "CoastalWater", "ShallowWater", "LandExpansionMarkers", "BuildablePlotGrid"]:
 		var old_node := get_node_or_null(node_name)
 		if is_instance_valid(old_node):
 			old_node.free()
 	_build_terrain()
+	_build_meadow_biome_overlays()
 	_build_land_expansion_markers()
 	_build_city_grid()
 
@@ -334,6 +337,95 @@ void fragment() {
 	beach.material_override = material
 	beach.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(beach)
+
+
+func _build_meadow_biome_overlays() -> void:
+	# The compatibility renderer can flatten subtle procedural shader variation
+	# at the mobile overview distance. Add a single deterministic, vertex-colour
+	# patch mesh so meadow/soil/olive fields remain visibly distinct in WebGL.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261122
+	var palette: Array[Color] = [
+		Color("#77815A"), Color("#8C8258"), Color("#6C7E50"),
+		Color("#566F46"), Color("#82664C"), Color("#98865D"),
+		Color("#687A54")
+	]
+	var base_edge := Color("#25723D")
+	var patch_count := 280
+	for patch_index in range(patch_count):
+		var center_x := rng.randf_range(-112.0, 88.0)
+		var center_z := rng.randf_range(-136.0, 136.0)
+		if center_x > _coastline(center_z) - BEACH_WIDTH - 14.0:
+			continue
+		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
+			continue
+		var in_starter_city := absf(center_x) < 34.0 and absf(center_z) < 34.0
+		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(2.8, 5.5)
+		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
+		var rotation := rng.randf_range(0.0, TAU)
+		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.60)
+		if in_starter_city:
+			# Keep future building plots readable: subtle sage and dry-grass
+			# islands add texture without looking like prebuilt landscaping.
+			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34)).lerp(base_edge, 0.48)
+		var ring_levels := [0.0, 0.34, 0.68, 1.0]
+		var segments := 16
+		var ring_points: Array = []
+		for ring_value in ring_levels:
+			var ring: Array[Vector3] = []
+			for segment in range(segments):
+				var angle := TAU * float(segment) / float(segments)
+				var edge_noise := 1.0 + sin(angle * 2.0 + float(patch_index) * 0.71) * 0.20 + cos(angle * 5.0 - float(patch_index) * 0.37) * 0.14 + sin(angle * 9.0 + float(patch_index) * 0.23) * 0.075 + cos(angle * 13.0 - float(patch_index) * 0.19) * 0.045
+				var local_x := cos(angle) * radius_x * float(ring_value) * edge_noise
+				var local_z := sin(angle) * radius_z * float(ring_value) * edge_noise
+				var rotated_x := local_x * cos(rotation) - local_z * sin(rotation)
+				var rotated_z := local_x * sin(rotation) + local_z * cos(rotation)
+				var point_x := center_x + rotated_x
+				var point_z := center_z + rotated_z
+				ring.append(Vector3(point_x, _terrain_height(point_x, point_z) + 0.052, point_z))
+			ring_points.append(ring)
+		for ring_index in range(ring_levels.size() - 1):
+			var inner_ring: Array = ring_points[ring_index]
+			var outer_ring: Array = ring_points[ring_index + 1]
+			var inner_mix := float(ring_index) / float(ring_levels.size() - 1)
+			var outer_mix := float(ring_index + 1) / float(ring_levels.size() - 1)
+			for segment in range(segments):
+				var next_segment := (segment + 1) % segments
+				var angle := TAU * float(segment) / float(segments)
+				var tone := 1.0 + sin(float(patch_index) * 0.41 + float(ring_index) * 0.7 + angle * 3.0) * 0.045 + cos(angle * 7.0 - float(patch_index) * 0.37) * 0.025
+				var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
+				var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
+				var p00: Vector3 = inner_ring[segment]
+				var p01: Vector3 = inner_ring[next_segment]
+				var p10: Vector3 = outer_ring[segment]
+				var p11: Vector3 = outer_ring[next_segment]
+				surface.set_color(inner_color)
+				surface.add_vertex(p00)
+				surface.set_color(outer_color)
+				surface.add_vertex(p10)
+				surface.set_color(inner_color)
+				surface.add_vertex(p01)
+				surface.set_color(inner_color)
+				surface.add_vertex(p01)
+				surface.set_color(outer_color)
+				surface.add_vertex(p10)
+				surface.set_color(outer_color)
+				surface.add_vertex(p11)
+	surface.generate_normals()
+	var patches := MeshInstance3D.new()
+	patches.name = "MeadowBiomePatches"
+	patches.mesh = surface.commit()
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.vertex_color_use_as_albedo = true
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 1.0
+	patches.material_override = material
+	patches.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	patches.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	add_child(patches)
 
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:

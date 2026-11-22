@@ -6,6 +6,12 @@ const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.g
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
+	presentation._build_meadow_biome_overlays()
+	var biome_patch_node := presentation.get_node_or_null("MeadowBiomePatches") as MeshInstance3D
+	if not is_instance_valid(biome_patch_node) or biome_patch_node.mesh == null or biome_patch_node.mesh.get_surface_count() != 1:
+		push_error("[VisualPresentationSmoke] WebGL meadow biome patchwork must generate one batched vertex-colour mesh")
+		get_tree().quit(1)
+		return
 	# Coastline regression: water geometry must follow the curved beach edge,
 	# and the terrain must taper to the sea datum instead of overlapping it.
 	var coast_sample := presentation._coastline(0.0)
@@ -110,6 +116,10 @@ func _ready() -> void:
 		"vec3 straw_grass = vec3(0.635, 0.565, 0.390)",
 		"vec3 exposed_soil = vec3(0.405, 0.305, 0.205)",
 		"float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
+		"func _build_meadow_biome_overlays() -> void:",
+		"var patch_count := 280",
+		"patches.name = \"MeadowBiomePatches\"",
+		"material.vertex_color_use_as_albedo = true",
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
 		"meadow = mix(meadow, straw_grass, dry_mask * 0.54)",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
