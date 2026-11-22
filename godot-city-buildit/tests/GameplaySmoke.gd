@@ -4456,6 +4456,8 @@ func _test_tutorial_guide_contract() -> void:
 	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
 	var compact_coach_layout := TutorialGuideScript.get_panel_layout(Vector2(844.0, 390.0), true)
 	_check(is_equal_approx(float(compact_coach_layout.get("width", 0.0)), 380.0) and is_equal_approx(float(compact_coach_layout.get("height", 0.0)), 230.0), "Compact landscape city coach must stay within a 380×230 logical-pixel footprint instead of covering nearly the full mobile height.")
+	var compact_960_coach_layout := TutorialGuideScript.get_panel_layout(Vector2(960.0, 540.0), true)
+	_check(is_equal_approx(float(compact_960_coach_layout.get("width", 0.0)), 380.0) and is_equal_approx(float(compact_960_coach_layout.get("height", 0.0)), 230.0), "The 960×540 compact landscape profile must use the compact city coach layout, not the tablet-sized panel.")
 	_check(float(compact_coach_layout.get("top", 0.0)) + float(compact_coach_layout.get("height", 0.0)) <= 390.0, "Compact landscape city coach must remain fully inside an 844×390 viewport.")
 	var tablet_coach_layout := TutorialGuideScript.get_panel_layout(Vector2(1024.0, 768.0), true)
 	_check(is_equal_approx(float(tablet_coach_layout.get("width", 0.0)), 430.0) and is_equal_approx(float(tablet_coach_layout.get("height", 0.0)), 270.0), "Tablet city coach must use the wider but shorter responsive profile.")
