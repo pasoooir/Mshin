@@ -181,7 +181,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			orbit_velocity = 0.0
 			is_mouse_panning = false
 			_refresh_processing()
-			# Do not consume this pointer event: CityInput must clear its own session too.
+			# Both world handlers must observe a blocked pointer to clear their own state.
+			if should_consume_blocked_world_input(event):
+				get_viewport().set_input_as_handled()
 			return
 	if is_instance_valid(hud):
 		var production_modal = hud.get("production_overlay")
@@ -198,7 +200,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			orbit_velocity = 0.0
 			is_focus_animating = false
 			_refresh_processing()
-			if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+			if should_consume_blocked_world_input(event):
 				get_viewport().set_input_as_handled()
 			return
 
@@ -270,6 +272,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif touch_points.size() >= 2:
 			_update_pinch()
 		_refresh_processing()
+
+static func should_consume_blocked_world_input(event: InputEvent) -> bool:
+	return not (event is InputEventScreenTouch or event is InputEventScreenDrag)
 
 static func is_cancelled_touch_release(event: InputEvent) -> bool:
 	return event is InputEventScreenTouch and not event.pressed and event.canceled
