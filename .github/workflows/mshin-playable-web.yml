@@ -201,13 +201,22 @@ jobs:
           ];
           const responsiveCaptureNames = [];
           const responsiveCaptureDetails = [];
-          // The game requests fullscreen after PLAY. CDP metrics can update CSS bounds
-          // while the screenshot remains at the outer-window resolution, so assert
-          // window.innerWidth/Height and PNG IHDR dimensions for every profile.
+          // Godot requests fullscreen after PLAY. Chromium rejects
+          // Browser.setWindowBounds/Playwright viewport resizing while the
+          // top-level window is fullscreen or maximized. Restore the browser
+          // window to its normal state before applying each real viewport size.
+          // This is a test-harness transition only; the game remains running.
+          const desktopWindowSession = await page.context().newCDPSession(page);
+          const { windowId: desktopWindowId } = await desktopWindowSession.send('Browser.getWindowForTarget');
+          await desktopWindowSession.send('Browser.setWindowBounds', {
+            windowId: desktopWindowId,
+            bounds: { windowState: 'normal' }
+          });
+          await desktopWindowSession.detach();
+          await page.waitForTimeout(150);
+
+          // Validate CSS viewport, iframe bounds and PNG IHDR dimensions for every profile.
           for (const profile of responsiveProfiles) {
-            // Resize the actual Playwright page viewport. CDP device metrics can
-            // change innerWidth/innerHeight while a fullscreen page screenshot
-            // still uses the original outer-window dimensions.
             await page.setViewportSize({ width: profile.width, height: profile.height });
             await page.waitForTimeout(350);
             const actualViewport = await page.evaluate(() => ({
