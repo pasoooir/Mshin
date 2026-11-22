@@ -129,6 +129,25 @@ func _ready() -> void:
 	main_instance.free()
 
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
+	var conifer_canopy: ArrayMesh = presentation._create_conifer_canopy_mesh()
+	var umbrella_canopy: ArrayMesh = presentation._create_umbrella_canopy_mesh()
+	if conifer_canopy == null or umbrella_canopy == null:
+		push_error("[VisualPresentationSmoke] Conifer and umbrella canopy meshes must be generated locally")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	if canopy.get_aabb().size.y <= conifer_canopy.get_aabb().size.y or umbrella_canopy.get_aabb().size.x <= conifer_canopy.get_aabb().size.x:
+		push_error("[VisualPresentationSmoke] Tree species must retain visibly distinct canopy proportions")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	var world_ready_source := world_source
+	for species_batch in ["TreeCanopies", "TreeCanopiesConifer", "TreeCanopiesUmbrella", "PacificPalmCrowns"]:
+		if not world_ready_source.contains(species_batch):
+			push_error("[VisualPresentationSmoke] Starter greenbelt is missing a distinct foliage batch: " + species_batch)
+			presentation.free()
+			get_tree().quit(1)
+			return
 	if canopy == null or canopy.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Canopy must be a single mesh surface")
 		presentation.free()
