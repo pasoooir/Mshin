@@ -87,9 +87,9 @@ func _test_camera_gesture_math() -> void:
 	var scale_b := CameraControllerScript.pinch_zoom_delta(200.0, 300.0, 0.045, 50.0)
 	_check(is_equal_approx(scale_a, scale_b), "Equivalent pinch scale ratios must produce the same zoom change regardless of raw touch-pixel distances.")
 	var opening_zoom_probe := CameraControllerScript.new()
-	opening_zoom_probe.current_zoom = 150.0
-	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 150.0))
-	_check(opening_zoom_probe.current_zoom > 150.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
+	opening_zoom_probe.current_zoom = 84.0
+	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 84.0))
+	_check(opening_zoom_probe.current_zoom > 84.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
 	opening_zoom_probe.free()
 	var city_input_probe := CityInputScript.new()
 	city_input_probe.pointer_start[7] = Vector2(100.0, 100.0)
@@ -4704,8 +4704,9 @@ func _run_gameplay_test() -> void:
 	# Assert the real entry overview, then move the test camera into a close city view
 	# so touch/building interaction fixtures remain inside the mobile viewport.
 	var entry_camera_rig := get_node_or_null("CameraRig")
-	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 150.0), "The opening camera must frame the Pacific coast and green city overview.")
-	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(38.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
+	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 110.0), "The opening camera must frame the Pacific coast and green city overview.")
+	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.rotation_degrees.y), -45.0), "The opening camera must look from the landward side toward the Pacific ocean instead of placing the sea behind the camera.")
+	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(25.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
 	if entry_camera_rig != null:
 		entry_camera_rig.current_zoom = 38.0
 		entry_camera_rig.global_position = Vector3(-9.0, 0.0, 2.5)
@@ -4765,7 +4766,7 @@ func _run_gameplay_test() -> void:
 	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
 	await _test_mixed_hud_world_touch_isolation(input_node, camera_rig)
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 210.0), "The city camera must expose enough zoom-out range beyond its 150 m opening overview.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 150.0), "The city camera must expose enough zoom-out range beyond its 84 m opening overview.")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
@@ -4773,7 +4774,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/HighwayLighting") != null, "Permanent motorway lighting was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/MeadowLivestock") == null, "Rural livestock must not appear in the Los Angeles-inspired starter scene.")
 	_check(WorldPresentationScript.HIGHWAY_LAMP_COUNT == 12, "The permanent motorway must include twelve batched light poles.")
-	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 36.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
+	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 56.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificCoastalPromenade") != null, "Pacific coastal promenade was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificPalmTrunks") != null and world.get_node_or_null("WorldPresentation/PacificPalmCrowns") != null, "Batched coastal palm trees were not generated.")
 	_check(WorldPresentationScript.HIGHWAY_LANE_COUNT == 6, "Permanent entrance highway must provide three lanes in each direction.")
@@ -5631,10 +5632,18 @@ func _run_gameplay_test() -> void:
 	var previous_level := GameManager.level
 	GameManager.level = 4
 	_grant_construction_bom_for_test("hardware_store")
-	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
+	var hardware_store_size: Vector2i = BuildManager.get_building_size("hardware_store", 0)
+	var hardware_store_placed := BuildManager.place_building(Vector2i(9, 1), "hardware_store")
+	if not hardware_store_placed:
+		print("[HardwareStoreDebug] level=", GameManager.level, " affordable=", EconomyManager.can_afford(2500), " bom_lock=", BuildManager.get_construction_bom_lock_reason("hardware_store"), " free=", BuildManager.is_cell_free(Vector2i(9, 1), hardware_store_size), " road_access=", BuildManager.has_road_access(Vector2i(9, 1), hardware_store_size))
+	_check(hardware_store_placed, "Could not place Hardware Store for production acceptance.")
+	if not hardware_store_placed:
+		return
 	await _wait_seconds(5.5)
 	var hardware = _find_building("hardware_store")
 	_check(hardware != null and hardware.status == "completed", "Hardware Store construction did not finish.")
+	if hardware == null:
+		return
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("wood",1)
 	var hardware_component = hardware.production_component

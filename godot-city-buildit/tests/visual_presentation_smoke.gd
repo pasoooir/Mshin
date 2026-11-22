@@ -23,14 +23,24 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Beach terrain must meet the ocean at the sea datum")
 		get_tree().quit(1)
 		return
+	var starter_plot_height := presentation._terrain_height(12.0, 12.0)
+	var outer_meadow_height := presentation._terrain_height(78.0, -54.0)
+	if absf(starter_plot_height) > 0.01:
+		push_error("[VisualPresentationSmoke] Starter build plots must remain perfectly level")
+		get_tree().quit(1)
+		return
+	if absf(outer_meadow_height) < 0.65 or absf(outer_meadow_height) > 3.5:
+		push_error("[VisualPresentationSmoke] Outer meadow must have visible but restrained rolling terrain relief; sampled height=%s" % outer_meadow_height)
+		get_tree().quit(1)
+		return
 	var ocean_mesh := presentation._create_coastal_water_mesh(8.0, 159.0, 24, 4, -0.055)
 	var ocean_bounds := ocean_mesh.get_aabb()
 	if ocean_mesh.get_surface_count() != 1 or ocean_bounds.position.x < 45.0 or ocean_bounds.end.x < 158.9:
 		push_error("[VisualPresentationSmoke] Deep water must be a continuous coastline-following mesh extending offshore")
 		get_tree().quit(1)
 		return
-	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 8.0, 24, 4, -0.025)
-	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 16.0:
+	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 18.0, 24, 8, -0.025)
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 32.0:
 		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
 		get_tree().quit(1)
 		return
@@ -70,6 +80,23 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
+	var terrain_material_source := world_source
+	for required_terrain_layer in [
+		"float terrain_fbm(vec2 p)",
+		"float terrain_noise(vec2 p)",
+		"vec3 deep_meadow = vec3(0.13, 0.245, 0.105)",
+		"vec3 fresh_meadow = vec3(0.30, 0.43, 0.17)",
+		"vec3 olive_grass = vec3(0.39, 0.36, 0.17)",
+		"float exposed_soil = smoothstep",
+		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
+		"var fresh_grass := Color(\"#718F4C\")",
+		"var biome_soil_mask := smoothstep",
+		"SPECULAR = 0.12"
+	]:
+		if not terrain_material_source.contains(required_terrain_layer):
+			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
+			get_tree().quit(1)
+			return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
 		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
 		get_tree().quit(1)
@@ -89,15 +116,16 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 36.0",
-		"func _build_coastal_promenade(",
+		"const BEACH_WIDTH := 56.0",
+		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
-		"PacificCoastalPromenade",
+		"PacificShoreFoam",
 		"PacificPalmTrunks",
 		"PacificPalmCrowns",
 		"COASTAL_GREEN_PALETTE",
-		"_build_coastal_promenade()",
+		"_build_sandy_beach()",
+		"_build_shoreline_foam()",
 		"_build_beach_palms()"
 	]:
 		if not world_visual_source.contains(required_coastal_feature):
@@ -144,6 +172,40 @@ func _ready() -> void:
 	var city_camera := main_instance.get_node_or_null("CameraRig/Camera3D") as Camera3D
 	if city_camera == null:
 		push_error("[VisualPresentationSmoke] Main scene must expose its playable city camera")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	var camera_rig := main_instance.get_node_or_null("CameraRig")
+	if camera_rig == null or float(camera_rig.get("max_zoom")) > 150.0 or float(camera_rig.get("current_zoom")) > 150.0:
+		push_error("[VisualPresentationSmoke] Maximum zoom-out must keep the city, coast and sea inside a useful playable composition")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	var camera_source := FileAccess.get_file_as_string("res://scripts/systems/CameraController.gd")
+	if not camera_source.contains("camera.fov = 62.0") or not camera_source.contains("global_position = Vector3(25.0, 0.0, 0.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, -45.0, 0.0)"):
+		push_error("[VisualPresentationSmoke] Opening camera must frame the ocean and buildable city together")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)
+	if wide_ocean == null or wide_ocean.get_aabb().size.x < 500.0 or wide_ocean.get_aabb().size.z < 280.0:
+		push_error("[VisualPresentationSmoke] Pacific ocean must form a broad visible water body, not a narrow shoreline strip")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 56.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	presentation.call("_build_sandy_beach")
+	var sandy_beach := presentation.get_node_or_null("ContinuousSandyBeach") as MeshInstance3D
+	if sandy_beach == null or sandy_beach.mesh == null or sandy_beach.mesh.get_surface_count() == 0:
+		push_error("[VisualPresentationSmoke] A continuous visible sandy beach mesh must cover the full coastline")
+	presentation.call("_build_shoreline_foam")
+	if presentation.get_node_or_null("PacificShoreFoam") == null:
+		push_error("[VisualPresentationSmoke] The beach must have a visible irregular surf/foam edge")
 		main_instance.free()
 		get_tree().quit(1)
 		return
