@@ -202,8 +202,8 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 
 ## Responsive viewport and orientation audit
 
-- **AUDIT-010 — Responsive viewport and orientation matrix: CI PASS on the pre-PR-657 baseline; rerun required on merged UI.**
-  - PR #658 uses CDP device-metric overrides to resize one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
-  - The touch-enabled mobile browser is also emulated through 844x390 -> 390x844 -> 844x390 using CDP screen-orientation metrics. The canvas must remain visible through portrait fallback and landscape return.
+- **AUDIT-010 — Responsive viewport and orientation matrix: PARTIAL; screenshot-dimension defect found and assertion added.**
+  - The first PR #658 matrix run passed its iframe/canvas checks but every PNG was still 1280x720. That is not accepted as responsive screenshot evidence. The latest change additionally asserts `window.innerWidth/innerHeight`, iframe bounds and the PNG header dimensions against each target profile, using CSS-scale screenshots.
+  - The touch-enabled mobile browser is emulated through 844x390 -> 390x844 -> 844x390 using CDP screen-orientation metrics; the latest change verifies actual `window.innerWidth/innerHeight` as well as canvas visibility.
   - Matrix review found 960x540 was incorrectly using the larger tablet coach profile. PR #658 moves the compact breakpoint to widths below 1024 or heights below 600 and adds a GameplaySmoke regression for 960x540.
   - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.
