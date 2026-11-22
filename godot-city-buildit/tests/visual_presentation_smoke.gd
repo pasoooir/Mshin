@@ -123,7 +123,7 @@ func _ready() -> void:
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
 		"meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
-		"var fresh_grass := Color(\"#85845A\")",
+		"var fresh_grass := Color(\"#A39A69\")",
 		"var biome_soil_mask := smoothstep",
 		"SPECULAR = 0.12"
 	]:
