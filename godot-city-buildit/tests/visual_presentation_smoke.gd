@@ -88,6 +88,9 @@ func _ready() -> void:
 		"vec3 fresh_meadow = vec3(0.235, 0.335, 0.145)",
 		"vec3 olive_grass = vec3(0.315, 0.305, 0.145)",
 		"float exposed_soil = smoothstep",
+		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
+		"var fresh_grass := Color(\"#718F4C\")",
+		"var biome_soil_mask := smoothstep",
 		"SPECULAR = 0.12"
 	]:
 		if not terrain_material_source.contains(required_terrain_layer):
