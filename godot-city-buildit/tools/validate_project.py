@@ -604,14 +604,17 @@ for contract in [
     if contract not in citizen_feedback_source:
         errors.append(f"Citizen feedback bubble contract is missing: {contract}")
 for contract in [
-    "func set_departed(value: bool) -> void:",
-    "const OPEN_WATER_X := 142.0",
-    "CargoHull",
-    "Container_A",
-    "Bridge",
+    "enum VoyageState { APPROACHING, BERTHED, UNLOADING, DEPARTING, WAITING }",
+    "const DOCK_X := 127.0",
+    "const SAIL_SPEED := 12.0",
+    "PASSENGER_COUNT := 8",
+    "PassengerFerryHull",
+    "func _release_next_passenger() -> void:",
+    "func get_waiting_passenger_count() -> int:",
+    "func get_last_voyage_unloaded_count() -> int:",
 ]:
     if contract not in cargo_ship_visual_source:
-        errors.append(f"Procedural cargo ship visual contract is missing: {contract}")
+        errors.append(f"Passenger ferry visual contract is missing: {contract}")
 if "const SAVE_VERSION: int = 5" not in save_manager_source:
     errors.append("Save format must be version 5 for independent per-region warehouse inventories")
 for contract in [
@@ -915,7 +918,12 @@ for visual_contract in [
     "_build_shoreline_foam()", 
     "water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)",
     "shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 280, 28, 0.008)",
-    "float offshore = max(0.0, world_position.x - coast);",
+    "vec3 coastal_teal = vec3(0.035, 0.31, 0.39)",
+    "vec3 mediterranean_blue = vec3(0.012, 0.145, 0.335)",
+    "vec3 pacific_blue = vec3(0.006, 0.065, 0.205)",
+    "wave_normal_x",
+    "FerryGangway",
+    "PassengerHarbor",
     "func _build_beach_palms() -> void:",
     "func _create_palm_frond_mesh() -> ArrayMesh:",
 
