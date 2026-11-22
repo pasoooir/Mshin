@@ -127,7 +127,7 @@ For every finding record:
   - PR #656 adds a live-scene GameplaySmoke sequence for both HUD→world and world→HUD start orderings. It routes a real temporary HUD `Button` through `_route_native_ui_touch`, invokes both actual world handlers for the other pointer, and asserts that camera/city pointer state is cleared and a cancelled HUD release never activates the button.
   - This is an engine-level handler integration test, not a physical touch-controller test. Browser CDP still dispatches generic canvas gestures; it does not prove the HUD hit target was touched.
   - Required next: browser/device test against measured visible HUD coordinates; repeat with each finger released in both orders, and on physical Android. Do not mark F7 PASS yet.
-- **AUDIT-002 — World pointer event propagation: FIX IMPLEMENTED, CI PENDING.**
+- **AUDIT-002 — World pointer event propagation: FIX IMPLEMENTED; PR #655 CI PASS.**
   - Root cause: CameraController and CityInput independently own pointer state; consuming a HUD-blocked or OS-cancelled pointer in the first `_unhandled_input` handler could prevent the sibling handler from clearing its state.
   - Fix in PR #655: HUD-owned touch/drag, modal-blocked pointer events and cancelled releases are not consumed by either world handler. Both handlers clear their own state; non-pointer modal input remains consumable.
   - Regression evidence: PR #655 GameplaySmoke tests the shared pointer-consumption rule for touch, drag and keyboard events. Full real mixed-finger interaction remains an open runtime test.
@@ -140,7 +140,7 @@ For every finding record:
   - Physical Android interruption, notification shade, app switch, screen lock, and resume behavior remain NOT TESTED.
 - **AUDIT-005 — Checklist completion state: OPEN.**
   - No A–J item is globally marked PASS solely from code inspection or CI. The checklist remains an acceptance plan until each item has reproducible evidence recorded against its required environment.
-- **AUDIT-006 — Escape key did not cancel active city tools: FIX IMPLEMENTED, CI PENDING.**
+- **AUDIT-006 — Escape key did not cancel active city tools: FIX IMPLEMENTED; PR #655 CI PASS.**
   - Responsive UX standard requires Escape to close the current panel or cancel the active tool; prior HUD routing only used X for tool cancellation, while Escape was reserved for detail panels.
   - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
   - Physical keyboard and Android system-back behavior still require device/browser verification.
