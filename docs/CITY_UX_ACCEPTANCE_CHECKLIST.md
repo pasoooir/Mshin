@@ -122,11 +122,11 @@ For every finding record:
 - [ ] J8. Errors and network/offline states are recoverable and explained.
 
 ## Current audit notes (2026-11-22)
-- **AUDIT-001 — Mixed HUD/world multi-touch isolation: NOT TESTED end-to-end; candidate P1/P2.**
+- **AUDIT-001 — Mixed HUD/world multi-touch isolation: PARTIAL; P1/P2 acceptance remains open.**
   - Implemented guard: HUD exposes `has_active_native_ui_touch()`; CameraController and CityInput block world interaction while HUD owns a pointer.
-  - Automated coverage currently verifies the ownership predicate and its focus-loss reset, not the complete two-finger event sequence.
-  - Required runtime regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
-  - Do not mark F7 PASS until that full sequence is exercised in Chromium touch automation and on a physical Android device.
+  - PR #656 adds a live-scene GameplaySmoke sequence for both HUD→world and world→HUD start orderings. It routes a real temporary HUD `Button` through `_route_native_ui_touch`, invokes both actual world handlers for the other pointer, and asserts that camera/city pointer state is cleared and a cancelled HUD release never activates the button.
+  - This is an engine-level handler integration test, not a physical touch-controller test. Browser CDP still dispatches generic canvas gestures; it does not prove the HUD hit target was touched.
+  - Required next: browser/device test against measured visible HUD coordinates; repeat with each finger released in both orders, and on physical Android. Do not mark F7 PASS yet.
 - **AUDIT-002 — World pointer event propagation: FIX IMPLEMENTED, CI PENDING.**
   - Root cause: CameraController and CityInput independently own pointer state; consuming a HUD-blocked or OS-cancelled pointer in the first `_unhandled_input` handler could prevent the sibling handler from clearing its state.
   - Fix in PR #655: HUD-owned touch/drag, modal-blocked pointer events and cancelled releases are not consumed by either world handler. Both handlers clear their own state; non-pointer modal input remains consumable.
@@ -144,10 +144,15 @@ For every finding record:
   - Responsive UX standard requires Escape to close the current panel or cancel the active tool; prior HUD routing only used X for tool cancellation, while Escape was reserved for detail panels.
   - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
   - Physical keyboard and Android system-back behavior still require device/browser verification.
-- **AUDIT-007 — Mixed-pointer event fan-out: FIX IMPLEMENTED, CI PENDING.**
-  - Both CameraController and CityInput now let HUD-blocked touch/drag events reach the sibling handler after clearing their own state; this addresses stale pointers when the HUD finger starts after a world finger.
-  - Automated tests assert that pointer events are not consumed while non-pointer modal input remains consumable.
-  - End-to-end order permutations (HUD→world and world→HUD), including one finger held while the other releases, still need browser/device reproduction before F7 can pass.
+- **AUDIT-007 — Mixed-pointer event fan-out: FIX IMPLEMENTED; PR #655 CI PASS.**
+  - Both CameraController and CityInput let HUD-blocked touch/drag events reach the sibling handler after clearing their own state; non-pointer modal input remains consumable.
+  - GameplaySmoke verifies the propagation policy. AUDIT-008 adds the stronger live-scene handler sequence for both start-order permutations.
+  - Browser/device hit-testing and physical Android behavior remain unverified; F7 remains PARTIAL.
+- **AUDIT-008 — Live mixed-touch handler integration: IMPLEMENTED; CI PENDING.**
+  - `GameplaySmoke._test_mixed_hud_world_touch_isolation` runs in the actual gameplay scene with a temporary HUD Button and the real HUD router, CameraController and CityInput handlers.
+  - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, and accidental button activation.
+  - Assertions are on runtime handler state, not merely static policy helpers. The probe button is removed before the rest of gameplay smoke proceeds.
+  - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
 
 ## Area-level evidence ledger (2026-11-22)
 
