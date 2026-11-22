@@ -792,7 +792,7 @@ func _build_tree_belts() -> void:
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 	# A broader landscaped urban greenbelt replaces the old sparse rural fringe.
 	# Keep all foliage outside owned plots and away from roads and the beach.
-	for index in range(84):
+	for index in range(144):
 		var x := -116.0 + fposmod(float(index) * 31.73, 188.0)
 		var z := -86.0 + fposmod(float(index) * 47.17, 172.0)
 		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
@@ -806,9 +806,9 @@ func _build_tree_belts() -> void:
 	var grove_centers := [Vector2(-94.0, -112.0), Vector2(-28.0, -112.0), Vector2(54.0, -108.0), Vector2(-92.0, 112.0), Vector2(-18.0, 108.0), Vector2(62.0, 104.0)]
 	for grove_index in range(grove_centers.size()):
 		var center: Vector2 = grove_centers[grove_index]
-		for tree_index in range(22):
+		for tree_index in range(30):
 			var angle := float(tree_index) * 2.399963 + float(grove_index) * 0.73
-			var radius := 5.0 + sqrt(float(tree_index) / 22.0) * 19.0
+			var radius := 5.0 + sqrt(float(tree_index) / 30.0) * 23.0
 			var x := center.x + cos(angle) * radius
 			var z := center.y + sin(angle) * radius * 0.82
 			var point := Vector3(x, 0.0, z)
@@ -1136,15 +1136,15 @@ void fragment() {
 	float lush_mask = smoothstep(0.38, 0.72, macro_noise);
 	float dry_mask = smoothstep(0.61, 0.83, terrain_fbm(world_xz * 0.19 + vec2(41.0, 13.0)));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
-	vec3 deep_meadow = vec3(0.27, 0.39, 0.19);
-	vec3 fresh_meadow = vec3(0.48, 0.62, 0.31);
-	vec3 olive_grass = vec3(0.58, 0.52, 0.28);
+	vec3 deep_meadow = vec3(0.40, 0.55, 0.27);
+	vec3 fresh_meadow = vec3(0.62, 0.75, 0.40);
+	vec3 olive_grass = vec3(0.68, 0.62, 0.36);
 	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
 	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.48);
 	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
 	meadow *= mix(0.84, 1.08, patch);
-	meadow = mix(meadow, meadow_palette * (0.88 + meadow_noise * 0.36), 0.90);
-	meadow *= 0.88 + micro_noise * 0.24;
+	meadow = mix(meadow, meadow_palette * (0.94 + meadow_noise * 0.24), 0.96);
+	meadow *= 0.94 + micro_noise * 0.18;
 	vec3 soil = vec3(0.39, 0.30, 0.18) * (0.82 + meadow_noise * 0.38);
 	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
 	meadow = mix(meadow, soil, exposed_soil * 0.24);
