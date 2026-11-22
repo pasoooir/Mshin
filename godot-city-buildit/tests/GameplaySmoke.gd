@@ -93,7 +93,43 @@ func _test_camera_gesture_math() -> void:
 	_check(not city_input_probe.pointer_start.has(7) and not city_input_probe.pointer_hold_elapsed.has(7), "Camera takeover must clear the pending tap and long-press state.")
 	city_input_probe.free()
 
+	var normal_release := InputEventScreenTouch.new()
+	normal_release.pressed = false
+	_check(CityInputScript.should_commit_city_touch_release(normal_release), "A normal touch release must be eligible to finish a city edit.")
+	var cancelled_release := InputEventScreenTouch.new()
+	cancelled_release.pressed = false
+	cancelled_release.canceled = true
+	_check(not CityInputScript.should_commit_city_touch_release(cancelled_release), "An OS-cancelled touch must never finish a city edit.")
+	var pressed_touch := InputEventScreenTouch.new()
+	pressed_touch.pressed = true
+	_check(not CityInputScript.should_commit_city_touch_release(pressed_touch), "A touch press must never be mistaken for a release confirmation.")
+	_check(CameraControllerScript.is_cancelled_touch_release(cancelled_release), "Camera must identify an OS-cancelled touch release.")
+	_check(not CameraControllerScript.is_cancelled_touch_release(normal_release), "Camera must preserve normal touch release handling.")
+	var camera_reset_probe := CameraControllerScript.new()
+	camera_reset_probe.touch_points[2] = Vector2(40.0, 50.0)
+	camera_reset_probe.pan_velocity = Vector2(300.0, 120.0)
+	camera_reset_probe.orbit_velocity = 0.4
+	camera_reset_probe._reset_touch_session()
+	_check(camera_reset_probe.touch_points.is_empty() and camera_reset_probe.pan_velocity == Vector2.ZERO and is_zero_approx(camera_reset_probe.orbit_velocity), "Cancelled touch/focus loss must clear stale camera pointers and inertia.")
+	camera_reset_probe.free()
+	var focus_loss_city_probe := CityInputScript.new()
+	focus_loss_city_probe.pointer_start[9] = Vector2(10.0, 10.0)
+	focus_loss_city_probe.road_stroke_active[9] = true
+	focus_loss_city_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(focus_loss_city_probe.pointer_start.is_empty() and focus_loss_city_probe.road_stroke_active.is_empty(), "Application focus loss must clear pending city touches and road strokes.")
+	focus_loss_city_probe.free()
+
 func _test_hud_touch_session_ownership() -> void:
+	var tap_release := InputEventScreenTouch.new()
+	tap_release.pressed = false
+	_check(HUDScript.should_activate_native_ui_touch(tap_release, false), "A normal stationary HUD touch release must activate its button.")
+	var cancelled_release := InputEventScreenTouch.new()
+	cancelled_release.pressed = false
+	cancelled_release.canceled = true
+	_check(not HUDScript.should_activate_native_ui_touch(cancelled_release, false), "A cancelled HUD touch must never activate a button.")
+	var dragged_release := InputEventScreenTouch.new()
+	dragged_release.pressed = false
+	_check(not HUDScript.should_activate_native_ui_touch(dragged_release, true), "A dragged HUD touch must never activate a button on release.")
 	var hud_probe = HUDScript.new()
 	_check(not hud_probe.has_active_native_ui_touch(), "HUD must report no UI-owned touch when no pointer is active.")
 	hud_probe._native_ui_touch_targets[3] = hud_probe
@@ -104,6 +140,10 @@ func _test_hud_touch_session_ownership() -> void:
 	hud_probe._native_ui_touch_excluded.clear()
 	hud_probe._production_touch_drag_active = true
 	_check(hud_probe.has_active_native_ui_touch(), "An active production drag must reserve the full touch session.")
+	hud_probe._native_ui_touch_targets[5] = hud_probe
+	hud_probe._native_ui_touch_excluded[6] = true
+	hud_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(not hud_probe.has_active_native_ui_touch(), "Application focus loss must release every HUD-owned and excluded touch.")
 	hud_probe.free()
 
 func _check(condition: bool, message: String) -> void:

@@ -236,6 +236,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_update_pinch_baseline()
 			_refresh_processing()
 		else:
+			if is_cancelled_touch_release(event):
+				_reset_touch_session()
+				get_viewport().set_input_as_handled()
+				return
 			touch_points.erase(event.index)
 			if _multi_touch_gesture_active:
 				pan_velocity = Vector2.ZERO
@@ -265,6 +269,27 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif touch_points.size() >= 2:
 			_update_pinch()
 		_refresh_processing()
+
+static func is_cancelled_touch_release(event: InputEvent) -> bool:
+	return event is InputEventScreenTouch and not event.pressed and event.canceled
+
+func _reset_touch_session() -> void:
+	touch_points.clear()
+	_multi_touch_gesture_active = false
+	last_pinch_distance = 0.0
+	last_pinch_angle = 0.0
+	last_pinch_centroid = Vector2.ZERO
+	_last_single_touch_position = Vector2.ZERO
+	pan_velocity = Vector2.ZERO
+	orbit_velocity = 0.0
+	is_mouse_panning = false
+	is_focus_animating = false
+	focus_zoom_target = -1.0
+	_refresh_processing()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_reset_touch_session()
 
 func _is_camera_pan_blocked() -> bool:
 	var scene := get_tree().current_scene
