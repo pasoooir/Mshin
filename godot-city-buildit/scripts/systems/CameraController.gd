@@ -137,9 +137,14 @@ static func screen_pan_scale(zoom: float, fov_degrees: float, viewport_height: f
 		return 0.0
 	return (2.0 * maxf(0.0, zoom) * tan(deg_to_rad(clampf(fov_degrees, 1.0, 179.0)) * 0.5) / viewport_height) * clampf(sensitivity, 0.1, 1.0)
 
-static func pinch_zoom_delta(previous_distance: float, current_distance: float, sensitivity: float) -> float:
-	# Negative distance delta means move the camera closer (zoom in).
-	return -(current_distance - previous_distance) * maxf(0.0, sensitivity)
+static func pinch_zoom_delta(previous_distance: float, current_distance: float, sensitivity: float, camera_distance: float = 1.0) -> float:
+	# Use a distance ratio rather than raw pixels: identical pinch scales must
+	# produce identical zoom percentages on different phone resolutions.
+	if previous_distance <= 0.001 or current_distance <= 0.001:
+		return 0.0
+	var exponent := clampf(maxf(0.0, sensitivity) * 10.0, 0.0, 2.0)
+	var scale_factor := pow(previous_distance / current_distance, exponent)
+	return maxf(0.0, camera_distance) * (scale_factor - 1.0)
 
 static func touch_centroid(first: Vector2, second: Vector2) -> Vector2:
 	return (first + second) * 0.5
@@ -287,7 +292,7 @@ func _update_pinch() -> void:
 		var centroid_delta := centroid - last_pinch_centroid
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
 			pan_velocity = Vector2.ZERO
-		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
+		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed, current_zoom)
 		if absf(distance_delta) >= PINCH_DEADZONE:
 			_zoom(distance_delta)
 		var angle_delta: float = touch_orbit_delta(last_pinch_angle, angle)
