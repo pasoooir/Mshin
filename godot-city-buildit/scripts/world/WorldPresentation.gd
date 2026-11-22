@@ -357,7 +357,6 @@ func _build_meadow_biome_overlays() -> void:
 	for patch_index in range(patch_count):
 		var center_x := rng.randf_range(-112.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
-		var center := Vector3(center_x, 0.0, center_z)
 		if center_x > _coastline(center_z) - BEACH_WIDTH - 14.0:
 			continue
 		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
@@ -374,7 +373,7 @@ func _build_meadow_biome_overlays() -> void:
 		var ring_levels := [0.0, 0.34, 0.68, 1.0]
 		var segments := 20
 		var ring_points: Array = []
-		for ring_value in RING_LEVELS:
+		for ring_value in ring_levels:
 			var ring: Array[Vector3] = []
 			for segment in range(segments):
 				var angle := TAU * float(segment) / float(segments)
@@ -395,7 +394,7 @@ func _build_meadow_biome_overlays() -> void:
 			var inner_color := patch_color.lerp(base_edge, inner_mix * 0.88)
 			var outer_color := patch_color.lerp(base_edge, outer_mix * 0.88)
 			for segment in range(segments):
-				var next_segment := (segment + 1) % SEGMENTS
+				var next_segment := (segment + 1) % segments
 				var p00: Vector3 = inner_ring[segment]
 				var p01: Vector3 = inner_ring[next_segment]
 				var p10: Vector3 = outer_ring[segment]
