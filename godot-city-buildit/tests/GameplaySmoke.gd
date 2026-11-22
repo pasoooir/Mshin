@@ -241,6 +241,12 @@ func _test_mixed_hud_world_touch_isolation(city_input: Node, camera: Node) -> vo
 	hud_second.pressed = true
 	hud_second.position = ui_position
 	_check(bool(hud.call("_route_native_ui_touch", hud_second)), "Second-finger HUD touch must be captured while a world pointer is already active.")
+	var camera_position_before_blocked_drag: Vector3 = camera.global_position
+	var camera_rotation_before_blocked_drag: Vector3 = camera.rotation_degrees
+	var camera_zoom_before_blocked_drag := float(camera.get("current_zoom"))
+	var building_count_before_blocked_drag := BuildManager.buildings.size()
+	var road_system_before_blocked_drag = get_node_or_null("World/RoadSystem")
+	var road_count_before_blocked_drag := int(road_system_before_blocked_drag.get_road_count()) if is_instance_valid(road_system_before_blocked_drag) else -1
 	var world_first_drag := InputEventScreenDrag.new()
 	world_first_drag.index = 43
 	world_first_drag.position = world_position + Vector2(38.0, 18.0)
@@ -248,6 +254,8 @@ func _test_mixed_hud_world_touch_isolation(city_input: Node, camera: Node) -> vo
 	city_input.call("_unhandled_input", world_first_drag)
 	_check(camera.get("touch_points").is_empty(), "HUD capture after a world-first touch must clear the camera's existing pointer.")
 	_check(city_input.get("pointer_start").is_empty() and city_input.get("road_stroke_active").is_empty(), "HUD capture after a world-first touch must clear CityInput pointer and road-stroke state.")
+	_check(camera.global_position.distance_to(camera_position_before_blocked_drag) <= 0.001 and camera.rotation_degrees.distance_to(camera_rotation_before_blocked_drag) <= 0.001 and is_equal_approx(float(camera.get("current_zoom")), camera_zoom_before_blocked_drag), "A world finger moving after HUD capture must not pan, rotate or zoom the camera.")
+	_check(BuildManager.buildings.size() == building_count_before_blocked_drag and (not is_instance_valid(road_system_before_blocked_drag) or int(road_system_before_blocked_drag.get_road_count()) == road_count_before_blocked_drag), "A world finger moving after HUD capture must not commit a building or road action.")
 	var world_first_release := InputEventScreenTouch.new()
 	world_first_release.index = 43
 	world_first_release.pressed = false
