@@ -264,7 +264,7 @@ world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_t
 for contract in [
     "func _create_coastal_water_mesh(",
     "var near_x0 := coast_x0 + shore_offset",
-    "var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge",
+    "var far_x0 := coast_x0 + far_edge if far_edge <= 100.0 else far_edge",
     "var beach_fade := smoothstep(0.0, 30.0, _coastline(z) - x)",
     "_is_city_road_footprint(x, z)",
 ]:
