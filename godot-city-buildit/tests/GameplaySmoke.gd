@@ -1377,7 +1377,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	var zoomed_in_distance: float = camera_rig.current_zoom
 	_check(zoomed_in_distance > gesture_start_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
 	if central_anchor != null:
-		var projected_anchor := camera_rig.camera.unproject_position(central_anchor)
+		var projected_anchor: Vector2 = camera_rig.camera.unproject_position(central_anchor)
 		_check(projected_anchor.distance_to(Vector2(200.0, 200.0)) <= 2.0, "Pinching around a central building must keep the ground focal point under the same screen midpoint.")
 
 	var outward_second := InputEventScreenDrag.new()
@@ -1436,7 +1436,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	edge_first_drag.position = Vector2(5.0, 220.0)
 	camera_rig._unhandled_input(edge_first_drag)
 	if edge_anchor != null:
-		var projected_edge_anchor := camera_rig.camera.unproject_position(edge_anchor)
+		var projected_edge_anchor: Vector2 = camera_rig.camera.unproject_position(edge_anchor)
 		_check(projected_edge_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Screen-edge pinch must preserve its world focal point under the gesture midpoint.")
 	var edge_release_second := InputEventScreenTouch.new()
 	edge_release_second.index = 6
@@ -1470,7 +1470,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig._unhandled_input(limit_zoom_first_drag)
 	_check(is_equal_approx(camera_rig.current_zoom, camera_rig.min_zoom), "Pinch-out at the minimum camera distance must respect the zoom limit.")
 	if limit_anchor != null:
-		var projected_limit_anchor := camera_rig.camera.unproject_position(limit_anchor)
+		var projected_limit_anchor: Vector2 = camera_rig.camera.unproject_position(limit_anchor)
 		_check(projected_limit_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Zooming beyond the minimum distance must not drift the focal point.")
 	var limit_release_second := InputEventScreenTouch.new()
 	limit_release_second.index = 11
