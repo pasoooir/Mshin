@@ -1,16 +1,16 @@
-extends SceneTree
+extends Node
 
 const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.gd")
 const PassengerFerryScript = preload("res://scripts/world/CargoShipVisual.gd")
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	call_deferred("_run")
 
 
 func _run() -> void:
 	var presentation := WorldPresentationScript.new()
-	root.add_child(presentation)
+	get_tree().root.add_child(presentation)
 	presentation.call("_build_passenger_harbor")
 	var harbor := presentation.get_node_or_null("PassengerHarbor")
 	if harbor == null or harbor.get_node_or_null("PierDeck") == null or harbor.get_node_or_null("FerryTerminal") == null:
@@ -31,7 +31,7 @@ func _run() -> void:
 			return
 
 	var ferry := PassengerFerryScript.new()
-	root.add_child(ferry)
+	get_tree().root.add_child(ferry)
 	ferry.set_process(false)
 	if ferry.get_waiting_passenger_count() != 8:
 		_fail("The arriving ferry must carry eight visible passengers.")
@@ -41,7 +41,7 @@ func _run() -> void:
 	# so queue_free/reparent operations are processed by the SceneTree.
 	for frame in range(24):
 		ferry.call("_process", 1.0)
-		await process_frame
+		await get_tree().process_frame
 
 	if ferry.get_completed_voyages() < 1:
 		_fail("The ferry did not reach its harbor berth.")
@@ -56,9 +56,9 @@ func _run() -> void:
 	print("[HarborWaterSmoke] PASS: ocean palette, animated waves, pier, terminal and 8-passenger ferry cycle")
 	ferry.queue_free()
 	presentation.queue_free()
-	quit(0)
+	get_tree().quit(0)
 
 
 func _fail(message: String) -> void:
 	push_error("[HarborWaterSmoke] " + message)
-	quit(1)
+	get_tree().quit(1)
