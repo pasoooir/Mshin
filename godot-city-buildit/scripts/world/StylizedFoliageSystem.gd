@@ -293,7 +293,6 @@ func _create_leaf_fall_emitter() -> CPUParticles3D:
     particles.amount = 10
     particles.lifetime = 4.5
     particles.emitting = false
-    particles.amount_ratio = 0.0
     particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
     particles.emission_box_extents = Vector3(25.0, 2.0, 25.0)
     particles.direction = Vector3(0.0, -1.0, 0.0)
