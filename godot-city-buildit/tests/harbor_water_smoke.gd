@@ -18,10 +18,11 @@ func _run() -> void:
 
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required in [
-		"vec3 coastal_teal = vec3(0.035, 0.31, 0.39)",
-		"vec3 mediterranean_blue = vec3(0.012, 0.145, 0.335)",
-		"vec3 pacific_blue = vec3(0.006, 0.065, 0.205)",
+		"vec3 coastal_teal = vec3(0.015, 0.16, 0.22)",
+		"vec3 mediterranean_blue = vec3(0.005, 0.04, 0.17)",
+		"vec3 pacific_blue = vec3(0.002, 0.014, 0.085)",
 		"wave_normal_x",
+		"shallow_wave_x",
 		"FerryGangway",
 		"PassengerHarbor"
 	]:
@@ -38,7 +39,7 @@ func _run() -> void:
 
 	# Advance the real ferry state machine deterministically while yielding frames
 	# so queue_free/reparent operations are processed by the SceneTree.
-	for frame in range(24):
+	for frame in range(28):
 		ferry.call("_process", 1.0)
 		await get_tree().process_frame
 
