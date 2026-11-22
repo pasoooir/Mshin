@@ -44,6 +44,15 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band following the curved shoreline")
 		get_tree().quit(1)
 		return
+	var production_shallow_mesh := presentation._create_coastal_water_mesh(0.16, 34.0, 24, 8, 0.008)
+	if production_shallow_mesh.get_aabb().position.x < 80.0:
+		push_error("[VisualPresentationSmoke] Production shallow water must start offshore; it must never extend inland across the beach")
+		get_tree().quit(1)
+		return
+	if not FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd").contains("coast_x0 + far_edge if far_edge <= 100.0 else far_edge"):
+		push_error("[VisualPresentationSmoke] Coast-relative water widths must not be mistaken for absolute world-space coordinates")
+		get_tree().quit(1)
+		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_foliage_integration in [
 		"StylizedFoliageSystemScript",
