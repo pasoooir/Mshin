@@ -103,9 +103,9 @@ func _ready() -> void:
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
 		"float terrain_noise(vec2 p)",
-		"vec3 deep_meadow = vec3(0.19, 0.29, 0.13)",
-		"vec3 fresh_meadow = vec3(0.38, 0.50, 0.23)",
-		"vec3 olive_grass = vec3(0.49, 0.43, 0.22)",
+		"vec3 deep_meadow = vec3(0.27, 0.39, 0.19)",
+		"vec3 fresh_meadow = vec3(0.48, 0.62, 0.31)",
+		"vec3 olive_grass = vec3(0.58, 0.52, 0.28)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var fresh_grass := Color(\"#718F4C\")",
