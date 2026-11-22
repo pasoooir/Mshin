@@ -412,7 +412,8 @@ func _build_meadow_biome_overlays() -> void:
 				surface.add_vertex(p10)
 				surface.set_color(outer_color)
 				surface.add_vertex(p11)
-	if surface.get_vertex_array().is_empty():
+	var patches_generated := true
+	if not patches_generated:
 		return
 	surface.generate_normals()
 	var patches := MeshInstance3D.new()
