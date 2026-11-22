@@ -5379,7 +5379,7 @@ func _refresh_settings_account_section() -> void:
 			if is_instance_valid(avatar_frame):
 				avatar_frame.visible = false
 		if is_instance_valid(_settings_avatar_placeholder):
-			_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.svg") as Texture2D
+			_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.png") as Texture2D
 			_settings_avatar_placeholder.show()
 		_settings_avatar_request_url = ""
 		_settings_account_status.text = "Guest mode\nSign in to unlock city registration, secure your progress and receive login rewards."
@@ -5545,7 +5545,7 @@ func _show_settings_panel() -> void:
 	avatar_frame.add_child(_settings_profile_avatar)
 	_settings_avatar_placeholder = TextureRect.new()
 	_settings_avatar_placeholder.name = "SettingsProfileAvatarFallback"
-	_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.svg") as Texture2D
+	_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.png") as Texture2D
 	_settings_avatar_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_settings_avatar_placeholder.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_settings_avatar_placeholder.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
