@@ -4,6 +4,10 @@ const FoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.g
 
 
 func _initialize() -> void:
+    call_deferred("_run")
+
+
+func _run() -> void:
     var system = FoliageSystemScript.new()
     root.add_child(system)
 
@@ -57,6 +61,11 @@ func _initialize() -> void:
             return
 
     system.set_season(2, 0.05)
+    await create_timer(0.12).timeout
+    var season_manager = system.get_node_or_null("SeasonManager")
+    if season_manager == null or int(season_manager.current_season) != 2:
+        _fail("Autumn season transition did not reach its requested state.")
+        return
     print("[FoliageSystemSmoke] PASS trees=%d chunks=%d lod_instances=%d/%d/%d" % [
         system.get_tree_count(),
         system.get_chunk_count(),
