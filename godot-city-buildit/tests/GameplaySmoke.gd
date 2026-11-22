@@ -87,9 +87,9 @@ func _test_camera_gesture_math() -> void:
 	var scale_b := CameraControllerScript.pinch_zoom_delta(200.0, 300.0, 0.045, 50.0)
 	_check(is_equal_approx(scale_a, scale_b), "Equivalent pinch scale ratios must produce the same zoom change regardless of raw touch-pixel distances.")
 	var opening_zoom_probe := CameraControllerScript.new()
-	opening_zoom_probe.current_zoom = 150.0
-	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 150.0))
-	_check(opening_zoom_probe.current_zoom > 150.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
+	opening_zoom_probe.current_zoom = 92.0
+	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 92.0))
+	_check(opening_zoom_probe.current_zoom > 92.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
 	opening_zoom_probe.free()
 	var city_input_probe := CityInputScript.new()
 	city_input_probe.pointer_start[7] = Vector2(100.0, 100.0)
@@ -4704,8 +4704,8 @@ func _run_gameplay_test() -> void:
 	# Assert the real entry overview, then move the test camera into a close city view
 	# so touch/building interaction fixtures remain inside the mobile viewport.
 	var entry_camera_rig := get_node_or_null("CameraRig")
-	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 150.0), "The opening camera must frame the Pacific coast and green city overview.")
-	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(38.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
+	_check(entry_camera_rig != null and is_equal_approx(float(entry_camera_rig.current_zoom), 92.0), "The opening camera must frame the Pacific coast and green city overview.")
+	_check(entry_camera_rig != null and entry_camera_rig.global_position.distance_to(Vector3(34.0, 0.0, 0.0)) < 0.1, "The opening camera target must balance the city grid and beach.")
 	if entry_camera_rig != null:
 		entry_camera_rig.current_zoom = 38.0
 		entry_camera_rig.global_position = Vector3(-9.0, 0.0, 2.5)
@@ -4765,7 +4765,7 @@ func _run_gameplay_test() -> void:
 	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
 	await _test_mixed_hud_world_touch_isolation(input_node, camera_rig)
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 210.0), "The city camera must expose enough zoom-out range beyond its 150 m opening overview.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 112.0), "The city camera must expose enough zoom-out range beyond its 92 m opening overview.")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
