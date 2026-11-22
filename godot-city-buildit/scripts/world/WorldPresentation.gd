@@ -1229,63 +1229,82 @@ func _create_water_material() -> ShaderMaterial:
 	shader.code = """
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
-uniform vec4 deep_color : source_color = vec4(0.008, 0.105, 0.29, 1.0);
-uniform vec4 blue_color : source_color = vec4(0.018, 0.29, 0.53, 1.0);
-uniform vec4 turquoise_color : source_color = vec4(0.035, 0.58, 0.68, 1.0);
-uniform float wave_height = 0.16;
 varying vec3 world_position;
+varying float wave_normal_x;
+varying float wave_normal_z;
 void vertex() {
 	vec3 p = VERTEX;
-	float wave_a = sin((p.x * 0.075) + (p.z * 0.052) + TIME * 0.72);
-	float wave_b = cos((p.x * 0.031) - (p.z * 0.094) + TIME * 0.48);
-	float wave_c = sin((p.x * 0.24) + (p.z * 0.18) + TIME * 1.35) * 0.18;
-	p.y += (wave_a * 0.48 + wave_b * 0.42 + wave_c) * wave_height;
+	float phase_a = p.x * 0.041 + p.z * 0.033 + TIME * 0.72;
+	float phase_b = p.x * 0.019 - p.z * 0.057 + TIME * 0.43;
+	float phase_c = p.x * 0.13 + p.z * 0.105 + TIME * 1.18;
+	float wave_a = sin(phase_a);
+	float wave_b = cos(phase_b);
+	float wave_c = sin(phase_c);
+	p.y += (wave_a * 0.52 + wave_b * 0.34 + wave_c * 0.14) * 0.32;
+	wave_normal_x = cos(phase_a) * 0.018 + sin(phase_b) * 0.010 + cos(phase_c) * 0.006;
+	wave_normal_z = cos(phase_a) * 0.014 - sin(phase_b) * 0.014 + cos(phase_c) * 0.005;
 	VERTEX = p;
 	world_position = (MODEL_MATRIX * vec4(p, 1.0)).xyz;
 }
 void fragment() {
-	float coast = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
-	float offshore = max(0.0, world_position.x - coast);
-	float depth = smoothstep(0.0, 0.18, UV.x);
-	float swell = sin(world_position.x * 0.027 + world_position.z * 0.018 + TIME * 0.24);
-	float cross_swell = cos(world_position.x * 0.061 - world_position.z * 0.033 + TIME * 0.39);
-	float fine_ripple = sin(world_position.x * 0.31 + world_position.z * 0.22 + TIME * 1.05) * 0.5;
-	float water_noise = swell * 0.014 + cross_swell * 0.008 + fine_ripple * 0.004;
-	vec3 lagoon = vec3(0.025, 0.36, 0.46);
-	vec3 shelf_blue = vec3(0.014, 0.15, 0.34);
-	vec3 deep_ocean = vec3(0.004, 0.035, 0.13);
-	vec3 water_color = mix(lagoon, shelf_blue, smoothstep(0.0, 0.04, UV.x));
-	water_color = mix(water_color, deep_ocean, smoothstep(0.06, 0.22, UV.x));
-	float wave_dx = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0058;
-	float wave_dz = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0040;
-	NORMAL = normalize(vec3(-wave_dx, 1.0, -wave_dz));
-	float facing = max(dot(normalize(NORMAL), normalize(VIEW)), 0.0);
-	float fresnel = pow(1.0 - facing, 5.0);
-	float glint = pow(max(0.0, sin(world_position.x * 0.24 + world_position.z * 0.16 + TIME * 0.68)), 28.0);
-	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.055));
-	ALBEDO = mix(ALBEDO, vec3(0.55, 0.78, 0.84), fresnel * 0.09);
-	ROUGHNESS = mix(0.20, 0.34, depth);
+	float u = clamp(UV.x, 0.0, 1.0);
+	vec3 coastal_teal = vec3(0.015, 0.16, 0.22);
+	vec3 coastal_blue = vec3(0.009, 0.09, 0.22);
+	vec3 mediterranean_blue = vec3(0.005, 0.04, 0.17);
+	vec3 pacific_blue = vec3(0.002, 0.014, 0.085);
+	vec3 water_color = mix(coastal_teal, coastal_blue, smoothstep(0.0, 0.055, u));
+	water_color = mix(water_color, mediterranean_blue, smoothstep(0.07, 0.34, u));
+	water_color = mix(water_color, pacific_blue, smoothstep(0.34, 0.96, u));
+	float long_swell = sin(world_position.x * 0.024 + world_position.z * 0.018 + TIME * 0.25);
+	float cross_swell = cos(world_position.x * 0.052 - world_position.z * 0.037 + TIME * 0.39);
+	float fine_ripple = sin(world_position.x * 0.29 + world_position.z * 0.21 + TIME * 1.1);
+	float wave_light = long_swell * 0.006 + cross_swell * 0.0035 + fine_ripple * 0.0015;
+	NORMAL = normalize(vec3(-wave_normal_x, 1.0, -wave_normal_z));
+	float view_facing = max(dot(normalize(NORMAL), normalize(VIEW)), 0.0);
+	float fresnel = pow(1.0 - view_facing, 5.0);
+	float crest = pow(max(0.0, sin(world_position.x * 0.18 + world_position.z * 0.14 + TIME * 0.62)), 24.0);
+	float sun_glint = crest * 0.025 * (0.35 + 0.65 * fresnel);
+	ALBEDO = max(vec3(0.0), water_color + vec3(wave_light + sun_glint));
+	ALBEDO = mix(ALBEDO, vec3(0.30, 0.48, 0.62), fresnel * 0.08);
+	ROUGHNESS = mix(0.30, 0.43, u);
 	METALLIC = 0.0;
-	SPECULAR = 0.68;
+	SPECULAR = 0.48;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	return material
 
+
 func _create_shallow_water_material() -> ShaderMaterial:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
+varying float shallow_wave_x;
+varying float shallow_wave_z;
+void vertex() {
+	vec3 p = VERTEX;
+	float phase_a = p.x * 0.42 + p.z * 0.27 + TIME * 0.85;
+	float phase_b = p.x * 0.23 - p.z * 0.51 + TIME * 0.58;
+	float phase_c = p.x * 0.96 + p.z * 0.72 + TIME * 1.35;
+	p.y += (sin(phase_a) * 0.52 + cos(phase_b) * 0.33 + sin(phase_c) * 0.15) * 0.16;
+	shallow_wave_x = cos(phase_a) * 0.060 + sin(phase_b) * 0.035 + cos(phase_c) * 0.020;
+	shallow_wave_z = cos(phase_a) * 0.040 - sin(phase_b) * 0.070 + cos(phase_c) * 0.018;
+	VERTEX = p;
+}
 void fragment() {
-	float broad = sin(UV.x * 31.0 + UV.y * 9.0 + TIME * 0.22);
-	float ripple = sin(UV.x * 118.0 + TIME * 1.35) * cos(UV.y * 47.0 - TIME * 0.82);
-	float caustic = pow(max(0.0, sin(UV.x * 37.0 + sin(UV.y * 23.0 + TIME * 0.28) * 2.2) * cos(UV.y * 31.0 - TIME * 0.31)), 5.0);
-	vec3 lagoon = mix(vec3(0.035, 0.52, 0.61), vec3(0.10, 0.78, 0.75), 0.42 + broad * 0.12 + ripple * 0.035);
-	ALBEDO = lagoon + vec3(caustic * 0.12);
-	ROUGHNESS = 0.18;
-	SPECULAR = 0.9;
+	float broad = sin(UV.x * 23.0 + UV.y * 7.0 + TIME * 0.20);
+	float ripple = sin(UV.x * 86.0 + TIME * 1.05) * cos(UV.y * 39.0 - TIME * 0.68);
+	float caustic = pow(max(0.0, sin(UV.x * 29.0 + sin(UV.y * 19.0 + TIME * 0.24) * 1.6) * cos(UV.y * 25.0 - TIME * 0.28)), 6.0);
+	vec3 shallow_teal = vec3(0.018, 0.15, 0.23);
+	vec3 shallow_azure = vec3(0.012, 0.09, 0.23);
+	vec3 water = mix(shallow_teal, shallow_azure, smoothstep(0.12, 0.94, UV.x));
+	water += vec3(caustic * 0.020 + broad * 0.003 + ripple * 0.001);
+	NORMAL = normalize(vec3(-shallow_wave_x, 1.0, -shallow_wave_z));
+	ALBEDO = water;
+	ROUGHNESS = 0.30;
+	SPECULAR = 0.50;
 }
 """
 	var material := ShaderMaterial.new()
@@ -1989,9 +2008,94 @@ func _shoreline_pebble_color(index: int) -> Color:
 	return stone_palette[index % stone_palette.size()]
 
 func _build_cargo_ship_visual() -> void:
+	_build_passenger_harbor()
 	var ship := CargoShipVisualScript.new()
 	ship.name = "CargoShipVisual"
 	add_child(ship)
+
+
+func _build_passenger_harbor() -> void:
+	var harbor := Node3D.new()
+	harbor.name = "PassengerHarbor"
+	add_child(harbor)
+
+	var deck_material := StandardMaterial3D.new()
+	deck_material.albedo_color = Color("#92734F")
+	deck_material.roughness = 0.92
+	var edge_material := StandardMaterial3D.new()
+	edge_material.albedo_color = Color("#D5C6A8")
+	edge_material.roughness = 0.86
+	var support_material := StandardMaterial3D.new()
+	support_material.albedo_color = Color("#66513D")
+	support_material.roughness = 1.0
+
+	# A compact timber pier links the beach to the deep-water side of the coast.
+	_add_harbor_box(harbor, "HarborApproach", Vector3(157.0, 0.59, -22.0), Vector3(18.0, 0.34, 6.8), deck_material)
+	_add_harbor_box(harbor, "PierDeck", Vector3(175.0, 0.66, -22.0), Vector3(18.0, 0.34, 9.0), deck_material)
+	_add_harbor_box(harbor, "PierOuterEdge", Vector3(175.0, 0.84, -26.48), Vector3(18.0, 0.10, 0.18), edge_material)
+	_add_harbor_box(harbor, "PierInnerEdge", Vector3(175.0, 0.84, -17.52), Vector3(18.0, 0.10, 0.18), edge_material)
+
+	for index in range(7):
+		var x := 167.0 + float(index) * 2.7
+		for z in [-25.6, -18.4]:
+			var pile := MeshInstance3D.new()
+			pile.name = "PierSupport_%02d_%s" % [index, str(z)]
+			var pile_mesh := CylinderMesh.new()
+			pile_mesh.top_radius = 0.16
+			pile_mesh.bottom_radius = 0.22
+			pile_mesh.height = 1.65
+			pile.mesh = pile_mesh
+			pile.position = Vector3(x, -0.10, z)
+			pile.material_override = support_material
+			harbor.add_child(pile)
+
+	# A short sloped gangway meets the ferry bow at the scheduled berth.
+	var gangway := MeshInstance3D.new()
+	gangway.name = "FerryGangway"
+	var gangway_mesh := BoxMesh.new()
+	gangway_mesh.size = Vector3(6.0, 0.16, 2.5)
+	gangway.mesh = gangway_mesh
+	gangway.position = Vector3(187.0, 0.91, -22.0)
+	gangway.rotation.z = deg_to_rad(3.0)
+	gangway.material_override = edge_material
+	harbor.add_child(gangway)
+
+	# The terminal sits on the dry side of the pier; its glazing faces the water.
+	var terminal_material := StandardMaterial3D.new()
+	terminal_material.albedo_color = Color("#E7DDC8")
+	terminal_material.roughness = 0.88
+	_add_harbor_box(harbor, "FerryTerminal", Vector3(156.8, 1.55, -22.0), Vector3(7.0, 2.7, 8.0), terminal_material)
+	var glass_material := StandardMaterial3D.new()
+	glass_material.albedo_color = Color("#5A9AAE")
+	glass_material.metallic = 0.08
+	glass_material.roughness = 0.24
+	_add_harbor_box(harbor, "TerminalWaterfrontWindows", Vector3(160.36, 1.72, -22.0), Vector3(0.08, 1.15, 5.6), glass_material)
+	var roof_material := StandardMaterial3D.new()
+	roof_material.albedo_color = Color("#B85D43")
+	roof_material.roughness = 0.9
+	_add_harbor_box(harbor, "TerminalRoof", Vector3(156.8, 2.98, -22.0), Vector3(7.5, 0.22, 8.5), roof_material)
+
+	var sign := Label3D.new()
+	sign.name = "PassengerFerrySign"
+	sign.text = "FERRY  •  TERMINAL"
+	sign.font_size = 42
+	sign.pixel_size = 0.012
+	sign.position = Vector3(160.7, 2.4, -22.0)
+	sign.rotation.y = deg_to_rad(90.0)
+	sign.modulate = Color("#F6F0E3")
+	harbor.add_child(sign)
+
+
+func _add_harbor_box(parent: Node3D, node_name: String, box_position: Vector3, dimensions: Vector3, material: Material) -> void:
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	instance.mesh = mesh
+	instance.position = box_position
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(instance)
 
 func _build_sunlight() -> void:
 	add_child(_create_warm_fill_light())
@@ -2014,7 +2118,7 @@ func _create_warm_fill_light() -> DirectionalLight3D:
 func _add_headless_test_markers() -> void:
 	# These names are part of the smoke-test scene contract; they intentionally
 	# contain no MeshInstance3D nodes and therefore allocate no render meshes.
-	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "PacificCoastalPromenade", "PacificPalmTrunks", "PacificPalmCrowns", "CargoShipVisual"]:
+	for marker_name in ["NaturalTerrain", "CoastalWater", "BuildablePlotGrid", "LandExpansionMarkers", "CoastalHighway", "HighwayLighting", "PacificCoastalPromenade", "PacificPalmTrunks", "PacificPalmCrowns", "PassengerHarbor", "CargoShipVisual"]:
 		var marker := Node3D.new()
 		marker.name = marker_name
 		add_child(marker)

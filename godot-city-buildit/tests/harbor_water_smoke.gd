@@ -1,0 +1,64 @@
+extends Node
+
+const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.gd")
+const PassengerFerryScript = preload("res://scripts/world/CargoShipVisual.gd")
+
+
+func _ready() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var presentation := WorldPresentationScript.new()
+	presentation.call("_build_passenger_harbor")
+	var harbor := presentation.get_node_or_null("PassengerHarbor")
+	if harbor == null or harbor.get_node_or_null("PierDeck") == null or harbor.get_node_or_null("FerryTerminal") == null:
+		_fail("The live world must build a pier, gangway and passenger terminal.")
+		return
+
+	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required in [
+		"vec3 coastal_teal = vec3(0.015, 0.16, 0.22)",
+		"vec3 mediterranean_blue = vec3(0.005, 0.04, 0.17)",
+		"vec3 pacific_blue = vec3(0.002, 0.014, 0.085)",
+		"wave_normal_x",
+		"shallow_wave_x",
+		"FerryGangway",
+		"PassengerHarbor"
+	]:
+		if not world_source.contains(required):
+			_fail("Pacific water or harbor visual is missing: " + required)
+			return
+
+	var ferry := PassengerFerryScript.new()
+	get_tree().root.add_child(ferry)
+	ferry.set_process(false)
+	if ferry.get_waiting_passenger_count() != 8:
+		_fail("The arriving ferry must carry eight visible passengers.")
+		return
+
+	# Advance the real ferry state machine deterministically while yielding frames
+	# so queue_free/reparent operations are processed by the SceneTree.
+	for frame in range(28):
+		ferry.call("_process", 1.0)
+		await get_tree().process_frame
+
+	if ferry.get_completed_voyages() < 1:
+		_fail("The ferry did not reach its harbor berth.")
+		return
+	if ferry.get_last_voyage_unloaded_count() != 8:
+		_fail("All eight passengers must disembark before the ferry departs.")
+		return
+	if ferry.get_waiting_passenger_count() != 0 or ferry.get_walking_passenger_count() != 0:
+		_fail("Passengers must finish walking from the gangway to the terminal.")
+		return
+
+	print("[HarborWaterSmoke] PASS: ocean palette, animated waves, pier, terminal and 8-passenger ferry cycle")
+	ferry.queue_free()
+	presentation.free()
+	get_tree().quit(0)
+
+
+func _fail(message: String) -> void:
+	push_error("[HarborWaterSmoke] " + message)
+	get_tree().quit(1)
