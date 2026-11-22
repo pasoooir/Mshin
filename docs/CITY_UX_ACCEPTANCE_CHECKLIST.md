@@ -140,6 +140,10 @@ For every finding record:
   - Physical Android interruption, notification shade, app switch, screen lock, and resume behavior remain NOT TESTED.
 - **AUDIT-005 — Checklist completion state: OPEN.**
   - No A–J item is globally marked PASS solely from code inspection or CI. The checklist remains an acceptance plan until each item has reproducible evidence recorded against its required environment.
+- **AUDIT-006 — Escape key did not cancel active city tools: FIX IMPLEMENTED, CI PENDING.**
+  - Responsive UX standard requires Escape to close the current panel or cancel the active tool; prior HUD routing only used X for tool cancellation, while Escape was reserved for detail panels.
+  - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
+  - Physical keyboard and Android system-back behavior still require device/browser verification.
 
 ## Acceptance policy
 - A checklist item is PASS only with reproducible evidence.
