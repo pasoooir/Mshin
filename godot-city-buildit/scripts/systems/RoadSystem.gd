@@ -362,7 +362,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		var arm_center := arm_center_along + _direction_to_world(right_direction) * side_offset
 		var along_x: bool = direction.x != 0
 		var road_size := Vector3(1.01, ROAD_SURFACE_HEIGHT, width) if along_x else Vector3(width, ROAD_SURFACE_HEIGHT, 1.01)
-		_append_box(asphalt_tool, grid_pos, arm_center + Vector3(0.0, ROAD_SURFACE_Y, 0.0), road_size)
+		_append_top_quad(asphalt_tool, grid_pos, arm_center + Vector3(0.0, ROAD_SURFACE_Y, 0.0), road_size)
 		asphalt_boxes += 1
 
 		for side_direction in [left_direction, right_direction]:
@@ -378,7 +378,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 			var sidewalk_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH + sidewalk_width * 0.5)
 			sidewalk_center.y = 0.03
 			var sidewalk_size := Vector3(1.02, 0.06, sidewalk_width) if along_x else Vector3(sidewalk_width, 0.06, 1.02)
-			_append_box(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
+			_append_top_quad(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
 			sidewalk_boxes += 1
 
 	# A dead-end stub receives a transverse curb cap at the unconnected end.
@@ -416,6 +416,26 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 func _direction_to_world(direction: Vector2i) -> Vector3:
 	return Vector3(float(direction.x), 0.0, float(direction.y))
 
+func _append_top_quad(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3, size: Vector3) -> void:
+	# Asphalt, sidewalk slabs and painted markings are viewed from above.
+	# Emit only the visible top face instead of six box faces; curbs retain
+	# closed box geometry because their vertical sides are part of the silhouette.
+	var half := size * 0.5
+	var corners: Array[Vector3] = [
+		Vector3(-half.x, half.y, -half.z),
+		Vector3(-half.x, half.y, half.z),
+		Vector3(half.x, half.y, half.z),
+		Vector3(half.x, half.y, -half.z)
+	]
+	for index in [0, 1, 2, 0, 2, 3]:
+		var point: Vector3 = center + corners[index]
+		surface_tool.set_normal(Vector3.UP)
+		surface_tool.set_uv(Vector2(
+			(float(grid_pos.x) * GRID_SIZE + GRID_HALF + point.x) / ROAD_TEXTURE_WORLD_SCALE,
+			(float(grid_pos.y) * GRID_SIZE + GRID_HALF + point.z) / ROAD_TEXTURE_WORLD_SCALE
+		))
+		surface_tool.add_vertex(point)
+
 func _append_box(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3, size: Vector3) -> void:
 	var half := size * 0.5
 	var faces: Array = [
@@ -451,7 +471,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 		for x_side in [-1.0, 1.0]:
 			for z_side in [-1.0, 1.0]:
 				var corner_center := Vector3(x_side * 0.82, 0.095, z_side * 0.82)
-				_append_box(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
+				_append_top_quad(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
 		return
 
 	if tile_kind == TILE_CORNER:
@@ -475,7 +495,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 			var center: Vector3 = _direction_to_world(main_axis) * (0.72 * float(side))
 			center.y = 0.088
 			var dash_size := Vector3(0.42, 0.006, 0.045) if main_axis.x != 0 else Vector3(0.045, 0.006, 0.42)
-			_append_box(surface_tool, grid_pos, center, dash_size)
+			_append_top_quad(surface_tool, grid_pos, center, dash_size)
 	else:
 		_add_axis_dashes(surface_tool, grid_pos, main_axis, false)
 
@@ -490,14 +510,14 @@ func _add_axis_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, axis: Vecto
 		var center := _direction_to_world(axis) * local_along
 		center.y = 0.088
 		var dash_size := Vector3(0.50, 0.006, 0.045) if axis.x != 0 else Vector3(0.045, 0.006, 0.50)
-		_append_box(surface_tool, grid_pos, center, dash_size)
+		_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _add_arm_center_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	for distance in [0.43, 0.77]:
 		var center := _direction_to_world(direction) * float(distance)
 		center.y = 0.088
 		var dash_size := Vector3(0.28, 0.006, 0.045) if direction.x != 0 else Vector3(0.045, 0.006, 0.28)
-		_append_box(surface_tool, grid_pos, center, dash_size)
+		_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _lane_divider_offsets(level: int) -> Array[float]:
 	match clampi(level, 1, 4):
@@ -518,7 +538,7 @@ func _add_lane_divider_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, dir
 			var center: Vector3 = _direction_to_world(direction) * 0.62 + _direction_to_world(lateral) * (offset * side_sign)
 			center.y = 0.091
 			var dash_size: Vector3 = Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
-			_append_box(surface_tool, grid_pos, center, dash_size)
+			_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	var lateral := Vector2i(-direction.y, direction.x)
@@ -527,7 +547,7 @@ func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Ve
 		var center := _direction_to_world(direction) * 0.57 + _direction_to_world(lateral) * lateral_offset
 		center.y = 0.089
 		var stripe_size := Vector3(0.10, 0.006, 0.075) if direction.x != 0 else Vector3(0.075, 0.006, 0.10)
-		_append_box(surface_tool, grid_pos, center, stripe_size)
+		_append_top_quad(surface_tool, grid_pos, center, stripe_size)
 
 func _count_marking_boxes(tile_kind: String, arms: Array[Vector2i], grid_pos: Vector2i) -> int:
 	if tile_kind == TILE_CROSS:
