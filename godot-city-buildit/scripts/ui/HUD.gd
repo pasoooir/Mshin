@@ -1668,15 +1668,19 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		submenu_scroll.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree():
+	var production_open := is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree()
+	var build_menu_open := submenu_scroll != null and submenu_scroll.visible
+	var escape_action := escape_tool_action(event, production_open, build_menu_open, _has_active_city_tool())
+	match escape_action:
+		"close_production":
 			_close_production_panel()
-		elif submenu_scroll and submenu_scroll.visible:
+		"close_build_menu":
 			_close_build_menu()
-		elif _has_active_city_tool():
+		"cancel_tool":
 			_on_cancel_pressed()
-		else:
-			return
+		_:
+			pass
+	if not escape_action.is_empty():
 		get_viewport().set_input_as_handled()
 		return
 	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_BACKSPACE:
@@ -1689,6 +1693,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
+
+static func escape_tool_action(event: InputEvent, production_panel_open: bool, build_menu_open: bool, active_tool: bool) -> String:
+	if not (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE):
+		return ""
+	if production_panel_open:
+		return "close_production"
+	if build_menu_open:
+		return "close_build_menu"
+	if active_tool:
+		return "cancel_tool"
+	return ""
 
 func _has_active_city_tool() -> bool:
 	var scene := get_tree().current_scene
