@@ -126,7 +126,7 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 56.0",
+		"const BEACH_WIDTH := 34.0",
 		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
@@ -142,8 +142,12 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
 			get_tree().quit(1)
 			return
-	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0:
+	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0 or absf(presentation._coastline(-120.0) - presentation._coastline(120.0)) < 4.0:
 		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
+		get_tree().quit(1)
+		return
+	if presentation.BEACH_WIDTH > 36.0:
+		push_error("[VisualPresentationSmoke] The playable shoreline beach must remain a human-scale coastal strip, not a 56 m sand plain")
 		get_tree().quit(1)
 		return
 	var palm_mesh: ArrayMesh = presentation._create_palm_frond_mesh()
@@ -204,7 +208,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 56.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 34.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)
