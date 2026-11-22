@@ -4184,6 +4184,10 @@ func _test_settings_panel_contract() -> void:
 	_check(hud.has_method("_style_settings_dialog"), "Settings internal dialogs must share the premium visual style helper.")
 	var settings_action := hud.find_child("SettingsAction", true, false) as Button
 	_check(settings_action != null and settings_action.tooltip_text == "Settings", "The mobile action bar must expose an accessible Settings shortcut.")
+	var login_indicator := hud.find_child("LoginRequiredIndicator", true, false) as Control
+	var hud_source := FileAccess.get_file_as_string("res://scripts/ui/HUD.gd")
+	_check(login_indicator != null and not (login_indicator is Label) and login_indicator.size.x >= 24.0 and login_indicator.size.y >= 24.0, "Guest login status badge must be a visible, font-independent visual control.")
+	_check(hud_source.contains("class LoginRequiredDotVisual extends Control") and hud_source.contains("draw_circle(center, radius, Color(\"#FF4D5E\"))"), "Guest login badge must use a procedural circle, not an unsupported text glyph.")
 	var original_master := AudioManager.master_volume
 	var original_music_enabled := AudioManager.music_enabled
 	var original_sfx_enabled := AudioManager.sfx_enabled
