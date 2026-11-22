@@ -56,6 +56,11 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Build grid visibility must follow building placement and road editing modes")
 		get_tree().quit(1)
 		return
+	var tutorial_source := FileAccess.get_file_as_string("res://scripts/ui/TutorialGuide.gd")
+	if not tutorial_source.contains("_build_coach_toggle_button()") or not tutorial_source.contains("_dismissed = true") or not tutorial_source.contains("_panel.hide()") or not tutorial_source.contains("func _toggle_guide_panel()"):
+		push_error("[VisualPresentationSmoke] City Coach must not obscure the opening city view and must remain accessible from a compact toggle")
+		get_tree().quit(1)
+		return
 	var expansion_panel_source := FileAccess.get_file_as_string("res://scripts/ui/LandExpansionPanel.gd")
 	if not world_source.contains("marker.visible = _expansion_preview_active") or not world_source.contains("func set_expansion_preview_visible(active: bool)") or not expansion_panel_source.contains("_set_world_expansion_preview(true)") or not expansion_panel_source.contains("_set_world_expansion_preview(false)"):
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
