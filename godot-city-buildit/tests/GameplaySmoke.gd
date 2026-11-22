@@ -163,6 +163,118 @@ func _test_hud_touch_session_ownership() -> void:
 	_check(not hud_probe.has_active_native_ui_touch(), "Application focus loss must release every HUD-owned and excluded touch.")
 	hud_probe.free()
 
+
+func _test_mixed_hud_world_touch_isolation(city_input: Node, camera: Node) -> void:
+	var hud := get_node_or_null("HUD")
+	_check(is_instance_valid(hud) and is_instance_valid(camera) and is_instance_valid(city_input), "Mixed HUD/world touch test requires the live HUD, camera and CityInput nodes.")
+	if not is_instance_valid(hud) or not is_instance_valid(camera) or not is_instance_valid(city_input):
+		return
+
+	# Add a temporary, real Control target to the live HUD. This exercises the
+	# same native touch router used by production buttons without clicking a
+	# destructive in-game action during smoke testing.
+	var probe_button := Button.new()
+	probe_button.name = "MixedTouchAcceptanceProbe"
+	probe_button.text = "TEST"
+	probe_button.position = Vector2(12.0, 12.0)
+	probe_button.size = Vector2(76.0, 76.0)
+	probe_button.z_index = 4096
+	probe_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	hud.add_child(probe_button)
+	var activation_count := [0]
+	probe_button.pressed.connect(func(): activation_count[0] += 1)
+	await get_tree().process_frame
+	var ui_position: Vector2 = probe_button.get_global_transform_with_canvas() * (probe_button.size * 0.5)
+	var world_position := get_viewport().get_visible_rect().size * Vector2(0.5, 0.56)
+
+	# Order 1: HUD finger first, then a second finger on the world. The world
+	# handlers must never acquire the second pointer while the HUD owns one.
+	var hud_down := InputEventScreenTouch.new()
+	hud_down.index = 41
+	hud_down.pressed = true
+	hud_down.position = ui_position
+	_check(bool(hud.call("_route_native_ui_touch", hud_down)), "A touch on a real HUD Control must be captured by the native UI router.")
+	_check(bool(hud.call("has_active_native_ui_touch")), "The HUD must reserve the complete touch session after capturing its first finger.")
+	var world_down := InputEventScreenTouch.new()
+	world_down.index = 42
+	world_down.pressed = true
+	world_down.position = world_position
+	camera.call("_unhandled_input", world_down)
+	city_input.call("_unhandled_input", world_down)
+	_check(camera.get("touch_points").is_empty(), "HUD-first mixed touch must not start a camera gesture from the second world finger.")
+	_check(city_input.get("pointer_start").is_empty(), "HUD-first mixed touch must not start a city action from the second world finger.")
+	var world_drag := InputEventScreenDrag.new()
+	world_drag.index = 42
+	world_drag.position = world_position + Vector2(54.0, 26.0)
+	camera.call("_unhandled_input", world_drag)
+	city_input.call("_unhandled_input", world_drag)
+	var world_cancel := InputEventScreenTouch.new()
+	world_cancel.index = 42
+	world_cancel.pressed = false
+	world_cancel.canceled = true
+	world_cancel.position = world_drag.position
+	camera.call("_unhandled_input", world_cancel)
+	city_input.call("_unhandled_input", world_cancel)
+	_check(camera.get("touch_points").is_empty() and city_input.get("pointer_start").is_empty(), "HUD-first mixed touch cancellation must leave neither world handler with a stale pointer.")
+	var hud_cancel := InputEventScreenTouch.new()
+	hud_cancel.index = 41
+	hud_cancel.pressed = false
+	hud_cancel.canceled = true
+	hud_cancel.position = ui_position
+	_check(bool(hud.call("_route_native_ui_touch", hud_cancel)), "The HUD router must consume and clear its own cancelled pointer.")
+	_check(not bool(hud.call("has_active_native_ui_touch")), "Cancelled HUD release must relinquish the shared touch-session lock.")
+	_check(activation_count[0] == 0, "A cancelled HUD touch must not activate its button.")
+
+	# Order 2: world finger first, then a HUD finger. Once the HUD captures the
+	# second finger, subsequent movement/release from the original world finger
+	# must clear both independent world-handler states without committing an edit.
+	var world_first := InputEventScreenTouch.new()
+	world_first.index = 43
+	world_first.pressed = true
+	world_first.position = world_position
+	camera.call("_unhandled_input", world_first)
+	city_input.call("_unhandled_input", world_first)
+	_check(camera.get("touch_points").has(43), "World-first mixed touch fixture must establish the camera pointer before HUD capture.")
+	_check(city_input.get("pointer_start").has(43), "World-first mixed touch fixture must establish the CityInput pointer before HUD capture.")
+	var hud_second := InputEventScreenTouch.new()
+	hud_second.index = 44
+	hud_second.pressed = true
+	hud_second.position = ui_position
+	_check(bool(hud.call("_route_native_ui_touch", hud_second)), "Second-finger HUD touch must be captured while a world pointer is already active.")
+	var camera_position_before_blocked_drag: Vector3 = camera.global_position
+	var camera_rotation_before_blocked_drag: Vector3 = camera.rotation_degrees
+	var camera_zoom_before_blocked_drag := float(camera.get("current_zoom"))
+	var building_count_before_blocked_drag := BuildManager.buildings.size()
+	var road_system_before_blocked_drag = get_node_or_null("World/RoadSystem")
+	var road_count_before_blocked_drag := int(road_system_before_blocked_drag.get_road_count()) if is_instance_valid(road_system_before_blocked_drag) else -1
+	var world_first_drag := InputEventScreenDrag.new()
+	world_first_drag.index = 43
+	world_first_drag.position = world_position + Vector2(38.0, 18.0)
+	camera.call("_unhandled_input", world_first_drag)
+	city_input.call("_unhandled_input", world_first_drag)
+	_check(camera.get("touch_points").is_empty(), "HUD capture after a world-first touch must clear the camera's existing pointer.")
+	_check(city_input.get("pointer_start").is_empty() and city_input.get("road_stroke_active").is_empty(), "HUD capture after a world-first touch must clear CityInput pointer and road-stroke state.")
+	_check(camera.global_position.distance_to(camera_position_before_blocked_drag) <= 0.001 and camera.rotation_degrees.distance_to(camera_rotation_before_blocked_drag) <= 0.001 and is_equal_approx(float(camera.get("current_zoom")), camera_zoom_before_blocked_drag), "A world finger moving after HUD capture must not pan, rotate or zoom the camera.")
+	_check(BuildManager.buildings.size() == building_count_before_blocked_drag and (not is_instance_valid(road_system_before_blocked_drag) or int(road_system_before_blocked_drag.get_road_count()) == road_count_before_blocked_drag), "A world finger moving after HUD capture must not commit a building or road action.")
+	var world_first_release := InputEventScreenTouch.new()
+	world_first_release.index = 43
+	world_first_release.pressed = false
+	world_first_release.position = world_first_drag.position
+	camera.call("_unhandled_input", world_first_release)
+	city_input.call("_unhandled_input", world_first_release)
+	var hud_second_release := InputEventScreenTouch.new()
+	hud_second_release.index = 44
+	hud_second_release.pressed = false
+	hud_second_release.canceled = true
+	hud_second_release.position = ui_position
+	_check(bool(hud.call("_route_native_ui_touch", hud_second_release)), "HUD-second cancelled release must be routed and cleared.")
+	_check(not bool(hud.call("has_active_native_ui_touch")), "World-first mixed touch sequence must end with no HUD-owned pointer.")
+	_check(camera.get("touch_points").is_empty() and city_input.get("pointer_start").is_empty(), "World-first mixed touch sequence must finish with no stale camera or city pointers.")
+	_check(activation_count[0] == 0, "Neither mixed-touch order may accidentally activate the HUD probe button.")
+
+	probe_button.queue_free()
+	await get_tree().process_frame
+
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
@@ -4608,6 +4720,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/DistantMountainBackdrop") == null, "The starter city must not instantiate a mountain backdrop.")
 	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
+	await _test_mixed_hud_world_touch_isolation(input_node, camera_rig)
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 210.0), "The city camera must expose enough zoom-out range beyond its 150 m opening overview.")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
