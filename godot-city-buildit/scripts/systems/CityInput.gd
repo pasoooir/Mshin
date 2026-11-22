@@ -50,6 +50,10 @@ func _process(delta: float) -> void:
 		return
 	if BuildManager.is_moving or bulldoze_mode or bulldoze_road_mode or _is_road_mode():
 		return
+	# Once a second finger joins, this pointer session belongs to the camera.
+	# Do not restart a building long-press when the gesture falls back to one finger.
+	if multi_touch_gesture:
+		return
 	if pointer_start.size() != 1:
 		return
 	var pointer_id = pointer_start.keys()[0]
@@ -124,7 +128,27 @@ func _building_at_screen(screen_position: Vector2) -> Building:
 			closest_building = building
 	return closest_building
 
-# CameraController uses this to suppress one-finger pan during a building hold.
+# A drag beyond tap slop is an intentional camera gesture, even when it
+# starts on top of a building. CityInput relinquishes that pointer so release
+# cannot become a building tap or a delayed long-press/move action.
+func take_over_camera_drag(pointer_id: int, screen_position: Vector2) -> bool:
+	if BuildManager.is_moving and move_pointer_id == pointer_id:
+		return false
+	if not pointer_start.has(pointer_id):
+		return true
+	var start_position: Vector2 = pointer_start[pointer_id]
+	if start_position.distance_to(screen_position) <= TAP_SLOP:
+		return false
+	pointer_start.erase(pointer_id)
+	pointer_moved.erase(pointer_id)
+	pointer_hold_elapsed.erase(pointer_id)
+	pointer_last_position.erase(pointer_id)
+	placement_rotate_pointer.erase(pointer_id)
+	road_stroke_active.erase(pointer_id)
+	road_stroke_last_cell.erase(pointer_id)
+	return true
+
+# Kept for callers that only need to query a pending building hold.
 func is_building_press_pending(pointer_id: int) -> bool:
 	if not pointer_start.has(pointer_id):
 		return false
@@ -287,7 +311,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				else:
 					var start: Vector2 = pointer_start[event.index]
 					var moved := bool(pointer_moved.get(event.index, false))
-					if not multi_touch_gesture and not BuildManager.is_moving:
+					if not event.canceled and not multi_touch_gesture and not BuildManager.is_moving:
 						if BuildManager.is_placing and moved and not placement_rotate_pointer.has(event.index):
 							_handle_tap(event.position)
 						elif start.distance_to(event.position) <= TAP_SLOP and not moved:
