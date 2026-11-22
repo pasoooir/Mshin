@@ -974,6 +974,32 @@ render_mode cull_back;
 uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
 uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
 varying vec3 world_position;
+
+float terrain_hash(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float terrain_noise(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = terrain_hash(cell);
+	float b = terrain_hash(cell + vec2(1.0, 0.0));
+	float c = terrain_hash(cell + vec2(0.0, 1.0));
+	float d = terrain_hash(cell + vec2(1.0, 1.0));
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+float terrain_fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int octave = 0; octave < 4; octave++) {
+		value += terrain_noise(p) * amplitude;
+		p *= 2.03;
+		amplitude *= 0.5;
+	}
+	return value;
+}
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -982,15 +1008,33 @@ void fragment() {
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 36.0 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
+	vec2 world_xz = world_position.xz;
 	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
 	float fine = sin(world_position.x * 0.31 - world_position.z * 0.27) * cos(world_position.z * 0.23 + world_position.x * 0.19);
 	float patch = smoothstep(-0.55, 0.55, broad);
 	float ground_variation = 0.88 + broad * 0.075 + fine * 0.025;
-	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb * ground_variation;
+	float macro_noise = terrain_fbm(world_xz * 0.105);
+	float meadow_noise = terrain_fbm(world_xz * 0.42 + vec2(17.0, 9.0));
+	float micro_noise = terrain_noise(world_xz * 2.8);
+	float lush_mask = smoothstep(0.38, 0.72, macro_noise);
+	float dry_mask = smoothstep(0.61, 0.83, terrain_fbm(world_xz * 0.19 + vec2(41.0, 13.0)));
+	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
+	vec3 deep_meadow = vec3(0.105, 0.205, 0.105);
+	vec3 fresh_meadow = vec3(0.235, 0.335, 0.145);
+	vec3 olive_grass = vec3(0.315, 0.305, 0.145);
+	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
+	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.48);
+	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
 	meadow *= mix(0.84, 1.08, patch);
+	meadow = mix(meadow, meadow_palette * (0.82 + meadow_noise * 0.42), 0.68);
+	meadow *= 0.91 + micro_noise * 0.18;
+	vec3 soil = vec3(0.31, 0.245, 0.145) * (0.82 + meadow_noise * 0.38);
+	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
+	meadow = mix(meadow, soil, exposed_soil * 0.24);
 	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
 	ALBEDO = mix(meadow, sand, sand_mask);
-	ROUGHNESS = 1.0;
+	ROUGHNESS = mix(0.98, 0.91, sand_mask);
+	SPECULAR = 0.12;
 }
 """
 	var material := ShaderMaterial.new()
