@@ -197,6 +197,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Never let a background city tap or keyboard shortcut leak through them.
 	var scene := get_tree().current_scene
 	var detail_hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
+	if (event is InputEventScreenTouch or event is InputEventScreenDrag) and is_instance_valid(detail_hud) and detail_hud.has_method("has_active_native_ui_touch") and detail_hud.has_active_native_ui_touch():
+		# Do not let a world pointer start/continue an action while another
+		# physical finger is owned by the HUD.
+		pointer_start.clear()
+		pointer_moved.clear()
+		pointer_hold_elapsed.clear()
+		pointer_last_position.clear()
+		placement_rotate_pointer.clear()
+		road_stroke_active.clear()
+		road_stroke_last_cell.clear()
+		move_pointer_id = -999
+		multi_touch_gesture = false
+		get_viewport().set_input_as_handled()
+		return
 	if _has_building_detail_modal_open():
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
 			if is_instance_valid(detail_hud):
