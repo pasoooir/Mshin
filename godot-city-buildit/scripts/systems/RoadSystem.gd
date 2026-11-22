@@ -778,3 +778,6 @@ func _get_white_marking_material() -> StandardMaterial3D:
 
 func get_road_count() -> int:
 	return roads.size()
+
+func get_road_render_chunk_count() -> int:
+	return _road_render_chunks.size()
