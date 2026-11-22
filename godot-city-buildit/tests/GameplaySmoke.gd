@@ -5632,10 +5632,17 @@ func _run_gameplay_test() -> void:
 	var previous_level := GameManager.level
 	GameManager.level = 4
 	_grant_construction_bom_for_test("hardware_store")
-	_check(BuildManager.place_building(Vector2i(9, 1), "hardware_store"), "Could not place Hardware Store for production acceptance.")
+	var hardware_store_size: Vector2i = BuildManager.get_building_size("hardware_store", 0)
+	print("[HardwareStoreDebug] level=", GameManager.level, " definition=", BuildManager.building_types.get("hardware_store", {}), " affordable=", EconomyManager.can_afford(int(BuildManager.building_types.get("hardware_store", {}).get("cost", 0))), " bom_lock=", BuildManager.get_construction_bom_lock_reason("hardware_store"), " region_lock=", BuildManager.get_region_build_lock_reason("hardware_store"), " population_lock=", BuildManager.get_population_build_lock_reason("hardware_store"), " factory_lock=", BuildManager.get_factory_build_lock_reason("hardware_store"), " free=", BuildManager.is_cell_free(Vector2i(9, 1), hardware_store_size), " road_access=", BuildManager.has_road_access(Vector2i(9, 1), hardware_store_size))
+	var hardware_store_placed := BuildManager.place_building(Vector2i(9, 1), "hardware_store")
+	_check(hardware_store_placed, "Could not place Hardware Store for production acceptance.")
+	if not hardware_store_placed:
+		return
 	await _wait_seconds(5.5)
 	var hardware = _find_building("hardware_store")
 	_check(hardware != null and hardware.status == "completed", "Hardware Store construction did not finish.")
+	if hardware == null:
+		return
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("wood",1)
 	var hardware_component = hardware.production_component
