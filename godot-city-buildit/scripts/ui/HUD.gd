@@ -1668,7 +1668,18 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		submenu_scroll.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree():
+			_close_production_panel()
+		elif submenu_scroll and submenu_scroll.visible:
+			_close_build_menu()
+		elif _has_active_city_tool():
+			_on_cancel_pressed()
+		else:
+			return
+		get_viewport().set_input_as_handled()
+		return
+	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_BACKSPACE:
 		_close_production_panel()
 		get_viewport().set_input_as_handled()
 		return
@@ -1678,6 +1689,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
+
+func _has_active_city_tool() -> bool:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if is_instance_valid(scene) else null
+	var road_system = scene.get_node_or_null("World/RoadSystem") if is_instance_valid(scene) else null
+	return BuildManager.is_placing or BuildManager.is_moving \
+		or (is_instance_valid(city_input) and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)) \
+		or (is_instance_valid(road_system) and (road_system.is_road_mode or road_system.is_road_upgrade_mode))
 
 func _build_service_warning_banner() -> void:
 	service_warning_panel = PanelContainer.new()
