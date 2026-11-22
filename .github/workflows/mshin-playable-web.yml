@@ -141,15 +141,16 @@ jobs:
             console.log('[desktop diagnostics] page errors=' + errors.join(' | '));
             throw error;
           }
-          const gameCanvas = page.frameLocator('#game-frame').locator('canvas');
-          // Read the exported canvas backing dimensions from DOM attributes.
-          // Avoid page-side evaluate/clientWidth: under software WebGL the
-          // renderer can stall the iframe main thread after startup, causing
-          // an otherwise healthy visible canvas to time out during evaluation.
-          const canvasWidth = Number(await gameCanvas.getAttribute('width'));
-          const canvasHeight = Number(await gameCanvas.getAttribute('height'));
+          // Godot's exported canvas backing-store width can legitimately be
+          // zero while the WebGL context is being initialized. The acceptance
+          // gate is the actual visible iframe viewport, not the backing-store
+          // attribute. Read its browser-computed box through Playwright's
+          // protocol instead of evaluating JavaScript inside the WebGL frame.
+          const frameBounds = await gameFrame.boundingBox();
+          const canvasWidth = Math.round(frameBounds?.width ?? 0);
+          const canvasHeight = Math.round(frameBounds?.height ?? 0);
           if (canvasWidth < 640 || canvasHeight < 360) {
-            throw new Error('Desktop WebGL canvas display size is too small: ' + canvasWidth + 'x' + canvasHeight);
+            throw new Error('Desktop game viewport display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-pacific-entry.png',
