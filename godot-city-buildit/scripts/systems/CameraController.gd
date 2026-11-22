@@ -303,12 +303,14 @@ func _screen_to_ground(screen_position: Vector2) -> Variant:
 		return null
 	return ray_origin + ray_direction * distance_to_ground
 
+static func ground_anchor_correction(anchor: Vector3, projected: Vector3) -> Vector3:
+	return Vector3(anchor.x - projected.x, 0.0, anchor.z - projected.z)
+
 func _keep_ground_point_under_screen(ground_point: Vector3, screen_position: Vector2) -> void:
 	var after_transform = _screen_to_ground(screen_position)
 	if after_transform == null:
 		return
-	global_position.x += ground_point.x - after_transform.x
-	global_position.z += ground_point.z - after_transform.z
+	global_position += ground_anchor_correction(ground_point, after_transform)
 	global_position.x = clampf(global_position.x, -world_limit, world_limit)
 	global_position.z = clampf(global_position.z, -world_limit, world_limit)
 
