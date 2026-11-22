@@ -131,8 +131,8 @@ func _ready() -> void:
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
 	var conifer_canopy: ArrayMesh = presentation._create_conifer_canopy_mesh()
 	var umbrella_canopy: ArrayMesh = presentation._create_umbrella_canopy_mesh()
-	if conifer_canopy == null or umbrella_canopy == null:
-		push_error("[VisualPresentationSmoke] Conifer and umbrella canopy meshes must be generated locally")
+	if canopy == null or conifer_canopy == null or umbrella_canopy == null:
+		push_error("[VisualPresentationSmoke] Three distinct tree canopy meshes must be generated locally")
 		presentation.free()
 		get_tree().quit(1)
 		return
