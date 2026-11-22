@@ -117,13 +117,13 @@ func _create_passenger(index: int) -> Node3D:
 func _release_next_passenger() -> void:
 	if _passengers_waiting.is_empty():
 		return
-	var passenger := _passengers_waiting.pop_front()
+	var passenger: Node3D = _passengers_waiting.pop_front()
 	var parent := get_parent()
 	if parent == null:
 		return
 	passenger.reparent(parent, true)
 	var lane := float(_unloaded_total % 4) - 1.5
-	var target := Vector3(TERMINAL_X + float(_unloaded_total / 4) * 0.9, 0.58, ROUTE_Z + lane * 1.15)
+	var target := Vector3(TERMINAL_X + float(_unloaded_total / 4) * 0.9, 0.76, ROUTE_Z + lane * 1.15)
 	passenger.set_meta("walk_target", target)
 	passenger.set_meta("walk_phase", float(_unloaded_total) * 0.7)
 	_unloaded_total += 1
