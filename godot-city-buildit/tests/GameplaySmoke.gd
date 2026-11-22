@@ -55,7 +55,25 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 	traffic_test_fleet_signal_count += 1
 
 func _ready() -> void:
+	_test_camera_gesture_math()
 	call_deferred("_run_gameplay_test")
+
+func _test_camera_gesture_math() -> void:
+	# Pinch-out must reduce camera distance; pinch-in must increase it.
+	var zoom_out := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045)
+	var zoom_in := CameraControllerScript.pinch_zoom_delta(150.0, 100.0, 0.045)
+	_check(zoom_out < 0.0, "Pinch-out must zoom in by reducing camera distance.")
+	_check(zoom_in > 0.0, "Pinch-in must zoom out by increasing camera distance.")
+	_check(100.0 + zoom_out < 100.0 and 100.0 + zoom_in > 100.0, "Pinch deltas must move camera distance in the expected direction.")
+	# A twist across the +/- PI seam must be the short continuous rotation.
+	var seam_delta := CameraControllerScript.touch_orbit_delta(deg_to_rad(179.0), deg_to_rad(-179.0))
+	_check(is_equal_approx(absf(seam_delta), deg_to_rad(2.0)), "Two-finger rotation must cross the +/-180-degree seam without a 358-degree jump.")
+	# The focal correction is horizontal and exactly cancels the projected anchor drift.
+	var anchor := Vector3(12.0, 0.0, -8.0)
+	var projected := Vector3(15.5, 4.0, -3.0)
+	var correction := CameraControllerScript.ground_anchor_correction(anchor, projected)
+	var corrected := projected + correction
+	_check(corrected.distance_to(anchor) <= 0.0001, "Focal-point correction must restore the same ground anchor without vertical drift.")
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
