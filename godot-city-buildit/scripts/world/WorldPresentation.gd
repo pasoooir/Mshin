@@ -353,7 +353,7 @@ func _build_meadow_biome_overlays() -> void:
 		Color("#687A54")
 	]
 	var base_edge := Color("#25723D")
-	var patch_count := 190
+	var patch_count := 280
 	for patch_index in range(patch_count):
 		var center_x := rng.randf_range(-112.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
@@ -362,22 +362,22 @@ func _build_meadow_biome_overlays() -> void:
 		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
 			continue
 		var in_starter_city := absf(center_x) < 34.0 and absf(center_z) < 34.0
-		var radius_x := rng.randf_range(2.2, 3.8) if in_starter_city else rng.randf_range(4.0, 7.5)
+		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(2.8, 5.5)
 		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
 		var rotation := rng.randf_range(0.0, TAU)
-		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.48)
+		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.60)
 		if in_starter_city:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
 			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34)).lerp(base_edge, 0.48)
 		var ring_levels := [0.0, 0.34, 0.68, 1.0]
-		var segments := 24
+		var segments := 16
 		var ring_points: Array = []
 		for ring_value in ring_levels:
 			var ring: Array[Vector3] = []
 			for segment in range(segments):
 				var angle := TAU * float(segment) / float(segments)
-				var edge_noise := 1.0 + sin(angle * 2.0 + float(patch_index) * 0.71) * 0.15 + cos(angle * 5.0 - float(patch_index) * 0.37) * 0.10 + sin(angle * 9.0 + float(patch_index) * 0.23) * 0.055 + cos(angle * 13.0 - float(patch_index) * 0.19) * 0.03
+				var edge_noise := 1.0 + sin(angle * 2.0 + float(patch_index) * 0.71) * 0.20 + cos(angle * 5.0 - float(patch_index) * 0.37) * 0.14 + sin(angle * 9.0 + float(patch_index) * 0.23) * 0.075 + cos(angle * 13.0 - float(patch_index) * 0.19) * 0.045
 				var local_x := cos(angle) * radius_x * float(ring_value) * edge_noise
 				var local_z := sin(angle) * radius_z * float(ring_value) * edge_noise
 				var rotated_x := local_x * cos(rotation) - local_z * sin(rotation)
