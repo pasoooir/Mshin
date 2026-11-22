@@ -407,7 +407,9 @@ func _refresh_build_grid_visibility(_active: bool = false) -> void:
 func _is_build_overlay_active() -> bool:
 	if BuildManager.is_placing:
 		return true
-	return is_instance_valid(_road_system_cache) and (_road_system_cache.is_road_mode or _road_system_cache.is_road_upgrade_mode)
+	if not is_instance_valid(_road_system_cache):
+		return false
+	return bool(_road_system_cache.get("is_road_mode")) or bool(_road_system_cache.get("is_road_upgrade_mode"))
 
 
 func _build_coastal_highway() -> void:
