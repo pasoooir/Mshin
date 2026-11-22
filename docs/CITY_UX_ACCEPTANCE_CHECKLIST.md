@@ -73,6 +73,7 @@ For every finding record:
 - [ ] E5. Bulldoze road/building modes are visually distinct and safely cancellable.
 - [ ] E6. Building access requirements are visible before construction.
 - [ ] E7. Road/terrain/water boundaries do not create misleading clickable areas.
+- [ ] E8. An OS-cancelled road touch preserves only segments already committed by delivered drag events and clears all pointer/stroke state.
 
 ## F. Panels, HUD, and touch targets
 - [ ] F1. Every panel has a visible close/back action.
@@ -159,6 +160,10 @@ For every finding record:
   - Confirmed defects: the first-step coach initially used a 430×300 logical-pixel panel at 1280×720; its pointing-hand emoji rendered as a missing-glyph box; the initial `Connected City` toast fired because the 50-road target exactly matched the 50 free starter tiles; the persistent GameBootstrap status line overlapped the bottom action dock; and the guest login indicator's `●` text glyph rendered as a red square over the Settings button.
   - PR #657 reduces the compact coach to 380×230, shortens the city-name instruction, hides the pointer during that self-explanatory first step, draws the later pointer from vector primitives (no font glyph), raises the road achievement threshold to 75 tiles, suppresses status feedback while the coach panel is visible, moves later status feedback above the bottom action dock with responsive wrapping, and replaces the guest login glyph with a procedural red dot.
   - Do not close A1/A3/I1 until fresh WebGL screenshots show the coach unobtrusive, no false startup achievement, no status/dock overlap and a correctly rendered vector pointer. Physical Android visual acceptance remains separate.
+- **AUDIT-011 — Road drawing native-touch integration: IMPLEMENTED; CI PENDING.**
+  - PR #659 drives CityInput._unhandled_input with actual InputEventScreenTouch and InputEventScreenDrag objects, rather than calling only the private road-stroke helpers.
+  - It asserts that a single finger paints every connected tile from cell 6 through 9, normal release clears the pointer/stroke state, and OS-cancelled release preserves only already-painted cells 10 and 11 while leaving cell 12 empty.
+  - The test also requires all road-stroke and pointer dictionaries to be empty after cancellation. Physical Android finger continuity and second-finger interruption remain separate acceptance items.
 
 ## Area-level evidence ledger (2026-11-22)
 
@@ -170,7 +175,7 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 | B. Camera and navigation | PARTIAL | GameplaySmoke camera math; Chromium dispatches pinch-out, two-finger pan/twist, 2→1 transition and one-finger pan; PR #654 cancellation/focus reset tests. | Assert actual camera transform and anchor stability, edge/zoom limits, HUD isolation; physical Android gesture feel and resume. |
 | C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
 | D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
-| E. Roads and city connectivity | PARTIAL | Automated road gateway/connectivity and system-level road placement coverage exist. | Finger-drawn continuity, cancellation semantics for already placed segments, invalid-connection messaging and water/terrain edge taps. |
+| E. Roads and city connectivity | PARTIAL | PR #659 extends GameplaySmoke through actual InputEventScreenTouch/Drag routing: one-finger contiguous road painting, normal release cleanup, cancelled-release segment preservation and stale-state cleanup; gateway/connectivity tests remain. | Physical finger-drawn continuity, second-finger interruption during a road stroke, road upgrade/bulldoze touch walkthrough and water/terrain edge taps. |
 | F. Panels, HUD and touch targets | PARTIAL | HUD ownership/cancel/focus tests plus PR #656 live-scene GameplaySmoke sequences for HUD→world and world→HUD; asserts both actual world handlers clear pointer/road state and cancelled HUD touch does not activate. | Browser hit-testing at measured HUD coordinates, full panel close/back walkthrough, safe areas, 48px target measurements, scroll drag and text legibility. |
 | G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
 | H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
