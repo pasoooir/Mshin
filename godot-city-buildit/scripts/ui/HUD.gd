@@ -175,7 +175,7 @@ var _settings_login_blink_timer: Timer
 var _settings_account_status: Label
 var _settings_account_action: Button
 var _settings_profile_avatar: TextureRect
-var _settings_avatar_placeholder: Label
+var _settings_avatar_placeholder: TextureRect
 var _settings_avatar_request_url := ""
 var placement_controls: PanelContainer
 var _trade_active_tab := "depot"
@@ -5379,7 +5379,7 @@ func _refresh_settings_account_section() -> void:
 			if is_instance_valid(avatar_frame):
 				avatar_frame.visible = false
 		if is_instance_valid(_settings_avatar_placeholder):
-			_settings_avatar_placeholder.text = "👤"
+			_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.svg") as Texture2D
 			_settings_avatar_placeholder.show()
 		_settings_avatar_request_url = ""
 		_settings_account_status.text = "Guest mode\nSign in to unlock city registration, secure your progress and receive login rewards."
@@ -5543,13 +5543,12 @@ func _show_settings_panel() -> void:
 	avatar_material.shader = avatar_shader
 	_settings_profile_avatar.material = avatar_material
 	avatar_frame.add_child(_settings_profile_avatar)
-	_settings_avatar_placeholder = Label.new()
+	_settings_avatar_placeholder = TextureRect.new()
 	_settings_avatar_placeholder.name = "SettingsProfileAvatarFallback"
-	_settings_avatar_placeholder.text = "👤"
+	_settings_avatar_placeholder.texture = load("res://assets/icons/ui/avatar_placeholder.svg") as Texture2D
 	_settings_avatar_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_settings_avatar_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_settings_avatar_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_settings_avatar_placeholder.add_theme_font_size_override("font_size", _settings_font_size(34))
+	_settings_avatar_placeholder.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_settings_avatar_placeholder.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_settings_avatar_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	avatar_frame.add_child(_settings_avatar_placeholder)
 	heading.add_child(avatar_frame)
@@ -5725,53 +5724,10 @@ func _refresh_settings_profile_avatar() -> void:
 	var frame := _settings_profile_avatar.get_parent() as Control
 	if is_instance_valid(frame):
 		frame.visible = true
-	var display_name := PlayerAccountManager.google_display_name
-	if is_instance_valid(_settings_avatar_placeholder):
-		_settings_avatar_placeholder.text = display_name.substr(0, 1).to_upper() if not display_name.is_empty() else "G"
-	var avatar_url := PlayerAccountManager.google_avatar_url
-	if avatar_url.is_empty() or avatar_url == _settings_avatar_request_url:
-		return
+	# Profile artwork is bundled with the game; account settings must render offline.
 	_settings_profile_avatar.texture = null
 	if is_instance_valid(_settings_avatar_placeholder):
 		_settings_avatar_placeholder.show()
-	_settings_avatar_request_url = avatar_url
-	var request := HTTPRequest.new()
-	request.name = "SettingsProfileAvatarRequest"
-	request.timeout = 12.0
-	request.body_size_limit = 2 * 1024 * 1024
-	add_child(request)
-	request.request_completed.connect(_on_settings_profile_avatar_downloaded.bind(request, avatar_url), CONNECT_ONE_SHOT)
-	var request_error := request.request(avatar_url)
-	if request_error != OK:
-		request.queue_free()
-		_settings_avatar_request_url = ""
-
-
-func _on_settings_profile_avatar_downloaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, request: HTTPRequest, avatar_url: String) -> void:
-	if is_instance_valid(request):
-		request.queue_free()
-	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or avatar_url != PlayerAccountManager.google_avatar_url:
-		if _settings_avatar_request_url == avatar_url:
-			_settings_avatar_request_url = ""
-		return
-	var avatar_image := Image.new()
-	var image_error := avatar_image.load_jpg_from_buffer(body)
-	if image_error != OK:
-		image_error = avatar_image.load_png_from_buffer(body)
-	if image_error != OK:
-		image_error = avatar_image.load_webp_from_buffer(body)
-	if image_error != OK or avatar_image.is_empty() or avatar_image.get_width() > 1024 or avatar_image.get_height() > 1024:
-		if _settings_avatar_request_url == avatar_url:
-			_settings_avatar_request_url = ""
-		if is_instance_valid(_settings_profile_avatar):
-			_settings_profile_avatar.texture = null
-		if is_instance_valid(_settings_avatar_placeholder):
-			_settings_avatar_placeholder.show()
-		return
-	if is_instance_valid(_settings_profile_avatar):
-		_settings_profile_avatar.texture = ImageTexture.create_from_image(avatar_image)
-		if is_instance_valid(_settings_avatar_placeholder):
-			_settings_avatar_placeholder.hide()
 
 
 func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
