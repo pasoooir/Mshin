@@ -4817,6 +4817,10 @@ func _run_gameplay_test() -> void:
 	var footprint_test_camera: Camera3D = get_viewport().get_camera_3d()
 	var construction_roof_screen := footprint_test_camera.unproject_position(indexed_house.global_position + Vector3(0.0, 3.4, 0.0))
 	_check(input_node._building_at_screen(construction_roof_screen) == indexed_house, "Oblique-camera ray hit on the house roof did not resolve the building volume.")
+	# A normal tap on a visible facade/roof must select the building itself,
+	# not the ground cell behind it as seen from the oblique camera.
+	input_node._handle_tap(construction_roof_screen)
+	_check(get_node("HUD/StatusLabel").text == "Still under construction…", "Tapping a visible building roof must open its construction interaction instead of selecting the ground behind it.")
 	input_node._begin_move_from_screen(77, construction_roof_screen)
 	_check(get_node("HUD/StatusLabel").text == "Still under construction", "Long-pressing the visible roof of a building under construction did not report construction status.")
 	input_node._begin_move_from_screen(78, footprint_test_camera.unproject_position(BuildManager.grid_to_world(Vector2i(12, 12))))
