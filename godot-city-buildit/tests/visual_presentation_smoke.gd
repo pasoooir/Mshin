@@ -25,6 +25,11 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
+	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
+		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
+		get_tree().quit(1)
+		return
 	if world_source.count("_is_city_road_footprint(x, z)") < 6:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
