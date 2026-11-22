@@ -1184,7 +1184,7 @@ for contract in [
     "orbit_inertia_damping",
     "func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:",
     "@export var world_limit: float = 130.0",
-    "@export var max_zoom: float = 150.0",
+    "@export var max_zoom: float = 210.0",
     "static func interpolate_focus(",
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",
