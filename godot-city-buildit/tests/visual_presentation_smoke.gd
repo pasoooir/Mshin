@@ -40,6 +40,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] The placement grid must be hidden during normal city viewing")
 		get_tree().quit(1)
 		return
+	if not road_source.contains("instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF"):
+		push_error("[VisualPresentationSmoke] Repeated road tiles must not consume the shadow-caster pass")
+		get_tree().quit(1)
+		return
 	if not world_source.contains("grid_instance.visible = _is_build_overlay_active()") or not road_source.contains("signal road_mode_changed(active: bool)"):
 		push_error("[VisualPresentationSmoke] Build grid visibility must follow building placement and road editing modes")
 		get_tree().quit(1)
