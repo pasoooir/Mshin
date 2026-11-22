@@ -227,8 +227,9 @@ func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int,
 		var coast_x1 := _coastline(z1)
 		var near_x0 := coast_x0 + shore_offset
 		var near_x1 := coast_x1 + shore_offset
-		var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge
-		var far_x1 := coast_x1 + far_edge if far_edge <= 20.0 else far_edge
+		# Values up to 100 m are coast-relative shallow-water widths; larger values are fixed offshore bounds.
+		var far_x0 := coast_x0 + far_edge if far_edge <= 100.0 else far_edge
+		var far_x1 := coast_x1 + far_edge if far_edge <= 100.0 else far_edge
 		for column in range(columns):
 			var u0 := float(column) / float(columns)
 			var u1 := float(column + 1) / float(columns)
