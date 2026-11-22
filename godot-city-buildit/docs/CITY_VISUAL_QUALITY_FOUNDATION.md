@@ -40,9 +40,10 @@ Use a clean, sunny, premium stylized 3D look: warm key light, restrained cool fi
 ### VQ-03 — Road presentation and draw-call budget
 1. Preserve the current connected-arm topology and tile connectivity.
 2. Keep asphalt, curb, sidewalk, and markings as merged surfaces per tile or region.
-3. Introduce one shared material set and deterministic tile/world-space wear variation; no unique texture generation per tile.
-4. Profile whether road tiles should be merged into spatial chunks (for example 8x8 tiles) while preserving placement updates and hit testing.
-5. Keep lane markings readable at the normal mobile camera zoom; suppress fine markings at overview distances if needed.
+3. Keep one shared material set and deterministic world-space asphalt UVs; no unique texture generation per tile.
+4. Implemented: combine road surfaces by material into one ArrayMesh per 8x8 spatial chunk. Chunk rebuilds inspect only their fixed 64-cell footprint, not the entire road network.
+5. Preserve per-cell topology and level metadata; placement, removal, restore, upgrade and neighbor-junction refresh rebuild only affected chunks.
+6. Keep lane markings readable at the normal mobile camera zoom; suppress fine markings at overview distances if profiling shows they become noise.
 
 ### VQ-04 — Building architecture and asset pipeline
 1. Prioritize a small curated hero set: starter home, corner shop, factory, school/civic building, and one tall landmark.
