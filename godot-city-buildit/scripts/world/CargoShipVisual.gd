@@ -2,7 +2,7 @@ extends Node3D
 
 enum VoyageState { APPROACHING, BERTHED, UNLOADING, DEPARTING, WAITING }
 
-const DOCK_X := 127.0
+const DOCK_X := 131.0
 const OFFSHORE_X := 174.0
 const DEPARTURE_X := 188.0
 const ROUTE_Z := -22.0
@@ -82,7 +82,7 @@ func _build_passengers() -> void:
 		passenger.name = "Passenger_%02d" % index
 		var row := index / 4
 		var lane := (index % 4) - 1.5
-		passenger.position = Vector3(-3.55 + float(row) * 1.05, 1.18, lane * 0.54)
+		passenger.position = Vector3(-3.55 + float(row) * 1.05, 1.79, lane * 0.54)
 		add_child(passenger)
 		_passengers_waiting.append(passenger)
 
