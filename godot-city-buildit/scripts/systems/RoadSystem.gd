@@ -355,9 +355,13 @@ func _refresh_road_render_chunks_for_cells(cells: Array[Vector2i]) -> void:
 func _rebuild_road_render_chunk(chunk_key: Vector2i) -> void:
 	var old_chunk = _road_render_chunks.get(chunk_key)
 	var chunk_cells: Array[Vector2i] = []
-	for cell in roads.keys():
-		if _road_chunk_key(cell) == chunk_key:
-			chunk_cells.append(cell)
+	# Visit only this chunk's fixed 8x8 footprint. Rebuilding one block must
+	# never scan the entire city's road dictionary as the city grows.
+	for x in range(chunk_key.x * ROAD_RENDER_CHUNK_SIZE, (chunk_key.x + 1) * ROAD_RENDER_CHUNK_SIZE):
+		for z in range(chunk_key.y * ROAD_RENDER_CHUNK_SIZE, (chunk_key.y + 1) * ROAD_RENDER_CHUNK_SIZE):
+			var cell := Vector2i(x, z)
+			if roads.has(cell):
+				chunk_cells.append(cell)
 	if chunk_cells.is_empty():
 		if is_instance_valid(old_chunk):
 			old_chunk.queue_free()
@@ -377,7 +381,6 @@ func _rebuild_road_render_chunk(chunk_key: Vector2i) -> void:
 		0.025,
 		float(chunk_key.y * ROAD_RENDER_CHUNK_SIZE) * GRID_SIZE
 	)
-	chunk_cells.sort()
 	for cell in chunk_cells:
 		var tile_node = roads.get(cell) as MeshInstance3D
 		if not is_instance_valid(tile_node) or tile_node.mesh == null:
