@@ -41,7 +41,7 @@ const MAX_CAMERA_STEP := 1.0 / 20.0
 const MAX_PAN_INERTIA_SPEED := 1600.0
 
 func _ready() -> void:
-	rotation_degrees = Vector3(0.0, 45.0, 0.0)
+	rotation_degrees = Vector3(0.0, -45.0, 0.0)
 	# Frame the open starter city, wide Pacific beach and green inland edge together.
 	global_position = Vector3(34.0, 0.0, 0.0)
 	_update_camera_transform()
