@@ -44,6 +44,10 @@ func _ready() -> void:
 		return
 	RegionManager.region_changed.connect(_on_region_changed)
 	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
+	BuildManager.placement_mode_changed.connect(_refresh_build_grid_visibility)
+	_road_system_cache = get_parent().get_node_or_null("RoadSystem")
+	if is_instance_valid(_road_system_cache) and _road_system_cache.has_signal("road_mode_changed"):
+		_road_system_cache.connect("road_mode_changed", Callable(self, "_on_road_mode_changed"))
 	_build_environment()
 	_build_terrain()
 	_build_land_expansion_markers()
@@ -291,8 +295,27 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		color = color.lerp(Color("#36523A"), 0.12)
 	var terrain_point := point
 	terrain_point.y = _terrain_height(point.x, point.z)
+	# Compatibility-safe baked-style cavity shading: preserve a perfectly level build zone.
+	color *= _terrain_vertex_ao(point.x, point.z)
 	surface.set_color(color)
 	surface.add_vertex(terrain_point)
+
+
+func _terrain_vertex_ao(x: float, z: float) -> float:
+	# Four height samples approximate local cavity darkening without SSAO/SSIL.
+	# This is evaluated once while building the terrain mesh, not per frame.
+	const SAMPLE_DISTANCE := 1.5
+	var center := _terrain_height(x, z)
+	var north := _terrain_height(x, z - SAMPLE_DISTANCE)
+	var south := _terrain_height(x, z + SAMPLE_DISTANCE)
+	var west := _terrain_height(x - SAMPLE_DISTANCE, z)
+	var east := _terrain_height(x + SAMPLE_DISTANCE, z)
+	var average_neighbour_height := (north + south + west + east) * 0.25
+	var cavity := maxf(0.0, average_neighbour_height - center)
+	var slope_x := (east - west) / (SAMPLE_DISTANCE * 2.0)
+	var slope_z := (south - north) / (SAMPLE_DISTANCE * 2.0)
+	var slope := Vector2(slope_x, slope_z).length()
+	return clampf(1.0 - cavity * 0.10 - slope * 0.012, 0.86, 1.0)
 
 
 func _terrain_height(x: float, z: float) -> float:
@@ -367,6 +390,26 @@ func _build_city_grid() -> void:
 	grid_material.no_depth_test = false
 	grid_instance.material_override = grid_material
 	add_child(grid_instance)
+	_refresh_build_grid_visibility()
+
+
+func _on_road_mode_changed(_active: bool) -> void:
+	_refresh_build_grid_visibility()
+
+
+func _refresh_build_grid_visibility(_active: bool = false) -> void:
+	var grid_instance := get_node_or_null("BuildablePlotGrid")
+	if not is_instance_valid(grid_instance):
+		return
+	grid_instance.visible = _is_build_overlay_active()
+
+
+func _is_build_overlay_active() -> bool:
+	if BuildManager.is_placing:
+		return true
+	if not is_instance_valid(_road_system_cache):
+		return false
+	return bool(_road_system_cache.get("is_road_mode")) or bool(_road_system_cache.get("is_road_upgrade_mode"))
 
 
 func _build_coastal_highway() -> void:
@@ -673,7 +716,18 @@ func _build_tree_belts() -> void:
 	trunk_mesh.height = 2.8
 	trunk_mesh.radial_segments = 8
 	trunk_mesh.material = bark_material
-	var canopy_mesh := _create_clustered_canopy_mesh()
+	var broadleaf_positions: Array[Vector3] = []
+	var conifer_positions: Array[Vector3] = []
+	var umbrella_positions: Array[Vector3] = []
+	for index in range(positions.size()):
+		match index % 3:
+			0:
+				broadleaf_positions.append(positions[index])
+			1:
+				conifer_positions.append(positions[index])
+			_:
+				umbrella_positions.append(positions[index])
+
 	var canopy_material := StandardMaterial3D.new()
 	canopy_material.vertex_color_use_as_albedo = true
 	canopy_material.albedo_texture = _create_foliage_texture()
@@ -682,11 +736,54 @@ func _build_tree_belts() -> void:
 	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
 	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.40)
-	var crowns := _create_tree_multimesh("TreeCanopies", canopy_mesh, positions, 2.85)
-	crowns.material_override = canopy_material
+	var broadleaf_crowns := _create_tree_multimesh("TreeCanopies", _create_clustered_canopy_mesh(), broadleaf_positions, 2.85)
+	var conifer_crowns := _create_tree_multimesh("TreeCanopiesConifer", _create_conifer_canopy_mesh(), conifer_positions, 1.85)
+	var umbrella_crowns := _create_tree_multimesh("TreeCanopiesUmbrella", _create_umbrella_canopy_mesh(), umbrella_positions, 2.35)
+	for crowns in [broadleaf_crowns, conifer_crowns, umbrella_crowns]:
+		crowns.material_override = canopy_material
+		add_child(crowns)
 	add_child(roots)
 	add_child(trunks)
-	add_child(crowns)
+
+
+func _create_conifer_canopy_mesh() -> ArrayMesh:
+	# Three overlapping tapered tiers create a readable evergreen silhouette.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for tier in range(3):
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.035
+		cone.bottom_radius = 1.0 - float(tier) * 0.16
+		cone.height = 1.65
+		cone.radial_segments = 10
+		cone.rings = 3
+		var scale := Vector3(1.0 - float(tier) * 0.17, 1.0, 1.0 - float(tier) * 0.17)
+		var offset := Vector3(0.0, -0.42 + float(tier) * 0.66, 0.0)
+		surface.append_from(cone, 0, Transform3D(Basis.IDENTITY.scaled(scale), offset))
+	return surface.commit()
+
+
+func _create_umbrella_canopy_mesh() -> ArrayMesh:
+	# Broad flattened crown with offset lobes, visually distinct from the round gum tree.
+	var lobe := SphereMesh.new()
+	lobe.radius = 1.0
+	lobe.height = 1.25
+	lobe.radial_segments = 14
+	lobe.rings = 8
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lobes := [
+		[Vector3(0.0, 0.0, 0.0), Vector3(1.25, 0.68, 1.12)],
+		[Vector3(-0.78, -0.12, 0.02), Vector3(0.78, 0.58, 0.78)],
+		[Vector3(0.76, -0.10, 0.04), Vector3(0.82, 0.62, 0.76)],
+		[Vector3(0.02, -0.08, -0.76), Vector3(0.84, 0.60, 0.78)],
+		[Vector3(-0.02, -0.06, 0.74), Vector3(0.82, 0.58, 0.78)]
+	]
+	for lobe_data in lobes:
+		var offset: Vector3 = lobe_data[0]
+		var scale: Vector3 = lobe_data[1]
+		surface.append_from(lobe, 0, Transform3D(Basis.IDENTITY.scaled(scale), offset))
+	return surface.commit()
 
 func _create_clustered_canopy_mesh() -> ArrayMesh:
 	# Low-poly ellipsoids intersect deliberately to form a single coherent

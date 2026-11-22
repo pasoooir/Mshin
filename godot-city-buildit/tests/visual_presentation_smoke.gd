@@ -9,6 +9,16 @@ func _ready() -> void:
 	# Coastline regression: water geometry must follow the curved beach edge,
 	# and the terrain must taper to the sea datum instead of overlapping it.
 	var coast_sample := presentation._coastline(0.0)
+	var owned_plot_ao := presentation._terrain_vertex_ao(0.0, 0.0)
+	var natural_terrain_ao := presentation._terrain_vertex_ao(40.0, 40.0)
+	if not is_equal_approx(owned_plot_ao, 1.0):
+		push_error("[VisualPresentationSmoke] Buildable starter plots must remain evenly lit without terrain cavity shading")
+		get_tree().quit(1)
+		return
+	if natural_terrain_ao < 0.86 or natural_terrain_ao > 1.0 or natural_terrain_ao >= 1.0:
+		push_error("[VisualPresentationSmoke] Natural terrain must apply restrained Compatibility-safe vertex cavity shading")
+		get_tree().quit(1)
+		return
 	if absf(presentation._terrain_height(coast_sample, 0.0)) > 0.01:
 		push_error("[VisualPresentationSmoke] Beach terrain must meet the ocean at the sea datum")
 		get_tree().quit(1)
@@ -26,6 +36,26 @@ func _ready() -> void:
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
+	if presentation._is_build_overlay_active():
+		push_error("[VisualPresentationSmoke] The placement grid must be hidden during normal city viewing")
+		get_tree().quit(1)
+		return
+	if not road_source.contains("func _append_top_quad(") or road_source.contains("_append_box(asphalt_tool,") or road_source.contains("_append_box(sidewalk_tool,"):
+		push_error("[VisualPresentationSmoke] Horizontal road surfaces must use top-face-only geometry to avoid hidden bottom/side triangles")
+		get_tree().quit(1)
+		return
+	if not road_source.contains("const ROAD_RENDER_CHUNK_SIZE: int = 8") or not road_source.contains("func _rebuild_road_render_chunk(") or not road_source.contains("append_from(tile_node.mesh, surface_index, local_transform)") or not road_source.contains("for x in range(chunk_key.x * ROAD_RENDER_CHUNK_SIZE") or not road_source.contains("for z in range(chunk_key.y * ROAD_RENDER_CHUNK_SIZE") or not road_source.contains("func get_road_render_chunk_count()") or road_source.contains("add_child(new_mesh)"):
+		push_error("[VisualPresentationSmoke] Road geometry must be batched into editable 8x8 spatial render chunks, not submitted as one scene node per tile")
+		get_tree().quit(1)
+		return
+	if not road_source.contains("instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF"):
+		push_error("[VisualPresentationSmoke] Repeated road tiles must not consume the shadow-caster pass")
+		get_tree().quit(1)
+		return
+	if not world_source.contains("grid_instance.visible = _is_build_overlay_active()") or not road_source.contains("signal road_mode_changed(active: bool)"):
+		push_error("[VisualPresentationSmoke] Build grid visibility must follow building placement and road editing modes")
+		get_tree().quit(1)
+		return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
 		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
 		get_tree().quit(1)
@@ -111,6 +141,33 @@ func _ready() -> void:
 	main_instance.free()
 
 	var canopy: ArrayMesh = presentation._create_clustered_canopy_mesh()
+	var conifer_canopy: ArrayMesh = presentation._create_conifer_canopy_mesh()
+	var umbrella_canopy: ArrayMesh = presentation._create_umbrella_canopy_mesh()
+	if canopy == null or conifer_canopy == null or umbrella_canopy == null:
+		push_error("[VisualPresentationSmoke] Three distinct tree canopy meshes must be generated locally")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	var broadleaf_vertices: PackedVector3Array = canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var conifer_vertices: PackedVector3Array = conifer_canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var umbrella_vertices: PackedVector3Array = umbrella_canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	if broadleaf_vertices.size() == conifer_vertices.size() or conifer_vertices.size() == umbrella_vertices.size():
+		push_error("[VisualPresentationSmoke] Tree species must use distinct canopy geometry, not recolored copies")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	if umbrella_canopy.get_aabb().size.x <= conifer_canopy.get_aabb().size.x:
+		push_error("[VisualPresentationSmoke] Umbrella crown must be visibly wider than the conifer crown")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	var world_ready_source := world_source
+	for species_batch in ["TreeCanopies", "TreeCanopiesConifer", "TreeCanopiesUmbrella", "PacificPalmCrowns"]:
+		if not world_ready_source.contains(species_batch):
+			push_error("[VisualPresentationSmoke] Starter greenbelt is missing a distinct foliage batch: " + species_batch)
+			presentation.free()
+			get_tree().quit(1)
+			return
 	if canopy == null or canopy.get_surface_count() != 1:
 		push_error("[VisualPresentationSmoke] Canopy must be a single mesh surface")
 		presentation.free()

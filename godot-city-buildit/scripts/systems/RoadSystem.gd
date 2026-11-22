@@ -3,6 +3,7 @@ extends Node3D
 signal road_placed(grid_pos: Vector2i)
 signal road_removed(grid_pos: Vector2i)
 signal road_upgraded(grid_pos: Vector2i, new_level: int)
+signal road_mode_changed(active: bool)
 
 const GRID_SIZE: float = 2.0
 const GRID_HALF: float = GRID_SIZE * 0.5
@@ -15,6 +16,7 @@ const ROAD_UPGRADE_REQUIRED_LEVELS: Array[int] = [9, 15, 20]
 const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
 const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
+const ROAD_RENDER_CHUNK_SIZE: int = 8
 const GATEWAY_ROAD_CELL := Vector2i(-23, -1)
 
 const DIR_UP := Vector2i(0, -1)
@@ -32,6 +34,9 @@ const TILE_CROSS: String = "cross"
 var roads: Dictionary = {}
 var road_levels: Dictionary = {}
 var road_refresh_counts: Dictionary = {}
+# Logical per-tile meshes are retained for cheap topology rebuilds, while only
+# one combined renderer node per spatial chunk is submitted to the scene.
+var _road_render_chunks: Dictionary = {}
 var is_road_mode: bool = false
 var is_road_upgrade_mode: bool = false
 var _service_recalc_queued: bool = false
@@ -50,6 +55,7 @@ func _ready() -> void:
 func set_road_mode(active: bool) -> void:
 	is_road_mode = active
 	is_road_upgrade_mode = false
+	road_mode_changed.emit(is_road_mode or is_road_upgrade_mode)
 	if active:
 		BuildManager.cancel_placement()
 
@@ -57,6 +63,8 @@ func set_road_upgrade_mode(active: bool) -> void:
 	is_road_upgrade_mode = active
 	if active:
 		is_road_mode = false
+	road_mode_changed.emit(is_road_mode or is_road_upgrade_mode)
+	if active:
 		BuildManager.cancel_placement()
 
 func get_road_level(grid_pos: Vector2i) -> int:
@@ -125,6 +133,7 @@ func seed_starter_access() -> void:
 			roads[Vector2i(x, z)] = null
 	for cell in roads.keys():
 		_refresh_road_mesh(cell)
+	_refresh_all_road_render_chunks()
 	invalidate_road_connectivity_cache()
 	_queue_service_recalculation()
 
@@ -155,12 +164,20 @@ func get_gateway_connected_roads() -> Dictionary:
 func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
 	return get_gateway_connected_roads().has(grid_pos)
 
+	for chunk in _road_render_chunks.values():
+		if is_instance_valid(chunk):
+			chunk.queue_free()
+	_road_render_chunks.clear()
 func clear_roads() -> void:
 	is_road_mode = false
 	is_road_upgrade_mode = false
 	for road_mesh in roads.values():
 		if is_instance_valid(road_mesh):
 			road_mesh.queue_free()
+	for chunk in _road_render_chunks.values():
+		if is_instance_valid(chunk):
+			chunk.queue_free()
+	_road_render_chunks.clear()
 	roads.clear()
 	road_levels.clear()
 	road_refresh_counts.clear()
@@ -288,11 +305,14 @@ func _flush_service_recalculation() -> void:
 func _refresh_road_neighborhood(grid_pos: Vector2i) -> void:
 	# Connectivity changes can alter the removed/placed tile and each of its
 	# four neighbors (for example straight -> T, or corner -> end).
+	var affected_cells: Array[Vector2i] = [grid_pos]
 	_refresh_road_mesh(grid_pos)
 	for direction in CARDINAL_DIRECTIONS:
 		var neighbour: Vector2i = grid_pos + direction
 		if roads.has(neighbour):
+			affected_cells.append(neighbour)
 			_refresh_road_mesh(neighbour)
+	_refresh_road_render_chunks_for_cells(affected_cells)
 
 func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 	if not roads.has(grid_pos):
@@ -304,15 +324,129 @@ func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 	new_mesh.set_meta("road_tile_kind", get_road_tile_kind(grid_pos))
 	new_mesh.set_meta("road_level", get_road_level(grid_pos))
 	new_mesh.set_meta("road_revision", revision)
-	add_child(new_mesh)
-	new_mesh.position = Vector3(
-		float(grid_pos.x) * GRID_SIZE + GRID_HALF,
-		0.025,
-		float(grid_pos.y) * GRID_SIZE + GRID_HALF
-	)
+	# Keep tile geometry detached. The visible renderer is rebuilt as a single
+	# ArrayMesh per 8x8 spatial chunk, reducing per-tile draw submission.
 	roads[grid_pos] = new_mesh
 	if is_instance_valid(old_mesh):
 		old_mesh.queue_free()
+
+func _road_chunk_key(grid_pos: Vector2i) -> Vector2i:
+	return Vector2i(
+		floori(float(grid_pos.x) / float(ROAD_RENDER_CHUNK_SIZE)),
+		floori(float(grid_pos.y) / float(ROAD_RENDER_CHUNK_SIZE))
+	)
+
+func _refresh_all_road_render_chunks() -> void:
+	var chunks: Dictionary = {}
+	for cell in roads.keys():
+		chunks[_road_chunk_key(cell)] = true
+	for chunk_key in _road_render_chunks.keys():
+		chunks[chunk_key] = true
+	for chunk_key in chunks.keys():
+		_rebuild_road_render_chunk(chunk_key)
+
+func _refresh_road_render_chunks_for_cells(cells: Array[Vector2i]) -> void:
+	var chunks: Dictionary = {}
+	for cell in cells:
+		chunks[_road_chunk_key(cell)] = true
+	for chunk_key in chunks.keys():
+		_rebuild_road_render_chunk(chunk_key)
+
+func _rebuild_road_render_chunk(chunk_key: Vector2i) -> void:
+	var old_chunk = _road_render_chunks.get(chunk_key)
+	var chunk_cells: Array[Vector2i] = []
+	# Visit only this chunk's fixed 8x8 footprint. Rebuilding one block must
+	# never scan the entire city's road dictionary as the city grows.
+	for x in range(chunk_key.x * ROAD_RENDER_CHUNK_SIZE, (chunk_key.x + 1) * ROAD_RENDER_CHUNK_SIZE):
+		for z in range(chunk_key.y * ROAD_RENDER_CHUNK_SIZE, (chunk_key.y + 1) * ROAD_RENDER_CHUNK_SIZE):
+			var cell := Vector2i(x, z)
+			if roads.has(cell):
+				chunk_cells.append(cell)
+	if chunk_cells.is_empty():
+		if is_instance_valid(old_chunk):
+			old_chunk.queue_free()
+		_road_render_chunks.erase(chunk_key)
+		return
+
+	if DisplayServer.get_name() == "headless":
+		return
+
+	var tools: Array[SurfaceTool] = []
+	for _surface_index in range(5):
+		var surface_tool := SurfaceTool.new()
+		surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		tools.append(surface_tool)
+	var chunk_origin := Vector3(
+		float(chunk_key.x * ROAD_RENDER_CHUNK_SIZE) * GRID_SIZE,
+		0.025,
+		float(chunk_key.y * ROAD_RENDER_CHUNK_SIZE) * GRID_SIZE
+	)
+	for cell in chunk_cells:
+		var tile_node = roads.get(cell) as MeshInstance3D
+		if not is_instance_valid(tile_node) or tile_node.mesh == null:
+			continue
+		var tile_origin := Vector3(
+			float(cell.x) * GRID_SIZE + GRID_HALF,
+			0.0,
+			float(cell.y) * GRID_SIZE + GRID_HALF
+		)
+		var local_transform := Transform3D(Basis.IDENTITY, tile_origin - chunk_origin)
+		for surface_index in range(tile_node.mesh.get_surface_count()):
+			var material: Material = tile_node.mesh.surface_get_material(surface_index)
+			var tool_index := _road_material_surface_index(material)
+			if tool_index >= 0:
+				tools[tool_index].append_from(tile_node.mesh, surface_index, local_transform)
+
+	var combined_mesh := ArrayMesh.new()
+	var materials: Array[Material] = [
+		_get_asphalt_material(),
+		_get_yellow_marking_material(),
+		_get_white_marking_material(),
+		_get_curb_material(),
+		_get_sidewalk_material()
+	]
+	for index in range(tools.size()):
+		if tools[index].get_vertex_count() == 0:
+			continue
+		var surface_index := combined_mesh.get_surface_count()
+		combined_mesh = _commit_road_surface(combined_mesh, tools[index])
+		if combined_mesh.get_surface_count() > surface_index:
+			combined_mesh.surface_set_material(surface_index, materials[index])
+
+	if combined_mesh.get_surface_count() == 0:
+		if is_instance_valid(old_chunk):
+			old_chunk.queue_free()
+		_road_render_chunks.erase(chunk_key)
+		return
+
+	var chunk_instance := MeshInstance3D.new()
+	chunk_instance.name = "RoadChunk_%d_%d" % [chunk_key.x, chunk_key.y]
+	chunk_instance.mesh = combined_mesh
+	chunk_instance.position = chunk_origin
+	chunk_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	chunk_instance.set_meta("road_tile_count", chunk_cells.size())
+	chunk_instance.set_meta("chunk_size", ROAD_RENDER_CHUNK_SIZE)
+	add_child(chunk_instance)
+	_road_render_chunks[chunk_key] = chunk_instance
+	if is_instance_valid(old_chunk):
+		old_chunk.queue_free()
+
+func _commit_road_surface(array_mesh: ArrayMesh, surface_tool: SurfaceTool) -> ArrayMesh:
+	surface_tool.commit(array_mesh)
+	return array_mesh
+
+func _road_material_surface_index(material: Material) -> int:
+	if material == _get_asphalt_material():
+		return 0
+	if material == _get_yellow_marking_material():
+		return 1
+	if material == _get_white_marking_material():
+		return 2
+	if material == _get_curb_material():
+		return 3
+	if material == _get_sidewalk_material():
+		return 4
+	return -1
 
 func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	# Headless gameplay tests still exercise the neighbor graph and placement
@@ -358,7 +492,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 		var arm_center := arm_center_along + _direction_to_world(right_direction) * side_offset
 		var along_x: bool = direction.x != 0
 		var road_size := Vector3(1.01, ROAD_SURFACE_HEIGHT, width) if along_x else Vector3(width, ROAD_SURFACE_HEIGHT, 1.01)
-		_append_box(asphalt_tool, grid_pos, arm_center + Vector3(0.0, ROAD_SURFACE_Y, 0.0), road_size)
+		_append_top_quad(asphalt_tool, grid_pos, arm_center + Vector3(0.0, ROAD_SURFACE_Y, 0.0), road_size)
 		asphalt_boxes += 1
 
 		for side_direction in [left_direction, right_direction]:
@@ -374,7 +508,7 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 			var sidewalk_center := arm_center_along + _direction_to_world(side_direction) * (side_extent + CURB_WIDTH + sidewalk_width * 0.5)
 			sidewalk_center.y = 0.03
 			var sidewalk_size := Vector3(1.02, 0.06, sidewalk_width) if along_x else Vector3(sidewalk_width, 0.06, 1.02)
-			_append_box(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
+			_append_top_quad(sidewalk_tool, grid_pos, sidewalk_center, sidewalk_size)
 			sidewalk_boxes += 1
 
 	# A dead-end stub receives a transverse curb cap at the unconnected end.
@@ -404,11 +538,33 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	var instance := MeshInstance3D.new()
 	instance.name = "Road_%d_%d_L%d_%s" % [grid_pos.x, grid_pos.y, road_level, tile_kind]
 	instance.mesh = road_mesh
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# Roads are near-horizontal receiver surfaces; building/prop shadows still fall onto them.
+	# Disabling per-tile shadow casting avoids submitting every road tile to the shadow pass.
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
 
 func _direction_to_world(direction: Vector2i) -> Vector3:
 	return Vector3(float(direction.x), 0.0, float(direction.y))
+
+func _append_top_quad(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3, size: Vector3) -> void:
+	# Asphalt, sidewalk slabs and painted markings are viewed from above.
+	# Emit only the visible top face instead of six box faces; curbs retain
+	# closed box geometry because their vertical sides are part of the silhouette.
+	var half := size * 0.5
+	var corners: Array[Vector3] = [
+		Vector3(-half.x, half.y, -half.z),
+		Vector3(-half.x, half.y, half.z),
+		Vector3(half.x, half.y, half.z),
+		Vector3(half.x, half.y, -half.z)
+	]
+	for index in [0, 1, 2, 0, 2, 3]:
+		var point: Vector3 = center + corners[index]
+		surface_tool.set_normal(Vector3.UP)
+		surface_tool.set_uv(Vector2(
+			(float(grid_pos.x) * GRID_SIZE + GRID_HALF + point.x) / ROAD_TEXTURE_WORLD_SCALE,
+			(float(grid_pos.y) * GRID_SIZE + GRID_HALF + point.z) / ROAD_TEXTURE_WORLD_SCALE
+		))
+		surface_tool.add_vertex(point)
 
 func _append_box(surface_tool: SurfaceTool, grid_pos: Vector2i, center: Vector3, size: Vector3) -> void:
 	var half := size * 0.5
@@ -445,7 +601,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 		for x_side in [-1.0, 1.0]:
 			for z_side in [-1.0, 1.0]:
 				var corner_center := Vector3(x_side * 0.82, 0.095, z_side * 0.82)
-				_append_box(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
+				_append_top_quad(sidewalk_surface_tool, grid_pos, corner_center, Vector3(0.34, 0.06, 0.34))
 		return
 
 	if tile_kind == TILE_CORNER:
@@ -469,7 +625,7 @@ func _add_road_markings(surface_tool: SurfaceTool, white_surface_tool: SurfaceTo
 			var center: Vector3 = _direction_to_world(main_axis) * (0.72 * float(side))
 			center.y = 0.088
 			var dash_size := Vector3(0.42, 0.006, 0.045) if main_axis.x != 0 else Vector3(0.045, 0.006, 0.42)
-			_append_box(surface_tool, grid_pos, center, dash_size)
+			_append_top_quad(surface_tool, grid_pos, center, dash_size)
 	else:
 		_add_axis_dashes(surface_tool, grid_pos, main_axis, false)
 
@@ -484,14 +640,14 @@ func _add_axis_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, axis: Vecto
 		var center := _direction_to_world(axis) * local_along
 		center.y = 0.088
 		var dash_size := Vector3(0.50, 0.006, 0.045) if axis.x != 0 else Vector3(0.045, 0.006, 0.50)
-		_append_box(surface_tool, grid_pos, center, dash_size)
+		_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _add_arm_center_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	for distance in [0.43, 0.77]:
 		var center := _direction_to_world(direction) * float(distance)
 		center.y = 0.088
 		var dash_size := Vector3(0.28, 0.006, 0.045) if direction.x != 0 else Vector3(0.045, 0.006, 0.28)
-		_append_box(surface_tool, grid_pos, center, dash_size)
+		_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _lane_divider_offsets(level: int) -> Array[float]:
 	match clampi(level, 1, 4):
@@ -512,7 +668,7 @@ func _add_lane_divider_dashes(surface_tool: SurfaceTool, grid_pos: Vector2i, dir
 			var center: Vector3 = _direction_to_world(direction) * 0.62 + _direction_to_world(lateral) * (offset * side_sign)
 			center.y = 0.091
 			var dash_size: Vector3 = Vector3(0.28, 0.006, 0.035) if direction.x != 0 else Vector3(0.035, 0.006, 0.28)
-			_append_box(surface_tool, grid_pos, center, dash_size)
+			_append_top_quad(surface_tool, grid_pos, center, dash_size)
 
 func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Vector2i) -> void:
 	var lateral := Vector2i(-direction.y, direction.x)
@@ -521,7 +677,7 @@ func _add_crosswalk(surface_tool: SurfaceTool, grid_pos: Vector2i, direction: Ve
 		var center := _direction_to_world(direction) * 0.57 + _direction_to_world(lateral) * lateral_offset
 		center.y = 0.089
 		var stripe_size := Vector3(0.10, 0.006, 0.075) if direction.x != 0 else Vector3(0.075, 0.006, 0.10)
-		_append_box(surface_tool, grid_pos, center, stripe_size)
+		_append_top_quad(surface_tool, grid_pos, center, stripe_size)
 
 func _count_marking_boxes(tile_kind: String, arms: Array[Vector2i], grid_pos: Vector2i) -> int:
 	if tile_kind == TILE_CROSS:
@@ -625,3 +781,6 @@ func _get_white_marking_material() -> StandardMaterial3D:
 
 func get_road_count() -> int:
 	return roads.size()
+
+func get_road_render_chunk_count() -> int:
+	return _road_render_chunks.size()
