@@ -326,10 +326,12 @@ func _terrain_height(x: float, z: float) -> float:
 		return 0.0
 	var distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)
 	var relief_mask := smoothstep(-1.0, 9.0, distance_from_city)
-	var broad := sin(x * 0.071 + z * 0.049) * 1.15
-	var cross := cos(z * 0.113 - x * 0.087) * 0.58
-	var rolling := sin(x * 0.19 - z * 0.16) * cos(z * 0.21 + x * 0.13) * 0.24
-	var fine := sin(x * 0.61 + z * 0.47) * 0.10
+	# Stronger, still gentle relief makes the surrounding meadow read as land,
+	# while the owned starter plots, highway corridor and beach remain level.
+	var broad := sin(x * 0.071 + z * 0.049) * 1.62
+	var cross := cos(z * 0.113 - x * 0.087) * 0.82
+	var rolling := sin(x * 0.19 - z * 0.16) * cos(z * 0.21 + x * 0.13) * 0.34
+	var fine := sin(x * 0.61 + z * 0.47) * 0.13
 	var natural_relief := (broad + cross + rolling + fine) * relief_mask
 	# The last 14 m of beach gently settle to the sea datum. The water mesh
 	# begins just offshore, so neither land nor ocean floats above the other.
