@@ -44,6 +44,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Horizontal road surfaces must use top-face-only geometry to avoid hidden bottom/side triangles")
 		get_tree().quit(1)
 		return
+	if not road_source.contains("const ROAD_RENDER_CHUNK_SIZE: int = 8") or not road_source.contains("func _rebuild_road_render_chunk(") or not road_source.contains("append_from(tile_node.mesh, surface_index, local_transform)") or not road_source.contains("func get_road_render_chunk_count()") or road_source.contains("add_child(new_mesh)"):
+		push_error("[VisualPresentationSmoke] Road geometry must be batched into editable 8x8 spatial render chunks, not submitted as one scene node per tile")
+		get_tree().quit(1)
+		return
 	if not road_source.contains("instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF"):
 		push_error("[VisualPresentationSmoke] Repeated road tiles must not consume the shadow-caster pass")
 		get_tree().quit(1)
