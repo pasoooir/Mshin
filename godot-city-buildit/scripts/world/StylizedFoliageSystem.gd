@@ -311,7 +311,7 @@ func _create_leaf_fall_emitter() -> CPUParticles3D:
     leaf_material.albedo_color = Color(0.83, 0.39, 0.12, 1.0)
     leaf_material.roughness = 1.0
     leaf_quad.material = leaf_material
-    particles.draw_pass_1 = leaf_quad
+    particles.mesh = leaf_quad
     return particles
 
 
