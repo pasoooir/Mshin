@@ -5,6 +5,7 @@ var _expansion_preview_active := false
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
+const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
 const TERRAIN_HALF_DEPTH := 145.0
 const TERRAIN_LEFT := -120.0
@@ -831,32 +832,18 @@ func _build_tree_belts() -> void:
 	trunk_mesh.height = 2.8
 	trunk_mesh.radial_segments = 8
 	trunk_mesh.material = bark_material
-	var broadleaf_positions: Array[Vector3] = []
-	var conifer_positions: Array[Vector3] = []
-	var umbrella_positions: Array[Vector3] = []
-	for index in range(positions.size()):
-		match index % 3:
-			0:
-				broadleaf_positions.append(positions[index])
-			1:
-				conifer_positions.append(positions[index])
-			_:
-				umbrella_positions.append(positions[index])
-
-	var canopy_material := StandardMaterial3D.new()
-	canopy_material.vertex_color_use_as_albedo = true
-	canopy_material.albedo_texture = _create_foliage_texture()
-	canopy_material.roughness = 0.96
+	# Tree trunks and contact shadows remain separate, inexpensive shared batches.
+	# The old sphere-lobe crowns are replaced by a four-species crossed-card system
+	# with chunked MultiMeshes and three distance-based geometry tiers.
 	var tree_shadows := _create_tree_shadow_multimesh(positions)
 	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
 	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.40)
-	var broadleaf_crowns := _create_tree_multimesh("TreeCanopies", _create_clustered_canopy_mesh(), broadleaf_positions, 2.85)
-	var conifer_crowns := _create_tree_multimesh("TreeCanopiesConifer", _create_conifer_canopy_mesh(), conifer_positions, 1.85)
-	var umbrella_crowns := _create_tree_multimesh("TreeCanopiesUmbrella", _create_umbrella_canopy_mesh(), umbrella_positions, 2.35)
-	for crowns in [broadleaf_crowns, conifer_crowns, umbrella_crowns]:
-		crowns.material_override = canopy_material
-		add_child(crowns)
+
+	var foliage_system := StylizedFoliageSystemScript.new()
+	foliage_system.name = "StylizedFoliageSystem"
+	foliage_system.configure_tree_positions(positions, 2026)
+	add_child(foliage_system)
 	add_child(roots)
 	add_child(trunks)
 
