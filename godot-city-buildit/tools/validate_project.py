@@ -650,6 +650,11 @@ else:
 placeholder_icon = ROOT / "assets/icons/ui/placeholder.png"
 if not placeholder_icon.is_file():
     errors.append("Transparent PNG fallback icon is missing")
+avatar_fallback_icon = ROOT / "assets/icons/ui/avatar_placeholder.svg"
+if not avatar_fallback_icon.is_file():
+    errors.append("Local illustrated avatar fallback SVG is missing")
+if "var _settings_avatar_placeholder: TextureRect" not in hud or "avatar_placeholder.svg" not in hud or "👤" in hud or "SettingsProfileAvatarRequest" in hud:
+    errors.append("Settings avatar must use bundled image artwork and must not download a remote profile photo")
 if "const Icons = preload(\"res://scripts/ui/Icons.gd\")" not in (ROOT / "scripts/ui/IconAtlas.gd").read_text(encoding="utf-8"):
     errors.append("Legacy IconAtlas facade must delegate to the centralized PNG helper")
 if "Color(0.0, 0.0, 0.0, 0.0)" not in hud:
