@@ -23,6 +23,16 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Beach terrain must meet the ocean at the sea datum")
 		get_tree().quit(1)
 		return
+	var starter_plot_height := presentation._terrain_height(12.0, 12.0)
+	var outer_meadow_height := presentation._terrain_height(78.0, -54.0)
+	if absf(starter_plot_height) > 0.01:
+		push_error("[VisualPresentationSmoke] Starter build plots must remain perfectly level")
+		get_tree().quit(1)
+		return
+	if absf(outer_meadow_height) < 0.65 or absf(outer_meadow_height) > 3.5:
+		push_error("[VisualPresentationSmoke] Outer meadow must have visible but restrained rolling terrain relief; sampled height=%s" % outer_meadow_height)
+		get_tree().quit(1)
+		return
 	var ocean_mesh := presentation._create_coastal_water_mesh(8.0, 159.0, 24, 4, -0.055)
 	var ocean_bounds := ocean_mesh.get_aabb()
 	if ocean_mesh.get_surface_count() != 1 or ocean_bounds.position.x < 45.0 or ocean_bounds.end.x < 158.9:
