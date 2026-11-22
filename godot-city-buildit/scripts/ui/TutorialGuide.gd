@@ -414,6 +414,7 @@ func _on_viewport_size_changed() -> void:
 func _refresh_guide() -> void:
 	if not is_instance_valid(_panel):
 		return
+	_layout_guide_panel()
 	if current_step >= STEP_DATA.size():
 		_show_completion()
 		return
@@ -572,6 +573,7 @@ func _get_valid_placement_world_target() -> Dictionary:
 func _show_completion() -> void:
 	if not is_instance_valid(_panel):
 		return
+	_layout_guide_panel()
 	_update_city_name_controls()
 	if is_instance_valid(_finger_pointer):
 		_finger_pointer.hide()
