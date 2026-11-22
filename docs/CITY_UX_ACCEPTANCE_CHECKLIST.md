@@ -153,10 +153,6 @@ For every finding record:
   - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, camera transform invariance, unchanged building/road counts, and accidental button activation.
   - Assertions are on runtime handler state, not merely static policy helpers. The probe button is removed before the rest of gameplay smoke proceeds.
   - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
-- **AUDIT-010 — Responsive viewport and orientation matrix: IMPLEMENTED; CI PENDING.**
-  - PR #658 resizes one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
-  - The touch-enabled mobile browser is also resized 844x390 -> 390x844 -> 844x390. The canvas must remain visible through portrait fallback and landscape return.
-  - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.
 
 ## Area-level evidence ledger (2026-11-22)
 
@@ -186,3 +182,10 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 - All P0/P1 findings must be fixed and regression-tested before a UX milestone is accepted.
 - P2 findings must have an explicit fix/defer decision; P3 items may be scheduled.
 - Chromium emulation is not physical Android acceptance. Record both separately.
+
+## Responsive viewport and orientation audit
+
+- **AUDIT-010 — Responsive viewport and orientation matrix: IMPLEMENTED; CI PENDING.**
+  - PR #658 resizes one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
+  - The touch-enabled mobile browser is also resized 844x390 -> 390x844 -> 844x390. The canvas must remain visible through portrait fallback and landscape return.
+  - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.
