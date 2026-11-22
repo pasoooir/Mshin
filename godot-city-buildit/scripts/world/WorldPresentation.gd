@@ -2017,7 +2017,7 @@ func _build_passenger_harbor() -> void:
 	support_material.roughness = 1.0
 
 	# A compact timber pier links the beach to the deep-water side of the coast.
-	_add_harbor_box(harbor, "HarborApproach", Vector3(101.0, 0.47, -22.0), Vector3(18.0, 0.34, 6.8), deck_material)
+	_add_harbor_box(harbor, "HarborApproach", Vector3(101.0, 0.59, -22.0), Vector3(18.0, 0.34, 6.8), deck_material)
 	_add_harbor_box(harbor, "PierDeck", Vector3(116.0, 0.66, -22.0), Vector3(18.0, 0.34, 9.0), deck_material)
 	_add_harbor_box(harbor, "PierOuterEdge", Vector3(116.0, 0.84, -26.48), Vector3(18.0, 0.10, 0.18), edge_material)
 	_add_harbor_box(harbor, "PierInnerEdge", Vector3(116.0, 0.84, -17.52), Vector3(18.0, 0.10, 0.18), edge_material)
