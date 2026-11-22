@@ -122,11 +122,24 @@ For every finding record:
 - [ ] J8. Errors and network/offline states are recoverable and explained.
 
 ## Current audit notes (2026-11-22)
-- **AUDIT-001 — Mixed HUD/world multi-touch isolation: NOT TESTED, candidate P1/P2.**
-  - Code observation: HUD routes native UI touch through `_route_native_ui_touch`; CityInput independently starts a pointer when it receives a screen touch.
-  - Risk scenario to verify: first finger begins on an interactive HUD control and second finger begins on the city (or the reverse). Confirm whether camera/build tools receive a partial gesture while the UI owns the other pointer.
-  - Do not label as a confirmed defect until a runtime reproduction test exists.
-  - Required regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
+- **AUDIT-001 — Mixed HUD/world multi-touch isolation: NOT TESTED end-to-end; candidate P1/P2.**
+  - Implemented guard: HUD exposes `has_active_native_ui_touch()`; CameraController and CityInput block world interaction while HUD owns a pointer.
+  - Automated coverage currently verifies the ownership predicate and its focus-loss reset, not the complete two-finger event sequence.
+  - Required runtime regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
+  - Do not mark F7 PASS until that full sequence is exercised in Chromium touch automation and on a physical Android device.
+- **AUDIT-002 — Cancelled touch event propagation across world input handlers: FIX IMPLEMENTED, CI PENDING.**
+  - Root cause: CameraController and CityInput both observed cancelled releases in `_unhandled_input`, but either handler could mark the event handled before the other cleared its pointer state.
+  - Fix in PR #655: each handler clears its own state without consuming the cancelled release, allowing the other world handler to observe the same event.
+  - Regression evidence: PR #654 GameplaySmoke verifies cancelled-release classification and camera/city focus cleanup; PR #655 CI must verify the propagation adjustment.
+- **AUDIT-003 — Camera gesture math and building selection: AUTOMATED COVERAGE, NOT FULL DEVICE ACCEPTANCE.**
+  - Existing tests cover pinch direction/scale invariance, rotation across the +/-180-degree seam, focal-anchor correction, and facade/roof building selection.
+  - Chromium touch emulation and physical-device gesture feel, edge behavior, and frame pacing remain separate acceptance requirements.
+- **AUDIT-004 — Touch cancellation and app focus loss: AUTOMATED COVERAGE.**
+  - PR #654 adds regression checks for normal/cancelled/dragged release handling, stale camera inertia reset, city pointer/road-stroke cleanup, and HUD touch ownership cleanup.
+  - Godot validation and Android Debug APK export/signature verification passed; Web/mobile Chromium smoke passed on commit `468f92067ce61580fa6e446012456598facf287c`.
+  - Physical Android interruption, notification shade, app switch, screen lock, and resume behavior remain NOT TESTED.
+- **AUDIT-005 — Checklist completion state: OPEN.**
+  - No A–J item is globally marked PASS solely from code inspection or CI. The checklist remains an acceptance plan until each item has reproducible evidence recorded against its required environment.
 
 ## Acceptance policy
 - A checklist item is PASS only with reproducible evidence.
