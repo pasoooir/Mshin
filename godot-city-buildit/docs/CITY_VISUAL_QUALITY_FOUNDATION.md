@@ -27,7 +27,7 @@ Use a clean, sunny, premium stylized 3D look: warm key light, restrained cool fi
 1. Preserve a level owned/buildable footprint so road/building placement and grid math remain exact.
 2. Keep rolling height variation outside owned land and fade it toward the shoreline datum.
 3. Add low-cost vertex cavity/slope shading to the terrain mesh. This is a baked-style approximation, not screen-space AO.
-4. Keep the placement grid hidden outside placement/build modes; expansion borders remain a separate state.
+4. Keep the placement grid hidden outside placement/build modes; expansion borders remain a separate state. The first implementation now wires this to building placement and road edit-mode signals.
 5. Verify the coast, highway, terrain, and city plot do not z-fight or expose seams.
 
 ### VQ-02 — Vegetation silhouettes and density
