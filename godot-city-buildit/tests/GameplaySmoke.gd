@@ -1438,6 +1438,14 @@ func _test_camera_touch_gesture_integration() -> void:
 	if edge_anchor != null:
 		var projected_edge_anchor := camera_rig.camera.unproject_position(edge_anchor)
 		_check(projected_edge_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Screen-edge pinch must preserve its world focal point under the gesture midpoint.")
+	var edge_release_second := InputEventScreenTouch.new()
+	edge_release_second.index = 6
+	edge_release_second.pressed = false
+	camera_rig._unhandled_input(edge_release_second)
+	var edge_release_first := InputEventScreenTouch.new()
+	edge_release_first.index = 5
+	edge_release_first.pressed = false
+	camera_rig._unhandled_input(edge_release_first)
 	# At the minimum zoom limit, a further pinch-out must not shift the target.
 	camera_rig.current_zoom = camera_rig.min_zoom
 	camera_rig._update_camera_transform()
@@ -1472,14 +1480,6 @@ func _test_camera_touch_gesture_integration() -> void:
 	limit_release_first.index = 10
 	limit_release_first.pressed = false
 	camera_rig._unhandled_input(limit_release_first)
-	var edge_release_second := InputEventScreenTouch.new()
-	edge_release_second.index = 6
-	edge_release_second.pressed = false
-	camera_rig._unhandled_input(edge_release_second)
-	var edge_release_first := InputEventScreenTouch.new()
-	edge_release_first.index = 5
-	edge_release_first.pressed = false
-	camera_rig._unhandled_input(edge_release_first)
 
 	# Two-to-one-finger transitions reset baselines and never reuse old velocity.
 	var transition_first := InputEventScreenTouch.new()
