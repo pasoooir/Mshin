@@ -387,6 +387,20 @@ func _clear_touch_pointer_state(pointer_id: int) -> void:
 	if pointer_start.is_empty():
 		multi_touch_gesture = false
 
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_APPLICATION_FOCUS_OUT:
+		return
+	if BuildManager.is_moving:
+		BuildManager.cancel_move()
+	move_pointer_id = -999
+	pointer_start.clear()
+	pointer_moved.clear()
+	pointer_hold_elapsed.clear()
+	pointer_last_position.clear()
+	placement_rotate_pointer.clear()
+	_cancel_all_road_strokes()
+	multi_touch_gesture = false
+
 func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
