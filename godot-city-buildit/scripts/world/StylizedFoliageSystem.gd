@@ -61,7 +61,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
     _season_manager = SeasonManagerScript.new()
     _season_manager.name = "SeasonManager"
     add_child(_season_manager)
-    _season_manager.configure(_material, _leaf_emitters)
+    _season_manager.call("configure", _material, _leaf_emitters)
 
 
 func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
@@ -105,7 +105,7 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                     2: # Soft, layered conifer.
                         width_factor = 0.96
                         height_factor = 1.12
-                    3: # Broad umbrella-like crown; coastal palms remain a separate species.
+                    3: # Fan-palm fronds; beach palms remain separate coastal landmarks.
                         width_factor = 1.18
                         height_factor = 0.88
 
@@ -344,7 +344,7 @@ func get_lod_instance_count(lod: int) -> int:
 
 func set_season(season: int, duration: float = 8.0) -> void:
     if is_instance_valid(_season_manager):
-        _season_manager.change_season(season, duration)
+        _season_manager.call("change_season", season, duration)
 
 
 func set_wind(strength: float, speed: float, direction: Vector3) -> void:
