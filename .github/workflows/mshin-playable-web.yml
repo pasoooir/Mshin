@@ -179,8 +179,15 @@ jobs:
             // Wait for the iframe navigation and WebGL canvas to settle without
             // querying the renderer's potentially busy JavaScript event loop.
             await page.waitForTimeout(3500);
-            await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 20000 });
-            await page.waitForTimeout(1500);
+            try {
+              await page.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 60000 });
+            } catch (error) {
+              console.log('[camera preset diagnostics] preset=' + preset + ' iframe=' + await gameFrame.getAttribute('src'));
+              console.log('[camera preset diagnostics] frames=' + page.frames().map(frame => frame.url()).join(' | '));
+              console.log('[camera preset diagnostics] page errors=' + errors.join(' | '));
+              throw error;
+            }
+            await page.waitForTimeout(1000);
             await page.screenshot({
               path: 'artifacts/visual-acceptance/' + filename,
               animations: 'disabled',
