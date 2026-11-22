@@ -36,6 +36,14 @@ func _ready() -> void:
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
+	if presentation._is_build_overlay_active():
+		push_error("[VisualPresentationSmoke] The placement grid must be hidden during normal city viewing")
+		get_tree().quit(1)
+		return
+	if not world_source.contains("grid_instance.visible = _is_build_overlay_active()") or not road_source.contains("signal road_mode_changed(active: bool)"):
+		push_error("[VisualPresentationSmoke] Build grid visibility must follow building placement and road editing modes")
+		get_tree().quit(1)
+		return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
 		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
 		get_tree().quit(1)
