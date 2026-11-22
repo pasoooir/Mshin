@@ -183,7 +183,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			is_mouse_panning = event.pressed and not _is_road_mode() and not _is_building_press_pending(-1)
+			is_mouse_panning = event.pressed and not _is_road_mode() and not _is_camera_pan_blocked()
 			if event.pressed:
 				pan_velocity = Vector2.ZERO
 				orbit_velocity = 0.0
@@ -195,7 +195,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom(2.0)
 	elif event is InputEventMouseMotion and is_mouse_panning:
-		if not _is_building_press_pending(-1):
+		if _city_input_allows_camera_drag(-1, event.position):
 			_pan_between_screen_points(last_mouse_position, event.position)
 			pan_velocity = clamp_pan_velocity(event.velocity)
 		last_mouse_position = event.position
@@ -246,11 +246,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_pinch()
 		_refresh_processing()
 
+func _is_camera_pan_blocked() -> bool:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if is_instance_valid(scene) else null
+	return city_input != null and city_input.has_method("is_camera_pan_blocked") and bool(city_input.is_camera_pan_blocked())
+
 func _city_input_allows_camera_drag(pointer_id: int, screen_position: Vector2) -> bool:
 	var scene := get_tree().current_scene
 	var city_input = scene.get_node_or_null("CityInput") if is_instance_valid(scene) else null
 	if city_input == null:
 		return true
+	if city_input.has_method("is_camera_pan_blocked") and bool(city_input.is_camera_pan_blocked()):
+		return false
 	if city_input.has_method("take_over_camera_drag"):
 		return bool(city_input.take_over_camera_drag(pointer_id, screen_position))
 	return not _is_building_press_pending(pointer_id)
