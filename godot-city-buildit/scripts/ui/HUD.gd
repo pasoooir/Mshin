@@ -1921,8 +1921,8 @@ func _sync_status_feedback_visibility() -> void:
 		return
 	var scene := get_tree().current_scene
 	var guide := scene.get_node_or_null("TutorialGuide") if is_instance_valid(scene) else null
-	var guide_panel = guide.get("_panel") if is_instance_valid(guide) else null
-	var coach_visible := is_instance_valid(guide_panel) and guide_panel.visible
+	var guide_panel: Control = guide.get("_panel") as Control if is_instance_valid(guide) else null
+	var coach_visible: bool = is_instance_valid(guide_panel) and guide_panel.visible
 	if coach_visible:
 		# The city coach already explains the current action. Suppress stale or
 		# duplicate bottom status copy until the coach is dismissed/completed.
