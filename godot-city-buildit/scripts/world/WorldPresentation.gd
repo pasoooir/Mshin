@@ -371,13 +371,13 @@ func _build_meadow_biome_overlays() -> void:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
 			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34))
-		const RING_LEVELS := [0.0, 0.34, 0.68, 1.0]
-		const SEGMENTS := 20
+		var ring_levels := [0.0, 0.34, 0.68, 1.0]
+		var segments := 20
 		var ring_points: Array = []
 		for ring_value in RING_LEVELS:
 			var ring: Array[Vector3] = []
-			for segment in range(SEGMENTS):
-				var angle := TAU * float(segment) / float(SEGMENTS)
+			for segment in range(segments):
+				var angle := TAU * float(segment) / float(segments)
 				var edge_noise := 1.0 + sin(angle * 3.0 + float(patch_index) * 0.71) * 0.10 + cos(angle * 5.0 - float(patch_index) * 0.37) * 0.055
 				var local_x := cos(angle) * radius_x * float(ring_value) * edge_noise
 				var local_z := sin(angle) * radius_z * float(ring_value) * edge_noise
@@ -387,14 +387,14 @@ func _build_meadow_biome_overlays() -> void:
 				var point_z := center_z + rotated_z
 				ring.append(Vector3(point_x, _terrain_height(point_x, point_z) + 0.052, point_z))
 			ring_points.append(ring)
-		for ring_index in range(RING_LEVELS.size() - 1):
+		for ring_index in range(ring_levels.size() - 1):
 			var inner_ring: Array = ring_points[ring_index]
 			var outer_ring: Array = ring_points[ring_index + 1]
-			var inner_mix := float(ring_index) / float(RING_LEVELS.size() - 1)
-			var outer_mix := float(ring_index + 1) / float(RING_LEVELS.size() - 1)
+			var inner_mix := float(ring_index) / float(ring_levels.size() - 1)
+			var outer_mix := float(ring_index + 1) / float(ring_levels.size() - 1)
 			var inner_color := patch_color.lerp(base_edge, inner_mix * 0.88)
 			var outer_color := patch_color.lerp(base_edge, outer_mix * 0.88)
-			for segment in range(SEGMENTS):
+			for segment in range(segments):
 				var next_segment := (segment + 1) % SEGMENTS
 				var p00: Vector3 = inner_ring[segment]
 				var p01: Vector3 = inner_ring[next_segment]
@@ -1908,9 +1908,9 @@ func _build_coastal_promenade() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	const SEGMENTS := 120
-	for step in range(SEGMENTS):
-		var z0 := lerpf(-89.0, 89.0, float(step) / float(SEGMENTS))
-		var z1 := lerpf(-89.0, 89.0, float(step + 1) / float(SEGMENTS))
+	for step in range(segments):
+		var z0 := lerpf(-89.0, 89.0, float(step) / float(segments))
+		var z1 := lerpf(-89.0, 89.0, float(step + 1) / float(segments))
 		var x0 := _coastline(z0) - PROMENADE_OFFSET
 		var x1 := _coastline(z1) - PROMENADE_OFFSET
 		var p00 := Vector3(x0 - 2.2, _terrain_height(x0 - 2.2, z0) + 0.22, z0)
@@ -2029,9 +2029,9 @@ func _build_shoreline_foam() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	const SEGMENTS := 220
-	for step in range(SEGMENTS):
-		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step) / float(SEGMENTS))
-		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step + 1) / float(SEGMENTS))
+	for step in range(segments):
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step) / float(segments))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step + 1) / float(segments))
 		var wave0 := sin(z0 * 0.31) * 0.62 + cos(z0 * 0.17) * 0.42
 		var wave1 := sin(z1 * 0.31) * 0.62 + cos(z1 * 0.17) * 0.42
 		var coast0 := _coastline(z0)
