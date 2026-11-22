@@ -209,7 +209,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		road_stroke_last_cell.clear()
 		move_pointer_id = -999
 		multi_touch_gesture = false
-		get_viewport().set_input_as_handled()
+		# CameraController must receive the same pointer event and clear its state.
 		return
 	if _has_building_detail_modal_open():
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
@@ -219,7 +219,8 @@ func _unhandled_input(event: InputEvent) -> void:
 					detail_hud.call("_close_residential_panel")
 				elif detail_hud.has_method("_close_production_panel"):
 					detail_hud.call("_close_production_panel")
-		get_viewport().set_input_as_handled()
+		if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and BuildManager.is_placing:
 		if BuildManager.rotate_placement():
