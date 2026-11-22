@@ -175,7 +175,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var camera_rig := main_instance.get_node_or_null("CameraRig")
-	if camera_rig == null or float(camera_rig.get("max_zoom")) > 112.0 or float(camera_rig.get("current_zoom")) > 112.0:
+	if camera_rig == null or float(camera_rig.get("max_zoom")) > 96.0 or float(camera_rig.get("current_zoom")) > 96.0 or not is_equal_approx(float(city_camera.fov), 55.0):
 		push_error("[VisualPresentationSmoke] Maximum zoom-out must keep the city, coast and sea inside a useful playable composition")
 		main_instance.free()
 		get_tree().quit(1)
