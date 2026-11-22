@@ -32,7 +32,7 @@ const COASTAL_GREEN_PALETTE := [
 	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
 ]
 const COASTLINE_BASE_X := 110.0
-const BEACH_WIDTH := 56.0
+const BEACH_WIDTH := 34.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
@@ -428,7 +428,7 @@ func _terrain_height(x: float, z: float) -> float:
 	return natural_relief * beach_fade
 
 func _coastline(z: float) -> float:
-	return COASTLINE_BASE_X + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
+	return COASTLINE_BASE_X + sin(z * 0.032) * 7.0 + sin(z * 0.071) * 3.2 + sin(z * 0.013) * 4.0
 
 
 func _build_land_expansion_markers() -> void:
@@ -1122,28 +1122,28 @@ void vertex() {
 void fragment() {
 	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 56.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
+	float sand_mask = smoothstep(coastline - 34.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
 	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
 	float fine = sin(world_position.x * 0.31 - world_position.z * 0.27) * cos(world_position.z * 0.23 + world_position.x * 0.19);
 	float patch = smoothstep(-0.55, 0.55, broad);
-	float ground_variation = 0.88 + broad * 0.075 + fine * 0.025;
+	float ground_variation = 0.86 + broad * 0.11 + fine * 0.045;
 	float macro_noise = terrain_fbm(world_xz * 0.105);
 	float meadow_noise = terrain_fbm(world_xz * 0.42 + vec2(17.0, 9.0));
 	float micro_noise = terrain_noise(world_xz * 2.8);
 	float lush_mask = smoothstep(0.38, 0.72, macro_noise);
 	float dry_mask = smoothstep(0.61, 0.83, terrain_fbm(world_xz * 0.19 + vec2(41.0, 13.0)));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
-	vec3 deep_meadow = vec3(0.13, 0.245, 0.105);
-	vec3 fresh_meadow = vec3(0.30, 0.43, 0.17);
-	vec3 olive_grass = vec3(0.39, 0.36, 0.17);
+	vec3 deep_meadow = vec3(0.19, 0.29, 0.13);
+	vec3 fresh_meadow = vec3(0.38, 0.50, 0.23);
+	vec3 olive_grass = vec3(0.49, 0.43, 0.22);
 	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
 	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.48);
 	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
 	meadow *= mix(0.84, 1.08, patch);
-	meadow = mix(meadow, meadow_palette * (0.82 + meadow_noise * 0.42), 0.68);
-	meadow *= 0.91 + micro_noise * 0.18;
+	meadow = mix(meadow, meadow_palette * (0.76 + meadow_noise * 0.56), 0.78);
+	meadow *= 0.84 + micro_noise * 0.30;
 	vec3 soil = vec3(0.39, 0.30, 0.18) * (0.82 + meadow_noise * 0.38);
 	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
 	meadow = mix(meadow, soil, exposed_soil * 0.24);
