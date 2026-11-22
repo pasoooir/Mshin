@@ -13,7 +13,7 @@ const DEFINITIONS := [
 	{"id":"mayor_level_10", "title":"Veteran Mayor", "description":"Reach Mayor Level 10.", "metric":"level", "target":10, "simoleons":600, "xp":35},
 	{"id":"industrialist", "title":"Industrial District", "description":"Complete three factories.", "metric":"factories", "target":3, "simoleons":350, "xp":25},
 	{"id":"green_city", "title":"Green City", "description":"Complete three parks.", "metric":"parks", "target":3, "simoleons":300, "xp":25},
-	{"id":"road_network", "title":"Connected City", "description":"Build 50 road tiles.", "metric":"roads", "target":50, "simoleons":300, "xp":20},
+	{"id":"road_network", "title":"Connected City", "description":"Expand your connected road network to 75 tiles.", "metric":"roads", "target":75, "simoleons":300, "xp":20},
 	{"id":"trade_seller", "title":"First Sale", "description":"Collect your first Trade Depot sale.", "metric":"sales", "target":1, "simoleons":150, "xp":15},
 	{"id":"global_buyer", "title":"Global Shopper", "description":"Buy your first Global Trade offer.", "metric":"market_purchases", "target":1, "simoleons":150, "xp":15},
 	{"id":"cargo_captain", "title":"Cargo Captain", "description":"Send your first cargo ship.", "metric":"ship_departures", "target":1, "simoleons":400, "xp":30},

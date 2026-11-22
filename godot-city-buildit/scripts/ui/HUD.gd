@@ -31,6 +31,14 @@ const SPECIALIZATION_GROUPS := [
 
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
 # SimCash and all other HUD glyphs use local transparent PNG assets.
+class LoginRequiredDotVisual extends Control:
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := minf(size.x, size.y) * 0.34
+		draw_circle(center + Vector2(0.0, 1.5), radius + 2.0, Color(0.0, 0.0, 0.0, 0.75))
+		draw_circle(center, radius, Color("#FF4D5E"))
+		draw_circle(center + Vector2(-radius * 0.28, -radius * 0.30), radius * 0.24, Color("#FFE6E9"))
+
 class BanknoteGlyph extends Control:
 	func _draw() -> void:
 		var note := Rect2(Vector2(5.0, 12.0), Vector2(size.x - 10.0, size.y - 24.0))
@@ -170,7 +178,7 @@ var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
 var settings_overlay: Control
-var _settings_login_indicator: Label
+var _settings_login_indicator: Control
 var _settings_login_blink_timer: Timer
 var _settings_account_status: Label
 var _settings_account_action: Button
@@ -339,6 +347,19 @@ func _apply_responsive_layout() -> void:
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	if is_instance_valid(status_label):
+		# Status feedback belongs above the bottom action dock, never underneath it.
+		var status_width := minf(730.0 * scale_factor, viewport_size.x - 24.0 * scale_factor)
+		status_label.anchor_left = 0.5
+		status_label.anchor_right = 0.5
+		status_label.anchor_top = 1.0
+		status_label.anchor_bottom = 1.0
+		status_label.offset_left = -status_width * 0.5
+		status_label.offset_right = status_width * 0.5
+		status_label.offset_top = -188.0 * scale_factor
+		status_label.offset_bottom = -122.0 * scale_factor
+		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
 		# Keep the transparent PNG shortcuts on the right at every viewport size.
@@ -905,16 +926,8 @@ func _build_toolbars() -> void:
 	var settings_button := _make_icon_button("settings", "Settings", Vector2(70, 76) * _ui_scale)
 	settings_button.name = "SettingsAction"
 	settings_button.pressed.connect(_on_settings_pressed)
-	_settings_login_indicator = Label.new()
+	_settings_login_indicator = LoginRequiredDotVisual.new()
 	_settings_login_indicator.name = "LoginRequiredIndicator"
-	_settings_login_indicator.text = "●"
-	_settings_login_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_settings_login_indicator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_settings_login_indicator.add_theme_font_size_override("font_size", int(25 * _ui_scale))
-	_settings_login_indicator.add_theme_color_override("font_color", Color("#FF4D5E"))
-	_settings_login_indicator.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
-	_settings_login_indicator.add_theme_constant_override("shadow_offset_x", 1)
-	_settings_login_indicator.add_theme_constant_override("shadow_offset_y", 2)
 	_settings_login_indicator.position = Vector2(settings_button.custom_minimum_size.x - 28 * _ui_scale, 0)
 	_settings_login_indicator.size = Vector2(28, 28) * _ui_scale
 	_settings_login_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1876,6 +1889,7 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
+	_sync_status_feedback_visibility()
 	_factory_ready_scan_accum += delta
 	if _factory_ready_scan_accum >= 0.5:
 		_factory_ready_scan_accum = 0.0
@@ -1900,6 +1914,20 @@ func _process(delta: float) -> void:
 		0.0
 	) * envelope
 	_level_up_camera.position = _level_up_camera_origin + shake
+
+
+func _sync_status_feedback_visibility() -> void:
+	if not is_instance_valid(status_label):
+		return
+	var scene := get_tree().current_scene
+	var guide := scene.get_node_or_null("TutorialGuide") if is_instance_valid(scene) else null
+	var guide_panel: Control = guide.get("_panel") as Control if is_instance_valid(guide) else null
+	var coach_visible: bool = is_instance_valid(guide_panel) and guide_panel.visible
+	if coach_visible:
+		# The city coach already explains the current action. Suppress stale or
+		# duplicate bottom status copy until the coach is dismissed/completed.
+		status_label.text = ""
+	status_label.visible = not coach_visible
 
 
 func _refresh_factory_ready_icons() -> void:
