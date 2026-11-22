@@ -10,7 +10,6 @@ func _ready() -> void:
 
 func _run() -> void:
 	var presentation := WorldPresentationScript.new()
-	get_tree().root.add_child(presentation)
 	presentation.call("_build_passenger_harbor")
 	var harbor := presentation.get_node_or_null("PassengerHarbor")
 	if harbor == null or harbor.get_node_or_null("PierDeck") == null or harbor.get_node_or_null("FerryTerminal") == null:
@@ -55,7 +54,7 @@ func _run() -> void:
 
 	print("[HarborWaterSmoke] PASS: ocean palette, animated waves, pier, terminal and 8-passenger ferry cycle")
 	ferry.queue_free()
-	presentation.queue_free()
+	presentation.free()
 	get_tree().quit(0)
 
 
