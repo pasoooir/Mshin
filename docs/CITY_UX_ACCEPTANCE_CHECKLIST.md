@@ -148,11 +148,17 @@ For every finding record:
   - Both CameraController and CityInput let HUD-blocked touch/drag events reach the sibling handler after clearing their own state; non-pointer modal input remains consumable.
   - GameplaySmoke verifies the propagation policy. AUDIT-008 adds the stronger live-scene handler sequence for both start-order permutations.
   - Browser/device hit-testing and physical Android behavior remain unverified; F7 remains PARTIAL.
-- **AUDIT-008 — Live mixed-touch handler integration: IMPLEMENTED; CI PENDING.**
+- **AUDIT-008 — Live mixed-touch handler integration: IMPLEMENTED; PR #656 CI PASS.**
   - `GameplaySmoke._test_mixed_hud_world_touch_isolation` runs in the actual gameplay scene with a temporary HUD Button and the real HUD router, CameraController and CityInput handlers.
   - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, camera transform invariance, unchanged building/road counts, and accidental button activation.
   - Assertions are on runtime handler state, not merely static policy helpers. The probe button is removed before the rest of gameplay smoke proceeds.
+  - PR #656 Godot validation, GameplaySmoke, Android Debug APK export/signature verification, and Chromium desktop/mobile Web build all passed. The PR was merged as `06cd613e27bc113f8c6884e57e3848d4e39b8eeb`.
   - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
+- **AUDIT-009 — First-entry visual acceptance: FAIL; remediation in PR #657.**
+  - Reviewed the real WebGL captures from [Mshin Playable Web run 44997719591](https://github.com/pasoooir/Mshin/actions/runs/44997719591): `desktop-pacific-entry.png`, `desktop-pacific-medium.png`, `desktop-pacific-near.png`, and `desktop-pacific-overview.png`.
+  - Confirmed defects: the first-step coach uses a 430×300 logical-pixel panel at 1280×720; its 64×64 pointing-hand emoji renders as a missing-glyph box over the instruction text; and the `Connected City` achievement toast appears on fresh entry because the metric counts the 50 free prebuilt highway connector tiles as player-built roads.
+  - PR #657 reduces the compact coach to 380×230, shortens the city-name instruction, hides the pointer for that self-explanatory first step, uses a directional glyph for later steps, and counts road achievement progress only beyond the 50 free starter tiles.
+  - Do not close A1/A3/I1 until fresh WebGL screenshots show the coach unobtrusive and no false startup achievement. Physical Android visual acceptance remains separate.
 
 ## Area-level evidence ledger (2026-11-22)
 
@@ -160,7 +166,7 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 
 | Area | Current status | Evidence-backed coverage | Still required |
 |---|---|---|---|
-| A. First impression and orientation | NOT TESTED | No recorded visual review of first-entry hierarchy, calmness, tutorial flow or framing in this audit. | Review real WebGL captures at entry on compact landscape and tablet; inspect empty plots and HUD occlusion. |
+| A. First impression and orientation | FAIL (A1/A3); A6 PARTIAL | PR #655 WebGL captures at 1280×720 show the city coach covering a large part of the opening view, its finger glyph overlapping instruction text, and a startup achievement toast overlapping the lower HUD. Evidence: `desktop-pacific-entry.png`, `desktop-pacific-medium.png`, `desktop-pacific-near.png`, `desktop-pacific-overview.png` from [Web run 44997719591](https://github.com/pasoooir/Mshin/actions/runs/44997719591). | PR #657 reduces the coach footprint and removes the first-step pointer; verify new compact-landscape/tablet captures and confirm the toast no longer appears on a fresh city. |
 | B. Camera and navigation | PARTIAL | GameplaySmoke camera math; Chromium dispatches pinch-out, two-finger pan/twist, 2→1 transition and one-finger pan; PR #654 cancellation/focus reset tests. | Assert actual camera transform and anchor stability, edge/zoom limits, HUD isolation; physical Android gesture feel and resume. |
 | C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
 | D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
@@ -168,7 +174,7 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 | F. Panels, HUD and touch targets | PARTIAL | HUD ownership/cancel/focus tests plus PR #656 live-scene GameplaySmoke sequences for HUD→world and world→HUD; asserts both actual world handlers clear pointer/road state and cancelled HUD touch does not activate. | Browser hit-testing at measured HUD coordinates, full panel close/back walkthrough, safe areas, 48px target measurements, scroll drag and text legibility. |
 | G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
 | H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
-| I. Visual comfort and readability | NOT TESTED | No signed-off visual review artifact is recorded in this audit. | Near/far screenshots, marker density, color-independent states, motion comfort, water/terrain/road readability. |
+| I. Visual comfort and readability | FAIL (I1); I6 PARTIAL | Actual WebGL entry/medium/near/overview captures expose tutorial/text overlap and an achievement toast on initial load; the opening view is not yet calm enough for visual sign-off. Evidence: Web run 44997719591 visual-acceptance artifact. | Re-capture after PR #657; review near/far detail, road/terrain/water readability, marker density, color-independent states and motion comfort. |
 | J. Performance, resilience and accessibility | PARTIAL | Godot headless, Web/mobile Chromium launch, APK export, focus-loss cleanup and automated economy/gameplay tests. | Real target-device FPS/draw-call benchmark, memory/input latency, save/load interruption, reduced-motion/audio-off and physical Android resume. |
 
 ### Explicit release blockers / open acceptance
