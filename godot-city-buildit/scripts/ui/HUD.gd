@@ -5746,6 +5746,7 @@ func _on_settings_profile_avatar_downloaded(
 		return
 	_settings_avatar_request_url = ""
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200 or body.is_empty() or body.size() > 4 * 1024 * 1024:
+		_restore_settings_profile_avatar_fallback()
 		return
 
 	var avatar_image := Image.new()
@@ -5757,8 +5758,10 @@ func _on_settings_profile_avatar_downloaded(
 	elif body.size() >= 12 and body.slice(0, 4).get_string_from_ascii() == "RIFF" and body.slice(8, 12).get_string_from_ascii() == "WEBP":
 		decode_error = avatar_image.load_webp_from_buffer(body)
 	if decode_error != OK or avatar_image.is_empty():
+		_restore_settings_profile_avatar_fallback()
 		return
 	if avatar_image.get_width() < 1 or avatar_image.get_height() < 1 or avatar_image.get_width() > 1024 or avatar_image.get_height() > 1024:
+		_restore_settings_profile_avatar_fallback()
 		return
 	if not is_instance_valid(_settings_profile_avatar) or not is_instance_valid(_settings_avatar_placeholder):
 		return
@@ -5767,6 +5770,17 @@ func _on_settings_profile_avatar_downloaded(
 	var avatar_frame := _settings_profile_avatar.get_parent() as Control
 	if is_instance_valid(avatar_frame):
 		avatar_frame.show()
+
+
+func _restore_settings_profile_avatar_fallback() -> void:
+	if is_instance_valid(_settings_profile_avatar):
+		_settings_profile_avatar.texture = null
+	if is_instance_valid(_settings_avatar_placeholder):
+		_settings_avatar_placeholder.show()
+	if is_instance_valid(_settings_profile_avatar):
+		var avatar_frame := _settings_profile_avatar.get_parent() as Control
+		if is_instance_valid(avatar_frame):
+			avatar_frame.show()
 
 
 func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
