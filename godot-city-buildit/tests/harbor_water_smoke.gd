@@ -39,8 +39,8 @@ func _run() -> void:
 
 	# Advance the real ferry state machine deterministically while yielding frames
 	# so queue_free/reparent operations are processed by the SceneTree.
-	for frame in range(100):
-		ferry.call("_process", 0.2)
+	for frame in range(24):
+		ferry.call("_process", 1.0)
 		await process_frame
 
 	if ferry.get_completed_voyages() < 1:
