@@ -103,9 +103,9 @@ func _ready() -> void:
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
 		"float terrain_noise(vec2 p)",
-		"vec3 deep_meadow = vec3(0.40, 0.55, 0.27)",
-		"vec3 fresh_meadow = vec3(0.62, 0.75, 0.40)",
-		"vec3 olive_grass = vec3(0.68, 0.62, 0.36)",
+		"vec3 deep_meadow = vec3(0.48, 0.64, 0.31)",
+		"vec3 fresh_meadow = vec3(0.68, 0.79, 0.45)",
+		"vec3 olive_grass = vec3(0.72, 0.67, 0.39)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var fresh_grass := Color(\"#718F4C\")",
@@ -135,7 +135,7 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 34.0",
+		"const BEACH_WIDTH := 26.0",
 		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
@@ -159,7 +159,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
 		get_tree().quit(1)
 		return
-	if presentation.BEACH_WIDTH > 36.0:
+	if presentation.BEACH_WIDTH > 28.0:
 		push_error("[VisualPresentationSmoke] The playable shoreline beach must remain a human-scale coastal strip, not a 56 m sand plain")
 		get_tree().quit(1)
 		return
@@ -221,7 +221,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 34.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 26.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)
