@@ -85,6 +85,14 @@ For every finding record:
 - [ ] F8. Touch cancel/focus loss clears UI pointer state.
 - [ ] F9. Text, icons, costs, and status messages remain legible at target mobile sizes.
 - [ ] F10. Back/Escape behavior is consistent and does not unexpectedly exit the game.
+- [ ] F11. Compact landscape profiles render at 854x480 and 960x540 without clipping or overlapping HUD/catalog controls.
+- [ ] F12. Tablet profiles render at 1024x768 and 1280x800 without clipped labels, hidden actions or compressed catalog cards.
+- [ ] F13. Desktop profiles render at 1366x768, 1536x864 and 1920x1080 with the correct navigation profile and readable hierarchy.
+- [ ] F14. Portrait resize remains a usable fallback when orientation lock is unavailable; returning to landscape restores the intended layout.
+- [ ] F15. Resizing while a category/submenu is open preserves the selected category, visible close action, scrollability and valid control bounds.
+- [ ] F16. Category icons are at least 48 logical px, category buttons at least 64 logical px high, labels at least 14 logical px, and interactive targets at least 48x48 logical px.
+- [ ] F17. Catalog cards retain the 196x148 logical-pixel baseline, stable widths and horizontal swipe behavior; long names and locked badges remain readable.
+- [ ] F18. All seven build categories and nested service/specialization groups remain reachable at every responsive profile.
 
 ## G. Economy, production, and progression
 - [ ] G1. Costs and rewards are explicit before the action.
@@ -120,6 +128,9 @@ For every finding record:
 - [ ] J6. Critical actions have non-color cues and readable labels/icons.
 - [ ] J7. Reduced-motion / audio-off scenarios remain usable.
 - [ ] J8. Errors and network/offline states are recoverable and explained.
+- [ ] J9. Normal text meets 4.5:1 contrast and large text/meaningful boundaries meet 3:1 where applicable.
+- [ ] J10. Focus states are visible and navigable by keyboard; state is not communicated by color alone.
+- [ ] J11. Reduced-motion preferences are respected where supported; animation and camera movement do not cause discomfort.
 
 ## Current audit notes (2026-11-22)
 - **AUDIT-001 — Mixed HUD/world multi-touch isolation: PARTIAL; P1/P2 acceptance remains open.**
@@ -158,7 +169,7 @@ For every finding record:
   - Reviewed the real WebGL captures from [Mshin Playable Web run 44997719591](https://github.com/pasoooir/Mshin/actions/runs/44997719591): `desktop-pacific-entry.png`, `desktop-pacific-medium.png`, `desktop-pacific-near.png`, and `desktop-pacific-overview.png`.
   - Confirmed defects: the first-step coach initially used a 430×300 logical-pixel panel at 1280×720; its pointing-hand emoji rendered as a missing-glyph box; the initial `Connected City` toast fired because the 50-road target exactly matched the 50 free starter tiles; the persistent GameBootstrap status line overlapped the bottom action dock; and the guest login indicator's `●` text glyph rendered as a red square over the Settings button.
   - PR #657 reduces the compact coach to 380×230, shortens the city-name instruction, hides the pointer during that self-explanatory first step, draws the later pointer from vector primitives (no font glyph), raises the road achievement threshold to 75 tiles, suppresses status feedback while the coach panel is visible, moves later status feedback above the bottom action dock with responsive wrapping, and replaces the guest login glyph with a procedural red dot.
-  - Do not close A1/A3/I1 until fresh WebGL screenshots show the coach unobtrusive, no false startup achievement, no status/dock overlap and a correctly rendered vector pointer. Physical Android visual acceptance remains separate.
+  - PR #657 final WebGL captures from run 45000792101 confirm the desktop first-entry fixes: no false startup toast, no duplicate status/dock overlap, the guest badge is a clean circle, and the first-step pointer is hidden. A/I are now PARTIAL, not PASS: compact/mobile screenshots and physical Android acceptance are still required.
 
 ## Area-level evidence ledger (2026-11-22)
 
@@ -166,15 +177,15 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 
 | Area | Current status | Evidence-backed coverage | Still required |
 |---|---|---|---|
-| A. First impression and orientation | FAIL (A1/A3); A6 PARTIAL | PR #655 WebGL captures at 1280×720 show the city coach covering a large part of the opening view, its finger glyph overlapping instruction text, and a startup achievement toast overlapping the lower HUD. Evidence: `desktop-pacific-entry.png`, `desktop-pacific-medium.png`, `desktop-pacific-near.png`, `desktop-pacific-overview.png` from [Web run 44997719591](https://github.com/pasoooir/Mshin/actions/runs/44997719591). | PR #657 reduces the coach footprint and removes the first-step pointer; verify new compact-landscape/tablet captures and confirm the toast no longer appears on a fresh city. |
+| A. First impression and orientation | PARTIAL | PR #657 final WebGL captures at 1280×720 show the smaller city coach, no startup achievement toast, no duplicate status line, and a clean procedural guest badge. Evidence: [Web run 45000792101](https://github.com/pasoooir/Mshin/actions/runs/45000792101), including entry/medium/near/overview captures. | Review compact-landscape/tablet captures and physical Android entry, orientation and safe-area behavior before marking A PASS. |
 | B. Camera and navigation | PARTIAL | GameplaySmoke camera math; Chromium dispatches pinch-out, two-finger pan/twist, 2→1 transition and one-finger pan; PR #654 cancellation/focus reset tests. | Assert actual camera transform and anchor stability, edge/zoom limits, HUD isolation; physical Android gesture feel and resume. |
 | C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
 | D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
 | E. Roads and city connectivity | PARTIAL | Automated road gateway/connectivity and system-level road placement coverage exist. | Finger-drawn continuity, cancellation semantics for already placed segments, invalid-connection messaging and water/terrain edge taps. |
-| F. Panels, HUD and touch targets | PARTIAL | HUD ownership/cancel/focus tests plus PR #656 live-scene GameplaySmoke sequences for HUD→world and world→HUD; asserts both actual world handlers clear pointer/road state and cancelled HUD touch does not activate. | Browser hit-testing at measured HUD coordinates, full panel close/back walkthrough, safe areas, 48px target measurements, scroll drag and text legibility. |
+| F. Panels, HUD and touch targets | PARTIAL | PR #656 live-scene mixed-touch integration; existing GameplaySmoke catalog/scroll/category tests; PR #658 browser canvas matrix for seven standard viewports and portrait-to-landscape return. | Inspect latest responsive captures for HUD/card clipping; test resize while submenu is open, safe areas, production HUD hit-testing, 48px targets and physical Android. |
 | G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
 | H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
-| I. Visual comfort and readability | FAIL (I1); I6 PARTIAL | Actual WebGL entry/medium/near/overview captures expose tutorial/text overlap and an achievement toast on initial load; the opening view is not yet calm enough for visual sign-off. Evidence: Web run 44997719591 visual-acceptance artifact. | Re-capture after PR #657; review near/far detail, road/terrain/water readability, marker density, color-independent states and motion comfort. |
+| I. Visual comfort and readability | PARTIAL | PR #657 entry/medium/near/overview captures confirm the startup toast/status overlap and missing-glyph badge are corrected at 1280×720. Evidence: PR #657 Web run 45000792101 visual-acceptance artifact. | Review all responsive captures and inspect near/far road, terrain, water, marker density, color-independent states and motion comfort; physical-device sign-off remains open. |
 | J. Performance, resilience and accessibility | PARTIAL | Godot headless, Web/mobile Chromium launch, APK export, focus-loss cleanup and automated economy/gameplay tests. | Real target-device FPS/draw-call benchmark, memory/input latency, save/load interruption, reduced-motion/audio-off and physical Android resume. |
 
 ### Explicit release blockers / open acceptance
@@ -188,3 +199,10 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 - All P0/P1 findings must be fixed and regression-tested before a UX milestone is accepted.
 - P2 findings must have an explicit fix/defer decision; P3 items may be scheduled.
 - Chromium emulation is not physical Android acceptance. Record both separately.
+
+## Responsive viewport and orientation audit
+
+- **AUDIT-010 — Responsive viewport and orientation matrix: CI PASS on the pre-PR-657 baseline; rerun required on merged UI.**
+  - PR #658 uses CDP device-metric overrides to resize one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
+  - The touch-enabled mobile browser is also emulated through 844x390 -> 390x844 -> 844x390 using CDP screen-orientation metrics. The canvas must remain visible through portrait fallback and landscape return.
+  - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.

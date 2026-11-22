@@ -185,13 +185,63 @@ jobs:
             animations: 'disabled',
             timeout: 60000
           });
+
+          // Exercise every viewport in the responsive UI acceptance standard.
+          // These are real resizes of the same running WebGL scene, not new page
+          // launches; screenshots are retained for visual review of clipping,
+          // overlap, category rail and catalog framing at each breakpoint.
+          const responsiveProfiles = [
+            { name: 'compact-854x480', width: 854, height: 480 },
+            { name: 'compact-960x540', width: 960, height: 540 },
+            { name: 'tablet-1024x768', width: 1024, height: 768 },
+            { name: 'tablet-1280x800', width: 1280, height: 800 },
+            { name: 'desktop-1366x768', width: 1366, height: 768 },
+            { name: 'desktop-1536x864', width: 1536, height: 864 },
+            { name: 'desktop-1920x1080', width: 1920, height: 1080 }
+          ];
+          const responsiveCaptureNames = [];
+          // The game requests fullscreen after PLAY. Playwright setViewportSize
+          // cannot resize a fullscreen browser window, so use CDP device metrics
+          // to change the responsive viewport without changing the outer window.
+          const responsiveSession = await page.context().newCDPSession(page);
+          for (const profile of responsiveProfiles) {
+            await responsiveSession.send('Emulation.setDeviceMetricsOverride', {
+              width: profile.width,
+              height: profile.height,
+              deviceScaleFactor: 1,
+              mobile: false
+            });
+            await page.waitForTimeout(350);
+            const bounds = await gameFrame.boundingBox();
+            if (!bounds ||
+                Math.abs(bounds.width - profile.width) > 2 ||
+                Math.abs(bounds.height - profile.height) > 2) {
+              throw new Error('Game iframe did not fill responsive viewport ' + profile.name +
+                ': ' + JSON.stringify(bounds));
+            }
+            const canvasVisible = await page.frameLocator('#game-frame').locator('canvas').isVisible();
+            if (!canvasVisible) {
+              throw new Error('Godot canvas became hidden at responsive viewport ' + profile.name);
+            }
+            const captureName = 'responsive-' + profile.name + '.png';
+            await page.screenshot({
+              path: 'artifacts/visual-acceptance/' + captureName,
+              animations: 'disabled',
+              timeout: 60000
+            });
+            responsiveCaptureNames.push(captureName);
+          }
+          await responsiveSession.send('Emulation.clearDeviceMetricsOverride');
+          await responsiveSession.detach();
+          await page.waitForTimeout(250);
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
             viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
             canvas: { width: canvasWidth, height: canvasHeight },
-            captures: ['desktop-pacific-entry.png', 'desktop-pacific-medium.png', 'desktop-pacific-near.png', 'desktop-pacific-overview.png'],
+            captures: ['desktop-pacific-entry.png', 'desktop-pacific-medium.png', 'desktop-pacific-near.png', 'desktop-pacific-overview.png', ...responsiveCaptureNames],
+            responsiveProfiles,
             zoomInteraction: 'Godot mouse wheel: 10 steps to medium, 22 additional steps to near, 20 steps out',
-            note: 'Desktop WebGL canvas captures are real rendered game frames. Mobile viewport is functionally smoke-tested separately; this does not claim physical-device visual acceptance.'
+            note: 'All responsive captures are real rendered frames from one live WebGL scene resized through the documented viewport matrix. They are evidence for visual review, not an automated proof of zero clipping or physical-device acceptance.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
@@ -270,6 +320,48 @@ jobs:
           if (!(await mobileCanvas.isVisible())) {
             throw new Error('Mobile canvas became hidden after single- and multi-touch gestures');
           }
+
+          // Portrait is a graceful fallback when a browser refuses orientation
+          // lock. The game must remain visible, then recover on landscape return.
+          const orientationSession = await mobilePage.context().newCDPSession(mobilePage);
+          await orientationSession.send('Emulation.setDeviceMetricsOverride', {
+            width: 390,
+            height: 844,
+            deviceScaleFactor: 1,
+            mobile: true,
+            screenWidth: 390,
+            screenHeight: 844,
+            screenOrientation: { type: 'portraitPrimary', angle: 0 }
+          });
+          await mobilePage.waitForTimeout(500);
+          const portraitBounds = await mobileFrame.boundingBox();
+          if (!portraitBounds || portraitBounds.width < 320 || portraitBounds.height < 700 ||
+              !(await mobileCanvas.isVisible())) {
+            throw new Error('Portrait fallback lost the live game canvas or viewport');
+          }
+          await orientationSession.send('Emulation.setDeviceMetricsOverride', {
+            width: 844,
+            height: 390,
+            deviceScaleFactor: 1,
+            mobile: true,
+            screenWidth: 844,
+            screenHeight: 390,
+            screenOrientation: { type: 'landscapePrimary', angle: 90 }
+          });
+          await mobilePage.waitForTimeout(500);
+          const landscapeReturnBounds = await mobileFrame.boundingBox();
+          if (!landscapeReturnBounds || landscapeReturnBounds.width < 800 ||
+              landscapeReturnBounds.height < 360 || !(await mobileCanvas.isVisible())) {
+            throw new Error('Returning to mobile landscape did not restore the live game canvas');
+          }
+          await writeFile('artifacts/visual-acceptance/mobile-orientation-resize.json', JSON.stringify({
+            portrait: { width: 390, height: 844, frame: portraitBounds },
+            landscapeReturn: { width: 844, height: 390, frame: landscapeReturnBounds },
+            result: 'canvas remained visible through portrait fallback and landscape return',
+            note: 'Browser viewport resize test; not a physical Android orientation-lock test.'
+          }, null, 2));
+          await orientationSession.send('Emulation.clearDeviceMetricsOverride');
+          await orientationSession.detach();
 
           if (errors.length || mobileErrors.length) {
             throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
