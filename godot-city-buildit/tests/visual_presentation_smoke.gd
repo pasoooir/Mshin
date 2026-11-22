@@ -116,7 +116,7 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 44.0",
+		"const BEACH_WIDTH := 56.0",
 		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
