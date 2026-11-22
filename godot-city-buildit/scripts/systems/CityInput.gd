@@ -328,7 +328,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					_set_status("Move cancelled. Building returned to its original location.")
 				_end_road_stroke(event.index)
 				_clear_touch_pointer_state(event.index)
-				get_viewport().set_input_as_handled()
+				# Let CameraController observe the same cancelled release.
 				return
 			if road_stroke_active.has(event.index):
 				_end_road_stroke(event.index)
