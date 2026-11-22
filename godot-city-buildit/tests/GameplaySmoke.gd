@@ -14,6 +14,7 @@ const BuildingNotificationLayerScript = preload("res://scripts/ui/BuildingNotifi
 const BuildingNotificationScript = preload("res://scripts/ui/BuildingNotification.gd")
 const BuildingNotificationAnchorScript = preload("res://scripts/ui/BuildingNotificationAnchor.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
+const CityInputScript = preload("res://scripts/systems/CityInput.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
@@ -55,7 +56,40 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 	traffic_test_fleet_signal_count += 1
 
 func _ready() -> void:
+	_test_camera_gesture_math()
 	call_deferred("_run_gameplay_test")
+
+func _test_camera_gesture_math() -> void:
+	# Pinch-out must reduce camera distance; pinch-in must increase it.
+	var zoom_out := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045)
+	var zoom_in := CameraControllerScript.pinch_zoom_delta(150.0, 100.0, 0.045)
+	_check(zoom_out < 0.0, "Pinch-out must zoom in by reducing camera distance.")
+	_check(zoom_in > 0.0, "Pinch-in must zoom out by increasing camera distance.")
+	_check(100.0 + zoom_out < 100.0 and 100.0 + zoom_in > 100.0, "Pinch deltas must move camera distance in the expected direction.")
+	# A twist across the +/- PI seam must be the short continuous rotation.
+	var seam_delta := CameraControllerScript.touch_orbit_delta(deg_to_rad(179.0), deg_to_rad(-179.0))
+	_check(is_equal_approx(absf(seam_delta), deg_to_rad(2.0)), "Two-finger rotation must cross the +/-180-degree seam without a 358-degree jump.")
+	# The focal correction is horizontal and exactly cancels the projected anchor drift.
+	var anchor := Vector3(12.0, 0.0, -8.0)
+	var projected := Vector3(15.5, 4.0, -3.0)
+	var correction := CameraControllerScript.ground_anchor_correction(anchor, projected)
+	var corrected := projected + correction
+	_check(Vector2(corrected.x, corrected.z).distance_to(Vector2(anchor.x, anchor.z)) <= 0.0001 and is_zero_approx(correction.y), "Focal-point correction must restore the same ground anchor without vertical drift.")
+	var scale_a := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045, 50.0)
+	var scale_b := CameraControllerScript.pinch_zoom_delta(200.0, 300.0, 0.045, 50.0)
+	_check(is_equal_approx(scale_a, scale_b), "Equivalent pinch scale ratios must produce the same zoom change regardless of raw touch-pixel distances.")
+	var opening_zoom_probe := CameraControllerScript.new()
+	opening_zoom_probe.current_zoom = 150.0
+	opening_zoom_probe._zoom(CameraControllerScript.pinch_zoom_delta(100.0, 80.0, 0.045, 150.0))
+	_check(opening_zoom_probe.current_zoom > 150.0 and opening_zoom_probe.current_zoom <= opening_zoom_probe.max_zoom, "The opening city camera must retain usable pinch-zoom-out range instead of starting at its maximum distance.")
+	opening_zoom_probe.free()
+	var city_input_probe := CityInputScript.new()
+	city_input_probe.pointer_start[7] = Vector2(100.0, 100.0)
+	city_input_probe.pointer_last_position[7] = Vector2(100.0, 100.0)
+	_check(not city_input_probe.take_over_camera_drag(7, Vector2(110.0, 100.0)), "A small touch movement must remain eligible for a city tap.")
+	_check(city_input_probe.take_over_camera_drag(7, Vector2(130.0, 100.0)), "A deliberate drag must transfer pointer ownership to the camera.")
+	_check(not city_input_probe.pointer_start.has(7) and not city_input_probe.pointer_hold_elapsed.has(7), "Camera takeover must clear the pending tap and long-press state.")
+	city_input_probe.free()
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
@@ -1208,14 +1242,14 @@ func _test_camera_inertia_math() -> void:
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 	var pinch_in := CameraControllerScript.pinch_zoom_delta(180.0, 120.0, 0.045)
 	var pinch_out := CameraControllerScript.pinch_zoom_delta(120.0, 180.0, 0.045)
-	_check(pinch_in < 0.0 and pinch_out > 0.0, "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).")
+	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinching two fingers inward must increase camera distance (zoom out), while spreading them must decrease distance (zoom in).")
 	var zoom_rig := CameraControllerScript.new()
 	zoom_rig.current_zoom = 30.0
 	zoom_rig._zoom(pinch_in)
 	var zoomed_in_distance := zoom_rig.current_zoom
-	_check(zoomed_in_distance < 30.0, "Inward pinch must move the camera closer to the city target.")
+	_check(zoomed_in_distance > 30.0, "Inward pinch must move the camera farther from the city target (zoom out).")
 	zoom_rig._zoom(pinch_out)
-	_check(zoom_rig.current_zoom > zoomed_in_distance, "Outward pinch must move the camera farther from the city target.")
+	_check(zoom_rig.current_zoom < zoomed_in_distance, "Outward pinch must move the camera closer to the city target (zoom in).")
 	zoom_rig.free()
 	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
 	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
@@ -1309,6 +1343,10 @@ func _test_camera_touch_gesture_integration() -> void:
 	var original_position: Vector3 = camera_rig.global_position
 	var original_yaw: float = camera_rig.rotation_degrees.y
 	var original_zoom: float = camera_rig.current_zoom
+	# Start away from the max-distance clamp so inward pinch can visibly zoom out.
+	camera_rig.current_zoom = 60.0
+	camera_rig._update_camera_transform()
+	var gesture_start_zoom: float = camera_rig.current_zoom
 	camera_rig.touch_points.clear()
 	camera_rig._multi_touch_gesture_active = false
 	camera_rig.pan_velocity = Vector2.ZERO
@@ -1325,6 +1363,8 @@ func _test_camera_touch_gesture_integration() -> void:
 	second_touch.position = Vector2(250.0, 200.0)
 	second_touch.pressed = true
 	camera_rig._unhandled_input(second_touch)
+	var central_anchor: Variant = camera_rig._screen_to_ground(Vector2(200.0, 200.0))
+	_check(central_anchor != null, "A central building point must resolve to the ground plane before pinch zoom.")
 
 	var inward_second := InputEventScreenDrag.new()
 	inward_second.index = 2
@@ -1335,7 +1375,10 @@ func _test_camera_touch_gesture_integration() -> void:
 	inward_first.position = Vector2(170.0, 200.0)
 	camera_rig._unhandled_input(inward_first)
 	var zoomed_in_distance: float = camera_rig.current_zoom
-	_check(zoomed_in_distance < original_zoom, "Real two-finger touch events moving inward must zoom the live camera in.")
+	_check(zoomed_in_distance > gesture_start_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
+	if central_anchor != null:
+		var projected_anchor: Vector2 = camera_rig.camera.unproject_position(central_anchor)
+		_check(projected_anchor.distance_to(Vector2(200.0, 200.0)) <= 2.0, "Pinching around a central building must keep the ground focal point under the same screen midpoint.")
 
 	var outward_second := InputEventScreenDrag.new()
 	outward_second.index = 2
@@ -1345,7 +1388,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	outward_first.index = 1
 	outward_first.position = Vector2(100.0, 200.0)
 	camera_rig._unhandled_input(outward_first)
-	_check(camera_rig.current_zoom > zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera out.")
+	_check(camera_rig.current_zoom < zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera in.")
 
 	var position_before_two_finger_pan: Vector3 = camera_rig.global_position
 	var pan_second := InputEventScreenDrag.new()
@@ -1370,6 +1413,117 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig._unhandled_input(release_first)
 	_check(camera_rig.pan_velocity.length() < 0.001 and absf(camera_rig.orbit_velocity) < 0.001, "Releasing a two-finger zoom/pan gesture must stop inertial fling at the finger-release position.")
 	_check(not camera_rig._multi_touch_gesture_active, "The camera must close the multi-touch gesture state after the final finger is lifted.")
+
+	# A screen-edge pinch must preserve the map point under its midpoint too.
+	var edge_first := InputEventScreenTouch.new()
+	edge_first.index = 5
+	edge_first.position = Vector2(20.0, 220.0)
+	edge_first.pressed = true
+	camera_rig._unhandled_input(edge_first)
+	var edge_second := InputEventScreenTouch.new()
+	edge_second.index = 6
+	edge_second.position = Vector2(120.0, 220.0)
+	edge_second.pressed = true
+	camera_rig._unhandled_input(edge_second)
+	var edge_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
+	_check(edge_anchor != null, "A visible screen-edge map point must resolve to the ground plane before zoom.")
+	var edge_second_drag := InputEventScreenDrag.new()
+	edge_second_drag.index = 6
+	edge_second_drag.position = Vector2(135.0, 220.0)
+	camera_rig._unhandled_input(edge_second_drag)
+	var edge_first_drag := InputEventScreenDrag.new()
+	edge_first_drag.index = 5
+	edge_first_drag.position = Vector2(5.0, 220.0)
+	camera_rig._unhandled_input(edge_first_drag)
+	if edge_anchor != null:
+		var projected_edge_anchor: Vector2 = camera_rig.camera.unproject_position(edge_anchor)
+		_check(projected_edge_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Screen-edge pinch must preserve its world focal point under the gesture midpoint.")
+	var edge_release_second := InputEventScreenTouch.new()
+	edge_release_second.index = 6
+	edge_release_second.pressed = false
+	camera_rig._unhandled_input(edge_release_second)
+	var edge_release_first := InputEventScreenTouch.new()
+	edge_release_first.index = 5
+	edge_release_first.pressed = false
+	camera_rig._unhandled_input(edge_release_first)
+	# At the minimum zoom limit, a further pinch-out must not shift the target.
+	camera_rig.current_zoom = camera_rig.min_zoom
+	camera_rig._update_camera_transform()
+	var limit_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
+	var limit_zoom_first := InputEventScreenTouch.new()
+	limit_zoom_first.index = 10
+	limit_zoom_first.position = Vector2(20.0, 220.0)
+	limit_zoom_first.pressed = true
+	camera_rig._unhandled_input(limit_zoom_first)
+	var limit_zoom_second := InputEventScreenTouch.new()
+	limit_zoom_second.index = 11
+	limit_zoom_second.position = Vector2(120.0, 220.0)
+	limit_zoom_second.pressed = true
+	camera_rig._unhandled_input(limit_zoom_second)
+	var limit_zoom_second_drag := InputEventScreenDrag.new()
+	limit_zoom_second_drag.index = 11
+	limit_zoom_second_drag.position = Vector2(135.0, 220.0)
+	camera_rig._unhandled_input(limit_zoom_second_drag)
+	var limit_zoom_first_drag := InputEventScreenDrag.new()
+	limit_zoom_first_drag.index = 10
+	limit_zoom_first_drag.position = Vector2(5.0, 220.0)
+	camera_rig._unhandled_input(limit_zoom_first_drag)
+	_check(is_equal_approx(camera_rig.current_zoom, camera_rig.min_zoom), "Pinch-out at the minimum camera distance must respect the zoom limit.")
+	if limit_anchor != null:
+		var projected_limit_anchor: Vector2 = camera_rig.camera.unproject_position(limit_anchor)
+		_check(projected_limit_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Zooming beyond the minimum distance must not drift the focal point.")
+	var limit_release_second := InputEventScreenTouch.new()
+	limit_release_second.index = 11
+	limit_release_second.pressed = false
+	camera_rig._unhandled_input(limit_release_second)
+	var limit_release_first := InputEventScreenTouch.new()
+	limit_release_first.index = 10
+	limit_release_first.pressed = false
+	camera_rig._unhandled_input(limit_release_first)
+
+	# Two-to-one-finger transitions reset baselines and never reuse old velocity.
+	var transition_first := InputEventScreenTouch.new()
+	transition_first.index = 7
+	transition_first.position = Vector2(180.0, 220.0)
+	transition_first.pressed = true
+	camera_rig._unhandled_input(transition_first)
+	var transition_second := InputEventScreenTouch.new()
+	transition_second.index = 8
+	transition_second.position = Vector2(220.0, 220.0)
+	transition_second.pressed = true
+	camera_rig._unhandled_input(transition_second)
+	var transition_release := InputEventScreenTouch.new()
+	transition_release.index = 8
+	transition_release.position = Vector2(220.0, 220.0)
+	transition_release.pressed = false
+	camera_rig._unhandled_input(transition_release)
+	_check(camera_rig.touch_points.size() == 1 and not camera_rig._multi_touch_gesture_active, "A two-to-one-finger transition must retain only the remaining pointer and close multi-touch state.")
+	_check(camera_rig.pan_velocity.length() < 0.001 and absf(camera_rig.orbit_velocity) < 0.001, "A two-to-one-finger transition must clear stale gesture inertia.")
+	var remaining_drag := InputEventScreenDrag.new()
+	remaining_drag.index = 7
+	remaining_drag.position = Vector2(190.0, 230.0)
+	camera_rig._unhandled_input(remaining_drag)
+	var transition_final_release := InputEventScreenTouch.new()
+	transition_final_release.index = 7
+	transition_final_release.pressed = false
+	camera_rig._unhandled_input(transition_final_release)
+
+	# Cancellation and a fresh gesture must not leak previous pan/orbit velocity.
+	camera_rig.pan_velocity = Vector2(300.0, 0.0)
+	camera_rig.orbit_velocity = 0.3
+	var cancel_touch := InputEventScreenTouch.new()
+	cancel_touch.index = 9
+	cancel_touch.position = Vector2(250.0, 250.0)
+	cancel_touch.pressed = true
+	camera_rig._unhandled_input(cancel_touch)
+	_check(camera_rig.pan_velocity.is_zero_approx() and is_zero_approx(camera_rig.orbit_velocity), "A new touch must immediately interrupt existing camera inertia.")
+	var canceled_release := InputEventScreenTouch.new()
+	canceled_release.index = 9
+	canceled_release.position = Vector2(250.0, 250.0)
+	canceled_release.pressed = false
+	canceled_release.canceled = true
+	camera_rig._unhandled_input(canceled_release)
+	_check(camera_rig.touch_points.is_empty() and not camera_rig._multi_touch_gesture_active, "Touch cancellation must release all camera pointer state safely.")
 
 	camera_rig.pan_velocity = Vector2.ZERO
 	camera_rig.orbit_velocity = 0.0
@@ -4382,7 +4536,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/DistantMountainBackdrop") == null, "The starter city must not instantiate a mountain backdrop.")
 	_check(not world_presentation_source.contains("DistantMountainBackdrop") and not world_presentation_source.contains("_build_near_city_rock_outcrops"), "Mountain and near-city rock generators must be removed from WorldPresentation.")
 	var camera_rig := get_node_or_null("CameraRig")
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 150.0), "The city camera must expose the expanded 150 m overview zoom.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 210.0), "The city camera must expose enough zoom-out range beyond its 150 m opening overview.")
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")

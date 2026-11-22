@@ -280,6 +280,22 @@ for contract in [
     if contract not in camera_controller_source:
         errors.append(f"Multi-touch release safety contract is missing: {contract}")
 city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="utf-8")
+for contract in [
+    "func take_over_camera_drag(pointer_id: int, screen_position: Vector2) -> bool:",
+    "func is_camera_pan_blocked() -> bool:",
+    "if multi_touch_gesture:",
+    "Do not restart a building long-press when the gesture falls back to one finger.",
+]:
+    if contract not in city_input_source:
+        errors.append(f"City touch/camera ownership contract is missing: {contract}")
+for contract in [
+    "func _screen_to_ground(screen_position: Vector2) -> Variant:",
+    "func _keep_ground_point_under_screen(",
+    "func _city_input_allows_camera_drag(",
+    "var scale_factor := pow(previous_distance / current_distance, exponent)",
+]:
+    if contract not in camera_controller_source:
+        errors.append(f"Camera ground-anchor/ownership contract is missing: {contract}")
 service_manager_source = (ROOT / "scripts/autoload/ServiceManager.gd").read_text(encoding="utf-8")
 traffic_manager_source = (ROOT / "scripts/autoload/TrafficManager.gd").read_text(encoding="utf-8")
 traffic_vehicle_source = (ROOT / "scripts/systems/TrafficVehicle.gd").read_text(encoding="utf-8")
@@ -1168,11 +1184,11 @@ for contract in [
     "orbit_inertia_damping",
     "func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:",
     "@export var world_limit: float = 130.0",
-    "@export var max_zoom: float = 150.0",
+    "@export var max_zoom: float = 210.0",
     "static func interpolate_focus(",
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",
-    "return (current_distance - previous_distance) * maxf(0.0, sensitivity)",
+    "var scale_factor := pow(previous_distance / current_distance, exponent)",
     "static func touch_centroid(",
     "static func touch_orbit_delta(",
     "static func apply_orbit_delta(",
@@ -1271,15 +1287,19 @@ for contract in [
     "A newer cloud game_state must replace an older local snapshot.",
     "func _test_camera_inertia_math()",
     "func _test_camera_touch_gesture_integration()",
-    "Real two-finger touch events moving inward must zoom the live camera in.",
-    "Real two-finger touch events spreading outward must zoom the live camera out.",
+    "Real two-finger touch events moving inward must zoom the live camera out.",
+    "Real two-finger touch events spreading outward must zoom the live camera in.",
     "Moving both active touches together must pan the live city camera",
     "Live two-finger touch input must complete a full 360-degree orbit",
     "Camera pan inertia must decay over time",
     "Camera orbit inertia must decay over time",
-    "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).",
+    "Pinching two fingers inward must increase camera distance (zoom out), while spreading them must decrease distance (zoom in).",
     "Two-finger pan must use the midpoint between active touches",
     "Equivalent normalized touch drags must move the same world distance on different resolutions",
+    "Pinching around a central building must keep the ground focal point under the same screen midpoint.",
+    "Screen-edge pinch must preserve its world focal point under the gesture midpoint.",
+    "A two-to-one-finger transition must retain only the remaining pointer and close multi-touch state.",
+    "Touch cancellation must release all camera pointer state safely.",
 ]:
     if contract not in gameplay_smoke_source:
         errors.append(f"Camera inertia regression test is missing: {contract}")
