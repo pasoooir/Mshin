@@ -2040,10 +2040,10 @@ func _build_passenger_harbor() -> void:
 	var gangway := MeshInstance3D.new()
 	gangway.name = "FerryGangway"
 	var gangway_mesh := BoxMesh.new()
-	gangway_mesh.size = Vector3(5.0, 0.16, 2.5)
+	gangway_mesh.size = Vector3(6.0, 0.16, 2.5)
 	gangway.mesh = gangway_mesh
-	gangway.position = Vector3(121.0, 0.91, -22.0)
-	gangway.rotation.z = deg_to_rad(-3.0)
+	gangway.position = Vector3(124.5, 0.91, -22.0)
+	gangway.rotation.z = deg_to_rad(3.0)
 	gangway.material_override = edge_material
 	harbor.add_child(gangway)
 
