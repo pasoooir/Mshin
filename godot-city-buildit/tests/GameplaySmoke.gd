@@ -14,6 +14,7 @@ const BuildingNotificationLayerScript = preload("res://scripts/ui/BuildingNotifi
 const BuildingNotificationScript = preload("res://scripts/ui/BuildingNotification.gd")
 const BuildingNotificationAnchorScript = preload("res://scripts/ui/BuildingNotificationAnchor.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
+const CityInputScript = preload("res://scripts/systems/CityInput.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
@@ -74,6 +75,16 @@ func _test_camera_gesture_math() -> void:
 	var correction := CameraControllerScript.ground_anchor_correction(anchor, projected)
 	var corrected := projected + correction
 	_check(Vector2(corrected.x, corrected.z).distance_to(Vector2(anchor.x, anchor.z)) <= 0.0001 and is_zero_approx(correction.y), "Focal-point correction must restore the same ground anchor without vertical drift.")
+	var scale_a := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045, 50.0)
+	var scale_b := CameraControllerScript.pinch_zoom_delta(200.0, 300.0, 0.045, 50.0)
+	_check(is_equal_approx(scale_a, scale_b), "Equivalent pinch scale ratios must produce the same zoom change regardless of raw touch-pixel distances.")
+	var city_input_probe := CityInputScript.new()
+	city_input_probe.pointer_start[7] = Vector2(100.0, 100.0)
+	city_input_probe.pointer_last_position[7] = Vector2(100.0, 100.0)
+	_check(not city_input_probe.take_over_camera_drag(7, Vector2(110.0, 100.0)), "A small touch movement must remain eligible for a city tap.")
+	_check(city_input_probe.take_over_camera_drag(7, Vector2(130.0, 100.0)), "A deliberate drag must transfer pointer ownership to the camera.")
+	_check(not city_input_probe.pointer_start.has(7) and not city_input_probe.pointer_hold_elapsed.has(7), "Camera takeover must clear the pending tap and long-press state.")
+	city_input_probe.free()
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
@@ -1343,6 +1354,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	second_touch.position = Vector2(250.0, 200.0)
 	second_touch.pressed = true
 	camera_rig._unhandled_input(second_touch)
+	var central_anchor: Variant = camera_rig._screen_to_ground(Vector2(200.0, 200.0))
 
 	var inward_second := InputEventScreenDrag.new()
 	inward_second.index = 2
@@ -1354,6 +1366,9 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig._unhandled_input(inward_first)
 	var zoomed_in_distance: float = camera_rig.current_zoom
 	_check(zoomed_in_distance > original_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
+	if central_anchor != null:
+		var projected_anchor := camera_rig.camera.unproject_position(central_anchor)
+		_check(projected_anchor.distance_to(Vector2(200.0, 200.0)) <= 2.0, "Pinching around a central building must keep the ground focal point under the same screen midpoint.")
 
 	var outward_second := InputEventScreenDrag.new()
 	outward_second.index = 2
