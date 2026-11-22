@@ -1,6 +1,7 @@
 extends Node3D
 
 var _road_system_cache: Node
+var _expansion_preview_active := false
 
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
@@ -362,7 +363,14 @@ func _build_land_expansion_markers() -> void:
 	material.no_depth_test = false
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	marker.material_override = material
+	marker.visible = _expansion_preview_active
 	add_child(marker)
+
+func set_expansion_preview_visible(active: bool) -> void:
+	_expansion_preview_active = active
+	var marker := get_node_or_null("LandExpansionMarkers")
+	if is_instance_valid(marker):
+		marker.visible = active
 
 func _build_city_grid() -> void:
 	var lines := SurfaceTool.new()
@@ -436,6 +444,8 @@ func _build_coastal_highway() -> void:
 	highway.mesh = highway_mesh
 	highway.position = Vector3(HIGHWAY_CENTER_X, 0.075, 0.0)
 	var highway_asphalt := _create_asphalt_material()
+	# Keep the motorway visibly asphalt-dark under the bright Pacific sun.
+	highway_asphalt.albedo_color = Color("#737A76")
 	highway_asphalt.uv1_scale = Vector3(12.0, 96.0, 1.0)
 	highway.material_override = highway_asphalt
 	highway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -972,7 +982,12 @@ void fragment() {
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 36.0 + transition_noise, coastline + 1.5 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
-	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb;
+	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
+	float fine = sin(world_position.x * 0.31 - world_position.z * 0.27) * cos(world_position.z * 0.23 + world_position.x * 0.19);
+	float patch = smoothstep(-0.55, 0.55, broad);
+	float ground_variation = 0.88 + broad * 0.075 + fine * 0.025;
+	vec3 meadow = texture(grass_texture, ground_uv).rgb * COLOR.rgb * ground_variation;
+	meadow *= mix(0.84, 1.08, patch);
 	vec3 sand = texture(sand_texture, ground_uv * 0.46).rgb * COLOR.rgb;
 	ALBEDO = mix(meadow, sand, sand_mask);
 	ROUGHNESS = 1.0;
