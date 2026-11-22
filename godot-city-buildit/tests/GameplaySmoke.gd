@@ -3769,8 +3769,20 @@ func _test_achievements() -> void:
 	var previous_market_purchases := TradeManager.market_purchases
 	var previous_ship_departures := TradeManager.ship_departures
 	AchievementManager.from_save_dict({})
-	_check(AchievementManager.count_player_built_road_tiles(50) == 0, "The 50 free starter connector tiles must not unlock the player-built road achievement.")
-	_check(AchievementManager.count_player_built_road_tiles(99) == 49 and AchievementManager.count_player_built_road_tiles(100) == 50, "The road achievement must count only road tiles added beyond the 50-tile starter connector.")
+	var achievement_road_system = get_node_or_null("World/RoadSystem")
+	_check(is_instance_valid(achievement_road_system), "Road achievement regression requires the live RoadSystem.")
+	if is_instance_valid(achievement_road_system):
+		var previous_road_tiles: Dictionary = achievement_road_system.roads.duplicate()
+		achievement_road_system.roads.clear()
+		for road_index in range(50):
+			achievement_road_system.roads[Vector2i(road_index, 0)] = null
+		AchievementManager._check_achievements()
+		_check(not bool(AchievementManager.unlocked.get("road_network", false)), "The 50 free starter highway tiles must not unlock Connected City on a fresh city.")
+		for road_index in range(50, 75):
+			achievement_road_system.roads[Vector2i(road_index, 0)] = null
+		AchievementManager._check_achievements()
+		_check(bool(AchievementManager.unlocked.get("road_network", false)), "Connected City must unlock only after the road network reaches 75 tiles.")
+		achievement_road_system.roads = previous_road_tiles
 	BuildManager.buildings = {}
 	GameManager.level = 10
 	GameManager.population = 10000
