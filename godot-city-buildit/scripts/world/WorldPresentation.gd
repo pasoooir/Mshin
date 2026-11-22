@@ -370,8 +370,8 @@ func _build_meadow_biome_overlays() -> void:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
 			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34)).lerp(base_edge, 0.48)
-		var ring_levels := [0.0, 0.28, 0.55, 0.78, 1.0]
-		var segments := 32
+		var ring_levels := [0.0, 0.34, 0.68, 1.0]
+		var segments := 20
 		var ring_points: Array = []
 		for ring_value in ring_levels:
 			var ring: Array[Vector3] = []
