@@ -554,29 +554,8 @@ func _get_asphalt_material() -> StandardMaterial3D:
 	_shared_asphalt_material.roughness = 0.97
 	_shared_asphalt_material.metallic = 0.0
 	_shared_asphalt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	_request_cc0_asphalt_texture(_shared_asphalt_material)
 	return _shared_asphalt_material
 
-
-func _request_cc0_asphalt_texture(material: StandardMaterial3D) -> void:
-	var request := HTTPRequest.new()
-	request.name = "RoadAsphaltTextureRequest"
-	request.timeout = 12.0
-	add_child(request)
-	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-		if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and not body.is_empty():
-			var image := Image.new()
-			if image.load_jpg_from_buffer(body) == OK:
-				image.generate_mipmaps()
-				material.albedo_texture = ImageTexture.create_from_image(image)
-			else:
-				push_warning("[RoadSystem] Asphalt CDN image invalid; local PBR fallback retained")
-		else:
-			push_warning("[RoadSystem] Asphalt CDN unavailable; local PBR fallback retained")
-		request.queue_free()
-	)
-	if request.request("https://cdn.meshy.ai/landing-assets/textures/concrete/smooth-grey-asphalt/smooth-grey-asphalt-2k.jpg") != OK:
-		request.queue_free()
 
 func _create_asphalt_textures() -> Array[Texture2D]:
 	const TEXTURE_SIZE: int = 256

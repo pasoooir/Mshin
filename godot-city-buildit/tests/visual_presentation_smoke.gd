@@ -25,6 +25,11 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
+	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
+		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
+		get_tree().quit(1)
+		return
 	if world_source.count("_is_city_road_footprint(x, z)") < 6:
 		push_error("[VisualPresentationSmoke] Grass, shrubs and loose field stones must all exclude occupied asphalt tiles")
 		get_tree().quit(1)
@@ -38,6 +43,32 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required_coastal_feature in [
+		"const COASTLINE_BASE_X := 110.0",
+		"const BEACH_WIDTH := 36.0",
+		"func _build_coastal_promenade(",
+		"func _build_beach_palms(",
+		"func _create_palm_frond_mesh(",
+		"PacificCoastalPromenade",
+		"PacificPalmTrunks",
+		"PacificPalmCrowns",
+		"COASTAL_GREEN_PALETTE",
+		"_build_coastal_promenade()",
+		"_build_beach_palms()"
+	]:
+		if not world_visual_source.contains(required_coastal_feature):
+			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
+			get_tree().quit(1)
+			return
+	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0:
+		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
+		get_tree().quit(1)
+		return
+	var palm_mesh: ArrayMesh = presentation._create_palm_frond_mesh()
+	if palm_mesh == null or palm_mesh.get_surface_count() != 1 or palm_mesh.get_aabb().size.x < 5.0 or palm_mesh.get_aabb().size.z < 5.0:
+		push_error("[VisualPresentationSmoke] Palm crown must be a single broad radial frond mesh")
+		get_tree().quit(1)
+		return
 	for required_visual_feature in [
 		"func _terrain_height(",
 		"func _build_dirt_tracks(",
@@ -53,7 +84,7 @@ func _ready() -> void:
 		"MeadowCreekWater"
 	]:
 		if not world_visual_source.contains(required_visual_feature):
-			push_error("[VisualPresentationSmoke] Living Australian ground is missing a required near-camera feature: " + required_visual_feature)
+			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
 	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
@@ -72,8 +103,8 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	if WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE.size() < 5 or WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].g <= WorldPresentationScript.AUSTRALIAN_GRASSLAND_PALETTE[0].r:
-		push_error("[VisualPresentationSmoke] Starter temperate terrain must use a green grassland palette")
+	if WorldPresentationScript.COASTAL_GREEN_PALETTE.size() < 5 or WorldPresentationScript.COASTAL_GREEN_PALETTE[0].g <= WorldPresentationScript.COASTAL_GREEN_PALETTE[0].r:
+		push_error("[VisualPresentationSmoke] Starter coastal terrain must use a lush Pacific urban-green palette")
 		main_instance.free()
 		get_tree().quit(1)
 		return

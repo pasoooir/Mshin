@@ -265,7 +265,7 @@ for contract in [
     "func _create_coastal_water_mesh(",
     "var near_x0 := coast_x0 + shore_offset",
     "var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge",
-    "var beach_fade := smoothstep(0.0, 14.0, _coastline(z) - x)",
+    "var beach_fade := smoothstep(0.0, 30.0, _coastline(z) - x)",
     "_is_city_road_footprint(x, z)",
 ]:
     if contract not in world_presentation_source:
@@ -886,7 +886,16 @@ for visual_contract in [
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
-    "const TERRAIN_DIVISIONS := 96",
+    "const TERRAIN_DIVISIONS := 128",
+    "const COASTLINE_BASE_X := 110.0",
+    "const BEACH_WIDTH := 36.0",
+    "func _build_coastal_promenade() -> void:",
+    "func _build_beach_palms() -> void:",
+    "func _create_palm_frond_mesh() -> ArrayMesh:",
+    "PacificCoastalPromenade",
+    "PacificPalmTrunks",
+    "PacificPalmCrowns",
+    "const COASTAL_GREEN_PALETTE :=",
     "func _add_highway_lane_dashes(",
     "HighwayConcreteMedian",
     "HighwayGuardrails",
@@ -895,8 +904,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#244D27\")",
-    "Color(\"#46763A\")",
+    "Color(\"#245A35\")",
+    "Color(\"#43834A\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
@@ -923,6 +932,14 @@ if livestock_body is None or "SheepWoolBodies" not in livestock_body.group(0) or
     errors.append("Natural meadow must contain both sheep and cattle visual groups")
 if lane_body is None or "MultiMesh" not in lane_body.group(0) or "range(-55, 56)" not in lane_body.group(0):
     errors.append("Highway lane markings must be batched and repeated along the full road")
+
+starter_world_builder = re.search(r"func _ready\(\).*?(?=\nfunc |\Z)", world_source, re.S)
+if starter_world_builder is None:
+    errors.append("WorldPresentation must expose its starter-scene composition builder")
+else:
+    for rural_feature in ["_build_dirt_tracks()", "_build_creek_channel()", "_build_meadow_livestock()", "_build_meadow_shrubs_and_stones()"]:
+        if rural_feature in starter_world_builder.group(0):
+            errors.append(f"Rural feature must not appear in the Pacific coastal starter scene: {rural_feature}")
 
 build_icon_paths = {
     "services": ("ui", "services"),

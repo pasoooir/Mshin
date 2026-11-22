@@ -17,7 +17,7 @@ extends Node3D
 
 @onready var camera: Camera3D = $Camera3D
 
-var current_zoom: float = 38.0
+var current_zoom: float = 150.0
 var is_mouse_panning: bool = false
 var last_mouse_position: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
@@ -41,8 +41,8 @@ const MAX_PAN_INERTIA_SPEED := 1600.0
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, 45.0, 0.0)
-	# Frame the starter highway and first adjacent build plots on entry.
-	global_position = Vector3(-9.0, 0.0, 2.5)
+	# Frame the open starter city, wide Pacific beach and green inland edge together.
+	global_position = Vector3(38.0, 0.0, 0.0)
 	_update_camera_transform()
 	focus_target = global_position
 	# No idle per-frame camera work: wake only for touch, inertia or focus.
