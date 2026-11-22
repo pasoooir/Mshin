@@ -248,9 +248,17 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_ready_source := world_source
-	for species_batch in ["TreeCanopies", "TreeCanopiesConifer", "TreeCanopiesUmbrella", "PacificPalmCrowns"]:
-		if not world_ready_source.contains(species_batch):
-			push_error("[VisualPresentationSmoke] Starter greenbelt is missing a distinct foliage batch: " + species_batch)
+	var foliage_source := FileAccess.get_file_as_string("res://scripts/world/StylizedFoliageSystem.gd")
+	for foliage_contract in [
+		"StylizedFoliageSystemScript",
+		"TreeCanopies_Species%d_LOD%d",
+		"LOD_CARDS := [8, 4, 2]",
+		"CHUNK_SIZE := 64.0",
+		"PacificPalmCrowns"
+	]:
+		var source_to_check := foliage_source if foliage_contract.begins_with("TreeCanopies") or foliage_contract.begins_with("LOD_") or foliage_contract.begins_with("CHUNK_") else world_ready_source
+		if not source_to_check.contains(foliage_contract):
+			push_error("[VisualPresentationSmoke] Starter greenbelt is missing a foliage-system contract: " + foliage_contract)
 			presentation.free()
 			get_tree().quit(1)
 			return
