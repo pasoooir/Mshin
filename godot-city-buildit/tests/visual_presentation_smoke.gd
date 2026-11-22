@@ -269,7 +269,7 @@ func _ready() -> void:
 	for foliage_contract in [
 		"StylizedFoliageSystemScript",
 		"TreeCanopies_Species%d_LOD%d",
-		"LOD_CARDS := [8, 4, 2]",
+		"LOD_CARDS := [10, 6, 3]",
 		"CHUNK_SIZE := 64.0",
 		"PacificPalmCrowns"
 	]:
