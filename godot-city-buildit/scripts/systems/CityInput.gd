@@ -500,8 +500,8 @@ func _handle_tap(screen_position: Vector2) -> void:
 	# Projecting a facade tap onto the ground can land behind the building,
 	# selecting an adjacent plot or nothing at all in the oblique camera view.
 	if not bulldoze_mode and not bulldoze_road_mode and not BuildManager.is_placing and not _is_road_mode() and not _is_road_upgrade_mode():
-		var visible_building := _building_at_screen(screen_position)
-		if visible_building != null and is_instance_valid(visible_building):
+		var visible_building := _visible_building_for_tap(screen_position)
+		if visible_building != null:
 			_try_interact_with_building(visible_building)
 			return
 	if world_position == null:
@@ -537,6 +537,10 @@ func _handle_tap(screen_position: Vector2) -> void:
 			_set_status("Cannot build here: use an empty plot beside a road. Red preview means blocked or not connected.")
 		return
 	_try_interact(world_position)
+
+func _visible_building_for_tap(screen_position: Vector2) -> Building:
+	var building := _building_at_screen(screen_position)
+	return building if building != null and is_instance_valid(building) else null
 
 func _set_status(message: String) -> void:
 	var label = get_tree().current_scene.get_node_or_null("HUD/StatusLabel")
