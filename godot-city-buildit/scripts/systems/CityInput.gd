@@ -114,10 +114,12 @@ func _building_at_screen(screen_position: Vector2) -> Building:
 		var footprint: Vector2i = building.definition.get("size", Vector2i(2, 2))
 		var half_width := float(footprint.x) * BuildManager.GRID_SIZE * 0.5 + 0.18
 		var half_depth := float(footprint.y) * BuildManager.GRID_SIZE * 0.5 + 0.18
-		# Conservative model-space envelope includes roof and upper facade.
+		# Use the authored building height where available. The old fixed 14 m
+		# envelope made upper floors of towers/skyscrapers impossible to select.
+		var authored_height: float = maxf(14.0, float(building.definition.get("height", 14.0)))
 		var bounds := AABB(
 			Vector3(building.global_position.x - half_width, 0.0, building.global_position.z - half_depth),
-			Vector3(half_width * 2.0, 14.0, half_depth * 2.0)
+			Vector3(half_width * 2.0, authored_height + 1.0, half_depth * 2.0)
 		)
 		var hit_position: Variant = bounds.intersects_ray(ray_origin, ray_direction)
 		if hit_position == null:
@@ -344,7 +346,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_continue_road_stroke(event.index, event.position)
 		elif BuildManager.is_moving and move_pointer_id == event.index:
 			_update_move_from_screen(event.position)
-		elif BuildManager.is_placing and event.index == 0:
+		elif BuildManager.is_placing and pointer_start.size() == 1:
+			# Touch indices are pointer identities, not a guarantee that the
+			# active finger is always index 0 after a prior multi-touch session.
 			_update_ghost(event.position)
 
 func _is_road_mode() -> bool:
@@ -494,6 +498,14 @@ func _cancel_all_road_strokes() -> void:
 
 func _handle_tap(screen_position: Vector2) -> void:
 	var world_position: Variant = _raycast_ground(screen_position)
+	# Normal city inspection must test the visible building volume first.
+	# Projecting a facade tap onto the ground can land behind the building,
+	# selecting an adjacent plot or nothing at all in the oblique camera view.
+	if not bulldoze_mode and not bulldoze_road_mode and not BuildManager.is_placing and not _is_road_mode() and not _is_road_upgrade_mode():
+		var visible_building := _visible_building_for_tap(screen_position)
+		if visible_building != null:
+			_try_interact_with_building(visible_building)
+			return
 	if world_position == null:
 		return
 	var road_system = _road_system()
@@ -528,6 +540,10 @@ func _handle_tap(screen_position: Vector2) -> void:
 		return
 	_try_interact(world_position)
 
+func _visible_building_for_tap(screen_position: Vector2) -> Building:
+	var building := _building_at_screen(screen_position)
+	return building if building != null and is_instance_valid(building) else null
+
 func _set_status(message: String) -> void:
 	var label = get_tree().current_scene.get_node_or_null("HUD/StatusLabel")
 	if label:
@@ -561,6 +577,11 @@ func _raycast_ground(screen_position: Vector2) -> Variant:
 func _try_interact(world_position: Vector3) -> void:
 	var grid: Vector2i = BuildManager.world_to_grid(world_position)
 	var building = BuildManager.building_at_cell(grid)
+	if building == null or not is_instance_valid(building):
+		return
+	_try_interact_with_building(building)
+
+func _try_interact_with_building(building: Building) -> void:
 	if building == null or not is_instance_valid(building):
 		return
 	var scene := get_tree().current_scene
