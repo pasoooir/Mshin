@@ -39,8 +39,8 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Deep water must be a continuous coastline-following mesh extending offshore")
 		get_tree().quit(1)
 		return
-	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 8.0, 24, 4, -0.025)
-	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 16.0:
+	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 18.0, 24, 8, -0.025)
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 32.0:
 		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
 		get_tree().quit(1)
 		return
@@ -84,9 +84,9 @@ func _ready() -> void:
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
 		"float terrain_noise(vec2 p)",
-		"vec3 deep_meadow = vec3(0.105, 0.205, 0.105)",
-		"vec3 fresh_meadow = vec3(0.235, 0.335, 0.145)",
-		"vec3 olive_grass = vec3(0.315, 0.305, 0.145)",
+		"vec3 deep_meadow = vec3(0.13, 0.245, 0.105)",
+		"vec3 fresh_meadow = vec3(0.30, 0.43, 0.17)",
+		"vec3 olive_grass = vec3(0.39, 0.36, 0.17)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var fresh_grass := Color(\"#718F4C\")",
@@ -116,15 +116,15 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 36.0",
-		"func _build_coastal_promenade(",
+		"const BEACH_WIDTH := 44.0",
+		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
-		"PacificCoastalPromenade",
+		"PacificShoreFoam",
 		"PacificPalmTrunks",
 		"PacificPalmCrowns",
 		"COASTAL_GREEN_PALETTE",
-		"_build_coastal_promenade()",
+		"_build_shoreline_foam()",
 		"_build_beach_palms()"
 	]:
 		if not world_visual_source.contains(required_coastal_feature):
@@ -180,15 +180,21 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(8.0, 680.0, 180, 36, -0.055)
+	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)
 	if wide_ocean == null or wide_ocean.get_aabb().size.x < 500.0 or wide_ocean.get_aabb().size.z < 280.0:
 		push_error("[VisualPresentationSmoke] Pacific ocean must form a broad visible water body, not a narrow shoreline strip")
 		main_instance.free()
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("_create_coastal_water_mesh(8.0, 680.0, 180, 36, -0.055)"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("_create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
+		main_instance.free()
+		get_tree().quit(1)
+		return
+	presentation.call("_build_shoreline_foam")
+	if presentation.get_node_or_null("PacificShoreFoam") == null:
+		push_error("[VisualPresentationSmoke] The beach must have a visible irregular surf/foam edge")
 		main_instance.free()
 		get_tree().quit(1)
 		return
