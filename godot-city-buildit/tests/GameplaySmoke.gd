@@ -73,7 +73,7 @@ func _test_camera_gesture_math() -> void:
 	var projected := Vector3(15.5, 4.0, -3.0)
 	var correction := CameraControllerScript.ground_anchor_correction(anchor, projected)
 	var corrected := projected + correction
-	_check(corrected.distance_to(anchor) <= 0.0001, "Focal-point correction must restore the same ground anchor without vertical drift.")
+	_check(Vector2(corrected.x, corrected.z).distance_to(Vector2(anchor.x, anchor.z)) <= 0.0001 and is_zero_approx(correction.y), "Focal-point correction must restore the same ground anchor without vertical drift.")
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
