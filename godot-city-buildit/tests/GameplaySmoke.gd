@@ -1416,6 +1416,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	edge_second.pressed = true
 	camera_rig._unhandled_input(edge_second)
 	var edge_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
+	_check(edge_anchor != null, "A visible screen-edge map point must resolve to the ground plane before zoom.")
 	var edge_second_drag := InputEventScreenDrag.new()
 	edge_second_drag.index = 6
 	edge_second_drag.position = Vector2(135.0, 220.0)
@@ -1427,6 +1428,41 @@ func _test_camera_touch_gesture_integration() -> void:
 	if edge_anchor != null:
 		var projected_edge_anchor := camera_rig.camera.unproject_position(edge_anchor)
 		_check(projected_edge_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Screen-edge pinch must preserve its world focal point under the gesture midpoint.")
+	# At the minimum zoom limit, a further pinch-out must not shift the target.
+	camera_rig.current_zoom = camera_rig.min_zoom
+	camera_rig._update_camera_transform()
+	var limit_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
+	var position_at_zoom_limit: Vector3 = camera_rig.global_position
+	var limit_zoom_first := InputEventScreenTouch.new()
+	limit_zoom_first.index = 10
+	limit_zoom_first.position = Vector2(20.0, 220.0)
+	limit_zoom_first.pressed = true
+	camera_rig._unhandled_input(limit_zoom_first)
+	var limit_zoom_second := InputEventScreenTouch.new()
+	limit_zoom_second.index = 11
+	limit_zoom_second.position = Vector2(120.0, 220.0)
+	limit_zoom_second.pressed = true
+	camera_rig._unhandled_input(limit_zoom_second)
+	var limit_zoom_second_drag := InputEventScreenDrag.new()
+	limit_zoom_second_drag.index = 11
+	limit_zoom_second_drag.position = Vector2(150.0, 220.0)
+	camera_rig._unhandled_input(limit_zoom_second_drag)
+	var limit_zoom_first_drag := InputEventScreenDrag.new()
+	limit_zoom_first_drag.index = 10
+	limit_zoom_first_drag.position = Vector2(-10.0, 220.0)
+	camera_rig._unhandled_input(limit_zoom_first_drag)
+	_check(is_equal_approx(camera_rig.current_zoom, camera_rig.min_zoom), "Pinch-out at the minimum camera distance must respect the zoom limit.")
+	if limit_anchor != null:
+		var projected_limit_anchor := camera_rig.camera.unproject_position(limit_anchor)
+		_check(projected_limit_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Zooming beyond the minimum distance must not drift the focal point.")
+	var limit_release_second := InputEventScreenTouch.new()
+	limit_release_second.index = 11
+	limit_release_second.pressed = false
+	camera_rig._unhandled_input(limit_release_second)
+	var limit_release_first := InputEventScreenTouch.new()
+	limit_release_first.index = 10
+	limit_release_first.pressed = false
+	camera_rig._unhandled_input(limit_release_first)
 	var edge_release_second := InputEventScreenTouch.new()
 	edge_release_second.index = 6
 	edge_release_second.pressed = false
