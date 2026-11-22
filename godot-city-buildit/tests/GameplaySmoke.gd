@@ -112,10 +112,12 @@ func _test_camera_gesture_math() -> void:
 	camera_reset_probe._reset_touch_session()
 	_check(camera_reset_probe.touch_points.is_empty() and camera_reset_probe.pan_velocity == Vector2.ZERO and is_zero_approx(camera_reset_probe.orbit_velocity), "Cancelled touch/focus loss must clear stale camera pointers and inertia.")
 	camera_reset_probe.free()
-	city_input_probe.pointer_start[9] = Vector2(10.0, 10.0)
-	city_input_probe.road_stroke_active[9] = true
-	city_input_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	_check(city_input_probe.pointer_start.is_empty() and city_input_probe.road_stroke_active.is_empty(), "Application focus loss must clear pending city touches and road strokes.")
+	var focus_loss_city_probe := CityInputScript.new()
+	focus_loss_city_probe.pointer_start[9] = Vector2(10.0, 10.0)
+	focus_loss_city_probe.road_stroke_active[9] = true
+	focus_loss_city_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(focus_loss_city_probe.pointer_start.is_empty() and focus_loss_city_probe.road_stroke_active.is_empty(), "Application focus loss must clear pending city touches and road strokes.")
+	focus_loss_city_probe.free()
 
 func _test_hud_touch_session_ownership() -> void:
 	var tap_release := InputEventScreenTouch.new()
