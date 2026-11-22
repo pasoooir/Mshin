@@ -1889,6 +1889,7 @@ func _start_next_level_up_effect() -> void:
 		_level_up_shake_elapsed = 0.0
 
 func _process(delta: float) -> void:
+	_sync_status_feedback_visibility()
 	_factory_ready_scan_accum += delta
 	if _factory_ready_scan_accum >= 0.5:
 		_factory_ready_scan_accum = 0.0
@@ -1913,6 +1914,20 @@ func _process(delta: float) -> void:
 		0.0
 	) * envelope
 	_level_up_camera.position = _level_up_camera_origin + shake
+
+
+func _sync_status_feedback_visibility() -> void:
+	if not is_instance_valid(status_label):
+		return
+	var scene := get_tree().current_scene
+	var guide := scene.get_node_or_null("TutorialGuide") if is_instance_valid(scene) else null
+	var guide_panel = guide.get("_panel") if is_instance_valid(guide) else null
+	var coach_visible := is_instance_valid(guide_panel) and guide_panel.visible
+	if coach_visible:
+		# The city coach already explains the current action. Suppress stale or
+		# duplicate bottom status copy until the coach is dismissed/completed.
+		status_label.text = ""
+	status_label.visible = not coach_visible
 
 
 func _refresh_factory_ready_icons() -> void:
