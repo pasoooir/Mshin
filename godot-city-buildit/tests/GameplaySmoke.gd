@@ -1445,11 +1445,11 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig._unhandled_input(limit_zoom_second)
 	var limit_zoom_second_drag := InputEventScreenDrag.new()
 	limit_zoom_second_drag.index = 11
-	limit_zoom_second_drag.position = Vector2(150.0, 220.0)
+	limit_zoom_second_drag.position = Vector2(135.0, 220.0)
 	camera_rig._unhandled_input(limit_zoom_second_drag)
 	var limit_zoom_first_drag := InputEventScreenDrag.new()
 	limit_zoom_first_drag.index = 10
-	limit_zoom_first_drag.position = Vector2(-10.0, 220.0)
+	limit_zoom_first_drag.position = Vector2(5.0, 220.0)
 	camera_rig._unhandled_input(limit_zoom_first_drag)
 	_check(is_equal_approx(camera_rig.current_zoom, camera_rig.min_zoom), "Pinch-out at the minimum camera distance must respect the zoom limit.")
 	if limit_anchor != null:
