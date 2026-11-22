@@ -1030,7 +1030,7 @@ void vertex() {
 void fragment() {
 	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 44.0 + transition_noise, coastline + 0.8 + transition_noise, world_position.x);
+	float sand_mask = smoothstep(coastline - 56.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
 	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
@@ -1056,7 +1056,7 @@ void fragment() {
 	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
 	meadow = mix(meadow, soil, exposed_soil * 0.24);
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
-	float wet_sand = smoothstep(coastline - 5.5, coastline - 0.6, world_position.x);
+	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
 	vec3 damp_sand = sand * vec3(0.78, 0.82, 0.83);
 	sand = mix(sand, damp_sand, wet_sand * 0.72);
 	float dune_ripple = sin(world_position.z * 0.42 + world_position.x * 0.16) * 0.018;
