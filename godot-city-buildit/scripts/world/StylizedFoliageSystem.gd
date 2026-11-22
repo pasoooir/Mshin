@@ -56,7 +56,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
         })
 
     for chunk_key in buckets.keys():
-        _build_chunk(chunk_key, buckets[chunk_key], rng)
+        _build_chunk(chunk_key, buckets[chunk_key])
 
     _season_manager = SeasonManagerScript.new()
     _season_manager.name = "SeasonManager"
@@ -64,7 +64,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
     _season_manager.configure(_material, _leaf_emitters)
 
 
-func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary, rng: RandomNumberGenerator) -> void:
+func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
     var chunk_root := Node3D.new()
     chunk_root.name = "FoliageChunk_%d_%d" % [chunk_key.x, chunk_key.y]
     chunk_root.position = Vector3(chunk_key.x * CHUNK_SIZE, 0.0, chunk_key.y * CHUNK_SIZE)
@@ -231,8 +231,19 @@ func _add_card_vertex(
 
     var lateral := u * width * profile
     var depth := sin((u + 1.0) * PI * 0.5) * 0.22 + sin(v * PI) * 0.08
-    var point := right * lateral + outward * depth + Vector3(0.0, center_y - height * 0.5 + v * height, 0.0)
-    var bent_normal := (outward + right * (u * 0.34) + Vector3.UP * ((v - 0.5) * 0.22)).normalized()
+    var point: Vector3
+    var bent_normal: Vector3
+    if species_id == 3:
+        # Fan-palm-like radial fronds: each crossed card grows outward and
+        # droops from the crown, rather than forming another spherical blob.
+        var radial_distance := v * 1.78
+        var frond_width := sin(v * PI) * 0.68
+        var frond_y := 0.92 - v * 1.28 + sin(v * PI) * 0.12
+        point = outward * radial_distance + right * (u * frond_width) + Vector3(0.0, frond_y, 0.0)
+        bent_normal = (outward * 0.82 + right * (u * 0.28) + Vector3.UP * 0.18).normalized()
+    else:
+        point = right * lateral + outward * depth + Vector3(0.0, center_y - height * 0.5 + v * height, 0.0)
+        bent_normal = (outward + right * (u * 0.34) + Vector3.UP * ((v - 0.5) * 0.22)).normalized()
     var uv := Vector2((u + 1.0) * 0.5, v)
     var wind_weight := 0.20 + v * 0.80
 
