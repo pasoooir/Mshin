@@ -219,7 +219,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_last_single_touch_position = event.position
 			else:
 				_update_pinch_baseline()
-		_refresh_processing()
+			_refresh_processing()
 		else:
 			touch_points.erase(event.index)
 			if _multi_touch_gesture_active:
