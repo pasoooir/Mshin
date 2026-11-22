@@ -45,7 +45,7 @@ func _ready() -> void:
 	# Frame the starter city behind the complete sandy shore and open Pacific.
 	# Keep the camera on the landward side and shift the target toward the coast,
 	# so city plots and the Pacific remain visible in the same wide overview.
-	global_position = Vector3(55.0, 0.0, -10.0)
+	global_position = Vector3(25.0, 0.0, 0.0)
 	camera.fov = 62.0
 	_update_camera_transform()
 	focus_target = global_position
