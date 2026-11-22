@@ -153,6 +153,10 @@ For every finding record:
   - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, camera transform invariance, unchanged building/road counts, and accidental button activation.
   - Assertions are on runtime handler state, not merely static policy helpers. The probe button is removed before the rest of gameplay smoke proceeds.
   - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
+- **AUDIT-010 — Responsive viewport and orientation matrix: IMPLEMENTED; CI PENDING.**
+  - PR #658 resizes one live WebGL game session through 854x480, 960x540, 1024x768, 1280x800, 1366x768, 1536x864 and 1920x1080; it verifies the game iframe fills each viewport, the Godot canvas remains visible, and stores a real screenshot for visual review.
+  - The touch-enabled mobile browser is also resized 844x390 -> 390x844 -> 844x390. The canvas must remain visible through portrait fallback and landscape return.
+  - This proves browser canvas continuity and supplies screenshots; it does not automatically prove HUD text/card clipping, orientation lock on a phone, or physical safe-area behavior. Human visual review and Android device acceptance remain required.
 
 ## Area-level evidence ledger (2026-11-22)
 
@@ -165,7 +169,7 @@ This ledger is deliberately conservative. A category marked PARTIAL means some s
 | C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
 | D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
 | E. Roads and city connectivity | PARTIAL | Automated road gateway/connectivity and system-level road placement coverage exist. | Finger-drawn continuity, cancellation semantics for already placed segments, invalid-connection messaging and water/terrain edge taps. |
-| F. Panels, HUD and touch targets | PARTIAL | HUD ownership/cancel/focus tests plus PR #656 live-scene GameplaySmoke sequences for HUD→world and world→HUD; asserts both actual world handlers clear pointer/road state and cancelled HUD touch does not activate. | Browser hit-testing at measured HUD coordinates, full panel close/back walkthrough, safe areas, 48px target measurements, scroll drag and text legibility. |
+| F. Panels, HUD and touch targets | PARTIAL | PR #656 live-scene mixed-touch integration; existing GameplaySmoke catalog/scroll/category tests; PR #658 adds browser canvas resize matrix for seven standard viewports plus portrait-to-landscape return. | Inspect responsive captures for clipping/overlap; test resize while submenu is open, safe areas, production HUD hit-testing, 48px targets and physical Android. |
 | G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
 | H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
 | I. Visual comfort and readability | NOT TESTED | No signed-off visual review artifact is recorded in this audit. | Near/far screenshots, marker density, color-independent states, motion comfort, water/terrain/road readability. |
