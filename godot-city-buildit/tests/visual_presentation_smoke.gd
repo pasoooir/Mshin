@@ -117,7 +117,7 @@ func _ready() -> void:
 		"vec3 exposed_soil = vec3(0.405, 0.305, 0.205)",
 		"float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
 		"func _build_meadow_biome_overlays() -> void:",
-		"var patch_count := 190",
+		"var patch_count := 280",
 		"patches.name = \"MeadowBiomePatches\"",
 		"material.vertex_color_use_as_albedo = true",
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
