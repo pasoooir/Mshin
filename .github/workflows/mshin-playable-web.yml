@@ -187,9 +187,9 @@ jobs:
           });
 
           // Exercise every viewport in the responsive UI acceptance standard.
-          // These are real resizes of the same running WebGL scene, not new page
-          // launches; screenshots are retained for visual review of clipping,
-          // overlap, category rail and catalog framing at each breakpoint.
+          // Resize the same running WebGL scene. Validate both the browser CSS viewport
+          // and the actual PNG dimensions; iframe bounds alone can pass while the
+          // screenshot is still captured at the original 1280x720 window size.
           const responsiveProfiles = [
             { name: 'compact-854x480', width: 854, height: 480 },
             { name: 'compact-960x540', width: 960, height: 540 },
@@ -200,9 +200,10 @@ jobs:
             { name: 'desktop-1920x1080', width: 1920, height: 1080 }
           ];
           const responsiveCaptureNames = [];
-          // The game requests fullscreen after PLAY. Playwright setViewportSize
-          // cannot resize a fullscreen browser window, so use CDP device metrics
-          // to change the responsive viewport without changing the outer window.
+          const responsiveCaptureDetails = [];
+          // The game requests fullscreen after PLAY. CDP metrics can update CSS bounds
+          // while the screenshot remains at the outer-window resolution, so assert
+          // window.innerWidth/Height and PNG IHDR dimensions for every profile.
           const responsiveSession = await page.context().newCDPSession(page);
           for (const profile of responsiveProfiles) {
             await responsiveSession.send('Emulation.setDeviceMetricsOverride', {
@@ -212,6 +213,15 @@ jobs:
               mobile: false
             });
             await page.waitForTimeout(350);
+            const actualViewport = await page.evaluate(() => ({
+              width: window.innerWidth,
+              height: window.innerHeight,
+              devicePixelRatio: window.devicePixelRatio
+            }));
+            if (actualViewport.width !== profile.width || actualViewport.height !== profile.height) {
+              throw new Error('Browser CSS viewport did not adopt ' + profile.name +
+                ': ' + JSON.stringify(actualViewport));
+            }
             const bounds = await gameFrame.boundingBox();
             if (!bounds ||
                 Math.abs(bounds.width - profile.width) > 2 ||
@@ -224,12 +234,28 @@ jobs:
               throw new Error('Godot canvas became hidden at responsive viewport ' + profile.name);
             }
             const captureName = 'responsive-' + profile.name + '.png';
-            await page.screenshot({
+            const screenshotBuffer = await page.screenshot({
               path: 'artifacts/visual-acceptance/' + captureName,
+              scale: 'css',
               animations: 'disabled',
               timeout: 60000
             });
+            const screenshotSize = {
+              width: screenshotBuffer.readUInt32BE(16),
+              height: screenshotBuffer.readUInt32BE(20)
+            };
+            if (screenshotSize.width !== profile.width || screenshotSize.height !== profile.height) {
+              throw new Error('Screenshot PNG dimensions do not match ' + profile.name +
+                ': ' + JSON.stringify(screenshotSize));
+            }
             responsiveCaptureNames.push(captureName);
+            responsiveCaptureDetails.push({
+              name: profile.name,
+              expected: { width: profile.width, height: profile.height },
+              actualViewport,
+              iframe: bounds,
+              screenshot: screenshotSize
+            });
           }
           await responsiveSession.send('Emulation.clearDeviceMetricsOverride');
           await responsiveSession.detach();
@@ -240,8 +266,9 @@ jobs:
             canvas: { width: canvasWidth, height: canvasHeight },
             captures: ['desktop-pacific-entry.png', 'desktop-pacific-medium.png', 'desktop-pacific-near.png', 'desktop-pacific-overview.png', ...responsiveCaptureNames],
             responsiveProfiles,
+            responsiveCaptureDetails,
             zoomInteraction: 'Godot mouse wheel: 10 steps to medium, 22 additional steps to near, 20 steps out',
-            note: 'All responsive captures are real rendered frames from one live WebGL scene resized through the documented viewport matrix. They are evidence for visual review, not an automated proof of zero clipping or physical-device acceptance.'
+            note: 'Each capture is accepted only when CSS viewport, iframe bounds and PNG dimensions all match the target profile. This still does not prove zero HUD clipping or physical-device safe-area behavior.'
           }, null, 2));
           // Release the desktop WebGL context before starting the mobile viewport.
           await page.close();
@@ -334,10 +361,16 @@ jobs:
             screenOrientation: { type: 'portraitPrimary', angle: 0 }
           });
           await mobilePage.waitForTimeout(500);
+          const portraitViewport = await mobilePage.evaluate(() => ({
+            width: window.innerWidth,
+            height: window.innerHeight
+          }));
           const portraitBounds = await mobileFrame.boundingBox();
-          if (!portraitBounds || portraitBounds.width < 320 || portraitBounds.height < 700 ||
+          if (portraitViewport.width !== 390 || portraitViewport.height !== 844 ||
+              !portraitBounds || portraitBounds.width < 320 || portraitBounds.height < 700 ||
               !(await mobileCanvas.isVisible())) {
-            throw new Error('Portrait fallback lost the live game canvas or viewport');
+            throw new Error('Portrait fallback lost the requested browser viewport or live game canvas: ' +
+              JSON.stringify({ portraitViewport, portraitBounds }));
           }
           await orientationSession.send('Emulation.setDeviceMetricsOverride', {
             width: 844,
@@ -349,15 +382,21 @@ jobs:
             screenOrientation: { type: 'landscapePrimary', angle: 90 }
           });
           await mobilePage.waitForTimeout(500);
+          const landscapeReturnViewport = await mobilePage.evaluate(() => ({
+            width: window.innerWidth,
+            height: window.innerHeight
+          }));
           const landscapeReturnBounds = await mobileFrame.boundingBox();
-          if (!landscapeReturnBounds || landscapeReturnBounds.width < 800 ||
+          if (landscapeReturnViewport.width !== 844 || landscapeReturnViewport.height !== 390 ||
+              !landscapeReturnBounds || landscapeReturnBounds.width < 800 ||
               landscapeReturnBounds.height < 360 || !(await mobileCanvas.isVisible())) {
-            throw new Error('Returning to mobile landscape did not restore the live game canvas');
+            throw new Error('Returning to mobile landscape did not restore the requested viewport and live game canvas: ' +
+              JSON.stringify({ landscapeReturnViewport, landscapeReturnBounds }));
           }
           await writeFile('artifacts/visual-acceptance/mobile-orientation-resize.json', JSON.stringify({
-            portrait: { width: 390, height: 844, frame: portraitBounds },
-            landscapeReturn: { width: 844, height: 390, frame: landscapeReturnBounds },
-            result: 'canvas remained visible through portrait fallback and landscape return',
+            portrait: { viewport: portraitViewport, frame: portraitBounds },
+            landscapeReturn: { viewport: landscapeReturnViewport, frame: landscapeReturnBounds },
+            result: 'browser viewport and canvas remained correct through portrait fallback and landscape return',
             note: 'Browser viewport resize test; not a physical Android orientation-lock test.'
           }, null, 2));
           await orientationSession.send('Emulation.clearDeviceMetricsOverride');
