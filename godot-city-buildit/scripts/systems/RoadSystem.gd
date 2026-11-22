@@ -389,7 +389,7 @@ func _rebuild_road_render_chunk(chunk_key: Vector2i) -> void:
 		)
 		var local_transform := Transform3D(Basis.IDENTITY, tile_origin - chunk_origin)
 		for surface_index in range(tile_node.mesh.get_surface_count()):
-			var material := tile_node.mesh.surface_get_material(surface_index)
+			var material: Material = tile_node.mesh.surface_get_material(surface_index)
 			var tool_index := _road_material_surface_index(material)
 			if tool_index >= 0:
 				tools[tool_index].append_from(tile_node.mesh, surface_index, local_transform)
