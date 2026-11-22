@@ -15,6 +15,7 @@ const BuildingNotificationScript = preload("res://scripts/ui/BuildingNotificatio
 const BuildingNotificationAnchorScript = preload("res://scripts/ui/BuildingNotificationAnchor.gd")
 const CameraControllerScript = preload("res://scripts/systems/CameraController.gd")
 const CityInputScript = preload("res://scripts/systems/CityInput.gd")
+const HUDScript = preload("res://scripts/ui/HUD.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
 const TutorialGuideScript = preload("res://scripts/ui/TutorialGuide.gd")
@@ -57,6 +58,7 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 
 func _ready() -> void:
 	_test_camera_gesture_math()
+	_test_hud_touch_session_ownership()
 	call_deferred("_run_gameplay_test")
 
 func _test_camera_gesture_math() -> void:
@@ -90,6 +92,19 @@ func _test_camera_gesture_math() -> void:
 	_check(city_input_probe.take_over_camera_drag(7, Vector2(130.0, 100.0)), "A deliberate drag must transfer pointer ownership to the camera.")
 	_check(not city_input_probe.pointer_start.has(7) and not city_input_probe.pointer_hold_elapsed.has(7), "Camera takeover must clear the pending tap and long-press state.")
 	city_input_probe.free()
+
+func _test_hud_touch_session_ownership() -> void:
+	var hud_probe = HUDScript.new()
+	_check(not hud_probe.has_active_native_ui_touch(), "HUD must report no UI-owned touch when no pointer is active.")
+	hud_probe._native_ui_touch_targets[3] = hud_probe
+	_check(hud_probe.has_active_native_ui_touch(), "A finger captured by a native HUD control must reserve the full touch session.")
+	hud_probe._native_ui_touch_targets.clear()
+	hud_probe._native_ui_touch_excluded[4] = true
+	_check(hud_probe.has_active_native_ui_touch(), "A production UI pointer excluded from generic routing must still reserve the full touch session.")
+	hud_probe._native_ui_touch_excluded.clear()
+	hud_probe._production_touch_drag_active = true
+	_check(hud_probe.has_active_native_ui_touch(), "An active production drag must reserve the full touch session.")
+	hud_probe.free()
 
 func _check(condition: bool, message: String) -> void:
 	if not condition:
