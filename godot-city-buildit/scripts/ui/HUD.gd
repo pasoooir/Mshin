@@ -3089,6 +3089,19 @@ func _clear_native_ui_touch(touch_index: int) -> void:
 	_native_ui_touch_scrolls.erase(touch_index)
 	_native_ui_touch_dragged.erase(touch_index)
 
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_APPLICATION_FOCUS_OUT:
+		return
+	_native_ui_touch_targets.clear()
+	_native_ui_touch_origins.clear()
+	_native_ui_touch_last_positions.clear()
+	_native_ui_touch_scrolls.clear()
+	_native_ui_touch_dragged.clear()
+	_native_ui_touch_excluded.clear()
+	_clear_production_touch_drag(true)
+	_touch_selected_production_item = ""
+	_touch_selected_production_building_id = 0
+
 func has_active_native_ui_touch() -> bool:
 	# Any UI-owned finger reserves the complete physical touch session.
 	# This prevents another finger on the city from leaking into gameplay.
