@@ -4489,7 +4489,7 @@ func _test_tutorial_guide_contract() -> void:
 			var previous_step := int(guide.current_step)
 			var previous_completed := bool(guide.completed)
 			var previous_dismissed_for_name_check := bool(guide._dismissed)
-			var previous_panel_visible_for_name_check := guide._panel.visible
+			var previous_panel_visible_for_name_check: bool = guide._panel.visible
 			guide.current_step = 0
 			guide.completed = false
 			guide._dismissed = false
