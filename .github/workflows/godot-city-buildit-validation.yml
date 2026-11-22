@@ -92,7 +92,7 @@ jobs:
       - name: Passenger harbor, Pacific water and ferry unloading smoke test
         run: |
           set -o pipefail
-          timeout 60s godot --headless --path godot-city-buildit --script res://tests/harbor_water_smoke.gd 2>&1 | tee /tmp/godot-harbor-water.log
+          timeout 60s godot --headless --path godot-city-buildit res://tests/harbor_water_smoke.tscn 2>&1 | tee /tmp/godot-harbor-water.log
           if grep -q "SCRIPT ERROR" /tmp/godot-harbor-water.log; then exit 1; fi
           grep -F "[HarborWaterSmoke] PASS" /tmp/godot-harbor-water.log
 
