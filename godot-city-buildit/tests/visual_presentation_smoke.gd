@@ -124,6 +124,7 @@ func _ready() -> void:
 		"PacificPalmTrunks",
 		"PacificPalmCrowns",
 		"COASTAL_GREEN_PALETTE",
+		"_build_sandy_beach()",
 		"_build_shoreline_foam()",
 		"_build_beach_palms()"
 	]:
@@ -175,13 +176,13 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var camera_rig := main_instance.get_node_or_null("CameraRig")
-	if camera_rig == null or float(camera_rig.get("max_zoom")) > 96.0 or float(camera_rig.get("current_zoom")) > 96.0:
+	if camera_rig == null or float(camera_rig.get("max_zoom")) > 150.0 or float(camera_rig.get("current_zoom")) > 150.0:
 		push_error("[VisualPresentationSmoke] Maximum zoom-out must keep the city, coast and sea inside a useful playable composition")
 		main_instance.free()
 		get_tree().quit(1)
 		return
 	var camera_source := FileAccess.get_file_as_string("res://scripts/systems/CameraController.gd")
-	if not camera_source.contains("camera.fov = 55.0") or not camera_source.contains("global_position = Vector3(62.0, 0.0, -10.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, -45.0, 0.0)"):
+	if not camera_source.contains("camera.fov = 62.0") or not camera_source.contains("global_position = Vector3(55.0, 0.0, -10.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, -90.0, 0.0)"):
 		push_error("[VisualPresentationSmoke] Opening camera must frame the ocean and buildable city together")
 		main_instance.free()
 		get_tree().quit(1)
@@ -198,6 +199,10 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
+	presentation.call("_build_sandy_beach")
+	var sandy_beach := presentation.get_node_or_null("ContinuousSandyBeach") as MeshInstance3D
+	if sandy_beach == null or sandy_beach.mesh == null or sandy_beach.mesh.get_surface_count() == 0:
+		push_error("[VisualPresentationSmoke] A continuous visible sandy beach mesh must cover the full coastline")
 	presentation.call("_build_shoreline_foam")
 	if presentation.get_node_or_null("PacificShoreFoam") == null:
 		push_error("[VisualPresentationSmoke] The beach must have a visible irregular surf/foam edge")
