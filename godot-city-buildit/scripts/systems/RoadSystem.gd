@@ -16,6 +16,7 @@ const ROAD_UPGRADE_REQUIRED_LEVELS: Array[int] = [9, 15, 20]
 const ROAD_SURFACE_Y: float = 0.04
 const ROAD_SURFACE_HEIGHT: float = 0.08
 const ROAD_TEXTURE_WORLD_SCALE: float = 8.0
+const ROAD_RENDER_CHUNK_SIZE: int = 8
 const GATEWAY_ROAD_CELL := Vector2i(-23, -1)
 
 const DIR_UP := Vector2i(0, -1)
@@ -33,6 +34,9 @@ const TILE_CROSS: String = "cross"
 var roads: Dictionary = {}
 var road_levels: Dictionary = {}
 var road_refresh_counts: Dictionary = {}
+# Logical per-tile meshes are retained for cheap topology rebuilds, while only
+# one combined renderer node per spatial chunk is submitted to the scene.
+var _road_render_chunks: Dictionary = {}
 var is_road_mode: bool = false
 var is_road_upgrade_mode: bool = false
 var _service_recalc_queued: bool = false
@@ -129,6 +133,7 @@ func seed_starter_access() -> void:
 			roads[Vector2i(x, z)] = null
 	for cell in roads.keys():
 		_refresh_road_mesh(cell)
+	_refresh_all_road_render_chunks()
 	invalidate_road_connectivity_cache()
 	_queue_service_recalculation()
 
@@ -159,12 +164,20 @@ func get_gateway_connected_roads() -> Dictionary:
 func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
 	return get_gateway_connected_roads().has(grid_pos)
 
+	for chunk in _road_render_chunks.values():
+		if is_instance_valid(chunk):
+			chunk.queue_free()
+	_road_render_chunks.clear()
 func clear_roads() -> void:
 	is_road_mode = false
 	is_road_upgrade_mode = false
 	for road_mesh in roads.values():
 		if is_instance_valid(road_mesh):
 			road_mesh.queue_free()
+	for chunk in _road_render_chunks.values():
+		if is_instance_valid(chunk):
+			chunk.queue_free()
+	_road_render_chunks.clear()
 	roads.clear()
 	road_levels.clear()
 	road_refresh_counts.clear()
@@ -292,11 +305,14 @@ func _flush_service_recalculation() -> void:
 func _refresh_road_neighborhood(grid_pos: Vector2i) -> void:
 	# Connectivity changes can alter the removed/placed tile and each of its
 	# four neighbors (for example straight -> T, or corner -> end).
+	var affected_cells: Array[Vector2i] = [grid_pos]
 	_refresh_road_mesh(grid_pos)
 	for direction in CARDINAL_DIRECTIONS:
 		var neighbour: Vector2i = grid_pos + direction
 		if roads.has(neighbour):
+			affected_cells.append(neighbour)
 			_refresh_road_mesh(neighbour)
+	_refresh_road_render_chunks_for_cells(affected_cells)
 
 func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 	if not roads.has(grid_pos):
@@ -308,15 +324,126 @@ func _refresh_road_mesh(grid_pos: Vector2i) -> void:
 	new_mesh.set_meta("road_tile_kind", get_road_tile_kind(grid_pos))
 	new_mesh.set_meta("road_level", get_road_level(grid_pos))
 	new_mesh.set_meta("road_revision", revision)
-	add_child(new_mesh)
-	new_mesh.position = Vector3(
-		float(grid_pos.x) * GRID_SIZE + GRID_HALF,
-		0.025,
-		float(grid_pos.y) * GRID_SIZE + GRID_HALF
-	)
+	# Keep tile geometry detached. The visible renderer is rebuilt as a single
+	# ArrayMesh per 8x8 spatial chunk, reducing per-tile draw submission.
 	roads[grid_pos] = new_mesh
 	if is_instance_valid(old_mesh):
 		old_mesh.queue_free()
+
+func _road_chunk_key(grid_pos: Vector2i) -> Vector2i:
+	return Vector2i(
+		floori(float(grid_pos.x) / float(ROAD_RENDER_CHUNK_SIZE)),
+		floori(float(grid_pos.y) / float(ROAD_RENDER_CHUNK_SIZE))
+	)
+
+func _refresh_all_road_render_chunks() -> void:
+	var chunks: Dictionary = {}
+	for cell in roads.keys():
+		chunks[_road_chunk_key(cell)] = true
+	for chunk_key in _road_render_chunks.keys():
+		chunks[chunk_key] = true
+	for chunk_key in chunks.keys():
+		_rebuild_road_render_chunk(chunk_key)
+
+func _refresh_road_render_chunks_for_cells(cells: Array[Vector2i]) -> void:
+	var chunks: Dictionary = {}
+	for cell in cells:
+		chunks[_road_chunk_key(cell)] = true
+	for chunk_key in chunks.keys():
+		_rebuild_road_render_chunk(chunk_key)
+
+func _rebuild_road_render_chunk(chunk_key: Vector2i) -> void:
+	var old_chunk = _road_render_chunks.get(chunk_key)
+	var chunk_cells: Array[Vector2i] = []
+	for cell in roads.keys():
+		if _road_chunk_key(cell) == chunk_key:
+			chunk_cells.append(cell)
+	if chunk_cells.is_empty():
+		if is_instance_valid(old_chunk):
+			old_chunk.queue_free()
+		_road_render_chunks.erase(chunk_key)
+		return
+
+	if DisplayServer.get_name() == "headless":
+		return
+
+	var tools: Array[SurfaceTool] = []
+	for _surface_index in range(5):
+		var surface_tool := SurfaceTool.new()
+		surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		tools.append(surface_tool)
+	var chunk_origin := Vector3(
+		float(chunk_key.x * ROAD_RENDER_CHUNK_SIZE) * GRID_SIZE,
+		0.025,
+		float(chunk_key.y * ROAD_RENDER_CHUNK_SIZE) * GRID_SIZE
+	)
+	chunk_cells.sort()
+	for cell in chunk_cells:
+		var tile_node = roads.get(cell) as MeshInstance3D
+		if not is_instance_valid(tile_node) or tile_node.mesh == null:
+			continue
+		var tile_origin := Vector3(
+			float(cell.x) * GRID_SIZE + GRID_HALF,
+			0.0,
+			float(cell.y) * GRID_SIZE + GRID_HALF
+		)
+		var local_transform := Transform3D(Basis.IDENTITY, tile_origin - chunk_origin)
+		for surface_index in range(tile_node.mesh.get_surface_count()):
+			var material := tile_node.mesh.surface_get_material(surface_index)
+			var tool_index := _road_material_surface_index(material)
+			if tool_index >= 0:
+				tools[tool_index].append_from(tile_node.mesh, surface_index, local_transform)
+
+	var combined_mesh := ArrayMesh.new()
+	var materials: Array[Material] = [
+		_get_asphalt_material(),
+		_get_yellow_marking_material(),
+		_get_white_marking_material(),
+		_get_curb_material(),
+		_get_sidewalk_material()
+	]
+	for index in range(tools.size()):
+		if tools[index].get_vertex_count() == 0:
+			continue
+		var surface_index := combined_mesh.get_surface_count()
+		combined_mesh = _commit_road_surface(combined_mesh, tools[index])
+		if combined_mesh.get_surface_count() > surface_index:
+			combined_mesh.surface_set_material(surface_index, materials[index])
+
+	if combined_mesh.get_surface_count() == 0:
+		if is_instance_valid(old_chunk):
+			old_chunk.queue_free()
+		_road_render_chunks.erase(chunk_key)
+		return
+
+	var chunk_instance := MeshInstance3D.new()
+	chunk_instance.name = "RoadChunk_%d_%d" % [chunk_key.x, chunk_key.y]
+	chunk_instance.mesh = combined_mesh
+	chunk_instance.position = chunk_origin
+	chunk_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	chunk_instance.set_meta("road_tile_count", chunk_cells.size())
+	chunk_instance.set_meta("chunk_size", ROAD_RENDER_CHUNK_SIZE)
+	add_child(chunk_instance)
+	_road_render_chunks[chunk_key] = chunk_instance
+	if is_instance_valid(old_chunk):
+		old_chunk.queue_free()
+
+func _commit_road_surface(array_mesh: ArrayMesh, surface_tool: SurfaceTool) -> ArrayMesh:
+	surface_tool.commit(array_mesh)
+	return array_mesh
+
+func _road_material_surface_index(material: Material) -> int:
+	if material == _get_asphalt_material():
+		return 0
+	if material == _get_yellow_marking_material():
+		return 1
+	if material == _get_white_marking_material():
+		return 2
+	if material == _get_curb_material():
+		return 3
+	if material == _get_sidewalk_material():
+		return 4
+	return -1
 
 func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	# Headless gameplay tests still exercise the neighbor graph and placement
