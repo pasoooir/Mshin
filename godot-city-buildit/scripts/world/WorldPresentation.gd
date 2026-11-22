@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#245A35"), Color("#2F7040"), Color("#43834A"),
-	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
+	Color("#536B45"), Color("#66764A"), Color("#77734B"),
+	Color("#465F43"), Color("#7B8052"), Color("#5D7048")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -357,16 +357,16 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#294F34")
-		var fresh_grass := Color("#718F4C")
+		var deep_grass := Color("#455B3D")
+		var fresh_grass := Color("#85845A")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
 		var biome_soil_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
-		color = color.lerp(Color("#A18A5B"), biome_soil_mask * 0.38)
+		color = color.lerp(Color("#A08A63"), biome_soil_mask * 0.48)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
-	color = color.lerp(Color("#A5A06C"), dry_patch_mask * 0.16)
+	color = color.lerp(Color("#B0A078"), dry_patch_mask * 0.22)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -381,7 +381,7 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 			color = color.lerp(Color("#8C875B"), 0.38)
 	var park_edge := smoothstep(48.0, 82.0, absf(point.z))
 	if point.x < 58.0 and point.x > -112.0:
-		color = color.lerp(Color("#4E8B4C"), 0.12 + park_edge * 0.08)
+		color = color.lerp(Color("#637A4B"), 0.08 + park_edge * 0.05)
 	if not LandExpansionManager.is_world_position_unlocked(point):
 		color = color.lerp(Color("#36523A"), 0.12)
 	var terrain_point := point
