@@ -1120,7 +1120,7 @@ void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 void fragment() {
-	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
 	float sand_mask = smoothstep(coastline - 34.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
