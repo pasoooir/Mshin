@@ -1,6 +1,10 @@
 extends SceneTree
 
+var _original_test_api_base := ""
+
 func _initialize() -> void:
+	_original_test_api_base = str(ProjectSettings.get_setting("mshin/account/api_base_url", ""))
+	ProjectSettings.set_setting("mshin/account/api_base_url", "")
 	call_deferred("_run")
 
 
@@ -30,6 +34,7 @@ func _tap_control(control: Control) -> void:
 	await process_frame
 
 func _run() -> void:
+	# Keep this UI smoke fully offline: account/profile state is simulated below.
 	var config := ConfigFile.new()
 	config.set_value("notifications", "building_alerts", false)
 	config.set_value("notifications", "city_updates", false)
@@ -543,7 +548,7 @@ func _run() -> void:
 	await process_frame
 	avatar_frame = hud.find_child("SettingsProfileAvatarFrame", true, false) as Control
 	avatar_texture = hud.find_child("SettingsProfileAvatar", true, false) as TextureRect
-	var placeholder := hud.find_child("SettingsProfileAvatarFallback", true, false) as Label
+	var placeholder := hud.find_child("SettingsProfileAvatarFallback", true, false) as TextureRect
 	var generated_avatar := Image.create(2, 2, false, Image.FORMAT_RGBA8)
 	generated_avatar.fill(Color("#5BD7F7"))
 	var avatar_bytes := generated_avatar.save_png_to_buffer()
@@ -589,5 +594,6 @@ func _run() -> void:
 		quit(1)
 		return
 
+	ProjectSettings.set_setting("mshin/account/api_base_url", _original_test_api_base)
 	print("[NotificationPreferencesSmoke] PASS")
 	quit(0)
