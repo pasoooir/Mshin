@@ -320,6 +320,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			if pointer_start.size() == 1 and _is_road_mode():
 				_start_road_stroke(event.index, event.position)
 		else:
+			# OS cancellation is not a confirmed release: discard the edit session.
+			if event.canceled:
+				if BuildManager.is_moving and move_pointer_id == event.index:
+					BuildManager.cancel_move()
+					move_pointer_id = -999
+					_set_status("Move cancelled. Building returned to its original location.")
+				_end_road_stroke(event.index)
+				_clear_touch_pointer_state(event.index)
+				get_viewport().set_input_as_handled()
+				return
 			if road_stroke_active.has(event.index):
 				_end_road_stroke(event.index)
 			elif pointer_start.has(event.index):
@@ -364,6 +374,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Touch indices are pointer identities, not a guarantee that the
 			# active finger is always index 0 after a prior multi-touch session.
 			_update_ghost(event.position)
+
+static func should_commit_city_touch_release(event: InputEvent) -> bool:
+	return event is InputEventScreenTouch and not event.pressed and not event.canceled
+
+func _clear_touch_pointer_state(pointer_id: int) -> void:
+	pointer_start.erase(pointer_id)
+	pointer_moved.erase(pointer_id)
+	pointer_hold_elapsed.erase(pointer_id)
+	pointer_last_position.erase(pointer_id)
+	placement_rotate_pointer.erase(pointer_id)
+	if pointer_start.is_empty():
+		multi_touch_gesture = false
 
 func _is_road_mode() -> bool:
 	var scene = get_tree().current_scene
