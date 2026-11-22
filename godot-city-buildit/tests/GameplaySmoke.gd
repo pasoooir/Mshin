@@ -1338,6 +1338,9 @@ func _test_camera_touch_gesture_integration() -> void:
 	var original_position: Vector3 = camera_rig.global_position
 	var original_yaw: float = camera_rig.rotation_degrees.y
 	var original_zoom: float = camera_rig.current_zoom
+	# Start away from the max-distance clamp so inward pinch can visibly zoom out.
+	camera_rig.current_zoom = 60.0
+	camera_rig._update_camera_transform()
 	camera_rig.touch_points.clear()
 	camera_rig._multi_touch_gesture_active = false
 	camera_rig.pan_velocity = Vector2.ZERO
@@ -1432,7 +1435,6 @@ func _test_camera_touch_gesture_integration() -> void:
 	camera_rig.current_zoom = camera_rig.min_zoom
 	camera_rig._update_camera_transform()
 	var limit_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
-	var position_at_zoom_limit: Vector3 = camera_rig.global_position
 	var limit_zoom_first := InputEventScreenTouch.new()
 	limit_zoom_first.index = 10
 	limit_zoom_first.position = Vector2(20.0, 220.0)
