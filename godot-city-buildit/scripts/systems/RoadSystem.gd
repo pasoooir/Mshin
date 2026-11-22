@@ -408,7 +408,9 @@ func _create_road_mesh(grid_pos: Vector2i) -> Node3D:
 	var instance := MeshInstance3D.new()
 	instance.name = "Road_%d_%d_L%d_%s" % [grid_pos.x, grid_pos.y, road_level, tile_kind]
 	instance.mesh = road_mesh
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# Roads are near-horizontal receiver surfaces; building/prop shadows still fall onto them.
+	# Disabling per-tile shadow casting avoids submitting every road tile to the shadow pass.
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
 
 func _direction_to_world(direction: Vector2i) -> Vector3:
