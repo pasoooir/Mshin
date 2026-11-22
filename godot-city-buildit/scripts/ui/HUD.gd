@@ -2974,6 +2974,10 @@ func _input(event: InputEvent) -> void:
 				return
 		elif event is InputEventScreenTouch and not event.pressed and event.index == _production_touch_drag_index:
 			var was_dragged := _production_touch_dragged
+			if event.canceled:
+				_clear_production_touch_drag(true)
+				get_viewport().set_input_as_handled()
+				return
 			if was_dragged:
 				_finish_production_touch_drag(event.position)
 				if is_instance_valid(_production_touch_drag_source_button):
@@ -3017,7 +3021,7 @@ func _route_native_ui_touch(event: InputEvent) -> bool:
 			return false
 		var target := _native_ui_touch_targets[touch_index] as Control
 		var dragged := bool(_native_ui_touch_dragged.get(touch_index, false))
-		if not dragged and is_instance_valid(target) and target.is_visible_in_tree() and target.get_global_rect().has_point(event.position) and target is BaseButton:
+		if should_activate_native_ui_touch(event, dragged) and is_instance_valid(target) and target.is_visible_in_tree() and target.get_global_rect().has_point(event.position) and target is BaseButton:
 			var button := target as BaseButton
 			if not button.disabled:
 				if button.toggle_mode:
@@ -3205,6 +3209,9 @@ func _finish_production_touch_drag(screen_position: Vector2) -> void:
 		status_label.text = "Tap a product to place the order. No empty queue slot is needed."
 
 
+static func should_activate_native_ui_touch(event: InputEvent, dragged: bool) -> bool:
+	return event is InputEventScreenTouch and not event.pressed and not event.canceled and not dragged
+
 func _clear_production_touch_drag(clear_selection: bool = true) -> void:
 	_production_touch_drag_active = false
 	_production_touch_dragged = false
@@ -3222,7 +3229,7 @@ func _clear_production_touch_drag(clear_selection: bool = true) -> void:
 
 func _on_production_building_gui_input(event: InputEvent, building: Building) -> void:
 	var activated := false
-	if event is InputEventScreenTouch and not event.pressed:
+	if event is InputEventScreenTouch and not event.pressed and not event.canceled:
 		activated = true
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		activated = true
