@@ -2528,6 +2528,11 @@ func _test_build_menu_visibility() -> void:
 	if toolbar == null:
 		return
 	var viewport_rect := get_viewport().get_visible_rect()
+	var status_feedback := hud.get_node_or_null("StatusLabel") as Label
+	var bottom_actions_for_status := hud.get_node_or_null("BottomActions") as Control
+	await get_tree().process_frame
+	_check(status_feedback != null and bottom_actions_for_status != null and not status_feedback.get_global_rect().intersects(bottom_actions_for_status.get_global_rect()), "Status feedback must remain above the bottom action dock and never overlap its controls.")
+	_check(status_feedback != null and status_feedback.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART and status_feedback.get_global_rect().position.x >= 0.0 and status_feedback.get_global_rect().end.x <= viewport_rect.size.x, "Status feedback must wrap and remain within the visible viewport at compact sizes.")
 	_check(toolbar.get_global_rect().intersects(viewport_rect), "Right-side category PNG rail is outside the visible screen.")
 	_check(toolbar.get_global_rect().size.x < viewport_rect.size.x * 0.12, "Transparent category rail covers too much of the mobile play area.")
 	# The road category must expose an active upgrade action, not a disabled placeholder.
@@ -4468,9 +4473,11 @@ func _test_tutorial_guide_contract() -> void:
 	if is_instance_valid(guide):
 		var name_input := guide.find_child("CityNameInput", true, false) as LineEdit
 		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
-		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
+		var finger := guide.find_child("ActionFingerPointer", true, false) as Control
 		_check(name_input != null and save_name_button != null, "The city-name instruction must have a real editable field and a real SAVE CITY button.")
-		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0 and finger.text == "↓", "The coach pointer must use a supported directional glyph, retain a touch-sized visual rect and never intercept touch input.")
+		var tutorial_source := FileAccess.get_file_as_string("res://scripts/ui/TutorialGuide.gd")
+		_check(finger != null and not (finger is Label) and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0, "The coach pointer must be a font-independent, touch-sized visual and never intercept touch input.")
+		_check(tutorial_source.contains("class TutorialPointerVisual extends Control") and tutorial_source.contains("draw_colored_polygon"), "The coach pointer must be drawn from vector primitives rather than font/emoji glyphs.")
 		if name_input != null and finger != null:
 			var previous_step := int(guide.current_step)
 			var previous_completed := bool(guide.completed)
