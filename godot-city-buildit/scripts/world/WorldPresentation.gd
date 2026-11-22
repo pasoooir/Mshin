@@ -1907,9 +1907,9 @@ func _build_coastal_promenade() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	const SEGMENTS := 120
-	for step in range(segments):
-		var z0 := lerpf(-89.0, 89.0, float(step) / float(segments))
-		var z1 := lerpf(-89.0, 89.0, float(step + 1) / float(segments))
+	for step in range(SEGMENTS):
+		var z0 := lerpf(-89.0, 89.0, float(step) / float(SEGMENTS))
+		var z1 := lerpf(-89.0, 89.0, float(step + 1) / float(SEGMENTS))
 		var x0 := _coastline(z0) - PROMENADE_OFFSET
 		var x1 := _coastline(z1) - PROMENADE_OFFSET
 		var p00 := Vector3(x0 - 2.2, _terrain_height(x0 - 2.2, z0) + 0.22, z0)
@@ -2028,9 +2028,9 @@ func _build_shoreline_foam() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	const SEGMENTS := 220
-	for step in range(segments):
-		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step) / float(segments))
-		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step + 1) / float(segments))
+	for step in range(SEGMENTS):
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step) / float(SEGMENTS))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(step + 1) / float(SEGMENTS))
 		var wave0 := sin(z0 * 0.31) * 0.62 + cos(z0 * 0.17) * 0.42
 		var wave1 := sin(z1 * 0.31) * 0.62 + cos(z1 * 0.17) * 0.42
 		var coast0 := _coastline(z0)
