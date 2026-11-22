@@ -28,5 +28,7 @@ func _restore_city() -> void:
 		SaveManager.save_game()
 
 	SaveManager.persistence_ready = true
-	if status and not account_ready:
+	var tutorial_guide = get_tree().current_scene.get_node_or_null("TutorialGuide") if get_tree().current_scene else null
+	var tutorial_is_active := is_instance_valid(tutorial_guide) and bool(tutorial_guide.get("tutorial_enabled")) and not bool(tutorial_guide.get("completed"))
+	if status and not account_ready and not tutorial_is_active:
 		status.text = "Your city is ready. Select Residential and place your first house beside a road."
