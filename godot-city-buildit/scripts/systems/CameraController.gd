@@ -168,6 +168,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Detail overlays own the complete pointer session; never move the city behind them.
 	var scene := get_tree().current_scene
 	var hud := scene.get_node_or_null("HUD") if is_instance_valid(scene) else null
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		if is_instance_valid(hud) and hud.has_method("has_active_native_ui_touch") and hud.has_active_native_ui_touch():
+			# A HUD-owned finger blocks every world-camera pointer until release.
+			touch_points.clear()
+			_multi_touch_gesture_active = false
+			last_pinch_distance = 0.0
+			last_pinch_angle = 0.0
+			last_pinch_centroid = Vector2.ZERO
+			_last_single_touch_position = Vector2.ZERO
+			pan_velocity = Vector2.ZERO
+			orbit_velocity = 0.0
+			is_mouse_panning = false
+			_refresh_processing()
+			get_viewport().set_input_as_handled()
+			return
 	if is_instance_valid(hud):
 		var production_modal = hud.get("production_overlay")
 		var residential_modal = hud.get("residential_overlay")
