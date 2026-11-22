@@ -145,6 +145,29 @@ For every finding record:
   - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
   - Physical keyboard and Android system-back behavior still require device/browser verification.
 
+## Area-level evidence ledger (2026-11-22)
+
+This ledger is deliberately conservative. A category marked PARTIAL means some sub-items have automated evidence; it does not mean the entire category passes. The individual checkboxes above remain open until their own reproduction evidence is attached.
+
+| Area | Current status | Evidence-backed coverage | Still required |
+|---|---|---|---|
+| A. First impression and orientation | NOT TESTED | No recorded visual review of first-entry hierarchy, calmness, tutorial flow or framing in this audit. | Review real WebGL captures at entry on compact landscape and tablet; inspect empty plots and HUD occlusion. |
+| B. Camera and navigation | PARTIAL | GameplaySmoke camera math; Chromium dispatches pinch-out, two-finger pan/twist, 2→1 transition and one-finger pan; PR #654 cancellation/focus reset tests. | Assert actual camera transform and anchor stability, edge/zoom limits, HUD isolation; physical Android gesture feel and resume. |
+| C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
+| D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
+| E. Roads and city connectivity | PARTIAL | Automated road gateway/connectivity and system-level road placement coverage exist. | Finger-drawn continuity, cancellation semantics for already placed segments, invalid-connection messaging and water/terrain edge taps. |
+| F. Panels, HUD and touch targets | PARTIAL | HUD touch ownership predicate, cancelled button release, focus-loss cleanup and mixed-pointer blocking code are covered by GameplaySmoke. | End-to-end mixed HUD/world two-finger sequence, all panel close/back paths, safe areas, 48px target measurements, scroll drag and text legibility. |
+| G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
+| H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
+| I. Visual comfort and readability | NOT TESTED | No signed-off visual review artifact is recorded in this audit. | Near/far screenshots, marker density, color-independent states, motion comfort, water/terrain/road readability. |
+| J. Performance, resilience and accessibility | PARTIAL | Godot headless, Web/mobile Chromium launch, APK export, focus-loss cleanup and automated economy/gameplay tests. | Real target-device FPS/draw-call benchmark, memory/input latency, save/load interruption, reduced-motion/audio-off and physical Android resume. |
+
+### Explicit release blockers / open acceptance
+- **P1/P2 candidate:** complete mixed HUD/world two-finger interaction test (AUDIT-001); current predicate coverage is not an end-to-end pass.
+- **P2:** physical Android interruption/resume, landscape/safe-area and touch-target acceptance.
+- **P2:** real mobile performance benchmark with uploaded evidence; tooling alone is not a performance result.
+- **P2:** visual first-entry and near/far review with screenshots; CI geometry smoke is not visual UX acceptance.
+
 ## Acceptance policy
 - A checklist item is PASS only with reproducible evidence.
 - All P0/P1 findings must be fixed and regression-tested before a UX milestone is accepted.
