@@ -550,7 +550,9 @@ func _finger_points_to_control(finger: Control, target: Control) -> bool:
 	if not is_instance_valid(finger) or not is_instance_valid(target) or not target.is_visible_in_tree() or not finger.visible:
 		return false
 	var finger_anchor_in_viewport := finger.get_global_transform_with_canvas().origin
-	var expected_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y + 2.0)
+	var target_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y * 0.5)
+	var expected_pointer_center := target_anchor_in_viewport + Vector2(0.0, -42.0)
+	var expected_anchor_in_viewport := expected_pointer_center - finger.size * 0.5
 	return finger_anchor_in_viewport.distance_to(expected_anchor_in_viewport) <= 8.0
 
 
@@ -3767,6 +3769,8 @@ func _test_achievements() -> void:
 	var previous_market_purchases := TradeManager.market_purchases
 	var previous_ship_departures := TradeManager.ship_departures
 	AchievementManager.from_save_dict({})
+	_check(AchievementManager.count_player_built_road_tiles(50) == 0, "The 50 free starter connector tiles must not unlock the player-built road achievement.")
+	_check(AchievementManager.count_player_built_road_tiles(99) == 49 and AchievementManager.count_player_built_road_tiles(100) == 50, "The road achievement must count only road tiles added beyond the 50-tile starter connector.")
 	BuildManager.buildings = {}
 	GameManager.level = 10
 	GameManager.population = 10000
@@ -4429,6 +4433,11 @@ func _test_tutorial_guide_contract() -> void:
 			_check(level_effect.mouse_filter == Control.MOUSE_FILTER_IGNORE and level_card != null and level_card.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The visual level-up celebration must never become a full-screen input shield.")
 	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile input must remain native-only; the centralized router must handle Controls without synthetic mouse duplication.")
 	_check(TutorialGuideScript.get_step_count() == 7, "First-session tutorial must begin with city naming, then cover the six core city-building milestones.")
+	var compact_coach_layout := TutorialGuideScript.get_panel_layout(Vector2(844.0, 390.0), true)
+	_check(is_equal_approx(float(compact_coach_layout.get("width", 0.0)), 380.0) and is_equal_approx(float(compact_coach_layout.get("height", 0.0)), 230.0), "Compact landscape city coach must stay within a 380×230 logical-pixel footprint instead of covering nearly the full mobile height.")
+	_check(float(compact_coach_layout.get("top", 0.0)) + float(compact_coach_layout.get("height", 0.0)) <= 390.0, "Compact landscape city coach must remain fully inside an 844×390 viewport.")
+	var tablet_coach_layout := TutorialGuideScript.get_panel_layout(Vector2(1024.0, 768.0), true)
+	_check(is_equal_approx(float(tablet_coach_layout.get("width", 0.0)), 430.0) and is_equal_approx(float(tablet_coach_layout.get("height", 0.0)), 270.0), "Tablet city coach must use the wider but shorter responsive profile.")
 	var expected_ids := ["city_name", "home", "factory", "raw", "store", "crafted", "upgrade"]
 	var seen_ids: Dictionary = {}
 	for index in range(TutorialGuideScript.get_step_count()):
@@ -4449,14 +4458,14 @@ func _test_tutorial_guide_contract() -> void:
 		var save_name_button := guide.find_child("SaveCityNameButton", true, false) as Button
 		var finger := guide.find_child("ActionFingerPointer", true, false) as Label
 		_check(name_input != null and save_name_button != null, "The city-name instruction must have a real editable field and a real SAVE CITY button.")
-		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0, "The moving finger pointer must have a visible touch-sized rect and must never intercept touch input.")
+		_check(finger != null and finger.mouse_filter == Control.MOUSE_FILTER_IGNORE and finger.size.x >= 48.0 and finger.size.y >= 48.0 and finger.text == "↓", "The coach pointer must use a supported directional glyph, retain a touch-sized visual rect and never intercept touch input.")
 		if name_input != null and finger != null:
 			var previous_step := int(guide.current_step)
 			var previous_completed := bool(guide.completed)
 			guide.current_step = 0
 			guide.completed = false
 			guide._refresh_guide()
-			_check(name_input.is_visible_in_tree() and finger.is_visible_in_tree(), "The city-name field and its finger pointer must both be visible during the first step.")
+			_check(name_input.is_visible_in_tree() and not finger.is_visible_in_tree(), "The city-name field must be self-explanatory; its pointer must stay hidden rather than overlap the instruction text.")
 			guide.current_step = previous_step
 			guide.completed = previous_completed
 			if guide.completed:
