@@ -82,6 +82,13 @@ jobs:
           if grep -q "SCRIPT ERROR" /tmp/godot-visual-presentation.log; then exit 1; fi
           grep -F "[VisualPresentationSmoke] PASS" /tmp/godot-visual-presentation.log
 
+      - name: Stylized foliage geometry, LOD and seasonal smoke test
+        run: |
+          set -o pipefail
+          timeout 60s godot --headless --path godot-city-buildit --script res://tests/foliage_system_smoke.gd 2>&1 | tee /tmp/godot-foliage.log
+          if grep -q "SCRIPT ERROR" /tmp/godot-foliage.log; then exit 1; fi
+          grep -F "[FoliageSystemSmoke] PASS" /tmp/godot-foliage.log
+
       - name: Currency conversion and sandbox purchase smoke test
         run: |
           set -o pipefail
