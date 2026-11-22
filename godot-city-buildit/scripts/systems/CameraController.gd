@@ -300,7 +300,7 @@ func _update_pinch() -> void:
 	if last_pinch_distance > 0.0:
 		# Preserve the ground point under the previous midpoint, then re-anchor
 		# it under the new midpoint after applying pan, pinch and twist together.
-		var focal_world := _screen_to_ground(last_pinch_centroid)
+		var focal_world: Variant = _screen_to_ground(last_pinch_centroid)
 		var centroid_delta := centroid - last_pinch_centroid
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
 			pan_velocity = Vector2.ZERO
