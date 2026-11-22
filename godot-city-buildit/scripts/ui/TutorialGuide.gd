@@ -9,8 +9,8 @@ const STEP_DATA: Array[Dictionary] = [
 	{
 		"id": "city_name",
 		"title": "Name your city",
-		"description": "Type your city name in the field below, then tap SAVE CITY. The moving finger points directly to the field.",
-		"hint": "👆 TAP THE FIELD  →  Enter a name  →  SAVE CITY",
+		"description": "Choose a name for your city to begin.",
+		"hint": "Enter a name, then tap SAVE CITY.",
 		"result": "YOU SHOULD SEE  Your city name is saved with your city."
 	},
 	{
@@ -326,7 +326,7 @@ func _build_guide_panel() -> void:
 
 	_finger_pointer = Label.new()
 	_finger_pointer.name = "ActionFingerPointer"
-	_finger_pointer.text = "👆"
+	_finger_pointer.text = "↓"
 	_finger_pointer.size = Vector2(64, 64)
 	_finger_pointer.custom_minimum_size = Vector2(64, 64)
 	_finger_pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -382,21 +382,31 @@ func _make_button_style(color: Color) -> StyleBoxFlat:
 	style.content_margin_bottom = 8
 	return style
 
+static func get_panel_layout(viewport_size: Vector2, first_step: bool) -> Dictionary:
+	var compact_profile := viewport_size.x < 900.0 or viewport_size.y < 520.0
+	var panel_top := 78.0
+	var panel_width := minf(380.0 if compact_profile else 430.0, maxf(260.0, viewport_size.x - 24.0))
+	var desired_height := (230.0 if compact_profile else 270.0) if first_step else (190.0 if compact_profile else 205.0)
+	var available_height := maxf(150.0, viewport_size.y - panel_top - 12.0)
+	return {
+		"left": 12.0,
+		"top": panel_top,
+		"width": panel_width,
+		"height": minf(desired_height, available_height)
+	}
+
 func _layout_guide_panel() -> void:
 	if not is_instance_valid(_panel):
 		return
-	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(430.0, maxf(280.0, viewport_size.x - 24.0))
-	var desired_height := 300.0 if current_step == 0 and not completed else 205.0
-	var panel_height := minf(desired_height, maxf(220.0, viewport_size.y - 100.0))
+	var layout := get_panel_layout(get_viewport().get_visible_rect().size, current_step == 0 and not completed)
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 0.0
 	_panel.anchor_top = 0.0
 	_panel.anchor_bottom = 0.0
-	_panel.offset_left = 12.0
-	_panel.offset_right = _panel.offset_left + panel_width
-	_panel.offset_top = 78.0
-	_panel.offset_bottom = _panel.offset_top + panel_height
+	_panel.offset_left = float(layout.get("left", 12.0))
+	_panel.offset_right = _panel.offset_left + float(layout.get("width", 430.0))
+	_panel.offset_top = float(layout.get("top", 78.0))
+	_panel.offset_bottom = _panel.offset_top + float(layout.get("height", 270.0))
 
 func _on_viewport_size_changed() -> void:
 	_layout_guide_panel()
@@ -456,10 +466,9 @@ func _update_finger_pointer() -> void:
 		return
 	var step_id := str(STEP_DATA[current_step].get("id", ""))
 	if current_step == 0:
-		if is_instance_valid(_city_name_input) and _city_name_input.is_visible_in_tree():
-			_point_to_control(_city_name_input)
-		else:
-			_finger_pointer.hide()
+		# The name field and SAVE CITY action are already visible and self-explanatory.
+		# Hiding the pointer here avoids covering the instruction or mobile keyboard.
+		_finger_pointer.hide()
 		return
 
 	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
@@ -524,8 +533,10 @@ func _point_to_control(target: Control) -> void:
 	# HUD and coach live on separate CanvasLayers. Convert the target's
 	# viewport-space anchor into this guide layer before positioning the finger;
 	# mixing get_global_rect() with local Control.position drifts on scaled/mobile canvases.
-	var target_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y + 2.0 + sin(_finger_elapsed * 5.0) * 5.0)
-	_finger_pointer.position = get_final_transform().affine_inverse() * target_anchor_in_viewport
+	var target_anchor_in_viewport := target.get_global_transform_with_canvas() * Vector2(target.size.x * 0.72, target.size.y * 0.5)
+	var pointer_center := target_anchor_in_viewport + Vector2(0.0, -42.0 + sin(_finger_elapsed * 5.0) * 4.0)
+	var pointer_origin := pointer_center - _finger_pointer.size * 0.5
+	_finger_pointer.position = get_final_transform().affine_inverse() * pointer_origin
 	_finger_pointer.show()
 
 func _point_to_world_position(world_position: Vector3) -> void:
@@ -533,8 +544,10 @@ func _point_to_world_position(world_position: Vector3) -> void:
 	if camera == null or camera.is_position_behind(world_position):
 		_finger_pointer.hide()
 		return
-	var world_anchor_in_viewport := camera.unproject_position(world_position) + Vector2(20.0, 12.0 + sin(_finger_elapsed * 5.0) * 5.0)
-	_finger_pointer.position = get_final_transform().affine_inverse() * world_anchor_in_viewport
+	var world_anchor_in_viewport := camera.unproject_position(world_position)
+	var pointer_center := world_anchor_in_viewport + Vector2(0.0, -42.0 + sin(_finger_elapsed * 5.0) * 4.0)
+	var pointer_origin := pointer_center - _finger_pointer.size * 0.5
+	_finger_pointer.position = get_final_transform().affine_inverse() * pointer_origin
 	_finger_pointer.show()
 
 func _get_valid_placement_world_target() -> Dictionary:
