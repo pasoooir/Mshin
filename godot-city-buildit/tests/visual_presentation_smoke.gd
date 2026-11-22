@@ -108,7 +108,7 @@ func _ready() -> void:
 		"vec3 olive_grass = vec3(0.51, 0.46, 0.29)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
-		"var fresh_grass := Color(\"#718F4C\")",
+		"var fresh_grass := Color(\"#85845A\")",
 		"var biome_soil_mask := smoothstep",
 		"SPECULAR = 0.12"
 	]:
