@@ -291,8 +291,27 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		color = color.lerp(Color("#36523A"), 0.12)
 	var terrain_point := point
 	terrain_point.y = _terrain_height(point.x, point.z)
+	# Compatibility-safe baked-style cavity shading: preserve a perfectly level build zone.
+	color *= _terrain_vertex_ao(point.x, point.z)
 	surface.set_color(color)
 	surface.add_vertex(terrain_point)
+
+
+func _terrain_vertex_ao(x: float, z: float) -> float:
+	# Four height samples approximate local cavity darkening without SSAO/SSIL.
+	# This is evaluated once while building the terrain mesh, not per frame.
+	const SAMPLE_DISTANCE := 1.5
+	var center := _terrain_height(x, z)
+	var north := _terrain_height(x, z - SAMPLE_DISTANCE)
+	var south := _terrain_height(x, z + SAMPLE_DISTANCE)
+	var west := _terrain_height(x - SAMPLE_DISTANCE, z)
+	var east := _terrain_height(x + SAMPLE_DISTANCE, z)
+	var average_neighbour_height := (north + south + west + east) * 0.25
+	var cavity := maxf(0.0, average_neighbour_height - center)
+	var slope_x := (east - west) / (SAMPLE_DISTANCE * 2.0)
+	var slope_z := (south - north) / (SAMPLE_DISTANCE * 2.0)
+	var slope := Vector2(slope_x, slope_z).length()
+	return clampf(1.0 - cavity * 0.10 - slope * 0.012, 0.86, 1.0)
 
 
 func _terrain_height(x: float, z: float) -> float:
