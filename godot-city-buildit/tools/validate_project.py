@@ -915,8 +915,7 @@ for visual_contract in [
     "_build_shoreline_foam()", 
     "water.mesh = _create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)",
     "shallow_water.mesh = _create_coastal_water_mesh(0.12, 18.0, 220, 16, -0.025)",
-    "float offshore = max(0.0, world_position.x - coast);"
-
+    "float offshore = max(0.0, world_position.x - coast);",
     "func _build_beach_palms() -> void:",
     "func _create_palm_frond_mesh() -> ArrayMesh:",
 
