@@ -907,12 +907,12 @@ if "multimesh.use_colors = true" not in world_source:
 
 # The permanent city-entry motorway and natural terrain are visual landmarks.
 for visual_contract in [
-    "vec3 sunlit_sage = vec3(0.455, 0.475, 0.305)",
-    "vec3 dry_olive = vec3(0.565, 0.505, 0.335)",
-    "vec3 straw_grass = vec3(0.635, 0.565, 0.390)",
+    "vec3 sunlit_sage = vec3(0.525, 0.535, 0.355)",
+    "vec3 dry_olive = vec3(0.625, 0.555, 0.375)",
+    "vec3 straw_grass = vec3(0.715, 0.625, 0.435)",
     "float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
     "float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
-    "meadow = mix(meadow, straw_grass, dry_mask * 0.54)",
+    "meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
@@ -944,8 +944,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#536B45\")",
-    "Color(\"#77734B\")",
+    "Color(\"#78865C\")",
+    "Color(\"#9A875D\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",

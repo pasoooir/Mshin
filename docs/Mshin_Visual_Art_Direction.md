@@ -47,12 +47,12 @@ Priority order:
 
 | Role | Color |
 |---|---|
-| Deep shaded grass | #3E5634 |
-| Cool meadow sage | #74845A |
-| Sunlit meadow | #929365 |
-| Dry olive grass | #90804F |
-| Straw field | #A28A5C |
-| Exposed soil | #67503A |
+| Deep shaded grass | #65734E |
+| Cool meadow sage | #78865C |
+| Sunlit meadow | #A39A69 |
+| Dry olive grass | #9A875D |
+| Straw field | #B09A6B |
+| Exposed soil | #795B41 |
 | Warm earth | #816247 |
 | Sandy beach | #D9C18D |
 | Wet sand | #A99570 |
@@ -76,6 +76,8 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 
 ### Phase A — Visible terrain rescue (current)
 - Replace the low-contrast meadow shader with broad world-space biome fields.
+- Keep the base meadow in a visible mid-value sage range; do not let deep green dominate the full playable ground.
+- Use ochre/straw and warm-soil accents at enough coverage to read at overview distance.
 - Add irregular dry-olive and straw-grass patches, exposed-earth islands and fine mottling.
 - Preserve the flat 48 × 48 m starter build area and coastline alignment.
 - Keep all generated materials local and deterministic.
@@ -109,7 +111,7 @@ The terrain is divided into three visual bands:
 - **Natural transition**: rolling meadow, curated dirt tracks, creek channel, scrub clusters, fieldstones and irregular groves.
 - **Coast**: meadow-to-dune transition, sand, wet-sand edge, foam, shallow water and deep ocean.
 
-The terrain shader uses world-space noise, not screen-space or repeating tiny tiles. Broad masks define fields; medium masks define dry patches; cellular masks irregularize exposed-earth islands; fine noise adds surface grain. Vertex colors provide a restrained climate tint. The shader must remain compatible with Godot 4.3's Compatibility renderer.
+The terrain shader uses world-space value noise and multi-octave FBM, not screen-space or repeating tiny tiles. Broad masks define sage and olive fields; medium masks define dry/straw grass; irregular value-noise masks break exposed-earth islands; fine noise adds surface grain. A single batched vertex-colour overlay reinforces the biome boundaries in WebGL at overview distance. Vertex colors provide a restrained climate tint. The shader must remain compatible with Godot 4.3's Compatibility renderer.
 
 Suggested height rules:
 - Starter plots: exactly 0 m.
