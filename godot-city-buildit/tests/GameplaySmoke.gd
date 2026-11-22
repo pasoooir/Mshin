@@ -4471,7 +4471,7 @@ func _test_tutorial_guide_contract() -> void:
 	if is_instance_valid(guide):
 		var startup_status := get_node_or_null("HUD/StatusLabel") as Label
 		if bool(guide.get("tutorial_enabled")) and not bool(guide.get("completed")):
-			_check(startup_status == null or not startup_status.text.contains("Your city is ready."), "The initial city-ready status must not duplicate the active first-session city coach.")
+			_check(startup_status == null or (not startup_status.visible and not startup_status.text.contains("Your city is ready.")), "Status feedback must not duplicate or overlap the active first-session city coach.")
 		_check(guide._panel.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The full-screen coach shell must ignore input so it cannot intercept the underlying HUD.")
 	if is_instance_valid(guide):
 		var name_input := guide.find_child("CityNameInput", true, false) as LineEdit
