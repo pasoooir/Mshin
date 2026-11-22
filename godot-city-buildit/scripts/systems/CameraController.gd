@@ -181,7 +181,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			orbit_velocity = 0.0
 			is_mouse_panning = false
 			_refresh_processing()
-			get_viewport().set_input_as_handled()
+			# Do not consume this pointer event: CityInput must clear its own session too.
 			return
 	if is_instance_valid(hud):
 		var production_modal = hud.get("production_overlay")
@@ -198,7 +198,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			orbit_velocity = 0.0
 			is_focus_animating = false
 			_refresh_processing()
-			get_viewport().set_input_as_handled()
+			if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+				get_viewport().set_input_as_handled()
 			return
 
 	if event is InputEventMouseButton:
