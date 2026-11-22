@@ -45,6 +45,16 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	for required_foliage_integration in [
+		"StylizedFoliageSystemScript",
+		"foliage_system.configure_tree_positions(positions, 2026)",
+		"_create_branched_tree_trunk_mesh(bark_material)"
+	]:
+		if not world_source.contains(required_foliage_integration):
+			push_error("[VisualPresentationSmoke] Stylized foliage integration is incomplete: " + required_foliage_integration)
+			get_tree().quit(1)
+			return
+
 	var road_source := FileAccess.get_file_as_string("res://scripts/systems/RoadSystem.gd")
 	if presentation._is_build_overlay_active():
 		push_error("[VisualPresentationSmoke] The placement grid must be hidden during normal city viewing")
