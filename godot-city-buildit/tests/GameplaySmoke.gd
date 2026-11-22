@@ -103,6 +103,19 @@ func _test_camera_gesture_math() -> void:
 	var pressed_touch := InputEventScreenTouch.new()
 	pressed_touch.pressed = true
 	_check(not CityInputScript.should_commit_city_touch_release(pressed_touch), "A touch press must never be mistaken for a release confirmation.")
+	_check(CameraControllerScript.is_cancelled_touch_release(cancelled_release), "Camera must identify an OS-cancelled touch release.")
+	_check(not CameraControllerScript.is_cancelled_touch_release(normal_release), "Camera must preserve normal touch release handling.")
+	var camera_reset_probe := CameraControllerScript.new()
+	camera_reset_probe.touch_points[2] = Vector2(40.0, 50.0)
+	camera_reset_probe.pan_velocity = Vector2(300.0, 120.0)
+	camera_reset_probe.orbit_velocity = 0.4
+	camera_reset_probe._reset_touch_session()
+	_check(camera_reset_probe.touch_points.is_empty() and camera_reset_probe.pan_velocity == Vector2.ZERO and is_zero_approx(camera_reset_probe.orbit_velocity), "Cancelled touch/focus loss must clear stale camera pointers and inertia.")
+	camera_reset_probe.free()
+	city_input_probe.pointer_start[9] = Vector2(10.0, 10.0)
+	city_input_probe.road_stroke_active[9] = true
+	city_input_probe._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(city_input_probe.pointer_start.is_empty() and city_input_probe.road_stroke_active.is_empty(), "Application focus loss must clear pending city touches and road strokes.")
 
 func _test_hud_touch_session_ownership() -> void:
 	var tap_release := InputEventScreenTouch.new()
