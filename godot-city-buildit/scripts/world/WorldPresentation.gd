@@ -23,16 +23,16 @@ const HIGHWAY_MEDIAN_WIDTH := 0.8
 const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
-const ENVIRONMENT_SMALL_DETAIL_END := 95.0
-const ENVIRONMENT_SMALL_DETAIL_MARGIN := 14.0
-const TREE_BELT_DETAIL_END := 280.0
-const TREE_BELT_DETAIL_MARGIN := 24.0
+const ENVIRONMENT_SMALL_DETAIL_END := 145.0
+const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
+const TREE_BELT_DETAIL_END := 420.0
+const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
 	Color("#245A35"), Color("#2F7040"), Color("#43834A"),
 	Color("#1F4F32"), Color("#5A914D"), Color("#347746")
 ]
 const COASTLINE_BASE_X := 110.0
-const BEACH_WIDTH := 56.0
+const BEACH_WIDTH := 26.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
@@ -227,8 +227,9 @@ func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int,
 		var coast_x1 := _coastline(z1)
 		var near_x0 := coast_x0 + shore_offset
 		var near_x1 := coast_x1 + shore_offset
-		var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge
-		var far_x1 := coast_x1 + far_edge if far_edge <= 20.0 else far_edge
+		# Values up to 100 m are coast-relative shallow-water widths; larger values are fixed offshore bounds.
+		var far_x0 := coast_x0 + far_edge if far_edge <= 100.0 else far_edge
+		var far_x1 := coast_x1 + far_edge if far_edge <= 100.0 else far_edge
 		for column in range(columns):
 			var u0 := float(column) / float(columns)
 			var u1 := float(column + 1) / float(columns)
@@ -428,7 +429,7 @@ func _terrain_height(x: float, z: float) -> float:
 	return natural_relief * beach_fade
 
 func _coastline(z: float) -> float:
-	return COASTLINE_BASE_X + sin(z * 0.045) * 2.2 + cos(z * 0.021) * 1.1
+	return COASTLINE_BASE_X + sin(z * 0.032) * 7.0 + sin(z * 0.071) * 3.2 + sin(z * 0.013) * 4.0
 
 
 func _build_land_expansion_markers() -> void:
@@ -791,9 +792,9 @@ func _build_tree_belts() -> void:
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 	# A broader landscaped urban greenbelt replaces the old sparse rural fringe.
 	# Keep all foliage outside owned plots and away from roads and the beach.
-	for index in range(84):
-		var x := -116.0 + fposmod(float(index) * 31.73, 188.0)
-		var z := -86.0 + fposmod(float(index) * 47.17, 172.0)
+	for index in range(216):
+		var x := -116.0 + fposmod(float(index) * 29.17, 188.0)
+		var z := -86.0 + fposmod(float(index) * 43.71, 172.0)
 		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 16.0 or x > _coastline(z) - BEACH_WIDTH - 8.0:
@@ -805,9 +806,9 @@ func _build_tree_belts() -> void:
 	var grove_centers := [Vector2(-94.0, -112.0), Vector2(-28.0, -112.0), Vector2(54.0, -108.0), Vector2(-92.0, 112.0), Vector2(-18.0, 108.0), Vector2(62.0, 104.0)]
 	for grove_index in range(grove_centers.size()):
 		var center: Vector2 = grove_centers[grove_index]
-		for tree_index in range(22):
+		for tree_index in range(30):
 			var angle := float(tree_index) * 2.399963 + float(grove_index) * 0.73
-			var radius := 5.0 + sqrt(float(tree_index) / 22.0) * 19.0
+			var radius := 5.0 + sqrt(float(tree_index) / 30.0) * 23.0
 			var x := center.x + cos(angle) * radius
 			var z := center.y + sin(angle) * radius * 0.82
 			var point := Vector3(x, 0.0, z)
@@ -1120,30 +1121,30 @@ void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 void fragment() {
-	float coastline = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
+	float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;
 	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 56.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
+	float sand_mask = smoothstep(coastline - 26.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
 	float broad = sin(world_position.x * 0.085 + world_position.z * 0.047) * cos(world_position.z * 0.063 - world_position.x * 0.039);
 	float fine = sin(world_position.x * 0.31 - world_position.z * 0.27) * cos(world_position.z * 0.23 + world_position.x * 0.19);
 	float patch = smoothstep(-0.55, 0.55, broad);
-	float ground_variation = 0.88 + broad * 0.075 + fine * 0.025;
-	float macro_noise = terrain_fbm(world_xz * 0.105);
-	float meadow_noise = terrain_fbm(world_xz * 0.42 + vec2(17.0, 9.0));
+	float ground_variation = 0.86 + broad * 0.11 + fine * 0.045;
+	float macro_noise = terrain_fbm(world_xz * 0.052);
+	float meadow_noise = terrain_fbm(world_xz * 0.13 + vec2(17.0, 9.0));
 	float micro_noise = terrain_noise(world_xz * 2.8);
 	float lush_mask = smoothstep(0.38, 0.72, macro_noise);
 	float dry_mask = smoothstep(0.61, 0.83, terrain_fbm(world_xz * 0.19 + vec2(41.0, 13.0)));
 	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
-	vec3 deep_meadow = vec3(0.13, 0.245, 0.105);
-	vec3 fresh_meadow = vec3(0.30, 0.43, 0.17);
-	vec3 olive_grass = vec3(0.39, 0.36, 0.17);
+	vec3 deep_meadow = vec3(0.48, 0.64, 0.31);
+	vec3 fresh_meadow = vec3(0.68, 0.79, 0.45);
+	vec3 olive_grass = vec3(0.72, 0.67, 0.39);
 	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
 	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.48);
 	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
 	meadow *= mix(0.84, 1.08, patch);
-	meadow = mix(meadow, meadow_palette * (0.82 + meadow_noise * 0.42), 0.68);
-	meadow *= 0.91 + micro_noise * 0.18;
+	meadow = mix(meadow, meadow_palette * (0.94 + meadow_noise * 0.24), 0.96);
+	meadow *= 0.94 + micro_noise * 0.18;
 	vec3 soil = vec3(0.39, 0.30, 0.18) * (0.82 + meadow_noise * 0.38);
 	float exposed_soil = smoothstep(0.69, 0.84, terrain_fbm(world_xz * 0.31 + vec2(7.0, 29.0)));
 	meadow = mix(meadow, soil, exposed_soil * 0.24);
@@ -1686,7 +1687,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	shrub_batch.use_colors = true
 	shrub_batch.mesh = shrub_mesh
 	var shrub_positions: Array[Vector3] = []
-	for index in range(260):
+	for index in range(360):
 		var x := -118.0 + fposmod(float(index) * 23.71, 190.0)
 		var z := -86.0 + fposmod(float(index) * 37.19, 172.0)
 		if absf(x) < 26.0 and absf(z) < 26.0:
@@ -1740,7 +1741,7 @@ func _build_meadow_shrubs_and_stones() -> void:
 	stone_batch.use_colors = true
 	stone_batch.mesh = stone_mesh
 	var stone_positions: Array[Vector3] = []
-	for index in range(220):
+	for index in range(300):
 		var x := -118.0 + fposmod(float(index) * 29.31, 190.0)
 		var z := -87.0 + fposmod(float(index) * 41.17, 174.0)
 		if absf(x) < 25.0 and absf(z) < 25.0:

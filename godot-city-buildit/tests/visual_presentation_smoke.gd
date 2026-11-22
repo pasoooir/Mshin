@@ -40,8 +40,17 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var shallow_mesh := presentation._create_coastal_water_mesh(0.12, 18.0, 24, 8, -0.025)
-	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 32.0:
-		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band immediately offshore")
+	if shallow_mesh.get_aabb().position.x < 45.0 or shallow_mesh.get_aabb().size.x > 52.0:
+		push_error("[VisualPresentationSmoke] Shallow water must remain a narrow continuous band following the curved shoreline")
+		get_tree().quit(1)
+		return
+	var production_shallow_mesh := presentation._create_coastal_water_mesh(0.16, 34.0, 24, 8, 0.008)
+	if production_shallow_mesh.get_aabb().position.x < 80.0:
+		push_error("[VisualPresentationSmoke] Production shallow water must start offshore; it must never extend inland across the beach")
+		get_tree().quit(1)
+		return
+	if not FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd").contains("coast_x0 + far_edge if far_edge <= 100.0 else far_edge"):
+		push_error("[VisualPresentationSmoke] Coast-relative water widths must not be mistaken for absolute world-space coordinates")
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
@@ -86,7 +95,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float ground_variation = 0.88 + broad * 0.075 + fine * 0.025") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+	if not world_source.contains("float ground_variation = 0.86 + broad * 0.11 + fine * 0.045") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
@@ -94,9 +103,9 @@ func _ready() -> void:
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
 		"float terrain_noise(vec2 p)",
-		"vec3 deep_meadow = vec3(0.13, 0.245, 0.105)",
-		"vec3 fresh_meadow = vec3(0.30, 0.43, 0.17)",
-		"vec3 olive_grass = vec3(0.39, 0.36, 0.17)",
+		"vec3 deep_meadow = vec3(0.48, 0.64, 0.31)",
+		"vec3 fresh_meadow = vec3(0.68, 0.79, 0.45)",
+		"vec3 olive_grass = vec3(0.72, 0.67, 0.39)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var fresh_grass := Color(\"#718F4C\")",
@@ -126,7 +135,7 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 56.0",
+		"const BEACH_WIDTH := 26.0",
 		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
@@ -142,8 +151,16 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
 			get_tree().quit(1)
 			return
-	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0:
+	if not world_visual_source.contains("float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;"):
+		push_error("[VisualPresentationSmoke] Terrain sand mask must use the same curved coastline function as the shoreline mesh")
+		get_tree().quit(1)
+		return
+	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0 or absf(presentation._coastline(-120.0) - presentation._coastline(120.0)) < 4.0:
 		push_error("[VisualPresentationSmoke] Pacific shoreline must sit beyond the full starter city footprint")
+		get_tree().quit(1)
+		return
+	if presentation.BEACH_WIDTH > 28.0:
+		push_error("[VisualPresentationSmoke] The playable shoreline beach must remain a human-scale coastal strip, not a 56 m sand plain")
 		get_tree().quit(1)
 		return
 	var palm_mesh: ArrayMesh = presentation._create_palm_frond_mesh()
@@ -169,7 +186,7 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(260)") or not world_visual_source.contains("range(220)"):
+	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
 		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
 		get_tree().quit(1)
 		return
@@ -204,7 +221,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 56.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 26.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)
@@ -252,7 +269,7 @@ func _ready() -> void:
 	for foliage_contract in [
 		"StylizedFoliageSystemScript",
 		"TreeCanopies_Species%d_LOD%d",
-		"LOD_CARDS := [8, 4, 2]",
+		"LOD_CARDS := [10, 6, 3]",
 		"CHUNK_SIZE := 64.0",
 		"PacificPalmCrowns"
 	]:

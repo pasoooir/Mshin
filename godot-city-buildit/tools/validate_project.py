@@ -264,7 +264,7 @@ world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_t
 for contract in [
     "func _create_coastal_water_mesh(",
     "var near_x0 := coast_x0 + shore_offset",
-    "var far_x0 := coast_x0 + far_edge if far_edge <= 20.0 else far_edge",
+    "var far_x0 := coast_x0 + far_edge if far_edge <= 100.0 else far_edge",
     "var beach_fade := smoothstep(0.0, 30.0, _coastline(z) - x)",
     "_is_city_road_footprint(x, z)",
 ]:
@@ -912,7 +912,7 @@ for visual_contract in [
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
     "const TERRAIN_DIVISIONS := 128",
     "const COASTLINE_BASE_X := 110.0",
-    "const BEACH_WIDTH := 56.0", 
+    "const BEACH_WIDTH := 26.0", 
     "func _build_shoreline_foam() -> void:",
     "PacificShoreFoam",
     "_build_shoreline_foam()", 

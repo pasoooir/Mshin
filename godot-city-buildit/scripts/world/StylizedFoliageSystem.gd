@@ -5,7 +5,7 @@ const SeasonManagerScript = preload("res://scripts/world/FoliageSeasonManager.gd
 const CHUNK_SIZE := 64.0
 const LOD_BEGIN := [0.0, 38.0, 108.0]
 const LOD_END := [46.0, 118.0, 280.0]
-const LOD_CARDS := [8, 4, 2]
+const LOD_CARDS := [10, 6, 3]
 const LOD_SEGMENTS_X := [3, 2, 1]
 const LOD_SEGMENTS_Y := [4, 3, 2]
 
@@ -94,7 +94,7 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                 var world_position: Vector3 = entry["position"]
                 var local_position := world_position - chunk_root.position
                 var stable_random: float = float(entry["seed"])
-                var scale_value := 1.30 + fposmod(stable_random * 17.0, 0.42)
+                var scale_value := 2.05 + fposmod(stable_random * 17.0, 0.72)
                 var yaw := stable_random * TAU
                 var width_factor := 1.0
                 var height_factor := 1.0
@@ -116,7 +116,7 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                         scale_value * width_factor
                     )
                 )
-                var crown_position := local_position + Vector3(0.0, 3.35 * scale_value, 0.0)
+                var crown_position := local_position + Vector3(0.0, 3.55 * scale_value, 0.0)
                 multimesh.set_instance_transform(
                     instance_index,
                     Transform3D(basis, crown_position)
