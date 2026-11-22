@@ -86,7 +86,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float ground_variation = 0.88 + broad * 0.075 + fine * 0.025") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+	if not world_source.contains("float ground_variation = 0.86 + broad * 0.11 + fine * 0.045") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
@@ -94,9 +94,9 @@ func _ready() -> void:
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
 		"float terrain_noise(vec2 p)",
-		"vec3 deep_meadow = vec3(0.13, 0.245, 0.105)",
-		"vec3 fresh_meadow = vec3(0.30, 0.43, 0.17)",
-		"vec3 olive_grass = vec3(0.39, 0.36, 0.17)",
+		"vec3 deep_meadow = vec3(0.19, 0.29, 0.13)",
+		"vec3 fresh_meadow = vec3(0.38, 0.50, 0.23)",
+		"vec3 olive_grass = vec3(0.49, 0.43, 0.22)",
 		"float exposed_soil = smoothstep",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var fresh_grass := Color(\"#718F4C\")",
