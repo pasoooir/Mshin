@@ -17,6 +17,16 @@ func open_panel() -> void:
 	selected_tile = Vector2i(999, 999)
 	_rebuild_panel()
 	show()
+	_set_world_expansion_preview(true)
+
+func _set_world_expansion_preview(active: bool) -> void:
+	var world := get_tree().root.get_node_or_null("Main/World/WorldPresentation")
+	if is_instance_valid(world) and world.has_method("set_expansion_preview_visible"):
+		world.set_expansion_preview_visible(active)
+
+func _close_panel() -> void:
+	_set_world_expansion_preview(false)
+	hide()
 
 func _rebuild_panel() -> void:
 	for child in get_children():
@@ -70,7 +80,7 @@ func _rebuild_panel() -> void:
 	close.custom_minimum_size = Vector2(58, 54)
 	close.add_theme_font_size_override("font_size", 36)
 	close.add_theme_color_override("font_color", Color("#17364A"))
-	close.pressed.connect(hide)
+	close.pressed.connect(_close_panel)
 	header.add_child(close)
 
 	var hint := Label.new()
