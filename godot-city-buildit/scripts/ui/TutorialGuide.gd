@@ -3,6 +3,27 @@ extends CanvasLayer
 ## Milestones are completed only by real gameplay events; this guide never
 ## grants items or mutates city state.
 
+class TutorialPointerVisual extends Control:
+	func _draw() -> void:
+		var arrow := PackedVector2Array([
+			Vector2(24.0, 5.0),
+			Vector2(40.0, 5.0),
+			Vector2(40.0, 28.0),
+			Vector2(55.0, 28.0),
+			Vector2(32.0, 56.0),
+			Vector2(9.0, 28.0),
+			Vector2(24.0, 28.0)
+		])
+		var shadow := PackedVector2Array()
+		for point in arrow:
+			shadow.append(point + Vector2(2.0, 3.0))
+		draw_colored_polygon(shadow, Color(0.02, 0.08, 0.13, 0.55))
+		draw_colored_polygon(arrow, Color("#FFD36E"))
+		var outline := arrow.duplicate()
+		outline.append(arrow[0])
+		draw_polyline(outline, Color("#744A16"), 2.5, true)
+		draw_line(Vector2(29.0, 10.0), Vector2(29.0, 27.0), Color("#FFF1B8"), 2.0, true)
+
 var save_path := "user://tutorial_progress.cfg"
 var _profile_progress_loaded := false
 const STEP_DATA: Array[Dictionary] = [
@@ -26,7 +47,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "Tool_Industrial",
 		"title": "Build a factory",
 		"description": "Tap Industrial, choose Small Factory, then tap BUILD in its information card. Follow the finger to a valid empty plot beside a connected road.",
-		"hint": "👆 TAP  Industrial  →  Small Factory  →  BUILD  →  Highlighted plot",
+		"hint": "TAP  Industrial  →  Small Factory  →  BUILD  →  Highlighted plot",
 		"result": "YOU SHOULD SEE  Your factory appear and begin its construction timer."
 	},
 	{
@@ -42,7 +63,7 @@ const STEP_DATA: Array[Dictionary] = [
 		"target": "Tool_Commercial",
 		"title": "Build a supply store",
 		"description": "Tap Commercial, choose Building Supplies, then tap BUILD in its information card. Follow the finger to a valid empty plot beside a connected road.",
-		"hint": "👆 TAP  Commercial  →  Building Supplies  →  BUILD  →  Highlighted plot",
+		"hint": "TAP  Commercial  →  Building Supplies  →  BUILD  →  Highlighted plot",
 		"result": "YOU SHOULD SEE  The store finish construction and become selectable."
 	},
 	{
@@ -89,7 +110,7 @@ var _dismissed := false
 var _city_name_input: LineEdit
 var _city_name_row: HBoxContainer
 var _city_name_button: Button
-var _finger_pointer: Label
+var _finger_pointer: Control
 var _finger_elapsed := 0.0
 var _state_poll_elapsed := 0.0
 
@@ -210,7 +231,7 @@ func _build_guide_panel() -> void:
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(header)
 	var eyebrow := Label.new()
-	eyebrow.text = "☁ CITY COACH  •  YOUR NEXT TASK"
+	eyebrow.text = "CITY COACH  •  YOUR NEXT TASK"
 	eyebrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eyebrow.add_theme_color_override("font_color", Color("#8AD7F5"))
@@ -224,7 +245,7 @@ func _build_guide_panel() -> void:
 	header.add_child(_counter)
 
 	_icon_legend = Label.new()
-	_icon_legend.text = "🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
+	_icon_legend.text = "Roads  ·  Homes  ·  Factory  ·  Shops  ·  Storage"
 	_icon_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_icon_legend.add_theme_color_override("font_color", Color("#D7F0FA"))
 	_icon_legend.add_theme_font_size_override("font_size", 16)
@@ -324,14 +345,10 @@ func _build_guide_panel() -> void:
 	_skip_button.pressed.connect(_skip_tutorial)
 	actions.add_child(_skip_button)
 
-	_finger_pointer = Label.new()
+	_finger_pointer = TutorialPointerVisual.new()
 	_finger_pointer.name = "ActionFingerPointer"
-	_finger_pointer.text = "↓"
 	_finger_pointer.size = Vector2(64, 64)
 	_finger_pointer.custom_minimum_size = Vector2(64, 64)
-	_finger_pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_finger_pointer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_finger_pointer.add_theme_font_size_override("font_size", 42)
 	_finger_pointer.pivot_offset = Vector2(32.0, 32.0)
 	_finger_pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_finger_pointer.z_index = 220
@@ -437,7 +454,7 @@ func _update_city_name_controls() -> void:
 	if is_instance_valid(_result):
 		_result.visible = not is_name_step
 	if is_instance_valid(_icon_legend) and not GameManager.city_name.is_empty():
-		_icon_legend.text = "🏙 " + GameManager.city_name + "    🛣 Roads    🏠 Homes    🏭 Factory    🛒 Shops    📦 Storage"
+		_icon_legend.text = GameManager.city_name + "  ·  Roads  ·  Homes  ·  Factory  ·  Shops  ·  Storage"
 
 func _submit_city_name() -> void:
 	if not is_instance_valid(_city_name_input):
