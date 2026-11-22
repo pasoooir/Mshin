@@ -101,20 +101,21 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+	if not world_source.contains("float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
 		"float terrain_fbm(vec2 p)",
+		"float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0))",
 		"float terrain_noise(vec2 p)",
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"vec3 deep_meadow = vec3(0.43, 0.47, 0.32)",
-		"vec3 sunlit_sage = vec3(0.57, 0.59, 0.40)",
-		"vec3 dry_olive = vec3(0.66, 0.61, 0.43)",
-		"vec3 straw_grass = vec3(0.73, 0.66, 0.48)",
-		"vec3 exposed_soil = vec3(0.53, 0.40, 0.29)",
+		"vec3 deep_meadow = vec3(0.57, 0.58, 0.43)",
+		"vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
+		"vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
+		"vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
+		"vec3 exposed_soil = vec3(0.61, 0.47, 0.35)",
 		"float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
 		"func _build_meadow_biome_overlays() -> void:",
 		"var patch_count := 190",
