@@ -109,7 +109,8 @@ func _season_density(season: Season) -> float:
         Season.AUTUMN:
             return 0.84
         Season.WINTER:
-            return 0.28
+            # Keep sparse snowy crowns visible above the shader's 0.32 alpha-scissor threshold.
+            return 0.48
     return 1.0
 
 
