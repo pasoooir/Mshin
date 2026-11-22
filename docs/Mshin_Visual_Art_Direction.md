@@ -47,13 +47,13 @@ Priority order:
 
 | Role | Color |
 |---|---|
-| Deep shaded grass | #65734E |
-| Cool meadow sage | #78865C |
-| Sunlit meadow | #A39A69 |
-| Dry olive grass | #9A875D |
-| Straw field | #B09A6B |
-| Exposed soil | #795B41 |
-| Warm earth | #816247 |
+| Deep shaded grass | #829067 |
+| Cool meadow sage | #89966D |
+| Sunlit meadow | #B3A071 |
+| Dry olive grass | #A9956B |
+| Straw field | #B5A071 |
+| Exposed soil | #987B5D |
+| Warm earth | #A07B55 |
 | Sandy beach | #D9C18D |
 | Wet sand | #A99570 |
 | Shallow water | #3D9A9A |
@@ -77,8 +77,8 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 ### Phase A — Visible terrain rescue (current)
 - Replace the low-contrast meadow shader with broad world-space biome fields.
 - Keep the base meadow in a visible mid-value sage range; do not let deep green dominate the full playable ground.
-- Use ochre/straw and warm-soil accents at enough coverage to read at overview distance.
-- Add irregular dry-olive and straw-grass patches, exposed-earth islands and fine mottling.
+- Use broad sage, olive, ochre/straw and warm-soil fields; each field must span a visible landscape region rather than appearing as scattered camouflage spots.
+- Build broad world-space biome regions with softened irregular boundaries, then layer medium exposed-earth islands and fine mottling without a dark-green carpet.
 - Preserve the flat 48 × 48 m starter build area and coastline alignment.
 - Keep all generated materials local and deterministic.
 - Validate with actual WebGL screenshots at overview, medium and near zoom.
@@ -158,7 +158,7 @@ Suggested height rules:
 ### Terrain
 - [ ] At overview zoom, at least four distinct ground materials/biomes are visible without zooming in.
 - [ ] The ground is not perceived as one green sheet at first glance.
-- [ ] Dry olive/straw fields and exposed-earth islands have irregular edges and do not look like checkerboard tiles.
+- [ ] Broad sage, olive and straw fields dominate the terrain composition; exposed-earth islands remain secondary and do not resemble camouflage spots.
 - [ ] Near-camera grass, scrub, creek banks, dirt tracks and stones are visible as separate silhouettes.
 - [ ] The starter build plots remain perfectly flat and free of decorative clutter.
 - [ ] Road edges and sidewalks remain clean; no grass or stones intersect asphalt.
