@@ -6,7 +6,7 @@ var _expansion_preview_active := false
 const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 
-const TERRAIN_HALF_DEPTH := 90.0
+const TERRAIN_HALF_DEPTH := 145.0
 const TERRAIN_LEFT := -120.0
 const TERRAIN_DIVISIONS := 128
 const CITY_HALF_EXTENT := 40
@@ -201,14 +201,14 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(8.0, 250.0, 120, 16, -0.055)
+	water.mesh = _create_coastal_water_mesh(8.0, 680.0, 180, 36, -0.055)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	shallow_water.mesh = _create_coastal_water_mesh(0.12, 8.0, 96, 4, -0.025)
+	shallow_water.mesh = _create_coastal_water_mesh(0.12, 8.0, 180, 8, -0.025)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
@@ -218,8 +218,8 @@ func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int,
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for row in range(rows):
-		var z0 := lerpf(-95.0, 95.0, float(row) / float(rows))
-		var z1 := lerpf(-95.0, 95.0, float(row + 1) / float(rows))
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row) / float(rows))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row + 1) / float(rows))
 		var coast_x0 := _coastline(z0)
 		var coast_x1 := _coastline(z1)
 		var near_x0 := coast_x0 + shore_offset
