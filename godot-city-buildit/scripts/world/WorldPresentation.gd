@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#78865C"), Color("#8D9165"), Color("#9A875D"),
-	Color("#687B55"), Color("#A08E65"), Color("#7F8960")
+	Color("#89966D"), Color("#A3A078"), Color("#A9956B"),
+	Color("#7F8B62"), Color("#B5A071"), Color("#987B5D")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -352,8 +352,8 @@ func _build_meadow_biome_overlays() -> void:
 		Color("#6F8258"), Color("#9A795C"), Color("#B09A6B"),
 		Color("#879064")
 	]
-	var base_edge := Color("#71805A")
-	var patch_count := 420
+	var base_edge := Color("#89916D")
+	var patch_count := 190
 	for patch_index in range(patch_count):
 		var center_x := rng.randf_range(-112.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
@@ -362,10 +362,10 @@ func _build_meadow_biome_overlays() -> void:
 		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
 			continue
 		var in_starter_city := absf(center_x) < 34.0 and absf(center_z) < 34.0
-		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(2.8, 5.5)
+		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(5.5, 10.5)
 		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
 		var rotation := rng.randf_range(0.0, TAU)
-		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.30)
+		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.12)
 		if in_starter_city:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
@@ -449,12 +449,12 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#65734E")
-		var fresh_grass := Color("#A39A69")
+		var deep_grass := Color("#829067")
+		var fresh_grass := Color("#B3A071")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
-		var biome_soil_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
-		color = color.lerp(Color("#A08A63"), biome_soil_mask * 0.48)
+		var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
+		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.34)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
@@ -1222,26 +1222,26 @@ void fragment() {
 	// A layered, world-space meadow: broad fields first, then irregular
 	// dry-grass islands, exposed earth, and fine mottling. These masks are
 	// deliberately high-contrast enough to survive the mobile overview camera.
-	float broad_field = terrain_fbm(world_xz * 0.019 + vec2(7.0, 13.0));
-	float mid_field = terrain_fbm(world_xz * 0.052 + vec2(23.0, 5.0));
-	float dry_field = terrain_noise(world_xz * 0.031 + vec2(47.0, 31.0));
-	float soil_field = terrain_noise(world_xz * 0.094 + vec2(11.0, 59.0));
+	float broad_field = terrain_fbm(world_xz * 0.011 + vec2(7.0, 13.0));
+	float mid_field = terrain_fbm(world_xz * 0.026 + vec2(23.0, 5.0));
+	float dry_field = terrain_noise(world_xz * 0.019 + vec2(47.0, 31.0));
+	float soil_field = terrain_noise(world_xz * 0.055 + vec2(11.0, 59.0));
 	float micro_grain = terrain_noise(world_xz * 1.65);
 	float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0));
 
-	float sunlit_mask = smoothstep(0.31, 0.68, broad_field);
-	float olive_mask = smoothstep(0.35, 0.69, mid_field);
-	float dry_mask = smoothstep(0.39, 0.68, dry_field);
+	float sunlit_mask = smoothstep(0.28, 0.63, broad_field);
+	float olive_mask = smoothstep(0.30, 0.64, mid_field);
+	float dry_mask = smoothstep(0.34, 0.62, dry_field);
 	float soil_core = 1.0 - smoothstep(0.24, 0.47, cell_shape);
 	float soil_patch_mask = smoothstep(0.59, 0.79, soil_field) * (0.42 + soil_core * 0.58);
 	soil_patch_mask *= 0.72 + dry_mask * 0.28;
 
-	vec3 deep_meadow = vec3(0.365, 0.405, 0.275);
-	vec3 sunlit_sage = vec3(0.525, 0.535, 0.355);
-	vec3 dry_olive = vec3(0.625, 0.555, 0.375);
-	vec3 straw_grass = vec3(0.715, 0.625, 0.435);
-	vec3 exposed_soil = vec3(0.475, 0.355, 0.255);
-	vec3 warm_earth = vec3(0.565, 0.425, 0.295);
+	vec3 deep_meadow = vec3(0.43, 0.47, 0.32);
+	vec3 sunlit_sage = vec3(0.57, 0.59, 0.40);
+	vec3 dry_olive = vec3(0.66, 0.61, 0.43);
+	vec3 straw_grass = vec3(0.73, 0.66, 0.48);
+	vec3 exposed_soil = vec3(0.53, 0.40, 0.29);
+	vec3 warm_earth = vec3(0.61, 0.47, 0.34);
 
 	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
 	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
@@ -1256,7 +1256,7 @@ void fragment() {
 	meadow *= mix(0.92, 1.06, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
 	// Baked vertex color gently carries climate/region tint without washing out
 	// the designed soil and dry-field colors.
-	meadow *= mix(vec3(0.96), COLOR.rgb, 0.34);
+	meadow *= mix(vec3(1.0), COLOR.rgb, 0.12);
 
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
