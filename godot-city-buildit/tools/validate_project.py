@@ -909,11 +909,17 @@ for visual_contract in [
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
     "const TERRAIN_DIVISIONS := 128",
     "const COASTLINE_BASE_X := 110.0",
-    "const BEACH_WIDTH := 36.0",
-    "func _build_coastal_promenade() -> void:",
+    "const BEACH_WIDTH := 44.0", 
+    "func _build_shoreline_foam() -> void:",
+    "PacificShoreFoam",
+    "_build_shoreline_foam()", 
+    "water.mesh = _create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)",
+    "shallow_water.mesh = _create_coastal_water_mesh(0.12, 18.0, 220, 16, -0.025)",
+    "float offshore = max(0.0, world_position.x - coast);"
+
     "func _build_beach_palms() -> void:",
     "func _create_palm_frond_mesh() -> ArrayMesh:",
-    "PacificCoastalPromenade",
+
     "PacificPalmTrunks",
     "PacificPalmCrowns",
     "const COASTAL_GREEN_PALETTE :=",
