@@ -129,14 +129,14 @@ func _set_leaf_fall_ratio(value: float) -> void:
     for emitter in _leaf_emitters:
         if not is_instance_valid(emitter):
             continue
-        emitter.amount = roundi(10.0 * clampf(value, 0.0, 1.0))
         emitter.emitting = value > 0.01
+        emitter.speed_scale = maxf(value, 0.01)
 
 
 func _current_leaf_fall_ratio() -> float:
     if _leaf_emitters.is_empty():
         return 0.0
-    return float(_leaf_emitters[0].amount) / 10.0
+    return _leaf_emitters[0].speed_scale if _leaf_emitters[0].emitting else 0.0
 
 
 func _finish_transition(season: Season) -> void:
