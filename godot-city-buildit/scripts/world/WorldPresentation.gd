@@ -1117,22 +1117,6 @@ float terrain_fbm(vec2 p) {
 	}
 	return value;
 }
-float terrain_cellular(vec2 p) {
-	vec2 cell = floor(p);
-	vec2 local = fract(p);
-	float nearest = 1.0;
-	for (int y = -1; y <= 1; y++) {
-		for (int x = -1; x <= 1; x++) {
-			vec2 neighbour = vec2(float(x), float(y));
-			vec2 feature = vec2(
-				terrain_hash(cell + neighbour + vec2(17.0, 3.0)),
-				terrain_hash(cell + neighbour + vec2(41.0, 29.0))
-			) * 0.72 + 0.14;
-			nearest = min(nearest, length(neighbour + feature - local));
-		}
-	}
-	return nearest;
-}
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -1148,10 +1132,10 @@ void fragment() {
 	// deliberately high-contrast enough to survive the mobile overview camera.
 	float broad_field = terrain_fbm(world_xz * 0.019 + vec2(7.0, 13.0));
 	float mid_field = terrain_fbm(world_xz * 0.052 + vec2(23.0, 5.0));
-	float dry_field = terrain_fbm(world_xz * 0.031 + vec2(47.0, 31.0));
-	float soil_field = terrain_fbm(world_xz * 0.094 + vec2(11.0, 59.0));
+	float dry_field = terrain_noise(world_xz * 0.031 + vec2(47.0, 31.0));
+	float soil_field = terrain_noise(world_xz * 0.094 + vec2(11.0, 59.0));
 	float micro_grain = terrain_noise(world_xz * 1.65);
-	float cell_shape = terrain_cellular(world_xz * 0.041);
+	float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0));
 
 	float sunlit_mask = smoothstep(0.31, 0.68, broad_field);
 	float olive_mask = smoothstep(0.35, 0.69, mid_field);
