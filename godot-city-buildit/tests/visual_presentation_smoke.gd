@@ -9,6 +9,16 @@ func _ready() -> void:
 	# Coastline regression: water geometry must follow the curved beach edge,
 	# and the terrain must taper to the sea datum instead of overlapping it.
 	var coast_sample := presentation._coastline(0.0)
+	var owned_plot_ao := presentation._terrain_vertex_ao(0.0, 0.0)
+	var natural_terrain_ao := presentation._terrain_vertex_ao(40.0, 40.0)
+	if not is_equal_approx(owned_plot_ao, 1.0):
+		push_error("[VisualPresentationSmoke] Buildable starter plots must remain evenly lit without terrain cavity shading")
+		get_tree().quit(1)
+		return
+	if natural_terrain_ao < 0.86 or natural_terrain_ao > 1.0 or natural_terrain_ao >= 1.0:
+		push_error("[VisualPresentationSmoke] Natural terrain must apply restrained Compatibility-safe vertex cavity shading")
+		get_tree().quit(1)
+		return
 	if absf(presentation._terrain_height(coast_sample, 0.0)) > 0.01:
 		push_error("[VisualPresentationSmoke] Beach terrain must meet the ocean at the sea datum")
 		get_tree().quit(1)
