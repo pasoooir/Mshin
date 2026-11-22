@@ -1172,7 +1172,7 @@ for contract in [
     "static func interpolate_focus(",
     "static func screen_pan_scale(",
     "static func pinch_zoom_delta(",
-    "return -(current_distance - previous_distance) * maxf(0.0, sensitivity)",
+    "var scale_factor := pow(previous_distance / current_distance, exponent)",
     "static func touch_centroid(",
     "static func touch_orbit_delta(",
     "static func apply_orbit_delta(",
