@@ -277,8 +277,8 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var fresh_grass := Color("#718F4C")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
-		var dry_patch_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
-		color = color.lerp(Color("#A18A5B"), dry_patch_mask * 0.38)
+		var biome_soil_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
+		color = color.lerp(Color("#A18A5B"), biome_soil_mask * 0.38)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
