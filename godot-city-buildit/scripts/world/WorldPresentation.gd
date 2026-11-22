@@ -308,11 +308,27 @@ func _build_sandy_beach() -> void:
 	var beach := MeshInstance3D.new()
 	beach.name = "ContinuousSandyBeach"
 	beach.mesh = surface.commit()
-	var material := StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.roughness = 0.96
-	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var beach_shader := Shader.new()
+	beach_shader.code = """
+shader_type spatial;
+render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
+varying vec3 beach_world;
+void vertex() {
+	beach_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	float grain = sin(beach_world.x * 1.31 + beach_world.z * 0.87) * 0.018
+		+ cos(beach_world.x * 0.47 - beach_world.z * 1.19) * 0.012;
+	float wet = smoothstep(0.80, 1.0, UV.x);
+	vec3 dry_sand = vec3(0.70, 0.55, 0.37) + vec3(grain);
+	vec3 damp_sand = vec3(0.43, 0.37, 0.27) + vec3(grain * 0.35);
+	ALBEDO = mix(dry_sand, damp_sand, wet * 0.78);
+	ROUGHNESS = 0.98;
+	SPECULAR = 0.06;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = beach_shader
 	beach.material_override = material
 	beach.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(beach)
@@ -1219,16 +1235,16 @@ void vertex() {
 void fragment() {
 	float coast = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float offshore = max(0.0, world_position.x - coast);
-	float depth = smoothstep(0.0, 95.0, offshore);
+	float depth = smoothstep(0.0, 0.18, UV.x);
 	float swell = sin(world_position.x * 0.027 + world_position.z * 0.018 + TIME * 0.24);
 	float cross_swell = cos(world_position.x * 0.061 - world_position.z * 0.033 + TIME * 0.39);
 	float fine_ripple = sin(world_position.x * 0.31 + world_position.z * 0.22 + TIME * 1.05) * 0.5;
-	float water_noise = swell * 0.018 + cross_swell * 0.010 + fine_ripple * 0.006;
-	vec3 lagoon = vec3(0.035, 0.43, 0.52);
-	vec3 shelf_blue = vec3(0.018, 0.22, 0.43);
-	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.18, 1.0, depth));
-	vec3 water_color = mix(lagoon, shelf_blue, smoothstep(0.0, 75.0, offshore));
-	water_color = mix(water_color, offshore_blue, smoothstep(100.0, 480.0, offshore));
+	float water_noise = swell * 0.014 + cross_swell * 0.008 + fine_ripple * 0.004;
+	vec3 lagoon = vec3(0.025, 0.36, 0.46);
+	vec3 shelf_blue = vec3(0.014, 0.15, 0.34);
+	vec3 deep_ocean = vec3(0.004, 0.035, 0.13);
+	vec3 water_color = mix(lagoon, shelf_blue, smoothstep(0.0, 0.04, UV.x));
+	water_color = mix(water_color, deep_ocean, smoothstep(0.06, 0.22, UV.x));
 	float wave_dx = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0058;
 	float wave_dz = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0040;
 	NORMAL = normalize(vec3(-wave_dx, 1.0, -wave_dz));
