@@ -128,6 +128,9 @@ func _building_at_screen(screen_position: Vector2) -> Building:
 			closest_building = building
 	return closest_building
 
+func is_camera_pan_blocked() -> bool:
+	return BuildManager.is_moving or BuildManager.is_placing or bulldoze_mode or bulldoze_road_mode or _is_road_mode()
+
 # A drag beyond tap slop is an intentional camera gesture, even when it
 # starts on top of a building. CityInput relinquishes that pointer so release
 # cannot become a building tap or a delayed long-press/move action.
@@ -331,6 +334,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_cancel_all_road_strokes()
 			for pointer_id in pointer_moved.keys():
 				pointer_moved[pointer_id] = true
+			# A two-finger session belongs exclusively to CameraController.
+			# Never move a placement ghost or commit an edit from either finger.
+			if multi_touch_gesture:
+				return
 		if pointer_start.has(event.index) and Vector2(pointer_start[event.index]).distance_to(event.position) > TAP_SLOP:
 			pointer_moved[event.index] = true
 		if road_stroke_active.has(event.index) and pointer_start.size() == 1:
