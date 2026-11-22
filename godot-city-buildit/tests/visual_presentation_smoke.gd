@@ -182,7 +182,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var camera_source := FileAccess.get_file_as_string("res://scripts/systems/CameraController.gd")
-	if not camera_source.contains("camera.fov = 62.0") or not camera_source.contains("global_position = Vector3(55.0, 0.0, -10.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, -45.0, 0.0)"):
+	if not camera_source.contains("camera.fov = 62.0") or not camera_source.contains("global_position = Vector3(25.0, 0.0, 0.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, -45.0, 0.0)"):
 		push_error("[VisualPresentationSmoke] Opening camera must frame the ocean and buildable city together")
 		main_instance.free()
 		get_tree().quit(1)
