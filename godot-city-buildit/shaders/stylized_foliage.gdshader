@@ -15,16 +15,18 @@ uniform float fake_sss_strength : hint_range(0.0, 1.0) = 0.28;
 
 varying vec3 bent_world_normal;
 varying float wind_weight;
+varying vec4 instance_data;
 
 void vertex() {
     vec3 world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
     wind_weight = UV2.x;
+    instance_data = INSTANCE_CUSTOM;
 
     // Each tree receives a stable phase from MultiMesh INSTANCE_CUSTOM.b.
     float phase = world_position.x * 0.115
         + world_position.z * 0.091
         + TIME * wind_speed
-        + INSTANCE_CUSTOM.b * 6.2831853;
+        + instance_data.b * 6.2831853;
     float wave = sin(phase) * 0.68
         + sin(phase * 0.53 + TIME * 0.31) * 0.32;
 
@@ -39,9 +41,9 @@ void vertex() {
 void fragment() {
     vec4 leaf = texture(leaf_atlas, UV);
 
-    float instance_variation = mix(0.88, 1.12, INSTANCE_CUSTOM.r);
-    float instance_density = mix(0.84, 1.0, INSTANCE_CUSTOM.g);
-    float instance_brightness = mix(0.92, 1.08, INSTANCE_CUSTOM.a);
+    float instance_variation = mix(0.88, 1.12, instance_data.r);
+    float instance_density = mix(0.84, 1.0, instance_data.g);
+    float instance_brightness = mix(0.92, 1.08, instance_data.a);
 
     vec3 foliage = leaf.rgb * seasonal_tint.rgb;
     foliage *= instance_variation * instance_brightness;
