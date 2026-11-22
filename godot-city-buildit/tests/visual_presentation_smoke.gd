@@ -136,8 +136,16 @@ func _ready() -> void:
 		presentation.free()
 		get_tree().quit(1)
 		return
-	if canopy.get_aabb().size.y <= conifer_canopy.get_aabb().size.y or umbrella_canopy.get_aabb().size.x <= conifer_canopy.get_aabb().size.x:
-		push_error("[VisualPresentationSmoke] Tree species must retain visibly distinct canopy proportions")
+	var broadleaf_vertices: PackedVector3Array = canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var conifer_vertices: PackedVector3Array = conifer_canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var umbrella_vertices: PackedVector3Array = umbrella_canopy.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	if broadleaf_vertices.size() == conifer_vertices.size() or conifer_vertices.size() == umbrella_vertices.size():
+		push_error("[VisualPresentationSmoke] Tree species must use distinct canopy geometry, not recolored copies")
+		presentation.free()
+		get_tree().quit(1)
+		return
+	if umbrella_canopy.get_aabb().size.x <= conifer_canopy.get_aabb().size.x:
+		push_error("[VisualPresentationSmoke] Umbrella crown must be visibly wider than the conifer crown")
 		presentation.free()
 		get_tree().quit(1)
 		return
