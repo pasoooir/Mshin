@@ -44,6 +44,10 @@ func _ready() -> void:
 		return
 	RegionManager.region_changed.connect(_on_region_changed)
 	LandExpansionManager.land_changed.connect(_on_land_expansion_changed)
+	BuildManager.placement_mode_changed.connect(_refresh_build_grid_visibility)
+	_road_system_cache = get_parent().get_node_or_null("RoadSystem")
+	if is_instance_valid(_road_system_cache) and _road_system_cache.has_signal("road_mode_changed"):
+		_road_system_cache.connect("road_mode_changed", Callable(self, "_on_road_mode_changed"))
 	_build_environment()
 	_build_terrain()
 	_build_land_expansion_markers()
@@ -386,6 +390,24 @@ func _build_city_grid() -> void:
 	grid_material.no_depth_test = false
 	grid_instance.material_override = grid_material
 	add_child(grid_instance)
+	_refresh_build_grid_visibility()
+
+
+func _on_road_mode_changed(_active: bool) -> void:
+	_refresh_build_grid_visibility()
+
+
+func _refresh_build_grid_visibility(_active: bool = false) -> void:
+	var grid_instance := get_node_or_null("BuildablePlotGrid")
+	if not is_instance_valid(grid_instance):
+		return
+	grid_instance.visible = _is_build_overlay_active()
+
+
+func _is_build_overlay_active() -> bool:
+	if BuildManager.is_placing:
+		return true
+	return is_instance_valid(_road_system_cache) and (_road_system_cache.is_road_mode or _road_system_cache.is_road_upgrade_mode)
 
 
 func _build_coastal_highway() -> void:
