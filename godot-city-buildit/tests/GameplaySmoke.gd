@@ -1404,6 +1404,82 @@ func _test_camera_touch_gesture_integration() -> void:
 	_check(camera_rig.pan_velocity.length() < 0.001 and absf(camera_rig.orbit_velocity) < 0.001, "Releasing a two-finger zoom/pan gesture must stop inertial fling at the finger-release position.")
 	_check(not camera_rig._multi_touch_gesture_active, "The camera must close the multi-touch gesture state after the final finger is lifted.")
 
+	# A screen-edge pinch must preserve the map point under its midpoint too.
+	var edge_first := InputEventScreenTouch.new()
+	edge_first.index = 5
+	edge_first.position = Vector2(20.0, 220.0)
+	edge_first.pressed = true
+	camera_rig._unhandled_input(edge_first)
+	var edge_second := InputEventScreenTouch.new()
+	edge_second.index = 6
+	edge_second.position = Vector2(120.0, 220.0)
+	edge_second.pressed = true
+	camera_rig._unhandled_input(edge_second)
+	var edge_anchor: Variant = camera_rig._screen_to_ground(Vector2(70.0, 220.0))
+	var edge_second_drag := InputEventScreenDrag.new()
+	edge_second_drag.index = 6
+	edge_second_drag.position = Vector2(135.0, 220.0)
+	camera_rig._unhandled_input(edge_second_drag)
+	var edge_first_drag := InputEventScreenDrag.new()
+	edge_first_drag.index = 5
+	edge_first_drag.position = Vector2(5.0, 220.0)
+	camera_rig._unhandled_input(edge_first_drag)
+	if edge_anchor != null:
+		var projected_edge_anchor := camera_rig.camera.unproject_position(edge_anchor)
+		_check(projected_edge_anchor.distance_to(Vector2(70.0, 220.0)) <= 2.0, "Screen-edge pinch must preserve its world focal point under the gesture midpoint.")
+	var edge_release_second := InputEventScreenTouch.new()
+	edge_release_second.index = 6
+	edge_release_second.pressed = false
+	camera_rig._unhandled_input(edge_release_second)
+	var edge_release_first := InputEventScreenTouch.new()
+	edge_release_first.index = 5
+	edge_release_first.pressed = false
+	camera_rig._unhandled_input(edge_release_first)
+
+	# Two-to-one-finger transitions reset baselines and never reuse old velocity.
+	var transition_first := InputEventScreenTouch.new()
+	transition_first.index = 7
+	transition_first.position = Vector2(180.0, 220.0)
+	transition_first.pressed = true
+	camera_rig._unhandled_input(transition_first)
+	var transition_second := InputEventScreenTouch.new()
+	transition_second.index = 8
+	transition_second.position = Vector2(220.0, 220.0)
+	transition_second.pressed = true
+	camera_rig._unhandled_input(transition_second)
+	var transition_release := InputEventScreenTouch.new()
+	transition_release.index = 8
+	transition_release.position = Vector2(220.0, 220.0)
+	transition_release.pressed = false
+	camera_rig._unhandled_input(transition_release)
+	_check(camera_rig.touch_points.size() == 1 and not camera_rig._multi_touch_gesture_active, "A two-to-one-finger transition must retain only the remaining pointer and close multi-touch state.")
+	_check(camera_rig.pan_velocity.length() < 0.001 and absf(camera_rig.orbit_velocity) < 0.001, "A two-to-one-finger transition must clear stale gesture inertia.")
+	var remaining_drag := InputEventScreenDrag.new()
+	remaining_drag.index = 7
+	remaining_drag.position = Vector2(190.0, 230.0)
+	camera_rig._unhandled_input(remaining_drag)
+	var transition_final_release := InputEventScreenTouch.new()
+	transition_final_release.index = 7
+	transition_final_release.pressed = false
+	camera_rig._unhandled_input(transition_final_release)
+
+	# Cancellation and a fresh gesture must not leak previous pan/orbit velocity.
+	camera_rig.pan_velocity = Vector2(300.0, 0.0)
+	camera_rig.orbit_velocity = 0.3
+	var cancel_touch := InputEventScreenTouch.new()
+	cancel_touch.index = 9
+	cancel_touch.position = Vector2(250.0, 250.0)
+	cancel_touch.pressed = true
+	camera_rig._unhandled_input(cancel_touch)
+	_check(camera_rig.pan_velocity.is_zero_approx() and is_zero_approx(camera_rig.orbit_velocity), "A new touch must immediately interrupt existing camera inertia.")
+	var canceled_release := InputEventScreenTouch.new()
+	canceled_release.index = 9
+	canceled_release.position = Vector2(250.0, 250.0)
+	canceled_release.pressed = false
+	canceled_release.canceled = true
+	camera_rig._unhandled_input(canceled_release)
+	_check(camera_rig.touch_points.is_empty() and not camera_rig._multi_touch_gesture_active, "Touch cancellation must release all camera pointer state safely.")
+
 	camera_rig.pan_velocity = Vector2.ZERO
 	camera_rig.orbit_velocity = 0.0
 	camera_rig.touch_points.clear()
