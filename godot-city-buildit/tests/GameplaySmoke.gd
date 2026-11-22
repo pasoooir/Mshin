@@ -1346,6 +1346,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	# Start away from the max-distance clamp so inward pinch can visibly zoom out.
 	camera_rig.current_zoom = 60.0
 	camera_rig._update_camera_transform()
+	var gesture_start_zoom: float = camera_rig.current_zoom
 	camera_rig.touch_points.clear()
 	camera_rig._multi_touch_gesture_active = false
 	camera_rig.pan_velocity = Vector2.ZERO
@@ -1363,6 +1364,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	second_touch.pressed = true
 	camera_rig._unhandled_input(second_touch)
 	var central_anchor: Variant = camera_rig._screen_to_ground(Vector2(200.0, 200.0))
+	_check(central_anchor != null, "A central building point must resolve to the ground plane before pinch zoom.")
 
 	var inward_second := InputEventScreenDrag.new()
 	inward_second.index = 2
@@ -1373,7 +1375,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	inward_first.position = Vector2(170.0, 200.0)
 	camera_rig._unhandled_input(inward_first)
 	var zoomed_in_distance: float = camera_rig.current_zoom
-	_check(zoomed_in_distance > original_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
+	_check(zoomed_in_distance > gesture_start_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
 	if central_anchor != null:
 		var projected_anchor := camera_rig.camera.unproject_position(central_anchor)
 		_check(projected_anchor.distance_to(Vector2(200.0, 200.0)) <= 2.0, "Pinching around a central building must keep the ground focal point under the same screen midpoint.")
