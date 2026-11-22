@@ -30,7 +30,7 @@ func change_season(next_season: int, duration: float = 8.0) -> void:
     if _foliage_material == null:
         return
 
-    current_season = next_season as Season
+    current_season = next_season
     if _transition != null and _transition.is_running():
         _transition.kill()
 
