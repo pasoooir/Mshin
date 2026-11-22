@@ -95,7 +95,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float ground_variation = 0.82 + broad * 0.16 + fine * 0.055") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+	if not world_source.contains("float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
