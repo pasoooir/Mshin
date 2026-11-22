@@ -3085,6 +3085,11 @@ func _clear_native_ui_touch(touch_index: int) -> void:
 	_native_ui_touch_scrolls.erase(touch_index)
 	_native_ui_touch_dragged.erase(touch_index)
 
+func has_active_native_ui_touch() -> bool:
+	# Any UI-owned finger reserves the complete physical touch session.
+	# This prevents another finger on the city from leaking into gameplay.
+	return not _native_ui_touch_targets.is_empty() or not _native_ui_touch_excluded.is_empty() or _production_touch_drag_active
+
 func _create_production_touch_drag_ghost(building: Building, item_id: String) -> void:
 	if not is_instance_valid(production_overlay):
 		return
