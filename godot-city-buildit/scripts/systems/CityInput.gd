@@ -321,7 +321,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_start_road_stroke(event.index, event.position)
 		else:
 			# OS cancellation is not a confirmed release: discard the edit session.
-			if event.canceled:
+			if not should_commit_city_touch_release(event):
 				if BuildManager.is_moving and move_pointer_id == event.index:
 					BuildManager.cancel_move()
 					move_pointer_id = -999
