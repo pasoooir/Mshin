@@ -70,6 +70,20 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
+	var terrain_material_source := world_source
+	for required_terrain_layer in [
+		"float terrain_fbm(vec2 p)",
+		"float terrain_noise(vec2 p)",
+		"vec3 deep_meadow = vec3(0.105, 0.205, 0.105)",
+		"vec3 fresh_meadow = vec3(0.235, 0.335, 0.145)",
+		"vec3 olive_grass = vec3(0.315, 0.305, 0.145)",
+		"float exposed_soil = smoothstep",
+		"SPECULAR = 0.12"
+	]:
+		if not terrain_material_source.contains(required_terrain_layer):
+			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
+			get_tree().quit(1)
+			return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
 		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
 		get_tree().quit(1)
