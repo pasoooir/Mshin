@@ -7,7 +7,7 @@ extends Node3D
 
 @export var zoom_speed: float = 0.045
 @export var min_zoom: float = 12.0
-@export var max_zoom: float = 96.0
+@export var max_zoom: float = 150.0
 @export var world_limit: float = 130.0
 @export_range(20.0, 75.0, 1.0) var camera_pitch_degrees: float = 42.0
 @export var pan_inertia_damping: float = 6.5
@@ -17,7 +17,7 @@ extends Node3D
 
 @onready var camera: Camera3D = $Camera3D
 
-var current_zoom: float = 84.0
+var current_zoom: float = 110.0
 var is_mouse_panning: bool = false
 var last_mouse_position: Vector2 = Vector2.ZERO
 var _last_single_touch_position: Vector2 = Vector2.ZERO
@@ -41,12 +41,12 @@ const MAX_CAMERA_STEP := 1.0 / 20.0
 const MAX_PAN_INERTIA_SPEED := 1600.0
 
 func _ready() -> void:
-	rotation_degrees = Vector3(0.0, -45.0, 0.0)
+	rotation_degrees = Vector3(0.0, -90.0, 0.0)
 	# Frame the starter city behind the complete sandy shore and open Pacific.
 	# Keep the camera on the landward side and shift the target toward the coast,
 	# so city plots and the Pacific remain visible in the same wide overview.
-	global_position = Vector3(62.0, 0.0, -10.0)
-	camera.fov = 55.0
+	global_position = Vector3(55.0, 0.0, -10.0)
+	camera.fov = 62.0
 	_update_camera_transform()
 	focus_target = global_position
 	# No idle per-frame camera work: wake only for touch, inertia or focus.
