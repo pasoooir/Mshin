@@ -94,7 +94,7 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                 var world_position: Vector3 = entry["position"]
                 var local_position := world_position - chunk_root.position
                 var stable_random: float = float(entry["seed"])
-                var scale_value := 1.30 + fposmod(stable_random * 17.0, 0.42)
+                var scale_value := 1.78 + fposmod(stable_random * 17.0, 0.62)
                 var yaw := stable_random * TAU
                 var width_factor := 1.0
                 var height_factor := 1.0
