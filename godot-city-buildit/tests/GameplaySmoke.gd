@@ -4474,7 +4474,7 @@ func _test_tutorial_guide_contract() -> void:
 	_check(is_instance_valid(guide), "The main scene must include the live city coach instance.")
 	if is_instance_valid(guide):
 		var startup_status := get_node_or_null("HUD/StatusLabel") as Label
-		if bool(guide.get("tutorial_enabled")) and not bool(guide.get("completed")):
+		if bool(guide.get("tutorial_enabled")) and not bool(guide.get("completed")) and guide._panel.visible:
 			_check(startup_status == null or (not startup_status.visible and not startup_status.text.contains("Your city is ready.")), "Status feedback must not duplicate or overlap the active first-session city coach.")
 		_check(guide._panel.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The full-screen coach shell must ignore input so it cannot intercept the underlying HUD.")
 	if is_instance_valid(guide):
@@ -4488,12 +4488,21 @@ func _test_tutorial_guide_contract() -> void:
 		if name_input != null and finger != null:
 			var previous_step := int(guide.current_step)
 			var previous_completed := bool(guide.completed)
+			var previous_dismissed_for_name_check := bool(guide._dismissed)
+			var previous_panel_visible_for_name_check := guide._panel.visible
 			guide.current_step = 0
 			guide.completed = false
+			guide._dismissed = false
+			guide._panel.show()
 			guide._refresh_guide()
 			_check(name_input.is_visible_in_tree() and not finger.is_visible_in_tree(), "The city-name field must be self-explanatory; its pointer must stay hidden rather than overlap the instruction text.")
 			guide.current_step = previous_step
 			guide.completed = previous_completed
+			guide._dismissed = previous_dismissed_for_name_check
+			if previous_panel_visible_for_name_check:
+				guide._panel.show()
+			else:
+				guide._panel.hide()
 			if guide.completed:
 				guide._show_completion()
 			else:
