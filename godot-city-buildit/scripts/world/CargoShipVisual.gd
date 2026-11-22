@@ -2,15 +2,15 @@ extends Node3D
 
 enum VoyageState { APPROACHING, BERTHED, UNLOADING, DEPARTING, WAITING }
 
-const DOCK_X := 131.0
-const OFFSHORE_X := 174.0
-const DEPARTURE_X := 188.0
+const DOCK_X := 195.0
+const OFFSHORE_X := 238.0
+const DEPARTURE_X := 252.0
 const ROUTE_Z := -22.0
 const SAIL_SPEED := 12.0
 const WALK_SPEED := 2.8
 const PASSENGER_COUNT := 8
 const UNLOAD_INTERVAL := 0.52
-const TERMINAL_X := 99.0
+const TERMINAL_X := 153.5
 
 var _state: VoyageState = VoyageState.APPROACHING
 var _state_timer := 0.0
