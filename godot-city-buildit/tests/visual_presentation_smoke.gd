@@ -40,6 +40,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] The placement grid must be hidden during normal city viewing")
 		get_tree().quit(1)
 		return
+	if not road_source.contains("func _append_top_quad(") or road_source.contains("_append_box(asphalt_tool,") or road_source.contains("_append_box(sidewalk_tool,"):
+		push_error("[VisualPresentationSmoke] Horizontal road surfaces must use top-face-only geometry to avoid hidden bottom/side triangles")
+		get_tree().quit(1)
+		return
 	if not road_source.contains("instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF"):
 		push_error("[VisualPresentationSmoke] Repeated road tiles must not consume the shadow-caster pass")
 		get_tree().quit(1)
