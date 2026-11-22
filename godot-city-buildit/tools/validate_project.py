@@ -605,7 +605,7 @@ for contract in [
         errors.append(f"Citizen feedback bubble contract is missing: {contract}")
 for contract in [
     "enum VoyageState { APPROACHING, BERTHED, UNLOADING, DEPARTING, WAITING }",
-    "const DOCK_X := 127.0",
+    "const DOCK_X := 131.0",
     "const SAIL_SPEED := 12.0",
     "PASSENGER_COUNT := 8",
     "PassengerFerryHull",
