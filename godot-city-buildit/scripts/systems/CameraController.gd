@@ -173,6 +173,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var residential_modal = hud.get("residential_overlay")
 		if (production_modal is Control and is_instance_valid(production_modal)) or (residential_modal is Control and is_instance_valid(residential_modal)):
 			touch_points.clear()
+			_multi_touch_gesture_active = false
+			last_pinch_distance = 0.0
+			last_pinch_angle = 0.0
+			last_pinch_centroid = Vector2.ZERO
+			_last_single_touch_position = Vector2.ZERO
 			is_mouse_panning = false
 			pan_velocity = Vector2.ZERO
 			orbit_velocity = 0.0
