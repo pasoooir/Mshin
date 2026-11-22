@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#536B45"), Color("#66764A"), Color("#77734B"),
-	Color("#465F43"), Color("#7B8052"), Color("#5D7048")
+	Color("#78865C"), Color("#8D9165"), Color("#9A875D"),
+	Color("#687B55"), Color("#A08E65"), Color("#7F8960")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -348,12 +348,12 @@ func _build_meadow_biome_overlays() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20261122
 	var palette: Array[Color] = [
-		Color("#77815A"), Color("#8C8258"), Color("#6C7E50"),
-		Color("#566F46"), Color("#82664C"), Color("#98865D"),
-		Color("#687A54")
+		Color("#8E9568"), Color("#A18C61"), Color("#7E8C5D"),
+		Color("#6F8258"), Color("#9A795C"), Color("#B09A6B"),
+		Color("#879064")
 	]
-	var base_edge := Color("#25723D")
-	var patch_count := 280
+	var base_edge := Color("#71805A")
+	var patch_count := 420
 	for patch_index in range(patch_count):
 		var center_x := rng.randf_range(-112.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
@@ -365,11 +365,11 @@ func _build_meadow_biome_overlays() -> void:
 		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(2.8, 5.5)
 		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
 		var rotation := rng.randf_range(0.0, TAU)
-		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.60)
+		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.30)
 		if in_starter_city:
 			# Keep future building plots readable: subtle sage and dry-grass
 			# islands add texture without looking like prebuilt landscaping.
-			patch_color = Color("#71835A").lerp(Color("#A08D61"), rng.randf_range(0.08, 0.34)).lerp(base_edge, 0.48)
+			patch_color = Color("#829064").lerp(Color("#B09A6B"), rng.randf_range(0.16, 0.48)).lerp(base_edge, 0.24)
 		var ring_levels := [0.0, 0.34, 0.68, 1.0]
 		var segments := 16
 		var ring_points: Array = []
@@ -449,8 +449,8 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#455B3D")
-		var fresh_grass := Color("#85845A")
+		var deep_grass := Color("#65734E")
+		var fresh_grass := Color("#A39A69")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
 		var biome_soil_mask := smoothstep(0.34, 0.78, macro_patch * 0.62 + secondary_patch * 0.38)
@@ -1236,17 +1236,17 @@ void fragment() {
 	float soil_patch_mask = smoothstep(0.59, 0.79, soil_field) * (0.42 + soil_core * 0.58);
 	soil_patch_mask *= 0.72 + dry_mask * 0.28;
 
-	vec3 deep_meadow = vec3(0.245, 0.335, 0.205);
-	vec3 sunlit_sage = vec3(0.455, 0.475, 0.305);
-	vec3 dry_olive = vec3(0.565, 0.505, 0.335);
-	vec3 straw_grass = vec3(0.635, 0.565, 0.390);
-	vec3 exposed_soil = vec3(0.405, 0.305, 0.205);
-	vec3 warm_earth = vec3(0.505, 0.385, 0.265);
+	vec3 deep_meadow = vec3(0.365, 0.405, 0.275);
+	vec3 sunlit_sage = vec3(0.525, 0.535, 0.355);
+	vec3 dry_olive = vec3(0.625, 0.555, 0.375);
+	vec3 straw_grass = vec3(0.715, 0.625, 0.435);
+	vec3 exposed_soil = vec3(0.475, 0.355, 0.255);
+	vec3 warm_earth = vec3(0.565, 0.425, 0.295);
 
 	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
-	meadow = mix(meadow, dry_olive, olive_mask * 0.56);
-	meadow = mix(meadow, straw_grass, dry_mask * 0.54);
-	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.78, 0.0, 0.68));
+	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
+	meadow = mix(meadow, straw_grass, dry_mask * 0.66);
+	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.92, 0.0, 0.76));
 
 	// Retain the locally generated grass texture as a restrained fine-scale
 	// overlay; the world-space biome colors remain the dominant visual read.
@@ -1256,7 +1256,7 @@ void fragment() {
 	meadow *= mix(0.92, 1.06, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
 	// Baked vertex color gently carries climate/region tint without washing out
 	// the designed soil and dry-field colors.
-	meadow *= mix(vec3(0.94), COLOR.rgb, 0.22);
+	meadow *= mix(vec3(0.96), COLOR.rgb, 0.34);
 
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
