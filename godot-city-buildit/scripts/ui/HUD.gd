@@ -339,6 +339,19 @@ func _apply_responsive_layout() -> void:
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
 	var scale_factor := clampf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.90, 1.20)
+	if is_instance_valid(status_label):
+		# Status feedback belongs above the bottom action dock, never underneath it.
+		var status_width := minf(730.0 * scale_factor, viewport_size.x - 24.0 * scale_factor)
+		status_label.anchor_left = 0.5
+		status_label.anchor_right = 0.5
+		status_label.anchor_top = 1.0
+		status_label.anchor_bottom = 1.0
+		status_label.offset_left = -status_width * 0.5
+		status_label.offset_right = status_width * 0.5
+		status_label.offset_top = -188.0 * scale_factor
+		status_label.offset_bottom = -122.0 * scale_factor
+		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var toolbar := get_node_or_null("RightToolbar") as Control
 	if toolbar:
 		# Keep the transparent PNG shortcuts on the right at every viewport size.
