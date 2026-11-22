@@ -150,7 +150,7 @@ For every finding record:
   - Browser/device hit-testing and physical Android behavior remain unverified; F7 remains PARTIAL.
 - **AUDIT-008 — Live mixed-touch handler integration: IMPLEMENTED; CI PENDING.**
   - `GameplaySmoke._test_mixed_hud_world_touch_isolation` runs in the actual gameplay scene with a temporary HUD Button and the real HUD router, CameraController and CityInput handlers.
-  - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, and accidental button activation.
+  - It covers HUD-first then world touch, world-first then HUD touch, world drag/release while HUD owns a finger, OS-cancelled releases, stale pointer/road-stroke cleanup, camera transform invariance, unchanged building/road counts, and accidental button activation.
   - Assertions are on runtime handler state, not merely static policy helpers. The probe button is removed before the rest of gameplay smoke proceeds.
   - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
 
