@@ -31,6 +31,14 @@ const SPECIALIZATION_GROUPS := [
 
 # The atlas does not currently contain a banknote glyph, so SimCash uses this
 # SimCash and all other HUD glyphs use local transparent PNG assets.
+class LoginRequiredDotVisual extends Control:
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := minf(size.x, size.y) * 0.34
+		draw_circle(center + Vector2(0.0, 1.5), radius + 2.0, Color(0.0, 0.0, 0.0, 0.75))
+		draw_circle(center, radius, Color("#FF4D5E"))
+		draw_circle(center + Vector2(-radius * 0.28, -radius * 0.30), radius * 0.24, Color("#FFE6E9"))
+
 class BanknoteGlyph extends Control:
 	func _draw() -> void:
 		var note := Rect2(Vector2(5.0, 12.0), Vector2(size.x - 10.0, size.y - 24.0))
@@ -170,7 +178,7 @@ var service_warning_panel: PanelContainer
 var trade_overlay: Control
 var trade_panel: PanelContainer
 var settings_overlay: Control
-var _settings_login_indicator: Label
+var _settings_login_indicator: Control
 var _settings_login_blink_timer: Timer
 var _settings_account_status: Label
 var _settings_account_action: Button
@@ -918,16 +926,8 @@ func _build_toolbars() -> void:
 	var settings_button := _make_icon_button("settings", "Settings", Vector2(70, 76) * _ui_scale)
 	settings_button.name = "SettingsAction"
 	settings_button.pressed.connect(_on_settings_pressed)
-	_settings_login_indicator = Label.new()
+	_settings_login_indicator = LoginRequiredDotVisual.new()
 	_settings_login_indicator.name = "LoginRequiredIndicator"
-	_settings_login_indicator.text = "●"
-	_settings_login_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_settings_login_indicator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_settings_login_indicator.add_theme_font_size_override("font_size", int(25 * _ui_scale))
-	_settings_login_indicator.add_theme_color_override("font_color", Color("#FF4D5E"))
-	_settings_login_indicator.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
-	_settings_login_indicator.add_theme_constant_override("shadow_offset_x", 1)
-	_settings_login_indicator.add_theme_constant_override("shadow_offset_y", 2)
 	_settings_login_indicator.position = Vector2(settings_button.custom_minimum_size.x - 28 * _ui_scale, 0)
 	_settings_login_indicator.size = Vector2(28, 28) * _ui_scale
 	_settings_login_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
