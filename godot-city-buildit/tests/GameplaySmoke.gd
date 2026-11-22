@@ -62,6 +62,12 @@ func _ready() -> void:
 	call_deferred("_run_gameplay_test")
 
 func _test_camera_gesture_math() -> void:
+	var blocked_touch := InputEventScreenTouch.new()
+	var blocked_drag := InputEventScreenDrag.new()
+	var blocked_key := InputEventKey.new()
+	_check(not CameraControllerScript.should_consume_blocked_world_input(blocked_touch) and not CityInputScript.should_consume_blocked_world_input(blocked_touch), "HUD-owned touch events must propagate through both world handlers so each clears its own pointer state.")
+	_check(not CameraControllerScript.should_consume_blocked_world_input(blocked_drag) and not CityInputScript.should_consume_blocked_world_input(blocked_drag), "HUD-owned drag events must propagate through both world handlers so neither retains a stale pointer.")
+	_check(CameraControllerScript.should_consume_blocked_world_input(blocked_key) and CityInputScript.should_consume_blocked_world_input(blocked_key), "Non-pointer modal input must remain consumable to block background actions.")
 	# Pinch-out must reduce camera distance; pinch-in must increase it.
 	var zoom_out := CameraControllerScript.pinch_zoom_delta(100.0, 150.0, 0.045)
 	var zoom_in := CameraControllerScript.pinch_zoom_delta(150.0, 100.0, 0.045)
