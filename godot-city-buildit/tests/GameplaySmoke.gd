@@ -1226,14 +1226,14 @@ func _test_camera_inertia_math() -> void:
 	_check(damped_orbit > 0.0, "Camera orbit inertia must preserve the rotation direction while decaying.")
 	var pinch_in := CameraControllerScript.pinch_zoom_delta(180.0, 120.0, 0.045)
 	var pinch_out := CameraControllerScript.pinch_zoom_delta(120.0, 180.0, 0.045)
-	_check(pinch_in < 0.0 and pinch_out > 0.0, "Pinching two fingers inward must reduce camera distance (zoom in), while spreading them must increase distance (zoom out).")
+	_check(pinch_in > 0.0 and pinch_out < 0.0, "Pinching two fingers inward must increase camera distance (zoom out), while spreading them must decrease distance (zoom in).")
 	var zoom_rig := CameraControllerScript.new()
 	zoom_rig.current_zoom = 30.0
 	zoom_rig._zoom(pinch_in)
 	var zoomed_in_distance := zoom_rig.current_zoom
-	_check(zoomed_in_distance < 30.0, "Inward pinch must move the camera closer to the city target.")
+	_check(zoomed_in_distance > 30.0, "Inward pinch must move the camera farther from the city target (zoom out).")
 	zoom_rig._zoom(pinch_out)
-	_check(zoom_rig.current_zoom > zoomed_in_distance, "Outward pinch must move the camera farther from the city target.")
+	_check(zoom_rig.current_zoom < zoomed_in_distance, "Outward pinch must move the camera closer to the city target (zoom in).")
 	zoom_rig.free()
 	var centroid := CameraControllerScript.touch_centroid(Vector2(100.0, 120.0), Vector2(300.0, 220.0))
 	_check(centroid.is_equal_approx(Vector2(200.0, 170.0)), "Two-finger pan must use the midpoint between active touches.")
@@ -1353,7 +1353,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	inward_first.position = Vector2(170.0, 200.0)
 	camera_rig._unhandled_input(inward_first)
 	var zoomed_in_distance: float = camera_rig.current_zoom
-	_check(zoomed_in_distance < original_zoom, "Real two-finger touch events moving inward must zoom the live camera in.")
+	_check(zoomed_in_distance > original_zoom, "Real two-finger touch events moving inward must zoom the live camera out.")
 
 	var outward_second := InputEventScreenDrag.new()
 	outward_second.index = 2
@@ -1363,7 +1363,7 @@ func _test_camera_touch_gesture_integration() -> void:
 	outward_first.index = 1
 	outward_first.position = Vector2(100.0, 200.0)
 	camera_rig._unhandled_input(outward_first)
-	_check(camera_rig.current_zoom > zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera out.")
+	_check(camera_rig.current_zoom < zoomed_in_distance, "Real two-finger touch events spreading outward must zoom the live camera in.")
 
 	var position_before_two_finger_pan: Vector3 = camera_rig.global_position
 	var pan_second := InputEventScreenDrag.new()
