@@ -94,6 +94,16 @@ func _test_camera_gesture_math() -> void:
 	city_input_probe.free()
 
 func _test_hud_touch_session_ownership() -> void:
+	var tap_release := InputEventScreenTouch.new()
+	tap_release.pressed = false
+	_check(HUDScript.should_activate_native_ui_touch(tap_release, false), "A normal stationary HUD touch release must activate its button.")
+	var cancelled_release := InputEventScreenTouch.new()
+	cancelled_release.pressed = false
+	cancelled_release.canceled = true
+	_check(not HUDScript.should_activate_native_ui_touch(cancelled_release, false), "A cancelled HUD touch must never activate a button.")
+	var dragged_release := InputEventScreenTouch.new()
+	dragged_release.pressed = false
+	_check(not HUDScript.should_activate_native_ui_touch(dragged_release, true), "A dragged HUD touch must never activate a button on release.")
 	var hud_probe = HUDScript.new()
 	_check(not hud_probe.has_active_native_ui_touch(), "HUD must report no UI-owned touch when no pointer is active.")
 	hud_probe._native_ui_touch_targets[3] = hud_probe
