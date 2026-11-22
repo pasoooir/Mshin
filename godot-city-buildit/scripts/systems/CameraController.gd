@@ -20,6 +20,7 @@ extends Node3D
 var current_zoom: float = 150.0
 var is_mouse_panning: bool = false
 var last_mouse_position: Vector2 = Vector2.ZERO
+var _last_single_touch_position: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
 var _multi_touch_gesture_active: bool = false
 var last_pinch_distance: float = 0.0
@@ -137,7 +138,8 @@ static func screen_pan_scale(zoom: float, fov_degrees: float, viewport_height: f
 	return (2.0 * maxf(0.0, zoom) * tan(deg_to_rad(clampf(fov_degrees, 1.0, 179.0)) * 0.5) / viewport_height) * clampf(sensitivity, 0.1, 1.0)
 
 static func pinch_zoom_delta(previous_distance: float, current_distance: float, sensitivity: float) -> float:
-	return (current_distance - previous_distance) * maxf(0.0, sensitivity)
+	# Negative distance delta means move the camera closer (zoom in).
+	return -(current_distance - previous_distance) * maxf(0.0, sensitivity)
 
 static func touch_centroid(first: Vector2, second: Vector2) -> Vector2:
 	return (first + second) * 0.5
@@ -189,45 +191,50 @@ func _unhandled_input(event: InputEvent) -> void:
 			_zoom(2.0)
 	elif event is InputEventMouseMotion and is_mouse_panning:
 		if not _is_building_press_pending(-1):
-			_pan(event.position - last_mouse_position)
+			_pan_between_screen_points(last_mouse_position, event.position)
 			pan_velocity = clamp_pan_velocity(event.velocity)
 		last_mouse_position = event.position
 		_refresh_processing()
 	elif event is InputEventScreenTouch:
 		if event.pressed:
-			# A multi-touch session is direct manipulation, not an inertial fling.
-			# Never carry velocity from a two-finger pinch/twist into the release.
+			# Every pointer-count transition takes control immediately and starts
+			# with fresh baselines; stale one-/two-finger velocities never leak.
+			pan_velocity = Vector2.ZERO
+			orbit_velocity = 0.0
+			is_focus_animating = false
 			if not touch_points.is_empty():
 				_multi_touch_gesture_active = true
-				pan_velocity = Vector2.ZERO
-				orbit_velocity = 0.0
-			is_focus_animating = false
 			touch_points[event.index] = event.position
-			if touch_points.size() >= 2:
+			if touch_points.size() == 1:
+				_last_single_touch_position = event.position
+			else:
 				_update_pinch_baseline()
-			_refresh_processing()
+		_refresh_processing()
 		else:
 			touch_points.erase(event.index)
-			if _multi_touch_gesture_active:
-				pan_velocity = Vector2.ZERO
-				orbit_velocity = 0.0
-				if touch_points.size() < 2:
-					_multi_touch_gesture_active = false
+			pan_velocity = Vector2.ZERO if _multi_touch_gesture_active else pan_velocity
+			orbit_velocity = 0.0
+			_multi_touch_gesture_active = touch_points.size() >= 2
+			if touch_points.size() == 1:
+				var remaining_ids: Array = touch_points.keys()
+				_last_single_touch_position = touch_points[remaining_ids[0]]
 			last_pinch_distance = 0.0
 			last_pinch_angle = 0.0
 			last_pinch_centroid = Vector2.ZERO
-			_refresh_processing()
+		_refresh_processing()
 	elif event is InputEventScreenDrag:
 		if not touch_points.has(event.index):
 			return
+		var previous_single_position := _last_single_touch_position
 		touch_points[event.index] = event.position
 		if touch_points.size() == 1:
 			# CityInput owns long-press building relocation and placement gestures.
 			if not _is_road_mode() and not BuildManager.is_moving and not _is_building_press_pending(event.index):
-				_pan(event.relative)
+				_pan_between_screen_points(previous_single_position, event.position)
 				orbit_velocity = 0.0
 				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
 				pan_velocity = clamp_pan_velocity(event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta)
+			_last_single_touch_position = event.position
 		elif touch_points.size() >= 2:
 			_update_pinch()
 		_refresh_processing()
@@ -263,10 +270,11 @@ func _update_pinch() -> void:
 	var angle: float = vector.angle()
 	var centroid := touch_centroid(points[0], points[1])
 	if last_pinch_distance > 0.0:
+		# Preserve the ground point under the previous midpoint, then re-anchor
+		# it under the new midpoint after applying pan, pinch and twist together.
+		var focal_world := _screen_to_ground(last_pinch_centroid)
 		var centroid_delta := centroid - last_pinch_centroid
 		if centroid_delta.length() >= TWO_FINGER_PAN_DEADZONE:
-			_pan(centroid_delta)
-			# Two-finger translation is applied only while fingers are down.
 			pan_velocity = Vector2.ZERO
 		var distance_delta := pinch_zoom_delta(last_pinch_distance, distance, zoom_speed)
 		if absf(distance_delta) >= PINCH_DEADZONE:
@@ -274,28 +282,56 @@ func _update_pinch() -> void:
 		var angle_delta: float = touch_orbit_delta(last_pinch_angle, angle)
 		if absf(angle_delta) >= TWIST_DEADZONE:
 			rotation_degrees.y = apply_orbit_delta(rotation_degrees.y, angle_delta)
-			# Two-finger twist must stop exactly on release; no angular fling.
 			orbit_velocity = 0.0
-	last_pinch_distance = distance
-	last_pinch_angle = angle
-	last_pinch_centroid = centroid
+		if focal_world != null:
+			_keep_ground_point_under_screen(focal_world, centroid)
+		last_pinch_distance = distance
+		last_pinch_angle = angle
+		last_pinch_centroid = centroid
+	else:
+		_update_pinch_baseline()
 
-func _pan(screen_delta: Vector2) -> void:
-	if screen_delta.length_squared() <= 0.0001:
+func _screen_to_ground(screen_position: Vector2) -> Variant:
+	if not is_instance_valid(camera):
+		return null
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_direction := camera.project_ray_normal(screen_position)
+	if absf(ray_direction.y) <= 0.000001:
+		return null
+	var distance_to_ground := -ray_origin.y / ray_direction.y
+	if distance_to_ground < 0.0:
+		return null
+	return ray_origin + ray_direction * distance_to_ground
+
+func _keep_ground_point_under_screen(ground_point: Vector3, screen_position: Vector2) -> void:
+	var after_transform = _screen_to_ground(screen_position)
+	if after_transform == null:
 		return
-	is_focus_animating = false
-	var right: Vector3 = global_transform.basis.x
-	var forward: Vector3 = global_transform.basis.z
-	right.y = 0.0
-	forward.y = 0.0
-	right = right.normalized()
-	forward = forward.normalized()
-	var viewport_height := float(get_viewport().get_visible_rect().size.y)
-	var fov_degrees := camera.fov if is_instance_valid(camera) else 46.0
-	var world_per_pixel := screen_pan_scale(current_zoom, fov_degrees, viewport_height, pan_screen_sensitivity)
-	global_position += (-right * screen_delta.x - forward * screen_delta.y) * world_per_pixel
+	global_position.x += ground_point.x - after_transform.x
+	global_position.z += ground_point.z - after_transform.z
 	global_position.x = clampf(global_position.x, -world_limit, world_limit)
 	global_position.z = clampf(global_position.z, -world_limit, world_limit)
+
+func _pan_between_screen_points(previous_position: Vector2, current_position: Vector2) -> void:
+	if previous_position.distance_squared_to(current_position) <= 0.0001:
+		return
+	var previous_ground = _screen_to_ground(previous_position)
+	var current_ground = _screen_to_ground(current_position)
+	if previous_ground == null or current_ground == null:
+		return
+	is_focus_animating = false
+	global_position += previous_ground - current_ground
+	global_position.y = 0.0
+	global_position.x = clampf(global_position.x, -world_limit, world_limit)
+	global_position.z = clampf(global_position.z, -world_limit, world_limit)
+
+func _pan(screen_delta: Vector2) -> void:
+	# Inertia is measured in screen pixels/second, but converted through the
+	# same ground-ray mapping as direct dragging at the current camera pose.
+	if screen_delta.length_squared() <= 0.0001:
+		return
+	var center := get_viewport().get_visible_rect().size * 0.5
+	_pan_between_screen_points(center, center + screen_delta)
 
 func _zoom(amount: float) -> void:
 	current_zoom = clampf(current_zoom + amount, min_zoom, max_zoom)
