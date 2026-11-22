@@ -1117,6 +1117,22 @@ float terrain_fbm(vec2 p) {
 	}
 	return value;
 }
+float terrain_cellular(vec2 p) {
+	vec2 cell = floor(p);
+	vec2 local = fract(p);
+	float nearest = 1.0;
+	for (int y = -1; y <= 1; y++) {
+		for (int x = -1; x <= 1; x++) {
+			vec2 neighbour = vec2(float(x), float(y));
+			vec2 feature = neighbour + vec2(
+				terrain_hash(cell + neighbour + vec2(17.0, 3.0)),
+				terrain_hash(cell + neighbour + vec2(41.0, 29.0))
+			) * 0.72 + 0.14;
+			nearest = min(nearest, length(neighbour + feature - local));
+		}
+	}
+	return nearest;
+}
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -1126,30 +1142,46 @@ void fragment() {
 	float sand_mask = smoothstep(coastline - 26.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
-	// Broad, low-frequency biome patches break the starter meadow into
-	// readable natural fields instead of one saturated green carpet.
-	float broad = sin(world_position.x * 0.041 + world_position.z * 0.027) * cos(world_position.z * 0.036 - world_position.x * 0.022);
-	float fine = sin(world_position.x * 0.31 - world_position.z * 0.27) * cos(world_position.z * 0.23 + world_position.x * 0.19);
-	float patch = smoothstep(-0.42, 0.48, broad);
-	float ground_variation = 0.82 + broad * 0.16 + fine * 0.055;
-	float macro_noise = terrain_fbm(world_xz * 0.034);
-	float meadow_noise = terrain_fbm(world_xz * 0.105 + vec2(17.0, 9.0));
-	float micro_noise = terrain_noise(world_xz * 2.8);
-	float lush_mask = smoothstep(0.34, 0.70, macro_noise);
-	float dry_mask = smoothstep(0.48, 0.76, terrain_fbm(world_xz * 0.12 + vec2(41.0, 13.0)));
-	vec3 sampled_grass = texture(grass_texture, ground_uv).rgb;
-	vec3 deep_meadow = vec3(0.29, 0.38, 0.22);
-	vec3 fresh_meadow = vec3(0.43, 0.51, 0.30);
-	vec3 olive_grass = vec3(0.51, 0.46, 0.29);
-	vec3 meadow_palette = mix(deep_meadow, fresh_meadow, lush_mask);
-	meadow_palette = mix(meadow_palette, olive_grass, dry_mask * 0.62);
-	vec3 meadow = sampled_grass * COLOR.rgb * ground_variation;
-	meadow *= mix(0.78, 1.12, patch);
-	meadow = mix(meadow, meadow_palette * (0.88 + meadow_noise * 0.30), 0.98);
-	meadow *= 0.88 + micro_noise * 0.22;
-	vec3 soil = vec3(0.35, 0.27, 0.17) * (0.78 + meadow_noise * 0.42);
-	float exposed_soil = smoothstep(0.56, 0.79, terrain_fbm(world_xz * 0.22 + vec2(7.0, 29.0)));
-	meadow = mix(meadow, soil, exposed_soil * 0.34);
+
+	// A layered, world-space meadow: broad fields first, then irregular
+	// dry-grass islands, exposed earth, and fine mottling. These masks are
+	// deliberately high-contrast enough to survive the mobile overview camera.
+	float broad_field = terrain_fbm(world_xz * 0.019 + vec2(7.0, 13.0));
+	float mid_field = terrain_fbm(world_xz * 0.052 + vec2(23.0, 5.0));
+	float dry_field = terrain_fbm(world_xz * 0.031 + vec2(47.0, 31.0));
+	float soil_field = terrain_fbm(world_xz * 0.094 + vec2(11.0, 59.0));
+	float micro_grain = terrain_noise(world_xz * 1.65);
+	float cell_shape = terrain_cellular(world_xz * 0.041);
+
+	float sunlit_mask = smoothstep(0.31, 0.68, broad_field);
+	float olive_mask = smoothstep(0.35, 0.69, mid_field);
+	float dry_mask = smoothstep(0.39, 0.68, dry_field);
+	float soil_core = 1.0 - smoothstep(0.24, 0.47, cell_shape);
+	float soil_patch_mask = smoothstep(0.59, 0.79, soil_field) * (0.42 + soil_core * 0.58);
+	soil_patch_mask *= 0.72 + dry_mask * 0.28;
+
+	vec3 deep_meadow = vec3(0.245, 0.335, 0.205);
+	vec3 sunlit_sage = vec3(0.455, 0.475, 0.305);
+	vec3 dry_olive = vec3(0.565, 0.505, 0.335);
+	vec3 straw_grass = vec3(0.635, 0.565, 0.390);
+	vec3 exposed_soil = vec3(0.405, 0.305, 0.205);
+	vec3 warm_earth = vec3(0.505, 0.385, 0.265);
+
+	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
+	meadow = mix(meadow, dry_olive, olive_mask * 0.56);
+	meadow = mix(meadow, straw_grass, dry_mask * 0.54);
+	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.78, 0.0, 0.68));
+
+	// Retain the locally generated grass texture as a restrained fine-scale
+	// overlay; the world-space biome colors remain the dominant visual read.
+	vec3 sampled_grass = texture(grass_texture, ground_uv * 0.72).rgb;
+	meadow = mix(meadow, meadow * sampled_grass * 1.55, 0.16);
+	meadow *= 0.88 + micro_grain * 0.25;
+	meadow *= mix(0.92, 1.06, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
+	// Baked vertex color gently carries climate/region tint without washing out
+	// the designed soil and dry-field colors.
+	meadow *= mix(vec3(0.94), COLOR.rgb, 0.22);
+
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
 	vec3 damp_sand = sand * vec3(0.78, 0.82, 0.83);
