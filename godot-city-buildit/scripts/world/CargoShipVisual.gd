@@ -205,3 +205,6 @@ func get_walking_passenger_count() -> int:
 
 func get_completed_voyages() -> int:
 	return _voyage_count
+
+func get_last_voyage_unloaded_count() -> int:
+	return _unloaded_total
