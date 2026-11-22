@@ -120,6 +120,17 @@ func _test_camera_gesture_math() -> void:
 	focus_loss_city_probe.free()
 
 func _test_hud_touch_session_ownership() -> void:
+	var escape := InputEventKey.new()
+	escape.pressed = true
+	escape.keycode = KEY_ESCAPE
+	_check(HUDScript.escape_tool_action(escape, true, false, true) == "close_production", "Escape must close a visible production panel before cancelling tools.")
+	_check(HUDScript.escape_tool_action(escape, false, true, true) == "close_build_menu", "Escape must close the build menu before cancelling its tool.")
+	_check(HUDScript.escape_tool_action(escape, false, false, true) == "cancel_tool", "Escape must cancel an active city tool.")
+	_check(HUDScript.escape_tool_action(escape, false, false, false).is_empty(), "Escape must not trigger a destructive action when no panel or tool is active.")
+	var other_key := InputEventKey.new()
+	other_key.pressed = true
+	other_key.keycode = KEY_ENTER
+	_check(HUDScript.escape_tool_action(other_key, false, false, true).is_empty(), "Non-Escape keys must not trigger Escape cancellation.")
 	var tap_release := InputEventScreenTouch.new()
 	tap_release.pressed = false
 	_check(HUDScript.should_activate_native_ui_touch(tap_release, false), "A normal stationary HUD touch release must activate its button.")
