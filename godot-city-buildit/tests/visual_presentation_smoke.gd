@@ -56,6 +56,15 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Build grid visibility must follow building placement and road editing modes")
 		get_tree().quit(1)
 		return
+	var expansion_panel_source := FileAccess.get_file_as_string("res://scripts/ui/LandExpansionPanel.gd")
+	if not world_source.contains("marker.visible = _expansion_preview_active") or not world_source.contains("func set_expansion_preview_visible(active: bool)") or not expansion_panel_source.contains("_set_world_expansion_preview(true)") or not expansion_panel_source.contains("_set_world_expansion_preview(false)"):
+		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
+		get_tree().quit(1)
+		return
+	if not world_source.contains("float ground_variation = 0.88 + broad * 0.075 + fine * 0.025") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
+		get_tree().quit(1)
+		return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
 		push_error("[VisualPresentationSmoke] Terrain and road textures must be fully local; runtime CDN/HTTP requests are forbidden")
 		get_tree().quit(1)
