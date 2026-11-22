@@ -156,8 +156,8 @@ For every finding record:
   - Remaining gap: browser CDP does not yet target a measured production HUD control, and physical Android multi-touch remains NOT TESTED.
 - **AUDIT-009 — First-entry visual acceptance: FAIL; remediation in PR #657.**
   - Reviewed the real WebGL captures from [Mshin Playable Web run 44997719591](https://github.com/pasoooir/Mshin/actions/runs/44997719591): `desktop-pacific-entry.png`, `desktop-pacific-medium.png`, `desktop-pacific-near.png`, and `desktop-pacific-overview.png`.
-  - Confirmed defects: the first-step coach uses a 430×300 logical-pixel panel at 1280×720; its 64×64 pointing-hand emoji renders as a missing-glyph box over the instruction text; and the `Connected City` achievement toast appears on fresh entry because the metric counts the 50 free prebuilt highway connector tiles as player-built roads.
-  - PR #657 reduces the compact coach to 380×230, shortens the city-name instruction, hides the pointer for that self-explanatory first step, uses a directional glyph for later steps, and counts road achievement progress only beyond the 50 free starter tiles.
+  - Confirmed defects: the first-step coach uses a 430×300 logical-pixel panel at 1280×720; its 64×64 pointing-hand emoji renders as a missing-glyph box over the instruction text; and the `Connected City` achievement toast appears on fresh entry because the achievement target was 50, exactly matching the 50 free prebuilt highway connector tiles.
+  - PR #657 reduces the compact coach to 380×230, shortens the city-name instruction, hides the pointer for that self-explanatory first step, uses a directional glyph for later steps, and raises the connected-road achievement threshold to 75 tiles so the 50 free starter tiles cannot trigger it on entry.
   - Do not close A1/A3/I1 until fresh WebGL screenshots show the coach unobtrusive and no false startup achievement. Physical Android visual acceptance remains separate.
 
 ## Area-level evidence ledger (2026-11-22)
