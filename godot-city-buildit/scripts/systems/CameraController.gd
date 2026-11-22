@@ -238,7 +238,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			if is_cancelled_touch_release(event):
 				_reset_touch_session()
-				get_viewport().set_input_as_handled()
+				# Do not consume the event: CityInput must also clear its matching pointer.
 				return
 			touch_points.erase(event.index)
 			if _multi_touch_gesture_active:
