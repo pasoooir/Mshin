@@ -4774,7 +4774,7 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/HighwayLighting") != null, "Permanent motorway lighting was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/MeadowLivestock") == null, "Rural livestock must not appear in the Los Angeles-inspired starter scene.")
 	_check(WorldPresentationScript.HIGHWAY_LAMP_COUNT == 12, "The permanent motorway must include twelve batched light poles.")
-	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 36.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
+	_check(is_equal_approx(WorldPresentationScript.COASTLINE_BASE_X, 110.0) and is_equal_approx(WorldPresentationScript.BEACH_WIDTH, 44.0), "Starter region must expose a wide Pacific beach beyond the buildable city.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificCoastalPromenade") != null, "Pacific coastal promenade was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificPalmTrunks") != null and world.get_node_or_null("WorldPresentation/PacificPalmCrowns") != null, "Batched coastal palm trees were not generated.")
 	_check(WorldPresentationScript.HIGHWAY_LANE_COUNT == 6, "Permanent entrance highway must provide three lanes in each direction.")
