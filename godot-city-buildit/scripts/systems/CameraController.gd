@@ -41,10 +41,10 @@ const MAX_CAMERA_STEP := 1.0 / 20.0
 const MAX_PAN_INERTIA_SPEED := 1600.0
 
 func _ready() -> void:
-	rotation_degrees = Vector3(0.0, 55.0, 0.0)
+	rotation_degrees = Vector3(0.0, -45.0, 0.0)
 	# Frame the starter city behind the complete sandy shore and open Pacific.
-	# A west-side camera heading east prevents the ocean from collapsing to a
-	# thin diagonal sliver at the widest playable overview.
+	# Keep the camera on the landward side and shift the target toward the coast,
+	# so city plots and the Pacific remain visible in the same wide overview.
 	global_position = Vector3(62.0, 0.0, -10.0)
 	camera.fov = 55.0
 	_update_camera_transform()
