@@ -4,6 +4,12 @@ signal achievement_unlocked(id: String, title: String, simoleons_reward: int, xp
 signal state_changed
 
 const SCAN_INTERVAL_SECONDS := 1.0
+const STARTER_ACCESS_ROAD_COUNT := 50
+
+static func count_player_built_road_tiles(total_road_tiles: int) -> int:
+	# The first 50 road tiles are a free, prebuilt highway connector. They are
+	# starter infrastructure, not roads the player has constructed.
+	return maxi(0, total_road_tiles - STARTER_ACCESS_ROAD_COUNT)
 const DEFINITIONS := [
 	{"id":"first_home", "title":"First Home", "description":"Complete your first residential building.", "metric":"homes", "target":1, "simoleons":100, "xp":10},
 	{"id":"home_builder", "title":"Growing Neighborhood", "description":"Complete five residential buildings.", "metric":"homes", "target":5, "simoleons":250, "xp":20},
@@ -61,7 +67,7 @@ func _collect_metrics() -> Dictionary:
 	var scene := get_tree().current_scene
 	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
 	if is_instance_valid(road_system) and road_system.has_method("get_road_count"):
-		metrics["roads"] = int(road_system.get_road_count())
+		metrics["roads"] = count_player_built_road_tiles(int(road_system.get_road_count()))
 	return metrics
 
 func _check_achievements() -> void:
