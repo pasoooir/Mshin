@@ -51,6 +51,7 @@ func _ready() -> void:
 		_road_system_cache.connect("road_mode_changed", Callable(self, "_on_road_mode_changed"))
 	_build_environment()
 	_build_terrain()
+	_build_sandy_beach()
 	_build_land_expansion_markers()
 	_build_city_grid()
 	_build_coastal_highway()
@@ -252,6 +253,70 @@ func _create_coastal_water_mesh(shore_offset: float, far_edge: float, rows: int,
 			surface.add_vertex(Vector3(x11, water_y, z1))
 	surface.generate_normals()
 	return surface.commit()
+
+
+func _build_sandy_beach() -> void:
+	# A dedicated, continuous sand ribbon guarantees a readable beach in the
+	# Compatibility renderer even when terrain shader detail is distance-culled.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const Z_SEGMENTS := 220
+	const X_SEGMENTS := 10
+	for row in range(Z_SEGMENTS):
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row) / float(Z_SEGMENTS))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row + 1) / float(Z_SEGMENTS))
+		var coast0 := _coastline(z0)
+		var coast1 := _coastline(z1)
+		for column in range(X_SEGMENTS):
+			var u0 := float(column) / float(X_SEGMENTS)
+			var u1 := float(column + 1) / float(X_SEGMENTS)
+			var x00 := lerpf(coast0 - BEACH_WIDTH, coast0 + 0.42, u0)
+			var x10 := lerpf(coast0 - BEACH_WIDTH, coast0 + 0.42, u1)
+			var x01 := lerpf(coast1 - BEACH_WIDTH, coast1 + 0.42, u0)
+			var x11 := lerpf(coast1 - BEACH_WIDTH, coast1 + 0.42, u1)
+			var p00 := Vector3(x00, _terrain_height(x00, z0) + 0.045, z0)
+			var p10 := Vector3(x10, _terrain_height(x10, z0) + 0.045, z0)
+			var p01 := Vector3(x01, _terrain_height(x01, z1) + 0.045, z1)
+			var p11 := Vector3(x11, _terrain_height(x11, z1) + 0.045, z1)
+			var grain := sin(z0 * 0.31 + u0 * 17.0) * 0.035 + cos(z1 * 0.19 - u1 * 13.0) * 0.025
+			var dry_sand := Color(0.79, 0.69, 0.51).lerp(Color(0.91, 0.82, 0.64), 0.5 + grain)
+			var wetness0 := smoothstep(0.78, 1.0, u0)
+			var wetness1 := smoothstep(0.78, 1.0, u1)
+			var c00 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness0 * 0.52)
+			var c10 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness1 * 0.52)
+			var c01 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness0 * 0.52)
+			var c11 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness1 * 0.52)
+			surface.set_color(c00)
+			surface.set_uv(Vector2(u0 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p00)
+			surface.set_color(c01)
+			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p01)
+			surface.set_color(c10)
+			surface.set_uv(Vector2(u1 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p10)
+			surface.set_color(c10)
+			surface.set_uv(Vector2(u1 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p10)
+			surface.set_color(c01)
+			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p01)
+			surface.set_color(c11)
+			surface.set_uv(Vector2(u1 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.add_vertex(p11)
+	surface.generate_normals()
+	var beach := MeshInstance3D.new()
+	beach.name = "ContinuousSandyBeach"
+	beach.mesh = surface.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.96
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	beach.material_override = material
+	beach.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(beach)
+
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	# Stable world-space texture scale plus restrained relief outside the build grid.
@@ -1154,25 +1219,27 @@ void vertex() {
 void fragment() {
 	float coast = 110.0 + sin(world_position.z * 0.045) * 2.2 + cos(world_position.z * 0.021) * 1.1;
 	float offshore = max(0.0, world_position.x - coast);
-	float depth = smoothstep(12.0, 260.0, offshore);
+	float depth = smoothstep(0.0, 95.0, offshore);
 	float swell = sin(world_position.x * 0.027 + world_position.z * 0.018 + TIME * 0.24);
 	float cross_swell = cos(world_position.x * 0.061 - world_position.z * 0.033 + TIME * 0.39);
 	float fine_ripple = sin(world_position.x * 0.31 + world_position.z * 0.22 + TIME * 1.05) * 0.5;
-	float water_noise = swell * 0.035 + cross_swell * 0.018 + fine_ripple * 0.012;
-	vec3 lagoon = mix(vec3(0.035, 0.66, 0.69), vec3(0.018, 0.43, 0.62), smoothstep(0.0, 42.0, offshore));
-	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.26, 1.0, depth));
-	vec3 water_color = mix(lagoon, offshore_blue, depth);
+	float water_noise = swell * 0.018 + cross_swell * 0.010 + fine_ripple * 0.006;
+	vec3 lagoon = vec3(0.035, 0.43, 0.52);
+	vec3 shelf_blue = vec3(0.018, 0.22, 0.43);
+	vec3 offshore_blue = mix(blue_color.rgb, deep_color.rgb, smoothstep(0.18, 1.0, depth));
+	vec3 water_color = mix(lagoon, shelf_blue, smoothstep(0.0, 75.0, offshore));
+	water_color = mix(water_color, offshore_blue, smoothstep(100.0, 480.0, offshore));
 	float wave_dx = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0058;
 	float wave_dz = cos(world_position.x * 0.075 + world_position.z * 0.052 + TIME * 0.72) * 0.0040;
 	NORMAL = normalize(vec3(-wave_dx, 1.0, -wave_dz));
 	float facing = max(dot(normalize(NORMAL), normalize(VIEW)), 0.0);
 	float fresnel = pow(1.0 - facing, 5.0);
 	float glint = pow(max(0.0, sin(world_position.x * 0.24 + world_position.z * 0.16 + TIME * 0.68)), 28.0);
-	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.12));
-	ALBEDO = mix(ALBEDO, vec3(0.55, 0.78, 0.84), fresnel * 0.16);
-	ROUGHNESS = mix(0.11, 0.27, depth);
+	ALBEDO = max(vec3(0.0), water_color + vec3(water_noise + glint * 0.055));
+	ALBEDO = mix(ALBEDO, vec3(0.55, 0.78, 0.84), fresnel * 0.09);
+	ROUGHNESS = mix(0.20, 0.34, depth);
 	METALLIC = 0.0;
-	SPECULAR = 0.94;
+	SPECULAR = 0.68;
 }
 """
 	var material := ShaderMaterial.new()
@@ -1813,10 +1880,10 @@ func _build_shoreline_foam() -> void:
 		var wave1 := sin(z1 * 0.31) * 0.62 + cos(z1 * 0.17) * 0.42
 		var coast0 := _coastline(z0)
 		var coast1 := _coastline(z1)
-		var inner0 := Vector3(coast0 + 0.7 + wave0, -0.006, z0)
-		var outer0 := Vector3(coast0 + 3.1 + wave0 * 1.4, -0.006, z0)
-		var inner1 := Vector3(coast1 + 0.7 + wave1, -0.006, z1)
-		var outer1 := Vector3(coast1 + 3.1 + wave1 * 1.4, -0.006, z1)
+		var inner0 := Vector3(coast0 + 0.7 + wave0, 0.065, z0)
+		var outer0 := Vector3(coast0 + 3.1 + wave0 * 1.4, 0.065, z0)
+		var inner1 := Vector3(coast1 + 0.7 + wave1, 0.065, z1)
+		var outer1 := Vector3(coast1 + 3.1 + wave1 * 1.4, 0.065, z1)
 		var foam_strength := 0.38 + 0.24 * (0.5 + 0.5 * sin(float(step) * 0.73))
 		surface.set_color(Color(0.88, 0.96, 0.96, foam_strength))
 		surface.add_vertex(inner0)
