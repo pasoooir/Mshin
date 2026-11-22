@@ -181,19 +181,19 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var camera_source := FileAccess.get_file_as_string("res://scripts/systems/CameraController.gd")
-	if not camera_source.contains("camera.fov = 55.0") or not camera_source.contains("global_position = Vector3(42.0, 0.0, -12.0)"):
+	if not camera_source.contains("camera.fov = 55.0") or not camera_source.contains("global_position = Vector3(62.0, 0.0, -10.0)") or not camera_source.contains("rotation_degrees = Vector3(0.0, 55.0, 0.0)"):
 		push_error("[VisualPresentationSmoke] Opening camera must frame the ocean and buildable city together")
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)
+	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)
 	if wide_ocean == null or wide_ocean.get_aabb().size.x < 500.0 or wide_ocean.get_aabb().size.z < 280.0:
 		push_error("[VisualPresentationSmoke] Pacific ocean must form a broad visible water body, not a narrow shoreline strip")
 		main_instance.free()
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("_create_coastal_water_mesh(18.0, 680.0, 220, 48, -0.055)"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 56.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)
