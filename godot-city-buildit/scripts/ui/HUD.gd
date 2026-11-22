@@ -1668,7 +1668,22 @@ func _close_building_submenu(cancel_placement: bool = true) -> void:
 		submenu_scroll.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE, KEY_BACKSPACE]:
+	var production_open := is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree()
+	var build_menu_open := submenu_scroll != null and submenu_scroll.visible
+	var escape_action := escape_tool_action(event, production_open, build_menu_open, _has_active_city_tool())
+	match escape_action:
+		"close_production":
+			_close_production_panel()
+		"close_build_menu":
+			_close_build_menu()
+		"cancel_tool":
+			_on_cancel_pressed()
+		_:
+			pass
+	if not escape_action.is_empty():
+		get_viewport().set_input_as_handled()
+		return
+	if is_instance_valid(production_overlay) and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_BACKSPACE:
 		_close_production_panel()
 		get_viewport().set_input_as_handled()
 		return
@@ -1678,6 +1693,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_on_cancel_pressed()
 		get_viewport().set_input_as_handled()
+
+static func escape_tool_action(event: InputEvent, production_panel_open: bool, build_menu_open: bool, active_tool: bool) -> String:
+	if not (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE):
+		return ""
+	if production_panel_open:
+		return "close_production"
+	if build_menu_open:
+		return "close_build_menu"
+	if active_tool:
+		return "cancel_tool"
+	return ""
+
+func _has_active_city_tool() -> bool:
+	var scene := get_tree().current_scene
+	var city_input = scene.get_node_or_null("CityInput") if is_instance_valid(scene) else null
+	var road_system = scene.get_node_or_null("World/RoadSystem") if is_instance_valid(scene) else null
+	return BuildManager.is_placing or BuildManager.is_moving \
+		or (is_instance_valid(city_input) and (city_input.bulldoze_mode or city_input.bulldoze_road_mode)) \
+		or (is_instance_valid(road_system) and (road_system.is_road_mode or road_system.is_road_upgrade_mode))
 
 func _build_service_warning_banner() -> void:
 	service_warning_panel = PanelContainer.new()

@@ -122,11 +122,55 @@ For every finding record:
 - [ ] J8. Errors and network/offline states are recoverable and explained.
 
 ## Current audit notes (2026-11-22)
-- **AUDIT-001 — Mixed HUD/world multi-touch isolation: NOT TESTED, candidate P1/P2.**
-  - Code observation: HUD routes native UI touch through `_route_native_ui_touch`; CityInput independently starts a pointer when it receives a screen touch.
-  - Risk scenario to verify: first finger begins on an interactive HUD control and second finger begins on the city (or the reverse). Confirm whether camera/build tools receive a partial gesture while the UI owns the other pointer.
-  - Do not label as a confirmed defect until a runtime reproduction test exists.
-  - Required regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
+- **AUDIT-001 — Mixed HUD/world multi-touch isolation: NOT TESTED end-to-end; candidate P1/P2.**
+  - Implemented guard: HUD exposes `has_active_native_ui_touch()`; CameraController and CityInput block world interaction while HUD owns a pointer.
+  - Automated coverage currently verifies the ownership predicate and its focus-loss reset, not the complete two-finger event sequence.
+  - Required runtime regression: touch down on HUD, touch down/drag/release on city, release HUD; assert no camera movement, placement, selection, or accidental activation. Repeat with order reversed and cancellation.
+  - Do not mark F7 PASS until that full sequence is exercised in Chromium touch automation and on a physical Android device.
+- **AUDIT-002 — World pointer event propagation: FIX IMPLEMENTED, CI PENDING.**
+  - Root cause: CameraController and CityInput independently own pointer state; consuming a HUD-blocked or OS-cancelled pointer in the first `_unhandled_input` handler could prevent the sibling handler from clearing its state.
+  - Fix in PR #655: HUD-owned touch/drag, modal-blocked pointer events and cancelled releases are not consumed by either world handler. Both handlers clear their own state; non-pointer modal input remains consumable.
+  - Regression evidence: PR #655 GameplaySmoke tests the shared pointer-consumption rule for touch, drag and keyboard events. Full real mixed-finger interaction remains an open runtime test.
+- **AUDIT-003 — Camera gesture math and building selection: AUTOMATED COVERAGE, NOT FULL DEVICE ACCEPTANCE.**
+  - Existing tests cover pinch direction/scale invariance, rotation across the +/-180-degree seam, focal-anchor correction, and facade/roof building selection.
+  - Chromium touch emulation and physical-device gesture feel, edge behavior, and frame pacing remain separate acceptance requirements.
+- **AUDIT-004 — Touch cancellation and app focus loss: AUTOMATED COVERAGE.**
+  - PR #654 adds regression checks for normal/cancelled/dragged release handling, stale camera inertia reset, city pointer/road-stroke cleanup, and HUD touch ownership cleanup.
+  - Godot validation and Android Debug APK export/signature verification passed; Web/mobile Chromium smoke passed on commit `468f92067ce61580fa6e446012456598facf287c`.
+  - Physical Android interruption, notification shade, app switch, screen lock, and resume behavior remain NOT TESTED.
+- **AUDIT-005 — Checklist completion state: OPEN.**
+  - No A–J item is globally marked PASS solely from code inspection or CI. The checklist remains an acceptance plan until each item has reproducible evidence recorded against its required environment.
+- **AUDIT-006 — Escape key did not cancel active city tools: FIX IMPLEMENTED, CI PENDING.**
+  - Responsive UX standard requires Escape to close the current panel or cancel the active tool; prior HUD routing only used X for tool cancellation, while Escape was reserved for detail panels.
+  - PR #655 adds Escape handling for production panel close, build-menu close, and active placement/move/road/road-upgrade/bulldoze cancellation. Backspace remains a production-panel close shortcut; X remains supported.
+  - Physical keyboard and Android system-back behavior still require device/browser verification.
+- **AUDIT-007 — Mixed-pointer event fan-out: FIX IMPLEMENTED, CI PENDING.**
+  - Both CameraController and CityInput now let HUD-blocked touch/drag events reach the sibling handler after clearing their own state; this addresses stale pointers when the HUD finger starts after a world finger.
+  - Automated tests assert that pointer events are not consumed while non-pointer modal input remains consumable.
+  - End-to-end order permutations (HUD→world and world→HUD), including one finger held while the other releases, still need browser/device reproduction before F7 can pass.
+
+## Area-level evidence ledger (2026-11-22)
+
+This ledger is deliberately conservative. A category marked PARTIAL means some sub-items have automated evidence; it does not mean the entire category passes. The individual checkboxes above remain open until their own reproduction evidence is attached.
+
+| Area | Current status | Evidence-backed coverage | Still required |
+|---|---|---|---|
+| A. First impression and orientation | NOT TESTED | No recorded visual review of first-entry hierarchy, calmness, tutorial flow or framing in this audit. | Review real WebGL captures at entry on compact landscape and tablet; inspect empty plots and HUD occlusion. |
+| B. Camera and navigation | PARTIAL | GameplaySmoke camera math; Chromium dispatches pinch-out, two-finger pan/twist, 2→1 transition and one-finger pan; PR #654 cancellation/focus reset tests. | Assert actual camera transform and anchor stability, edge/zoom limits, HUD isolation; physical Android gesture feel and resume. |
+| C. Selection and object feedback | PARTIAL | GameplaySmoke resolves visible facade/roof taps to the building volume and checks construction feedback. | Frontmost overlap, empty plot, roads/trees/services, duplicate panel/action behavior and visible feedback review. |
+| D. Build, move, upgrade, demolish | PARTIAL | GameplaySmoke exercises move/cancel restoration and construction/building state paths; PR #654 prevents cancelled release from committing a move. | Full touch-driven build/rotate/move/cancel/bulldoze flows, resource preservation, confirmations and construction UX on mobile. |
+| E. Roads and city connectivity | PARTIAL | Automated road gateway/connectivity and system-level road placement coverage exist. | Finger-drawn continuity, cancellation semantics for already placed segments, invalid-connection messaging and water/terrain edge taps. |
+| F. Panels, HUD and touch targets | PARTIAL | HUD touch ownership predicate, cancelled button release, focus-loss cleanup and mixed-pointer blocking code are covered by GameplaySmoke. | End-to-end mixed HUD/world two-finger sequence, all panel close/back paths, safe areas, 48px target measurements, scroll drag and text legibility. |
+| G. Economy, production and progression | PARTIAL | Gameplay/economy integration and production queue/system tests run in CI. | Mobile UI walkthrough for costs, shortages, queue/collect, overflow, upgrades, locks and offline return. |
+| H. Services, population and city feedback | PARTIAL | Service/connectivity and citizen feedback logic have automated gameplay coverage. | Inspect coverage overlays, explainable happiness changes, warning-to-object navigation and vehicle visual obstruction in live play. |
+| I. Visual comfort and readability | NOT TESTED | No signed-off visual review artifact is recorded in this audit. | Near/far screenshots, marker density, color-independent states, motion comfort, water/terrain/road readability. |
+| J. Performance, resilience and accessibility | PARTIAL | Godot headless, Web/mobile Chromium launch, APK export, focus-loss cleanup and automated economy/gameplay tests. | Real target-device FPS/draw-call benchmark, memory/input latency, save/load interruption, reduced-motion/audio-off and physical Android resume. |
+
+### Explicit release blockers / open acceptance
+- **P1/P2 candidate:** complete mixed HUD/world two-finger interaction test (AUDIT-001); current predicate coverage is not an end-to-end pass.
+- **P2:** physical Android interruption/resume, landscape/safe-area and touch-target acceptance.
+- **P2:** real mobile performance benchmark with uploaded evidence; tooling alone is not a performance result.
+- **P2:** visual first-entry and near/far review with screenshots; CI geometry smoke is not visual UX acceptance.
 
 ## Acceptance policy
 - A checklist item is PASS only with reproducible evidence.
