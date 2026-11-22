@@ -204,14 +204,11 @@ jobs:
           // The game requests fullscreen after PLAY. CDP metrics can update CSS bounds
           // while the screenshot remains at the outer-window resolution, so assert
           // window.innerWidth/Height and PNG IHDR dimensions for every profile.
-          const responsiveSession = await page.context().newCDPSession(page);
           for (const profile of responsiveProfiles) {
-            await responsiveSession.send('Emulation.setDeviceMetricsOverride', {
-              width: profile.width,
-              height: profile.height,
-              deviceScaleFactor: 1,
-              mobile: false
-            });
+            // Resize the actual Playwright page viewport. CDP device metrics can
+            // change innerWidth/innerHeight while a fullscreen page screenshot
+            // still uses the original outer-window dimensions.
+            await page.setViewportSize({ width: profile.width, height: profile.height });
             await page.waitForTimeout(350);
             const actualViewport = await page.evaluate(() => ({
               width: window.innerWidth,
@@ -257,8 +254,7 @@ jobs:
               screenshot: screenshotSize
             });
           }
-          await responsiveSession.send('Emulation.clearDeviceMetricsOverride');
-          await responsiveSession.detach();
+          await page.setViewportSize({ width: 1280, height: 720 });
           await page.waitForTimeout(250);
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
