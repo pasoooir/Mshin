@@ -17,9 +17,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	presentation._build_meadow_biome_overlays()
-	var biome_patch_node := presentation.get_node_or_null("MeadowBiomePatches") as MeshInstance3D
-	if not is_instance_valid(biome_patch_node) or biome_patch_node.mesh == null or biome_patch_node.mesh.get_surface_count() != 1:
-		push_error("[VisualPresentationSmoke] WebGL meadow biome patchwork must generate one batched vertex-colour mesh")
+	if presentation.get_node_or_null("MeadowBiomePatches") != null:
+		push_error("[VisualPresentationSmoke] Disconnected biome islands must not be rendered over the continuous meadow")
 		get_tree().quit(1)
 		return
 	# Coastline regression: water geometry must follow the curved beach edge,
@@ -111,35 +110,29 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
-		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
+	if not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+		push_error("[VisualPresentationSmoke] Pacific motorway must retain dark asphalt contrast")
 		get_tree().quit(1)
 		return
+	# Compatibility/WebGL terrain uses authored, unshaded vertex colours so the palette
+	# is not washed out by stacked lighting or the old procedural spatial shader.
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
-		"float terrain_fbm(vec2 p)",
-		"float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0))",
-		"float terrain_noise(vec2 p)",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"vec3 deep_meadow = vec3(0.57, 0.58, 0.43)",
-		"vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
-		"vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
-		"vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
-		"vec3 exposed_soil = vec3(0.61, 0.47, 0.35)",
-		"float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
-		"func _build_meadow_biome_overlays() -> void:",
-		"var patch_count := 190",
-		"patches.name = \"MeadowBiomePatches\"",
-		"material.vertex_color_use_as_albedo = true",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
+		"func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:",
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
-		"var fresh_grass := Color(\"#B3A071\")",
-		"var biome_soil_mask := smoothstep",
-		"SPECULAR = 0.12"
+		"var secondary_patch := sin(point.x * 0.091 - point.z * 0.073)",
+		"var biome_soil_mask := smoothstep(0.22, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)",
+		"Color(\"#9A8056\")",
+		"func _create_natural_ground_material() -> StandardMaterial3D:",
+		"material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
+		"material.vertex_color_use_as_albedo = true",
+		"material.albedo_color = Color.WHITE",
+		"render_mode unshaded, cull_disabled;",
+		"material.roughness = 0.98",
+		"func _build_meadow_biome_overlays() -> void:"
 	]:
 		if not terrain_material_source.contains(required_terrain_layer):
-			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
+			push_error("[VisualPresentationSmoke] Compatibility-safe colour-accurate vertex-colour meadow is incomplete: " + required_terrain_layer)
 			get_tree().quit(1)
 			return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
@@ -177,8 +170,10 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;"):
-		push_error("[VisualPresentationSmoke] Terrain sand mask must use the same curved coastline function as the shoreline mesh")
+	# The shader coastline assertion is obsolete: the Compatibility-safe
+	# vertex-colour terrain uses a dedicated beach mesh driven by _coastline().
+	if not world_visual_source.contains("return COASTLINE_BASE_X + sin(z * 0.032) * 7.0 + sin(z * 0.071) * 3.2 + sin(z * 0.013) * 4.0") or not world_visual_source.contains("var coast0 := _coastline(z0)") or not world_visual_source.contains("var coast1 := _coastline(z1)"):
+		push_error("[VisualPresentationSmoke] Sandy beach and shoreline must share the curved coastline function")
 		get_tree().quit(1)
 		return
 	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0 or absf(presentation._coastline(-120.0) - presentation._coastline(120.0)) < 4.0:

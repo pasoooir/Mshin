@@ -217,9 +217,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				last_mouse_position = event.position
 			_refresh_processing()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			_zoom(-2.0)
+			_zoom(-6.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			_zoom(2.0)
+			_zoom(6.0)
 	elif event is InputEventMouseMotion and is_mouse_panning:
 		if _city_input_allows_camera_drag(-1, event.position):
 			_pan_between_screen_points(last_mouse_position, event.position)

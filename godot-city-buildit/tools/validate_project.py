@@ -909,14 +909,19 @@ if "Vector3(0.0, 0.018, 0.0)" not in world_source:
 if "multimesh.use_colors = true" not in world_source:
     errors.append("Tree instances must use per-instance natural color variation")
 
-# The permanent city-entry motorway and natural terrain are visual landmarks.
+# Compatibility-renderer meadow must retain its authored light palette. Guard
+# against the old double-darkening path and camouflage-like biome island meshes.
+if "Broad biome fields are baked into the terrain itself" not in world_source:
+    errors.append("Meadow biome overlays must remain disabled until continuous field rendering is restored")
 for visual_contract in [
-    "vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
-    "vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
-    "vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
-    "float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-    "float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
-    "meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
+    "func _create_natural_ground_material() -> StandardMaterial3D:",
+    "material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
+    "material.vertex_color_use_as_albedo = true",
+    "material.roughness = 0.98",
+    'Color("#587B43"), Color("#6C8C4C"), Color("#8F9357")',
+    "render_mode unshaded, cull_disabled;",
+    'color = color.lerp(Color("#A5AD7B"), 0.16)',
+    "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
@@ -948,8 +953,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#89966D\")",
-    "Color(\"#A9956B\")",
+    "Color(\"#587B43\")",
+    "Color(\"#8F9357\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
@@ -1872,7 +1877,7 @@ for contract in [
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'LandExpansionManager.get_owned_tiles()',
     '_build_city_grid()',
-    'color = color.lerp(Color("#36523A"), 0.12)',
+    'color = color.lerp(Color("#78835E"), 0.05)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
         errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
