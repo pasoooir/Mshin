@@ -8,20 +8,20 @@ const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
 # Expand across the complete inland landmass, stopping before the sandy beach.
 # BuildManager cells are 2 m; each 8-cell expansion tile is therefore 16 m.
-# Match the actual terrain mesh: X starts at -120 m, shoreline varies near
-# 100–120 m, and the landmass spans Z=-145…145 m.
+# Match the actual terrain mesh: X starts at -128 m, shoreline varies near
+# 100–120 m, and the landmass spans Z=-144…144 m.
 const EXPANSION_MIN_TILE_X := -8
 const EXPANSION_MAX_TILE_X := 6
 const EXPANSION_MIN_TILE_Y := -9
 const EXPANSION_MAX_TILE_Y := 8
 const BUILDABLE_COAST_MARGIN := 8.0
 const COASTLINE_BASE_X := 110.0
-const TERRAIN_LEFT := -120.0
-const TERRAIN_HALF_DEPTH := 145.0
-const MIN_CELL_X := -60
+const TERRAIN_LEFT := -128.0
+const TERRAIN_HALF_DEPTH := 144.0
+const MIN_CELL_X := -64
 const MAX_CELL_X_EXCLUSIVE := 56
-const MIN_CELL_Y := -73
-const MAX_CELL_Y_EXCLUSIVE := 73
+const MIN_CELL_Y := -72
+const MAX_CELL_Y_EXCLUSIVE := 72
 const HIGHWAY_RESERVED_TILE_MIN_X := -5
 const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
