@@ -1155,7 +1155,7 @@ void fragment() {
 	vec3 sampled_grass = texture(grass_texture, ground_uv * 0.72).rgb;
 	meadow = mix(meadow, meadow * sampled_grass * 1.42, 0.08);
 	meadow *= 0.96 + micro_grain * 0.10;
-	meadow *= mix(0.98, 1.04, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
+	meadow *= 0.98 + micro_grain * 0.08;
 
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
