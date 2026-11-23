@@ -15,6 +15,8 @@ const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
 const MAX_CELL_X_EXCLUSIVE := (EXPANSION_MAX_TILE_X + 1) * TILE_CELLS
 const MIN_CELL_Y := EXPANSION_MIN_TILE_Y * TILE_CELLS
 const MAX_CELL_Y_EXCLUSIVE := (EXPANSION_MAX_TILE_Y + 1) * TILE_CELLS
+const HIGHWAY_RESERVED_TILE_MIN_X := -5
+const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
@@ -49,6 +51,9 @@ func _is_tile_in_bounds(tile: Vector2i) -> bool:
 		and tile.y >= EXPANSION_MIN_TILE_Y
 		and tile.y <= EXPANSION_MAX_TILE_Y
 	)
+
+func _is_reserved_highway_tile(tile: Vector2i) -> bool:
+	return tile.x >= HIGHWAY_RESERVED_TILE_MIN_X and tile.x <= HIGHWAY_RESERVED_TILE_MAX_X
 
 func _reset_initial_land() -> void:
 	owned_tiles.clear()
@@ -107,7 +112,7 @@ func get_available_expansion_tiles() -> Array[Vector2i]:
 	for x in range(EXPANSION_MIN_TILE_X, EXPANSION_MAX_TILE_X + 1):
 		for y in range(EXPANSION_MIN_TILE_Y, EXPANSION_MAX_TILE_Y + 1):
 			var tile := Vector2i(x, y)
-			if not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
+			if not _is_reserved_highway_tile(tile) and not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
 				result.append(tile)
 	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 		var cost_a := _distance_from_initial_land(a)
@@ -138,6 +143,8 @@ func get_tile_error(tile: Vector2i) -> String:
 		return "This land is outside the expansion boundary."
 	if tile.x < EXPANSION_MIN_TILE_X or tile.x > EXPANSION_MAX_TILE_X or tile.y < EXPANSION_MIN_TILE_Y or tile.y > EXPANSION_MAX_TILE_Y:
 		return "This plot is reserved for the highway corridor or coastline."
+	if _is_reserved_highway_tile(tile):
+		return "This plot overlaps the permanent regional highway corridor."
 	if is_tile_owned(tile):
 		return "This land is already part of your city."
 	if not _is_adjacent_to_owned(tile):
