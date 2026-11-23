@@ -78,14 +78,14 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Stylized foliage integration is incomplete: " + required_foliage_integration)
 			get_tree().quit(1)
 			return
-	var foliage_source := FileAccess.get_file_as_string("res://scripts/world/StylizedFoliageSystem.gd")
+	var trunk_foliage_source := FileAccess.get_file_as_string("res://scripts/world/StylizedFoliageSystem.gd")
 	for required_trunk_contract in [
 		"func _build_chunk_trunks(",
 		"_trunk_material.albedo_texture = bark_texture",
 		"var crown_height_factor := CANOPY_CROWN_HEIGHT_FACTOR",
 		"trunks.set_instance_transform("
 	]:
-		if not foliage_source.contains(required_trunk_contract):
+		if not trunk_foliage_source.contains(required_trunk_contract):
 			push_error("[VisualPresentationSmoke] Crown-aligned batched tree trunks are incomplete: " + required_trunk_contract)
 			get_tree().quit(1)
 			return
