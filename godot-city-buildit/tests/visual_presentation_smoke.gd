@@ -116,7 +116,7 @@ func _ready() -> void:
 		"vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
 		"vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
 		"vec3 exposed_soil = vec3(0.61, 0.47, 0.35)",
-		"float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
+		"float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
 		"func _build_meadow_biome_overlays() -> void:",
 		"var patch_count := 190",
 		"patches.name = \"MeadowBiomePatches\"",
