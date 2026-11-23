@@ -79,7 +79,7 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 - Keep the base meadow in a visible mid-value sage range; do not let deep green dominate the full playable ground.
 - Use broad sage, olive, ochre/straw and warm-soil fields at approximately 150–250 m visual scale; each field must span a visible landscape region rather than appearing as scattered camouflage spots. The dominant meadow must not render as deep emerald green.
 - Build broad world-space biome regions with softened irregular boundaries, then layer medium exposed-earth islands and fine mottling without a dark-green carpet.
-- Preserve the flat 48 × 48 m starter build area and coastline alignment.
+- Preserve the flat 96 × 96 m starter build area and coastline alignment.
 - Keep all generated materials local and deterministic.
 - Validate with actual WebGL screenshots at overview, medium and near zoom. Reject the build if more than half of the visible natural ground reads as a single dark-green value group.
 
@@ -118,7 +118,7 @@ The rendered landmass and the city expansion domain must agree. Keep the existin
 ## 5. Terrain system specification
 
 The terrain is divided into three visual bands:
-- **Buildable city**: 48 × 48 m, flat, neutral, clean and unobstructed.
+- **Buildable city**: 96 × 96 m, flat, neutral, clean and unobstructed.
 - **Natural transition**: rolling meadow, curated dirt tracks, creek channel, scrub clusters, fieldstones and irregular groves.
 - **Coast**: meadow-to-dune transition, sand, wet-sand edge, foam, shallow water and deep ocean.
 
