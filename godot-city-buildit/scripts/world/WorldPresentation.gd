@@ -60,6 +60,7 @@ func _ready() -> void:
 	_build_highway_lighting()
 	_build_tree_belts()
 	_build_grass_detail()
+	_build_shrubland_detail()
 	# Retire the isolated timber strip; render a proper surf edge instead.
 	_build_shoreline_foam()
 	_build_beach_palms()
@@ -1435,6 +1436,120 @@ func _is_city_road_footprint(x: float, z: float) -> bool:
 	if not is_instance_valid(_road_system_cache) or not _road_system_cache.has_method("has_road"):
 		return false
 	return bool(_road_system_cache.call("has_road", cell))
+
+
+func _build_shrubland_detail() -> void:
+	# A clustered, irregular shrub layer breaks up the remaining flat meadow
+	# while keeping the entire ground-cover pass to one MultiMesh draw call.
+	var shrub_mesh := _create_shrub_cluster_mesh()
+	var shrub_material := StandardMaterial3D.new()
+	shrub_material.vertex_color_use_as_albedo = true
+	shrub_material.roughness = 0.96
+	shrub_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261123
+	var positions: Array[Vector3] = []
+	var colors: Array[Color] = []
+	var transforms: Array[Transform3D] = []
+	var palette: Array[Color] = [
+		Color("#496C3C"), Color("#64864A"), Color("#82975A"),
+		Color("#A0A36A"), Color("#55764B"), Color("#71875A"),
+		Color("#9B9860"), Color("#3F6240")
+	]
+	# Cluster centers are distributed across the natural meadow, with deliberate
+	# breathing gaps. A cluster contains several low shrubs rather than one ball.
+	for cluster_index in range(190):
+		var center_x := rng.randf_range(-116.0, 88.0)
+		var center_z := rng.randf_range(-136.0, 136.0)
+		if absf(center_x) < 31.0 and absf(center_z) < 31.0:
+			continue
+		if center_x > _coastline(center_z) - BEACH_WIDTH - 18.0:
+			continue
+		if absf(center_x - HIGHWAY_CENTER_X) < 17.0 or _is_city_road_footprint(center_x, center_z):
+			continue
+		var creek_x := 36.0 + sin(center_z * 0.045) * 2.0
+		if absf(center_x - creek_x) < 6.0:
+			continue
+		var cluster_size := rng.randi_range(3, 6)
+		for shrub_index in range(cluster_size):
+			var angle := rng.randf_range(0.0, TAU)
+			var radius := rng.randf_range(0.0, 3.8)
+			var x := center_x + cos(angle) * radius
+			var z := center_z + sin(angle) * radius * 0.78
+			if x > _coastline(z) - BEACH_WIDTH - 15.0 or _is_city_road_footprint(x, z):
+				continue
+			if absf(x) < 27.0 and absf(z) < 27.0:
+				continue
+			var scale_value := rng.randf_range(0.68, 1.22)
+			var yaw := rng.randf_range(0.0, TAU)
+			var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale_value, scale_value, scale_value))
+			transforms.append(Transform3D(basis, Vector3(x, _terrain_height(x, z) + 0.035, z)))
+			var color_index := rng.randi_range(0, palette.size() - 1)
+			var color := palette[color_index]
+			var sun_variation := rng.randf_range(0.92, 1.08)
+			colors.append(Color(color.r * sun_variation, color.g * sun_variation, color.b * sun_variation, 1.0))
+
+	if transforms.is_empty():
+		return
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = shrub_mesh
+	multimesh.instance_count = transforms.size()
+	for index in range(transforms.size()):
+		multimesh.set_instance_transform(index, transforms[index])
+		multimesh.set_instance_color(index, colors[index])
+	var shrubs := MultiMeshInstance3D.new()
+	shrubs.name = "CoastalMeadowShrubClusters"
+	shrubs.multimesh = multimesh
+	shrubs.material_override = shrub_material
+	shrubs.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shrubs.visibility_range_end = ENVIRONMENT_SMALL_DETAIL_END + 35.0
+	shrubs.visibility_range_end_margin = ENVIRONMENT_SMALL_DETAIL_MARGIN
+	shrubs.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	add_child(shrubs)
+
+
+func _create_shrub_cluster_mesh() -> ArrayMesh:
+	# Three overlapping, differently-sized lobes create a hand-shaped shrub
+	# silhouette with visible volume; the mesh is shared by every instance.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lobes: Array[Dictionary] = [
+		{"center": Vector3(-0.30, 0.43, 0.02), "radii": Vector3(0.55, 0.48, 0.48), "tone": 0.88},
+		{"center": Vector3(0.28, 0.48, -0.08), "radii": Vector3(0.58, 0.54, 0.52), "tone": 1.05},
+		{"center": Vector3(0.02, 0.67, 0.30), "radii": Vector3(0.43, 0.48, 0.42), "tone": 1.12}
+	]
+	for lobe in lobes:
+		var center: Vector3 = lobe["center"]
+		var radii: Vector3 = lobe["radii"]
+		var tone: float = lobe["tone"]
+		const RINGS := 7
+		const SEGMENTS := 10
+		for ring in range(RINGS):
+			var v0 := float(ring) / float(RINGS)
+			var v1 := float(ring + 1) / float(RINGS)
+			var phi0 := PI * v0
+			var phi1 := PI * v1
+			for segment in range(SEGMENTS):
+				var u0 := TAU * float(segment) / float(SEGMENTS)
+				var u1 := TAU * float(segment + 1) / float(SEGMENTS)
+				var p00 := center + Vector3(sin(phi0) * cos(u0) * radii.x, cos(phi0) * radii.y, sin(phi0) * sin(u0) * radii.z)
+				var p01 := center + Vector3(sin(phi1) * cos(u0) * radii.x, cos(phi1) * radii.y, sin(phi1) * sin(u0) * radii.z)
+				var p10 := center + Vector3(sin(phi0) * cos(u1) * radii.x, cos(phi0) * radii.y, sin(phi0) * sin(u1) * radii.z)
+				var p11 := center + Vector3(sin(phi1) * cos(u1) * radii.x, cos(phi1) * radii.y, sin(phi1) * sin(u1) * radii.z)
+				var normal00 := Vector3((p00.x - center.x) / radii.x, (p00.y - center.y) / radii.y, (p00.z - center.z) / radii.z).normalized()
+				var normal01 := Vector3((p01.x - center.x) / radii.x, (p01.y - center.y) / radii.y, (p01.z - center.z) / radii.z).normalized()
+				var normal10 := Vector3((p10.x - center.x) / radii.x, (p10.y - center.y) / radii.y, (p10.z - center.z) / radii.z).normalized()
+				var normal11 := Vector3((p11.x - center.x) / radii.x, (p11.y - center.y) / radii.y, (p11.z - center.z) / radii.z).normalized()
+				var base_color := Color("#719052") * tone
+				for vertex in [{"p":p00,"n":normal00,"c":base_color.darkened(0.12)}, {"p":p01,"n":normal01,"c":base_color}, {"p":p10,"n":normal10,"c":base_color.lightened(0.06)}, {"p":p10,"n":normal10,"c":base_color.lightened(0.06)}, {"p":p01,"n":normal01,"c":base_color}, {"p":p11,"n":normal11,"c":base_color.lightened(0.10)}]:
+					surface.set_normal(vertex["n"])
+					surface.set_color(vertex["c"])
+					surface.add_vertex(vertex["p"])
+	return surface.commit()
+
 
 func _build_grass_detail() -> void:
 	# Each instance is a multi-blade tussock, not a single rectangular stalk.
