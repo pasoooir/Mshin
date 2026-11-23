@@ -131,7 +131,11 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                         scale_value * width_factor
                     )
                 )
-                var crown_position := local_position + Vector3(0.0, 3.55 * scale_value, 0.0)
+                var crown_height_factor := 3.55
+                if species_id == 3:
+                    # Palm fronds radiate from a lower crown above the tall trunk.
+                    crown_height_factor = 2.85
+                var crown_position := local_position + Vector3(0.0, crown_height_factor * scale_value, 0.0)
                 multimesh.set_instance_transform(
                     instance_index,
                     Transform3D(basis, crown_position)
