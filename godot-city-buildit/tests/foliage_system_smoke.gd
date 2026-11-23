@@ -59,6 +59,31 @@ func _run() -> void:
         _fail("Foliage smoke did not find a palm crown for trunk alignment.")
         return
 
+    var trunk_instances_checked := 0
+    for chunk in system.get_children():
+        if not chunk.name.begins_with("FoliageChunk_"):
+            continue
+        var trunk_renderer := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
+        if trunk_renderer == null or trunk_renderer.multimesh == null:
+            _fail("Every foliage chunk must contain a batched trunk renderer.")
+            return
+        var expected_chunk_trees := 0
+        for species_id in range(4):
+            var canopy := chunk.get_node_or_null("TreeCanopies_Species%d_LOD0" % species_id) as MultiMeshInstance3D
+            if canopy != null and canopy.multimesh != null:
+                expected_chunk_trees += canopy.multimesh.instance_count
+        if trunk_renderer.multimesh.instance_count != expected_chunk_trees:
+            _fail("Trunk batch count must equal the number of canopy trees in its chunk.")
+            return
+        trunk_instances_checked += trunk_renderer.multimesh.instance_count
+    if trunk_instances_checked != sample_positions.size():
+        _fail("Every supplied tree position must have one batched trunk.")
+
+    var broadleaf_crown_height := float(system.call("_get_tree_crown_height", 0, 0.25))
+    var palm_crown_height := float(system.call("_get_tree_crown_height", 3, 0.25))
+    if broadleaf_crown_height <= 6.0 or palm_crown_height <= 2.0 or palm_crown_height >= broadleaf_crown_height:
+        _fail("Shared species crown-height calculation must preserve tall trees and lower palm crowns.")
+
     for lod in range(3):
         if system.get_lod_instance_count(lod) != sample_positions.size():
             _fail("Every tree must have exactly one instance in each LOD tier.")

@@ -932,21 +932,18 @@ func _build_tree_belts() -> void:
 	bark_material.albedo_texture = _create_bark_texture()
 	bark_material.roughness = 1.0
 	root_mesh.material = bark_material
-	var trunk_mesh := _create_branched_tree_trunk_mesh(bark_material)
-	# Tree trunks and contact shadows remain separate, inexpensive shared batches.
-	# The old sphere-lobe crowns are replaced by a four-species crossed-card system
-	# with chunked MultiMeshes and three distance-based geometry tiers.
+	# Keep roots and contact shadows as single inexpensive batches. Trunks are
+	# generated inside the foliage renderer so each one shares the exact seeded
+	# species scale and crown height used by its corresponding canopy.
 	var tree_shadows := _create_tree_shadow_multimesh(positions)
 	add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
-	var trunks := _create_tree_multimesh("TreeTrunks", trunk_mesh, positions, 1.40)
 
 	var foliage_system := StylizedFoliageSystemScript.new()
 	foliage_system.name = "StylizedFoliageSystem"
-	foliage_system.configure_tree_positions(positions, 2026)
+	foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)
 	add_child(foliage_system)
 	add_child(roots)
-	add_child(trunks)
 
 
 func _create_branched_tree_trunk_mesh(bark_material: Material) -> ArrayMesh:

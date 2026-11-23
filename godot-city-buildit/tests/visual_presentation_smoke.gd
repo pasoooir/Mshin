@@ -71,11 +71,22 @@ func _ready() -> void:
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_foliage_integration in [
 		"StylizedFoliageSystemScript",
-		"foliage_system.configure_tree_positions(positions, 2026)",
-		"_create_branched_tree_trunk_mesh(bark_material)"
+		"foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)",
+		"TreeRootBases"
 	]:
 		if not world_source.contains(required_foliage_integration):
 			push_error("[VisualPresentationSmoke] Stylized foliage integration is incomplete: " + required_foliage_integration)
+			get_tree().quit(1)
+			return
+	var trunk_foliage_source := FileAccess.get_file_as_string("res://scripts/world/StylizedFoliageSystem.gd")
+	for required_trunk_contract in [
+		"func _build_chunk_trunks(",
+		"_trunk_material.albedo_texture = bark_texture",
+		"func _get_tree_crown_height(species_id: int, stable_random: float) -> float:",
+		"trunks.set_instance_transform("
+	]:
+		if not trunk_foliage_source.contains(required_trunk_contract):
+			push_error("[VisualPresentationSmoke] Crown-aligned batched tree trunks are incomplete: " + required_trunk_contract)
 			get_tree().quit(1)
 			return
 

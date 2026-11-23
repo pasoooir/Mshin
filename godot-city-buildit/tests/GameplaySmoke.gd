@@ -5894,21 +5894,25 @@ func _test_world_presentation_mobile_shadow_budget() -> void:
 	presentation.name = "MobileShadowBudgetProbe"
 	add_child(presentation)
 	presentation.call("_build_tree_belts")
-	for node_name in ["TreeRootBases", "TreeTrunks"]:
-		var batch := presentation.get_node_or_null(node_name) as GeometryInstance3D
-		_check(batch != null, "Tree visual batch is missing: %s" % node_name)
-		if batch != null:
-			_check(batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Decorative tree batch must not render a redundant real-time shadow: %s" % node_name)
+	var roots := presentation.get_node_or_null("TreeRootBases") as GeometryInstance3D
+	_check(roots != null, "Tree root-base batch must be present.")
+	if roots != null:
+		_check(roots.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Tree root bases must not render redundant real-time shadows.")
 	var foliage_system := presentation.get_node_or_null("StylizedFoliageSystem") as Node3D
 	_check(foliage_system != null, "Chunked stylized foliage system must be integrated into the live world.")
 	var canopy_batch_count := 0
+	var trunk_batch_count := 0
 	if foliage_system != null:
-		for canopy_node in foliage_system.find_children("*", "MultiMeshInstance3D", true, false):
-			var canopy_batch := canopy_node as MultiMeshInstance3D
-			if canopy_batch.name.begins_with("TreeCanopies_"):
+		for foliage_node in foliage_system.find_children("*", "MultiMeshInstance3D", true, false):
+			var foliage_batch := foliage_node as MultiMeshInstance3D
+			if foliage_batch.name.begins_with("TreeCanopies_"):
 				canopy_batch_count += 1
-				_check(canopy_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Chunked canopy LOD batches must not add redundant real-time shadow casters.")
+				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Chunked canopy LOD batches must not add redundant real-time shadow casters.")
+			elif foliage_batch.name == "TreeTrunks":
+				trunk_batch_count += 1
+				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Chunked trunk batches must not add redundant real-time shadow casters.")
 	_check(canopy_batch_count > 0, "Stylized foliage system must produce chunked canopy LOD MultiMeshes.")
+	_check(trunk_batch_count > 0, "Stylized foliage system must produce chunked crown-aligned trunk MultiMeshes.")
 	var contact_shadows := presentation.get_node_or_null("TreeContactShadows") as MultiMeshInstance3D
 	_check(contact_shadows != null, "Tree contact-shadow batch must remain visible after shadow optimization.")
 	if contact_shadows != null:

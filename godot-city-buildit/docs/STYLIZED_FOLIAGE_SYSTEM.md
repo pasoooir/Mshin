@@ -4,10 +4,10 @@
 This system replaces the previous three sphere-lobe canopy batches in the coastal tree belt with a four-shape, crossed-card canopy renderer for Godot 4.3 GL Compatibility. It remains local/offline and is integrated into `WorldPresentation.gd`; it is not a standalone demo.
 
 ## Runtime structure
-- `scripts/world/StylizedFoliageSystem.gd`: deterministic species assignment, 64 m spatial chunks, MultiMesh construction, three geometry tiers, soft leaf atlas generation and seasonal leaf emitters.
+- `scripts/world/StylizedFoliageSystem.gd`: deterministic species assignment, 64 m spatial chunks, canopy and trunk MultiMeshes, three geometry tiers, soft leaf atlas generation and seasonal leaf emitters.
 - `scripts/world/FoliageSeasonManager.gd`: tweened spring/summer/autumn/winter tint, canopy density, snow tint and falling-leaf intensity.
 - `shaders/stylized_foliage.gdshader`: Alpha Scissor, per-instance variation, bent-normal lighting, low-cost back-light response and gentle wind.
-- `scripts/world/WorldPresentation.gd`: builds one reusable branched trunk mesh, contact shadows and the foliage system for the existing natural tree-belt placements.
+- `scripts/world/WorldPresentation.gd`: builds the existing natural tree-belt placements, root bases and batched contact shadows; passes the shared procedural bark texture into the foliage renderer.
 
 ## Species
 1. Round broadleaf canopy.
@@ -15,7 +15,7 @@ This system replaces the previous three sphere-lobe canopy batches in the coasta
 3. Soft tapered conifer canopy.
 4. Fan-palm-like radial frond canopy. Existing beach palms remain separate coastal landmarks.
 
-The trunk mesh has a central tapered trunk and four merged primary branches. Trunks, branches and roots share batched rendering. The foliage atlas is generated locally at startup and does not make network requests.
+Each 64 m foliage chunk owns one tapered-trunk MultiMesh. Trunk transforms use the exact deterministic per-tree seed, species width factor and canopy crown-height factor from the canopy generator, so every trunk starts at terrain height and meets its own canopy rather than relying on a separate, mismatched scale calculation. Bark reuses the local procedural bark texture; root bases and soft contact shadows remain separate batched passes. The foliage atlas is generated locally at startup and does not make network requests.
 
 ## LOD and culling
 | Tier | Distance band | Crossed cards |
@@ -47,6 +47,6 @@ The child `SeasonManager` can also be accessed for signals. Seasonal transitions
 The world keeps its existing climate-aware ProceduralSky, sky ambient energy, filmic tonemapping, fog and warm coastal directional fill. The foliage shader adds only a restrained back-light term; it does not add a per-tree light or reflection probe. Compatibility-safe contact AO remains in the existing batched shadow pass.
 
 ## Validation
-`tests/foliage_system_smoke.gd` checks chunk partitioning, all three LOD instance counts, shader features and the season transition. `VisualPresentationSmoke` asserts the new system is connected to the live world. The Godot validation workflow runs both tests.
+`tests/foliage_system_smoke.gd` checks chunk partitioning, one trunk per canopy, exact trunk-to-crown vertical alignment, all three LOD instance counts, shader features and the season transition. `VisualPresentationSmoke` asserts the new system is connected to the live world. The Godot validation workflow runs both tests.
 
 Headless tests verify geometry/resource construction and source contracts. They do not substitute for the required real WebGL captures and physical Android review at close, medium and overview distances.
