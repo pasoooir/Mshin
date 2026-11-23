@@ -17,9 +17,12 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	presentation._build_meadow_biome_overlays()
-	var biome_patch_node := presentation.get_node_or_null("MeadowBiomePatches") as MeshInstance3D
-	if not is_instance_valid(biome_patch_node) or biome_patch_node.mesh == null or biome_patch_node.mesh.get_surface_count() != 1:
-		push_error("[VisualPresentationSmoke] WebGL meadow biome patchwork must generate one batched vertex-colour mesh")
+	if presentation.get_node_or_null("MeadowBiomePatches") != null:
+		push_error("[VisualPresentationSmoke] Continuous world-space biome fields must not spawn scattered camouflage patch geometry")
+		get_tree().quit(1)
+		return
+	if not world_source.contains("float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))"):
+		push_error("[VisualPresentationSmoke] Broad world-space biome fields must remain part of the primary terrain material")
 		get_tree().quit(1)
 		return
 	# Coastline regression: water geometry must follow the curved beach edge,
@@ -111,33 +114,27 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+	if not world_source.contains("var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
 		get_tree().quit(1)
 		return
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
-		"float terrain_fbm(vec2 p)",
-		"float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0))",
 		"float terrain_noise(vec2 p)",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"vec3 deep_meadow = vec3(0.57, 0.58, 0.43)",
-		"vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
-		"vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
-		"vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
-		"vec3 exposed_soil = vec3(0.61, 0.47, 0.35)",
-		"float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
-		"func _build_meadow_biome_overlays() -> void:",
-		"var patch_count := 190",
-		"patches.name = \"MeadowBiomePatches\"",
-		"material.vertex_color_use_as_albedo = true",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
+		"float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))",
+		"float mid_field = terrain_noise(world_xz * 0.016 + vec2(23.0, 5.0))",
+		"float dry_field = terrain_noise(world_xz * 0.0095 + vec2(47.0, 31.0))",
+		"float soil_patch_mask = smoothstep(0.58, 0.72, soil_field)",
+		"vec3 deep_meadow = vec3(0.66, 0.68, 0.49)",
+		"vec3 sunlit_sage = vec3(0.78, 0.78, 0.60)",
+		"vec3 dry_olive = vec3(0.82, 0.75, 0.54)",
+		"vec3 straw_grass = vec3(0.88, 0.81, 0.63)",
+		"vec3 exposed_soil = vec3(0.58, 0.46, 0.34)",
 		"meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
-		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
-		"var fresh_grass := Color(\"#B3A071\")",
-		"var biome_soil_mask := smoothstep",
+		"func _build_meadow_biome_overlays() -> void:",
+		"Biome fields are rendered continuously by the terrain shader",
 		"SPECULAR = 0.12"
-	]:
+	]
 		if not terrain_material_source.contains(required_terrain_layer):
 			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
 			get_tree().quit(1)
