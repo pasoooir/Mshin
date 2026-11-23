@@ -109,11 +109,11 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 
 ## 5.2 Coastal build boundary and complete world visibility
 
-The brown inner coastal field is part of the city landmass and must be purchasable/buildable. Keep only the final 8 m shoreline ribbon as non-buildable dry/wet beach. The expansion domain follows the sampled curved coastline per tile and per cell; it must not use a single rectangular X cutoff that strands visible inland fields. Purchased expansion plots are flattened to a stable construction plane when terrain is rebuilt. The camera far clip must reach beyond the 1,100 m offshore water mesh (retain at least 4,000 m) so zooming out never clips the sea or the far side of the landmass. Do not solve clipping by shrinking the water mesh or hiding terrain.
+The brown inner coastal field is part of the city landmass and must be purchasable/buildable. Keep only the final 8 m shoreline ribbon as non-buildable dry/wet beach. The expansion domain follows the sampled curved coastline per tile and per cell; it must not use a single rectangular X cutoff that strands visible inland fields. Purchased expansion plots are flattened to a stable construction plane when terrain is rebuilt. Keep the camera's 4,000 m far clip so the complete offshore water mesh remains visible.
 
 ## 5.1 Complete inland city expansion boundary
 
-The rendered landmass and the city expansion domain must agree. Keep starter ownership at 48 × 48 m so existing progression and saves remain intact, but allow expansion across the complete inland terrain footprint: tile X -15…8 and tile Z -18…17 (8 m per tile). This makes the broad brown and olive inland fields part of the expandable city rather than permanently decorative scenery. Stop the east boundary at X=72 m, before the sandy beach ribbon and sampled shoreline. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
+The rendered landmass and the city expansion domain must agree. Keep the existing six-by-six starter tile ownership unchanged (96 × 96 m at 2 m per cell and 8 cells per tile). Expand only within the rendered landmass: X tiles -8…6 and Z tiles -9…8, with the curved coastline checked per tile and per cell. The inner brown coastal field is expandable; only the final 8 m shore ribbon is reserved. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
 
 ## 5. Terrain system specification
 
