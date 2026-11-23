@@ -1389,9 +1389,11 @@ func _build_shrubland_detail() -> void:
 	]
 	# Cluster centers are distributed across the natural meadow, with deliberate
 	# breathing gaps. A cluster contains several low shrubs rather than one ball.
-	for cluster_index in range(190):
+	for cluster_index in range(240):
 		var center_x := rng.randf_range(-116.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
+		if LandExpansionManager.is_world_position_unlocked(Vector3(center_x, 0.0, center_z)):
+			continue
 		if absf(center_x) < 31.0 and absf(center_z) < 31.0:
 			continue
 		if center_x > _coastline(center_z) - BEACH_WIDTH - 18.0:
@@ -1407,11 +1409,13 @@ func _build_shrubland_detail() -> void:
 			var radius := rng.randf_range(0.0, 3.8)
 			var x := center_x + cos(angle) * radius
 			var z := center_z + sin(angle) * radius * 0.78
+			if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+				continue
 			if x > _coastline(z) - BEACH_WIDTH - 15.0 or _is_city_road_footprint(x, z):
 				continue
 			if absf(x) < 27.0 and absf(z) < 27.0:
 				continue
-			var scale_value := rng.randf_range(0.68, 1.22)
+			var scale_value := rng.randf_range(0.76, 1.30)
 			var yaw := rng.randf_range(0.0, TAU)
 			var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale_value, scale_value, scale_value))
 			transforms.append(Transform3D(basis, Vector3(x, _terrain_height(x, z) + 0.035, z)))
@@ -1489,9 +1493,11 @@ func _build_grass_detail() -> void:
 	blade_material.roughness = 0.98
 	blade_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var positions: Array[Vector3] = []
-	for index in range(2400):
+	for index in range(3600):
 		var x := -118.0 + fposmod(float(index) * 19.37, 194.0)
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
+		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+			continue
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or _is_city_road_footprint(x, z):
