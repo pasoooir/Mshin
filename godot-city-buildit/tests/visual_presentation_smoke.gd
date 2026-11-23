@@ -21,7 +21,7 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Continuous world-space biome fields must not spawn scattered camouflage patch geometry")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))"):
+	if not shrub_source.contains("float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))"):
 		push_error("[VisualPresentationSmoke] Broad world-space biome fields must remain part of the primary terrain material")
 		get_tree().quit(1)
 		return
