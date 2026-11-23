@@ -7,8 +7,8 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 145.0
-const TERRAIN_LEFT := -120.0
+const TERRAIN_HALF_DEPTH := 144.0
+const TERRAIN_LEFT := -128.0
 const TERRAIN_DIVISIONS := 128
 const CITY_HALF_EXTENT := 40
 
