@@ -4767,7 +4767,7 @@ func _run_gameplay_test() -> void:
 	var camera_rig := get_node_or_null("CameraRig")
 	await _test_mixed_hud_world_touch_isolation(input_node, camera_rig)
 	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("max_zoom")), 150.0), "The city camera must expose enough zoom-out range beyond its 84 m opening overview.")
-	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_limit")), 130.0), "The city camera must retain its bounded coastal-map pan range.")
+	_check(camera_rig != null and is_equal_approx(float(camera_rig.get("world_min_x")), -300.0) and is_equal_approx(float(camera_rig.get("world_max_x")), 60.0) and is_equal_approx(float(camera_rig.get("world_min_z")), -240.0) and is_equal_approx(float(camera_rig.get("world_max_z")), 240.0), "The city camera must expose asymmetric pan bounds that cover the expanded inland city and full coastal water view.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalWater") != null, "Coastal water was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/BuildablePlotGrid") != null, "Buildable plot grid was not generated.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CoastalHighway") != null, "Coastal highway was not generated.")
