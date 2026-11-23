@@ -22,7 +22,7 @@ var _tree_count := 0
 var _season_manager: Node
 
 
-func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026) -> void:
+func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026, bark_texture: Texture2D = null) -> void:
     clear_foliage()
     _tree_count = positions.size()
     if positions.is_empty():
@@ -43,6 +43,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
     _trunk_material = StandardMaterial3D.new()
     _trunk_material.vertex_color_use_as_albedo = true
     _trunk_material.albedo_color = Color("#806044")
+    _trunk_material.albedo_texture = bark_texture
     _trunk_material.roughness = 1.0
     _trunk_mesh = CylinderMesh.new()
     _trunk_mesh.top_radius = 0.075
