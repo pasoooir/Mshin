@@ -4,7 +4,7 @@ class_name StylizedFoliageSystem
 const SeasonManagerScript = preload("res://scripts/world/FoliageSeasonManager.gd")
 const CHUNK_SIZE := 64.0
 const CANOPY_CROWN_HEIGHT_FACTOR := 3.0
-const PALM_CROWN_HEIGHT_FACTOR := 2.85
+const PALM_CROWN_HEIGHT_FACTOR := 1.2
 const LOD_BEGIN := [0.0, 38.0, 108.0]
 const LOD_END := [46.0, 118.0, 280.0]
 const LOD_CARDS := [10, 6, 3]
