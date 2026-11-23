@@ -45,7 +45,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
     _trunk_mesh = CylinderMesh.new()
     _trunk_mesh.top_radius = 0.095
     _trunk_mesh.bottom_radius = 0.235
-    _trunk_mesh.height = 4.6
+    _trunk_mesh.height = 2.6
     _trunk_mesh.radial_segments = 7
     _trunk_mesh.rings = 2
 
@@ -205,20 +205,21 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
         var world_position: Vector3 = entry["position"]
         var local_position := world_position - chunk_root.position
         var stable_random := float(entry["seed"])
-        var height_scale := 1.0
-        var width_scale := 1.0
+        var scale_value := 2.05 + fposmod(stable_random * 17.0, 0.72)
+        var height_factor := 1.0
+        var width_factor := 1.0
         match species_id:
             1:
-                height_scale = 1.12
-                width_scale = 0.86
+                height_factor = 1.20
+                width_factor = 0.82
             2:
-                height_scale = 1.08
-                width_scale = 0.94
+                height_factor = 1.12
+                width_factor = 0.96
             3:
-                height_scale = 1.28
-                width_scale = 0.76
-        height_scale *= 0.94 + fposmod(stable_random * 5.7, 0.12)
-        width_scale *= 0.92 + fposmod(stable_random * 8.3, 0.16)
+                height_factor = 0.88
+                width_factor = 1.18
+        var height_scale := scale_value * height_factor
+        var width_scale := scale_value * width_factor
         var basis := Basis.IDENTITY.scaled(Vector3(width_scale, height_scale, width_scale))
         var trunk_height := _trunk_mesh.height * height_scale
         trunks.set_instance_transform(
