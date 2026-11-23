@@ -449,20 +449,24 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	else:
 		# Bake broad biome patches into the mesh vertex colors as well as the
 		# shader. This keeps terrain variation visible in WebGL/Compatibility.
-		var macro_patch := sin(point.x * 0.026 + point.z * 0.019) * cos(point.z * 0.034 - point.x * 0.021)
-		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
-		var patch_mix := clampf(0.5 + macro_patch * 0.50 + secondary_patch * 0.22, 0.0, 1.0)
-		var palette_index := int(abs(floor(point.x * 0.073 + point.z * 0.047))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#4D7440")
-		var fresh_grass := Color("#91A75B")
-		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
-		color = meadow_color.lerp(COASTAL_GREEN_PALETTE[palette_index], 0.18)
-		var biome_soil_mask := smoothstep(0.22, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
-		color = color.lerp(Color("#9A8056"), biome_soil_mask * 0.28)
-	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
-	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
-	var dry_patch_mask := smoothstep(0.36, 0.78, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
-	color = color.lerp(Color("#9A8056"), dry_patch_mask * 0.28)
+		# Continuous low-frequency fields avoid the hard rectangular colour
+		# changes produced by palette-index tiling at mobile overview distance.
+		var macro_field := sin(point.x * 0.018 + point.z * 0.014) * cos(point.z * 0.023 - point.x * 0.016)
+		var secondary_field := sin(point.x * 0.047 - point.z * 0.039) * cos(point.z * 0.055 + point.x * 0.031)
+		var field_mix := clampf(0.50 + macro_field * 0.38 + secondary_field * 0.12, 0.0, 1.0)
+		var deep_grass := Color("#587B45")
+		var sage_grass := Color("#87995D")
+		var sunlit_grass := Color("#A4A36A")
+		var meadow_color := deep_grass.lerp(sage_grass, smoothstep(0.08, 0.72, field_mix))
+		meadow_color = meadow_color.lerp(sunlit_grass, smoothstep(0.58, 0.96, field_mix) * 0.72)
+		color = meadow_color
+		var soil_field := sin(point.x * 0.061 + point.z * 0.043) * cos(point.z * 0.079 - point.x * 0.052)
+		var biome_soil_mask := smoothstep(0.48, 0.78, soil_field) * (0.72 + smoothstep(0.0, 0.8, macro_field) * 0.28)
+		color = color.lerp(Color("#A18A61"), biome_soil_mask * 0.22)
+	# Broad dry-grass variation remains subordinate to the continuous meadow fields.
+	var rock_field := sin(point.x * 0.071 + point.z * 0.053) * cos(point.z * 0.089 - point.x * 0.067)
+	var dry_patch_mask := smoothstep(0.46, 0.82, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
+	color = color.lerp(Color("#A18A61"), dry_patch_mask * 0.20)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":

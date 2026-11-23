@@ -114,7 +114,7 @@ The terrain is divided into three visual bands:
 - **Natural transition**: rolling meadow, curated dirt tracks, creek channel, scrub clusters, fieldstones and irregular groves.
 - **Coast**: meadow-to-dune transition, sand, wet-sand edge, foam, shallow water and deep ocean.
 
-The terrain shader uses world-space value noise and multi-octave FBM, not screen-space or repeating tiny tiles. Broad masks define sage and olive fields; medium masks define dry/straw grass; irregular value-noise masks break exposed-earth islands; fine noise adds surface grain. A single batched vertex-colour overlay reinforces the biome boundaries in WebGL at overview distance. Vertex colors provide a restrained climate tint. The shader must remain compatible with Godot 4.3's Compatibility renderer.
+Godot 4.3 Compatibility currently uses a deterministic, unshaded vertex-colour terrain material so authored palette values survive mobile WebGL lighting consistently. Broad continuous world-space fields define sage, olive and sunlit grass; a subordinate irregular soil mask and dry-grass field add variation. Do not use coordinate-quantized palette indices, hard-edged colour tiles or scattered overlay islands: they create visible stripes or camouflage at overview distance. Climate tint is applied after the base field. If a procedural shader is reintroduced, it must preserve the same value separation in Compatibility and pass real mobile captures.
 
 Suggested height rules:
 - Starter plots: exactly 0 m.
@@ -150,9 +150,9 @@ Suggested height rules:
 ## 9. Godot 4.3 implementation constraints
 
 - Renderer: GL Compatibility; no Forward+/Vulkan-only features.
-- Terrain: one merged ArrayMesh with world-space shader and baked vertex colors.
+- Terrain: one merged ArrayMesh with baked continuous world-space vertex colours and a Compatibility-safe material.
 - Grass/trees/rocks: MultiMeshInstance3D batches; no one-node-per-blade/tree patterns.
-- Shader: deterministic world-space hash/FBM/cellular fields; keep loops bounded and avoid screen texture reads.
+- Terrain fields: deterministic low-frequency world-space functions; no coordinate-quantized palette bands, no expensive screen texture reads.
 - Assets: local files in GitHub; no runtime CDN/HTTPRequest.
 - Maintain a mobile frame-time budget; reduce near-detail density with distance and keep shadow casters selective.
 
