@@ -341,6 +341,9 @@ void fragment() {
 
 
 func _build_meadow_biome_overlays() -> void:
+	# Broad biome fields are baked into the terrain itself. Retire scattered
+	# island overlays: real WebGL captures showed a camouflage-like result.
+	return
 	# The compatibility renderer can flatten subtle procedural shader variation
 	# at the mobile overview distance. Add a single deterministic, vertex-colour
 	# patch mesh so meadow/soil/olive fields remain visibly distinct in WebGL.
@@ -450,12 +453,12 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#829067")
-		var fresh_grass := Color("#B3A071")
+		var deep_grass := Color("#A0A77A")
+		var fresh_grass := Color("#C2B27D")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
-		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.78)
+		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.90)
 		var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
-		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.34)
+		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.18)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
@@ -1237,27 +1240,26 @@ void fragment() {
 	float soil_patch_mask = smoothstep(0.47, 0.64, soil_field) * (0.42 + soil_core * 0.58);
 	soil_patch_mask *= 0.72 + dry_mask * 0.28;
 
-	vec3 deep_meadow = vec3(0.57, 0.58, 0.43);
-	vec3 sunlit_sage = vec3(0.70, 0.70, 0.54);
-	vec3 dry_olive = vec3(0.75, 0.68, 0.49);
-	vec3 straw_grass = vec3(0.82, 0.75, 0.57);
-	vec3 exposed_soil = vec3(0.61, 0.47, 0.35);
-	vec3 warm_earth = vec3(0.69, 0.53, 0.39);
+	vec3 deep_meadow = vec3(0.66, 0.68, 0.49);
+	vec3 sunlit_sage = vec3(0.78, 0.78, 0.60);
+	vec3 dry_olive = vec3(0.82, 0.75, 0.54);
+	vec3 straw_grass = vec3(0.88, 0.81, 0.63);
+	vec3 exposed_soil = vec3(0.58, 0.46, 0.34);
+	vec3 warm_earth = vec3(0.66, 0.52, 0.39);
 
 	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
 	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
 	meadow = mix(meadow, straw_grass, dry_mask * 0.66);
-	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.92, 0.0, 0.76));
+	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.62, 0.0, 0.34));
 
 	// Retain the locally generated grass texture as a restrained fine-scale
 	// overlay; the world-space biome colors remain the dominant visual read.
 	vec3 sampled_grass = texture(grass_texture, ground_uv * 0.72).rgb;
-	meadow = mix(meadow, meadow * sampled_grass * 1.55, 0.16);
-	meadow *= 0.88 + micro_grain * 0.25;
-	meadow *= mix(0.92, 1.06, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
-	// Baked vertex color gently carries climate/region tint without washing out
-	// the designed soil and dry-field colors.
-	meadow *= mix(vec3(1.0), COLOR.rgb, 0.12);
+	meadow = mix(meadow, meadow * sampled_grass * 1.42, 0.08);
+	meadow *= 0.96 + micro_grain * 0.10;
+	meadow *= mix(0.98, 1.04, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
+	// Do not multiply the authored biome palette by terrain vertex tint: this
+	// double-darkened the meadow into an emerald carpet in Compatibility.
 
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
