@@ -47,8 +47,8 @@ func _run() -> void:
         if far_canopy == null or far_canopy.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
             _fail("Far canopy LOD must not add mobile shadow-map cost.")
             return
-        if shadow_trunks == null or shadow_trunks.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON:
-            _fail("Batched tree trunks must cast grounding shadows.")
+        if shadow_trunks == null or shadow_trunks.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+            _fail("Batched trunks must stay shadow-free; the near canopy is the only tree shadow caster.")
             return
         var canopy_lod := chunk.get_node_or_null("TreeCanopies_Species0_LOD0") as MultiMeshInstance3D
         if canopy_lod != null and canopy_lod.multimesh != null and canopy_lod.multimesh.instance_count > 0:
