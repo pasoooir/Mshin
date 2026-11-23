@@ -909,11 +909,18 @@ if "Vector3(0.0, 0.018, 0.0)" not in world_source:
 if "multimesh.use_colors = true" not in world_source:
     errors.append("Tree instances must use per-instance natural color variation")
 
+# Compatibility-renderer meadow must retain its authored light palette. Guard
+# against the old double-darkening path and camouflage-like biome island meshes.
+if "meadow *= mix(vec3(1.0), COLOR.rgb, 0.12)" in world_source:
+    errors.append("Meadow shader must not multiply authored colors by terrain vertex tint")
+if "Broad biome fields are baked into the terrain itself" not in world_source:
+    errors.append("Meadow biome overlays must remain disabled until continuous field rendering is restored")
+
 # The permanent city-entry motorway and natural terrain are visual landmarks.
 for visual_contract in [
-    "vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
-    "vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
-    "vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
+    "vec3 sunlit_sage = vec3(0.78, 0.78, 0.60)",
+    "vec3 dry_olive = vec3(0.82, 0.75, 0.54)",
+    "vec3 straw_grass = vec3(0.88, 0.81, 0.63)",
     "float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
     "float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
     "meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
