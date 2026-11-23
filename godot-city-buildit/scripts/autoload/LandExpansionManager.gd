@@ -8,7 +8,7 @@ const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
 # Expand across the complete inland landmass, stopping before the sandy beach.
 const EXPANSION_MIN_TILE_X := -15
-const EXPANSION_MAX_TILE_X := 9
+const EXPANSION_MAX_TILE_X := 8
 const EXPANSION_MIN_TILE_Y := -18
 const EXPANSION_MAX_TILE_Y := 17
 const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
