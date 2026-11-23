@@ -47,6 +47,10 @@ func _ready() -> void:
 	# so city plots and the Pacific remain visible in the same wide overview.
 	global_position = Vector3(25.0, 0.0, 0.0)
 	camera.fov = 62.0
+	# The coastal water mesh extends far offshore; the default 400 m far plane
+	# clipped the ocean at wide zoom and made the world appear abruptly cut off.
+	camera.near = 0.1
+	camera.far = 1800.0
 	_update_camera_transform()
 	focus_target = global_position
 	# No idle per-frame camera work: wake only for touch, inertia or focus.
