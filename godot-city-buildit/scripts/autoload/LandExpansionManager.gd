@@ -8,7 +8,9 @@ const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
 # Expand across the complete inland landmass, stopping before the sandy beach.
 const EXPANSION_MIN_TILE_X := -15
-const EXPANSION_MAX_TILE_X := 8
+const EXPANSION_MAX_TILE_X := 12
+const BUILDABLE_COAST_MARGIN := 8.0
+const COASTLINE_BASE_X := 110.0
 const EXPANSION_MIN_TILE_Y := -18
 const EXPANSION_MAX_TILE_Y := 17
 const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
@@ -44,13 +46,27 @@ func get_expansion_item_definition(item_id: String) -> Dictionary:
 func _tile_key(tile: Vector2i) -> String:
 	return "%d:%d" % [tile.x, tile.y]
 
+func _coastline_x(world_z: float) -> float:
+	return COASTLINE_BASE_X + sin(world_z * 0.032) * 7.0 + sin(world_z * 0.071) * 3.2 + sin(world_z * 0.013) * 4.0
+
+func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:
+	var world_x := (float(cell.x) + 0.5) * BuildManager.GRID_SIZE
+	var world_z := (float(cell.y) + 0.5) * BuildManager.GRID_SIZE
+	return world_x <= _coastline_x(world_z) - BUILDABLE_COAST_MARGIN
+
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
-	return (
-		tile.x >= EXPANSION_MIN_TILE_X
-		and tile.x <= EXPANSION_MAX_TILE_X
-		and tile.y >= EXPANSION_MIN_TILE_Y
-		and tile.y <= EXPANSION_MAX_TILE_Y
+	if (
+		tile.x < EXPANSION_MIN_TILE_X
+		or tile.x > EXPANSION_MAX_TILE_X
+		or tile.y < EXPANSION_MIN_TILE_Y
+		or tile.y > EXPANSION_MAX_TILE_Y
+	):
+		return false
+	var center_cell := Vector2i(
+		tile.x * TILE_CELLS + TILE_CELLS / 2,
+		tile.y * TILE_CELLS + TILE_CELLS / 2
 	)
+	return is_cell_inside_coastal_build_boundary(center_cell)
 
 func _is_reserved_highway_tile(tile: Vector2i) -> bool:
 	return tile.x >= HIGHWAY_RESERVED_TILE_MIN_X and tile.x <= HIGHWAY_RESERVED_TILE_MAX_X
@@ -74,6 +90,8 @@ func is_cell_unlocked(cell: Vector2i) -> bool:
 		or cell.y < MIN_CELL_Y
 		or cell.y >= MAX_CELL_Y_EXCLUSIVE
 	):
+		return false
+	if not is_cell_inside_coastal_build_boundary(cell):
 		return false
 	return is_tile_owned(get_tile_for_cell(cell))
 
