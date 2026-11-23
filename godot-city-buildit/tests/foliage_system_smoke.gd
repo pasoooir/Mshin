@@ -34,6 +34,22 @@ func _run() -> void:
     for chunk in system.get_children():
         if not chunk.name.begins_with("FoliageChunk_"):
             continue
+        var near_canopy := chunk.get_node_or_null("TreeCanopies_Species0_LOD0") as MultiMeshInstance3D
+        var medium_canopy := chunk.get_node_or_null("TreeCanopies_Species0_LOD1") as MultiMeshInstance3D
+        var far_canopy := chunk.get_node_or_null("TreeCanopies_Species0_LOD2") as MultiMeshInstance3D
+        var shadow_trunks := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
+        if near_canopy == null or near_canopy.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON:
+            _fail("Near canopy LOD must cast shadows to ground the tree silhouette.")
+            return
+        if medium_canopy == null or medium_canopy.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+            _fail("Medium canopy LOD must not add mobile shadow-map cost.")
+            return
+        if far_canopy == null or far_canopy.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+            _fail("Far canopy LOD must not add mobile shadow-map cost.")
+            return
+        if shadow_trunks == null or shadow_trunks.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON:
+            _fail("Batched tree trunks must cast grounding shadows.")
+            return
         var canopy_lod := chunk.get_node_or_null("TreeCanopies_Species0_LOD0") as MultiMeshInstance3D
         if canopy_lod != null and canopy_lod.multimesh != null and canopy_lod.multimesh.instance_count > 0:
             var canopy_y := canopy_lod.multimesh.get_instance_transform(0).origin.y
