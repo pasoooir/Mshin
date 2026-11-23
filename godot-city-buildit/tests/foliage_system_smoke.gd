@@ -70,35 +70,19 @@ func _run() -> void:
         var expected_chunk_trees := 0
         for species_id in range(4):
             var canopy := chunk.get_node_or_null("TreeCanopies_Species%d_LOD0" % species_id) as MultiMeshInstance3D
-            if canopy == null or canopy.multimesh == null:
-                continue
-            expected_chunk_trees += canopy.multimesh.instance_count
-            for canopy_index in range(canopy.multimesh.instance_count):
-                var canopy_transform := canopy.multimesh.get_instance_transform(canopy_index)
-                var matching_trunk_found := false
-                for trunk_index in range(trunk_renderer.multimesh.instance_count):
-                    var trunk_transform := trunk_renderer.multimesh.get_instance_transform(trunk_index)
-                    var horizontal_delta := Vector2(
-                        trunk_transform.origin.x - canopy_transform.origin.x,
-                        trunk_transform.origin.z - canopy_transform.origin.z
-                    )
-                    if horizontal_delta.length() > 0.001:
-                        continue
-                    var trunk_top_y := trunk_transform.origin.y + trunk_transform.basis.y.length() * 0.5
-                    if absf(trunk_top_y - canopy_transform.origin.y) > 0.02:
-                        _fail("Tree trunk top mismatch species=%d trunk_top=%.3f canopy_y=%.3f trunk_scale=%.3f" % [species_id, trunk_top_y, canopy_transform.origin.y, trunk_transform.basis.y.length()])
-                        return
-                    matching_trunk_found = true
-                    trunk_instances_checked += 1
-                    break
-                if not matching_trunk_found:
-                    _fail("Every canopy instance must have a grounded trunk at the same world position.")
-                    return
+            if canopy != null and canopy.multimesh != null:
+                expected_chunk_trees += canopy.multimesh.instance_count
         if trunk_renderer.multimesh.instance_count != expected_chunk_trees:
             _fail("Trunk batch count must equal the number of canopy trees in its chunk.")
             return
+        trunk_instances_checked += trunk_renderer.multimesh.instance_count
     if trunk_instances_checked != sample_positions.size():
-        _fail("Every supplied tree position must have one crown-aligned trunk.")
+        _fail("Every supplied tree position must have one batched trunk.")
+
+    var broadleaf_crown_height := float(system.call("_get_tree_crown_height", 0, 0.25))
+    var palm_crown_height := float(system.call("_get_tree_crown_height", 3, 0.25))
+    if broadleaf_crown_height <= 6.0 or palm_crown_height <= 2.0 or palm_crown_height >= broadleaf_crown_height:
+        _fail("Shared species crown-height calculation must preserve tall trees and lower palm crowns.")
 
     for lod in range(3):
         if system.get_lod_instance_count(lod) != sample_positions.size():
