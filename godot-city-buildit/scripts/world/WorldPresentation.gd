@@ -7,9 +7,10 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 360.0
+const TERRAIN_HALF_DEPTH := 760.0
 const TERRAIN_LEFT := -420.0
-const TERRAIN_DIVISIONS := 192
+const TERRAIN_X_DIVISIONS := 192
+const TERRAIN_Z_DIVISIONS := 320
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -175,15 +176,14 @@ func _on_land_expansion_changed() -> void:
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var divisions := TERRAIN_DIVISIONS
-	for z_index in range(divisions):
-		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / divisions) * TERRAIN_HALF_DEPTH * 2.0
-		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / divisions) * TERRAIN_HALF_DEPTH * 2.0
+	for z_index in range(TERRAIN_Z_DIVISIONS):
+		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / TERRAIN_Z_DIVISIONS) * TERRAIN_HALF_DEPTH * 2.0
+		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / TERRAIN_Z_DIVISIONS) * TERRAIN_HALF_DEPTH * 2.0
 		var coast0 := _coastline(z0)
 		var coast1 := _coastline(z1)
-		for x_index in range(divisions):
-			var u0 := float(x_index) / divisions
-			var u1 := float(x_index + 1) / divisions
+		for x_index in range(TERRAIN_X_DIVISIONS):
+			var u0 := float(x_index) / TERRAIN_X_DIVISIONS
+			var u1 := float(x_index + 1) / TERRAIN_X_DIVISIONS
 			var x00 := lerpf(TERRAIN_LEFT, coast0, u0)
 			var x10 := lerpf(TERRAIN_LEFT, coast0, u1)
 			var x01 := lerpf(TERRAIN_LEFT, coast1, u0)
