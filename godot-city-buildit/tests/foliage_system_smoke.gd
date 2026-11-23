@@ -86,7 +86,7 @@ func _run() -> void:
                         continue
                     var trunk_top_y := trunk_transform.origin.y + trunk_transform.basis.y.length() * 0.5
                     if absf(trunk_top_y - canopy_transform.origin.y) > 0.02:
-                        _fail("Tree trunk top must meet the exact canopy crown height.")
+                        _fail("Tree trunk top mismatch species=%d trunk_top=%.3f canopy_y=%.3f trunk_scale=%.3f" % [species_id, trunk_top_y, canopy_transform.origin.y, trunk_transform.basis.y.length()])
                         return
                     matching_trunk_found = true
                     trunk_instances_checked += 1
