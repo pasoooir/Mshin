@@ -114,8 +114,8 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Pacific motorway must retain dark asphalt contrast")
 		get_tree().quit(1)
 		return
-	# Compatibility/WebGL terrain is deliberately authored as lit vertex colours,
-	# not the procedural spatial shader that produced a dark green carpet.
+	# Compatibility/WebGL terrain uses authored, unshaded vertex colours so the palette
+	# is not washed out by stacked lighting or the old procedural spatial shader.
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
 		"func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:",
@@ -124,13 +124,15 @@ func _ready() -> void:
 		"var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)",
 		"Color(\"#A88B62\")",
 		"func _create_natural_ground_material() -> StandardMaterial3D:",
+		"material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
 		"material.vertex_color_use_as_albedo = true",
 		"material.albedo_color = Color.WHITE",
+		"render_mode unshaded, cull_disabled;",
 		"material.roughness = 0.98",
 		"func _build_meadow_biome_overlays() -> void:"
 	]:
 		if not terrain_material_source.contains(required_terrain_layer):
-			push_error("[VisualPresentationSmoke] Compatibility-safe vertex-colour meadow is incomplete: " + required_terrain_layer)
+			push_error("[VisualPresentationSmoke] Compatibility-safe colour-accurate vertex-colour meadow is incomplete: " + required_terrain_layer)
 			get_tree().quit(1)
 			return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
