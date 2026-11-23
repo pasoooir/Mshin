@@ -125,11 +125,12 @@
           // receives taps instead of being covered by the fullscreen iframe.
           const gameDocument = frame.contentDocument;
           if (!gameDocument || !gameDocument.body) throw new Error('Game document is not available for Google sign-in UI');
-          const overlay = gameDocument.createElement('div');
+          // A native modal dialog enters the browser top layer, above Godot's
+          // composited WebGL canvas and any fullscreen stacking context.
+          const overlay = gameDocument.createElement('dialog');
           overlay.id = 'mshin-google-signin-overlay';
-          overlay.setAttribute('role', 'dialog');
           overlay.setAttribute('aria-label', 'Sign in with Google');
-          overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,13,27,.82);backdrop-filter:blur(9px);';
+          overlay.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:20px;border:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(3,13,27,.82);backdrop-filter:blur(9px);pointer-events:auto;color:#f5fbff;';
           const card = gameDocument.createElement('div');
           card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:18px;min-width:300px;max-width:92vw;padding:30px 26px 24px;border:1px solid rgba(91,215,247,.8);border-radius:22px;background:linear-gradient(145deg,#1c3d5d,#10253d);box-shadow:0 22px 70px rgba(0,0,0,.55);';
           const heading = gameDocument.createElement('div');
@@ -148,7 +149,9 @@
           card.append(heading, subtitle, button, cancel);
           overlay.appendChild(card);
           gameDocument.body.appendChild(overlay);
-          window.google.accounts.id.renderButton(button, { type:'standard', theme:'outline', size:'large', text:'continue_with', shape:'pill', logo_alignment:'left', width:Math.min(300, Math.floor(window.innerWidth * .78)) });
+          if (typeof overlay.showModal === 'function') overlay.showModal();
+          else overlay.setAttribute('open', '');
+          window.google.accounts.id.renderButton(button, { type:'standard', theme:'outline', size:'large', text:'continue_with', shape:'pill', logo_alignment:'left', width:Math.min(300, Math.floor(gameDocument.defaultView.innerWidth * .78)) });
         } catch (error) {
           console.error('[Mshin Google sign-in]', error);
           finishGoogleSignIn(frame, nonce, null);
