@@ -107,6 +107,10 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 - Snow accumulation only for arctic regions; dry soil and sparse scrub for desert; lush but still varied tropical ground.
 - Do not duplicate complete geometry for each season.
 
+## 5.1 Complete inland city expansion boundary
+
+The rendered landmass and the city expansion domain must agree. Keep starter ownership at 48 × 48 m so existing progression and saves remain intact, but allow expansion across the complete inland terrain footprint: tile X -15…9 and tile Z -18…17 (8 m per tile). This makes the broad brown and olive inland fields part of the expandable city rather than permanently decorative scenery. Stop the east boundary at X=80 m, before the sandy beach ribbon and sampled shoreline. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
+
 ## 5. Terrain system specification
 
 The terrain is divided into three visual bands:
