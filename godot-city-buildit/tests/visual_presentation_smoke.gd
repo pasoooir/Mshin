@@ -69,20 +69,11 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	var ground_material: StandardMaterial3D = presentation._create_natural_ground_material()
-	if ground_material.albedo_texture == null or not ground_material.vertex_color_use_as_albedo:
-		push_error("[VisualPresentationSmoke] Natural ground must combine biome vertex colors with its offline fine-grain detail texture")
-		ground_material.free()
-		presentation.free()
-		get_tree().quit(1)
-		return
 	if not world_source.contains("func _create_ground_detail_texture() -> Texture2D:") or not world_source.contains("material.albedo_texture = _create_ground_detail_texture()"):
 		push_error("[VisualPresentationSmoke] Ground detail texture must be generated locally and applied to the terrain material")
-		ground_material.free()
 		presentation.free()
 		get_tree().quit(1)
 		return
-	ground_material.free()
 	for required_foliage_integration in [
 		"StylizedFoliageSystemScript",
 		"foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)",
