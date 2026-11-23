@@ -33,6 +33,8 @@ func _run() -> void:
 
     var grounded_trunk_count := 0
     for chunk in system.get_children():
+        if not chunk.name.begins_with("FoliageChunk_"):
+            continue
         var trunk_renderer := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
         if trunk_renderer == null or trunk_renderer.multimesh == null:
             _fail("Every foliage chunk must render grounded trunks in a batched MultiMesh.")
