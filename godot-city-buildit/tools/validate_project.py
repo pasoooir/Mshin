@@ -276,6 +276,7 @@ for contract in [
         errors.append(f"Coastal continuity and road-clearance contract is missing: {contract}")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 for contract in [
+    "camera.far = 1800.0",
     "var _multi_touch_gesture_active: bool = false",
     "if _multi_touch_gesture_active:",
     "pan_velocity = Vector2.ZERO",
@@ -1892,7 +1893,7 @@ for contract in [
     "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "Land expansion special items must not appear as factory-manufacturable raw materials.",
     "A fully funded adjacent plot must be claimable.",
-    "Expansion choices must span the inland landmass while excluding the motorway and sandy coastline.",
+    "Expansion choices must span the inland landmass while excluding the motorway and following the curved sandy coastline.",
     "New roads must not be placed over the permanent highway asphalt.",
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
