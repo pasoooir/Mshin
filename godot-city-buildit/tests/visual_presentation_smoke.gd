@@ -6,6 +6,13 @@ const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.g
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
+	# The headless dummy renderer cannot return SurfaceTool.commit() meshes.
+	# Validate the exact generation bounds and tessellation inputs directly;
+	# real WebGL captures verify the resulting rendered surface.
+	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 256 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
+		push_error("[VisualPresentationSmoke] Terrain generation bounds must cover the complete mobile camera envelope and coastal edge")
+		get_tree().quit(1)
+		return
 	var shrub_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	if not shrub_source.contains("_build_shrubland_detail()") or not shrub_source.contains("CoastalMeadowShrubClusters"):
 		push_error("[VisualPresentationSmoke] Natural meadow must include the batched coastal shrubland layer")
@@ -69,6 +76,11 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var world_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	if not world_source.contains("func _create_ground_detail_texture() -> Texture2D:") or not world_source.contains("material.albedo_texture = _create_ground_detail_texture()"):
+		push_error("[VisualPresentationSmoke] Ground detail texture must be generated locally and applied to the terrain material")
+		presentation.free()
+		get_tree().quit(1)
+		return
 	for required_foliage_integration in [
 		"StylizedFoliageSystemScript",
 		"foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)",
@@ -130,15 +142,15 @@ func _ready() -> void:
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
 		"func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:",
-		"var macro_field := sin(point.x * 0.018 + point.z * 0.014)",
-		"var secondary_field := sin(point.x * 0.047 - point.z * 0.039)",
-		"var biome_soil_mask := smoothstep(0.48, 0.78, soil_field)",
-		"Color(\"#A18A61\")",
+		"var macro_field := sin(point.x * 0.019 + point.z * 0.015)",
+		"var secondary_field := sin(point.x * 0.043 - point.z * 0.037)",
+		"var biome_soil_mask := smoothstep(0.58, 0.88, soil_field)",
+		"Color(\"#987B5D\")",
 		"func _create_natural_ground_material() -> StandardMaterial3D:",
 		"material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
-		"var field_mix := clampf(0.50 + macro_field * 0.38 + secondary_field * 0.12, 0.0, 1.0)",
-		"var sage_grass := Color(\"#87995D\")",
-		"var sunlit_grass := Color(\"#A4A36A\")",
+		"var field_mix := clampf(0.50 + macro_field * 0.43 + secondary_field * 0.07, 0.0, 1.0)",
+		"var meadow_sage := Color(\"#89966D\")",
+		"var sunlit_straw := Color(\"#B5A071\")",
 		"material.vertex_color_use_as_albedo = true",
 		"material.albedo_color = Color.WHITE",
 		"render_mode unshaded, cull_disabled;",
@@ -221,8 +233,12 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
-		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
+	if not world_visual_source.contains("range(3600)") or not world_visual_source.contains("range(240)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
+		push_error("[VisualPresentationSmoke] Near-city grass, shrub, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
+		get_tree().quit(1)
+		return
+	if not world_visual_source.contains("LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z))"):
+		push_error("[VisualPresentationSmoke] Natural ground cover must never occupy purchased buildable plots")
 		get_tree().quit(1)
 		return
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
@@ -256,7 +272,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 144.0") or not ocean_source.contains("const BEACH_WIDTH := 8.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 320.0") or not ocean_source.contains("const BEACH_WIDTH := 8.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)

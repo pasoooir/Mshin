@@ -7,9 +7,12 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 144.0
-const TERRAIN_LEFT := -128.0
-const TERRAIN_DIVISIONS := 128
+# Cover the complete mobile pan/zoom envelope with continuous terrain.
+# The old 238 x 288 m patch was narrower than the 844x390 overview frustum,
+# exposing the clear colour as a hard green void when users zoomed or panned.
+const TERRAIN_HALF_DEPTH := 320.0
+const TERRAIN_LEFT := -420.0
+const TERRAIN_DIVISIONS := 256
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -449,26 +452,29 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		# Only the final 8 m dry-sand ribbon remains reserved for the shore.
 		color = Color("#A18A61").lerp(Color("#B0A174"), blend * 0.38)
 	else:
-		# Bake broad biome patches into the mesh vertex colors as well as the
-		# shader. This keeps terrain variation visible in WebGL/Compatibility.
-		# Continuous low-frequency fields avoid the hard rectangular colour
-		# changes produced by palette-index tiling at mobile overview distance.
-		var macro_field := sin(point.x * 0.018 + point.z * 0.014) * cos(point.z * 0.023 - point.x * 0.016)
-		var secondary_field := sin(point.x * 0.047 - point.z * 0.039) * cos(point.z * 0.055 + point.x * 0.031)
-		var field_mix := clampf(0.50 + macro_field * 0.38 + secondary_field * 0.12, 0.0, 1.0)
-		var deep_grass := Color("#587B45")
-		var sage_grass := Color("#87995D")
-		var sunlit_grass := Color("#A4A36A")
-		var meadow_color := deep_grass.lerp(sage_grass, smoothstep(0.08, 0.72, field_mix))
-		meadow_color = meadow_color.lerp(sunlit_grass, smoothstep(0.58, 0.96, field_mix) * 0.72)
+		# Bake large, continuous biome fields into vertex colors so the authored
+		# palette survives Godot Compatibility and WebGL lighting unchanged.
+		# The macro field controls 150-250 m landscape regions; a restrained
+		# secondary field softens boundaries without producing camouflage specks.
+		var macro_field := sin(point.x * 0.019 + point.z * 0.015) * cos(point.z * 0.022 - point.x * 0.017)
+		var secondary_field := sin(point.x * 0.043 - point.z * 0.037) * cos(point.z * 0.051 + point.x * 0.029)
+		var field_mix := clampf(0.50 + macro_field * 0.43 + secondary_field * 0.07, 0.0, 1.0)
+		var shaded_sage := Color("#829067")
+		var meadow_sage := Color("#89966D")
+		var dry_olive := Color("#A9956B")
+		var sunlit_straw := Color("#B5A071")
+		var meadow_color := shaded_sage.lerp(meadow_sage, smoothstep(0.12, 0.40, field_mix))
+		meadow_color = meadow_color.lerp(dry_olive, smoothstep(0.40, 0.70, field_mix))
+		meadow_color = meadow_color.lerp(sunlit_straw, smoothstep(0.68, 0.94, field_mix))
 		color = meadow_color
-		var soil_field := sin(point.x * 0.061 + point.z * 0.043) * cos(point.z * 0.079 - point.x * 0.052)
-		var biome_soil_mask := smoothstep(0.48, 0.78, soil_field) * (0.72 + smoothstep(0.0, 0.8, macro_field) * 0.28)
-		color = color.lerp(Color("#A18A61"), biome_soil_mask * 0.22)
-	# Broad dry-grass variation remains subordinate to the continuous meadow fields.
-	var rock_field := sin(point.x * 0.071 + point.z * 0.053) * cos(point.z * 0.089 - point.x * 0.067)
-	var dry_patch_mask := smoothstep(0.46, 0.82, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
-	color = color.lerp(Color("#A18A61"), dry_patch_mask * 0.20)
+		# Exposed soil is a secondary material, never a broad dark-green substitute.
+		var soil_field := sin(point.x * 0.057 + point.z * 0.041) * cos(point.z * 0.073 - point.x * 0.049)
+		var biome_soil_mask := smoothstep(0.58, 0.88, soil_field) * (0.68 + smoothstep(-0.1, 0.85, macro_field) * 0.32)
+		color = color.lerp(Color("#987B5D"), biome_soil_mask * 0.18)
+	# Warm dry-grass accents stay subordinate to the broad sage/olive/straw fields.
+	var rock_field := sin(point.x * 0.067 + point.z * 0.051) * cos(point.z * 0.083 - point.x * 0.063)
+	var dry_patch_mask := smoothstep(0.50, 0.84, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
+	color = color.lerp(Color("#B5A071"), dry_patch_mask * 0.16)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -1185,18 +1191,38 @@ func _create_grass_texture() -> Texture2D:
 
 
 
+func _create_ground_detail_texture() -> Texture2D:
+	# Fine-scale soil/grass grain adds close-camera surface detail without
+	# replacing the large, continuous biome colors baked into terrain vertices.
+	# A near-neutral tile modulates the palette instead of tinting it green.
+	const TEXTURE_SIZE := 128
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * cos(angle_y * 2.0 - sin(angle_x * 3.0))
+			var fine := sin(angle_x * 29.0 + angle_y * 37.0) * 0.5 + cos(angle_x * 47.0 - angle_y * 31.0) * 0.5
+			var grain := fposmod(sin(float(x) * 127.1 + float(y) * 311.7) * 43758.5453, 1.0)
+			var value := clampf(0.965 + broad * 0.025 + fine * 0.018 + (grain - 0.5) * 0.012, 0.91, 1.0)
+			var texel := Color(value, value, value, 1.0)
+			if grain > 0.994:
+				texel = texel.lerp(Color(0.98, 0.93, 0.80, 1.0), 0.10)
+			image.set_pixel(x, y, texel)
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
 func _create_natural_ground_material() -> StandardMaterial3D:
-	# Use the mesh's authored biome vertex colors as the source of truth.
+	# Use authored biome vertex colors plus a restrained local detail tile.
 	# Compatibility/WebGL previously rendered the procedural terrain shader as
-	# a dark green carpet on mobile GPUs; this lit material is deterministic.
+	# a dark green carpet on mobile GPUs; this deterministic material preserves
+	# the intended palette while restoring visible grass/soil grain up close.
 	var material := StandardMaterial3D.new()
-	# Vertex colours are authored in the intended final palette. Unshaded
-	# rendering prevents stacked key/fill/ambient lights from clipping the
-	# meadow to pale white in WebGL Compatibility; cavity shading is baked into
-	# vertices and tree contact shadows are separate geometry.
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.vertex_color_use_as_albedo = true
 	material.albedo_color = Color.WHITE
+	material.albedo_texture = _create_ground_detail_texture()
 	material.roughness = 0.98
 	material.metallic = 0.0
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -1386,9 +1412,11 @@ func _build_shrubland_detail() -> void:
 	]
 	# Cluster centers are distributed across the natural meadow, with deliberate
 	# breathing gaps. A cluster contains several low shrubs rather than one ball.
-	for cluster_index in range(190):
+	for cluster_index in range(240):
 		var center_x := rng.randf_range(-116.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
+		if LandExpansionManager.is_world_position_unlocked(Vector3(center_x, 0.0, center_z)):
+			continue
 		if absf(center_x) < 31.0 and absf(center_z) < 31.0:
 			continue
 		if center_x > _coastline(center_z) - BEACH_WIDTH - 18.0:
@@ -1404,11 +1432,13 @@ func _build_shrubland_detail() -> void:
 			var radius := rng.randf_range(0.0, 3.8)
 			var x := center_x + cos(angle) * radius
 			var z := center_z + sin(angle) * radius * 0.78
+			if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+				continue
 			if x > _coastline(z) - BEACH_WIDTH - 15.0 or _is_city_road_footprint(x, z):
 				continue
 			if absf(x) < 27.0 and absf(z) < 27.0:
 				continue
-			var scale_value := rng.randf_range(0.68, 1.22)
+			var scale_value := rng.randf_range(0.76, 1.30)
 			var yaw := rng.randf_range(0.0, TAU)
 			var basis := Basis(Vector3.UP, yaw).scaled(Vector3(scale_value, scale_value, scale_value))
 			transforms.append(Transform3D(basis, Vector3(x, _terrain_height(x, z) + 0.035, z)))
@@ -1486,9 +1516,11 @@ func _build_grass_detail() -> void:
 	blade_material.roughness = 0.98
 	blade_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var positions: Array[Vector3] = []
-	for index in range(2400):
+	for index in range(3600):
 		var x := -118.0 + fposmod(float(index) * 19.37, 194.0)
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
+		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+			continue
 		if absf(x) < 26.0 and absf(z) < 26.0:
 			continue
 		if absf(x - HIGHWAY_CENTER_X) < 14.0 or _is_city_road_footprint(x, z):

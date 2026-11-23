@@ -105,20 +105,34 @@ jobs:
 
       - name: Verify mobile landscape WebGL launch and touch controls in Chromium
         run: |
-          npm install --no-save playwright
+          # Bound package/browser setup as well as the test itself: network
+          # stalls must not leave the mobile visual gate running indefinitely.
+          timeout 120s npm install --no-save playwright
           # GitHub-hosted runners already include Chromium's shared system libraries.
           # Avoid apt-based --with-deps: transient Ubuntu mirror outages must not
           # block the browser smoke test after the game has already exported.
-          npx playwright install chromium
+          timeout 120s npx playwright install chromium
           python3 -m http.server 4173 --directory site >/tmp/mshin-web-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           mkdir -p artifacts/visual-acceptance
-          timeout 120s node --input-type=module <<'NODE'
+          timeout 240s node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
           const page = await browser.newPage({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 1, hasTouch: true });
+          // Preserve the WebGL drawing buffer so Chromium can export the actual
+          // game canvas directly. page.screenshot() invokes SwiftShader's
+          // compositor readback and can hang for 30s on hosted Linux runners.
+          await page.addInitScript(() => {
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, options) {
+              if (type === 'webgl2' || type === 'webgl' || type === 'experimental-webgl') {
+                options = { ...(options || {}), preserveDrawingBuffer: true };
+              }
+              return originalGetContext.call(this, type, options);
+            };
+          });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
           page.on('crash', () => console.log('[desktop diagnostics] page crashed'));
@@ -148,6 +162,24 @@ jobs:
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
           }
+          // Export the live WebGL canvas itself instead of asking Chromium's
+          // software compositor to screenshot the entire page. The preserved
+          // drawing buffer makes this deterministic on SwiftShader CI runners.
+          const captures = [];
+          const capture = async path => {
+            const dataUrl = await mobileCanvas.evaluate(canvas => canvas.toDataURL('image/png'));
+            if (!dataUrl.startsWith('data:image/png;base64,')) {
+              throw new Error('WebGL canvas did not return a PNG data URL');
+            }
+            const png = Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64');
+            if (png.length < 4096 || png.readUInt32BE(16) < 320 || png.readUInt32BE(20) < 180) {
+              throw new Error('WebGL canvas capture is empty or below the mobile acceptance resolution');
+            }
+            await writeFile(path, png);
+            captures.push(path.split('/').pop());
+            console.log('[visual capture saved] ' + path + ' (' + png.length + ' bytes)');
+          };
+          await capture('artifacts/visual-acceptance/01-overview.png');
           const touchSession = await page.context().newCDPSession(page);
           const centerX = canvasBounds.x + canvasBounds.width * 0.5;
           const centerY = canvasBounds.y + canvasBounds.height * 0.52;
@@ -170,6 +202,20 @@ jobs:
             touchPoints: [touch(1, centerX - 48, centerY - 44), touch(2, centerX + 48, centerY + 44)]
           });
           await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForTimeout(350);
+          await capture('artifacts/visual-acceptance/02-near-zoom.png');
+          // Reverse pinch to capture the medium/overview transition.
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [touch(4, centerX - 78, centerY), touch(5, centerX + 78, centerY)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touch(4, centerX - 36, centerY), touch(5, centerX + 36, centerY)]
+          });
+          await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForTimeout(350);
+          await capture('artifacts/visual-acceptance/03-medium-zoom.png');
           await touchSession.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
             touchPoints: [touch(3, centerX, centerY)]
@@ -191,10 +237,14 @@ jobs:
             build: process.env.GITHUB_SHA,
             viewport: { width: 844, height: 390, deviceScaleFactor: 1, hasTouch: true },
             canvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
-            captures: [],
+            captures,
             interactions: ['mobile landscape Godot WebGL Compatibility launch', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
-            note: 'The mobile landscape viewport launches a live Godot Compatibility canvas and receives real browser touch events. Hosted software-WebGL pixel readback is excluded because it blocks Chromium.'
+            note: 'PNG evidence is exported from the preserved live WebGL canvas at the real 844x390 mobile landscape viewport.'
+
           }, null, 2));
+          if (captures.length !== 3) {
+            throw new Error('Visual acceptance requires all overview, near-zoom and medium-zoom PNG captures; received ' + captures.length);
+          }
           await browser.close();
           NODE
       - name: Upload real WebGL visual acceptance captures
