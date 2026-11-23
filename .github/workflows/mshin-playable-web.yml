@@ -177,6 +177,15 @@ jobs:
           // Prove the actual top-level Google bridge returns a credential only
           // to the requesting same-origin game iframe.
           const bridgeNonce = 'A'.repeat(43);
+          await page.evaluate(() => {
+            const frame = document.getElementById('game-frame');
+            window.__mshinGoogleBridgeDiagnostics = { topOrigin: location.origin, googleReady: !!window.google?.accounts?.id, iframeOrigin: frame?.contentWindow?.location?.origin || null, requests: [] };
+            window.addEventListener('message', event => {
+              if (event.data?.type === 'mshin-google-auth-request') {
+                window.__mshinGoogleBridgeDiagnostics.requests.push({ sourceMatches: event.source === frame.contentWindow, origin: event.origin, expectedOrigin: location.origin, clientId: event.data.clientId, nonceLength: String(event.data.nonce || '').length });
+              }
+            });
+          });
           const bridgeResponse = await mobileCanvas.evaluate((canvas, nonce) => new Promise(resolve => {
             const timeout = setTimeout(() => resolve(null), 5000);
             const receive = event => {
@@ -195,7 +204,8 @@ jobs:
             }, window.location.origin);
           }), bridgeNonce);
           if (!bridgeResponse || bridgeResponse.credential !== 'synthetic-google-id-token' || bridgeResponse.nonce !== bridgeNonce) {
-            throw new Error('Top-level Google sign-in bridge did not return the nonce-bound credential to the game iframe');
+            const diagnostics = await page.evaluate(() => window.__mshinGoogleBridgeDiagnostics);
+            throw new Error('Top-level Google sign-in bridge did not return the nonce-bound credential to the game iframe: ' + JSON.stringify({ bridgeResponse, diagnostics }));
           }
           const canvasBounds = await mobileCanvas.boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
