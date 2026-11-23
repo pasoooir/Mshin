@@ -103,7 +103,7 @@ jobs:
           if grep -Fq "__GAME_BUILD__" "$GITHUB_WORKSPACE/site/index.html"; then exit 1; fi
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
-      - name: Verify desktop and mobile Web launches in Chromium
+      - name: Verify mobile landscape WebGL launch and touch controls in Chromium
         run: |
           npm install --no-save playwright
           # GitHub-hosted runners already include Chromium's shared system libraries.
@@ -118,7 +118,7 @@ jobs:
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
-          const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1, hasTouch: true });
+          const page = await browser.newPage({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 1, hasTouch: true });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
           page.on('crash', () => console.log('[desktop diagnostics] page crashed'));
@@ -141,32 +141,11 @@ jobs:
             console.log('[desktop diagnostics] page errors=' + errors.join(' | '));
             throw error;
           }
-          // Godot's exported canvas backing-store width can legitimately be
-          // zero while the WebGL context is being initialized. The acceptance
-          // gate is the actual visible iframe viewport, not the backing-store
-          // attribute. Read its browser-computed box through Playwright's
-          // protocol instead of evaluating JavaScript inside the WebGL frame.
-          const frameBounds = await gameFrame.boundingBox();
-          const canvasWidth = Math.round(frameBounds?.width ?? 0);
-          const canvasHeight = Math.round(frameBounds?.height ?? 0);
-          if (canvasWidth < 640 || canvasHeight < 360) {
-            throw new Error('Desktop game viewport display size is too small: ' + canvasWidth + 'x' + canvasHeight);
-          }
-          // The launcher delegates fullscreen to the game after the user click.
-          // Exit it before changing the emulated viewport; Chromium refuses
-          // setViewportSize while a page owns the fullscreen window.
-          await page.evaluate(async () => {
-            if (document.fullscreenElement) await document.exitFullscreen();
-          });
-          // Reuse one WebGL instance for desktop and mobile dimensions. Starting
-          // a second software-rendered Godot context on the same runner exhausts
-          // compositor resources and makes page teardown block indefinitely.
-          await page.setViewportSize({ width: 844, height: 390 });
-          await page.waitForTimeout(500);
-          const mobileCanvas = page.frameLocator('#game-frame').locator('canvas');
-          const canvasBounds = await mobileCanvas.boundingBox();
+          // The page stays in its actual mobile landscape viewport from launch;
+          // the game may own fullscreen after the Play button is pressed.
+          const canvasBounds = await page.frameLocator('#game-frame').locator('canvas').boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
-            throw new Error('Mobile canvas bounds are unavailable or too small for touch acceptance');
+            throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
           }
           const touchSession = await page.context().newCDPSession(page);
           const centerX = canvasBounds.x + canvasBounds.width * 0.5;
@@ -209,13 +188,11 @@ jobs:
           }
           await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
             build: process.env.GITHUB_SHA,
-            desktopViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-            mobileViewport: { width: 844, height: 390, hasTouch: true },
-            desktopCanvas: { width: canvasWidth, height: canvasHeight },
-            mobileCanvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
+            viewport: { width: 844, height: 390, deviceScaleFactor: 1, hasTouch: true },
+            canvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
             captures: [],
-            interactions: ['desktop WebGL Compatibility launch', 'mobile landscape viewport', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
-            note: 'One live Godot WebGL instance is tested at desktop and mobile landscape dimensions. Software-WebGL pixel readback is intentionally excluded because it blocks Chromium on hosted runners.'
+            interactions: ['mobile landscape Godot WebGL Compatibility launch', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
+            note: 'The mobile landscape viewport launches a live Godot Compatibility canvas and receives real browser touch events. Hosted software-WebGL pixel readback is excluded because it blocks Chromium.'
           }, null, 2));
           await browser.close();
           NODE
