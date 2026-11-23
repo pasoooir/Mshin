@@ -1892,7 +1892,7 @@ for contract in [
     "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "Land expansion special items must not appear as factory-manufacturable raw materials.",
     "A fully funded adjacent plot must be claimable.",
-    "Expansion choices must exclude the motorway asphalt corridor and ocean coastline.",
+    "Expansion choices must span the inland landmass while excluding the motorway and sandy coastline.",
     "New roads must not be placed over the permanent highway asphalt.",
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",
