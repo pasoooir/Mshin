@@ -119,6 +119,17 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var terrain_material_source := world_source
+	var terrain_shader_start := world_source.find("shader.code =")
+	var terrain_shader_end := world_source.find("\n\tvar material := ShaderMaterial.new()", terrain_shader_start)
+	if terrain_shader_start < 0 or terrain_shader_end < 0:
+		push_error("[VisualPresentationSmoke] Terrain shader source boundaries must be present")
+		get_tree().quit(1)
+		return
+	var terrain_shader_source := world_source.substr(terrain_shader_start, terrain_shader_end - terrain_shader_start)
+	if terrain_shader_source.count("terrain_noise(world_xz *") != 5 or terrain_shader_source.contains("terrain_fbm"):
+		push_error("[VisualPresentationSmoke] Mobile terrain shader must remain bounded to five value-noise samples without FBM octave loops")
+		get_tree().quit(1)
+		return
 	for required_terrain_layer in [
 		"float terrain_noise(vec2 p)",
 		"float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))",
