@@ -754,9 +754,7 @@ for contract in [
 building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
 # The Building Supplies shop is the first detailed, colour-separated commercial hero asset.
 for visual_contract in [
-    "float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))",
-    "float mid_field = terrain_noise(world_xz * 0.016 + vec2(23.0, 5.0))",
-    "float dry_field = terrain_noise(world_xz * 0.0095 + vec2(47.0, 31.0))",
+
     'if building_type == "building_supplies" or subtype == "building_supplies":',
     "func _build_building_supplies_showcase(",
     "func _add_emissive_box(",
@@ -914,6 +912,9 @@ if "multimesh.use_colors = true" not in world_source:
 
 # The permanent city-entry motorway and natural terrain are visual landmarks.
 for visual_contract in [
+    "float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))",
+    "float mid_field = terrain_noise(world_xz * 0.016 + vec2(23.0, 5.0))",
+    "float dry_field = terrain_noise(world_xz * 0.0095 + vec2(47.0, 31.0))",
     "vec3 sunlit_sage = vec3(0.78, 0.78, 0.60)",
 
     "vec3 dry_olive = vec3(0.82, 0.75, 0.54)",
