@@ -186,14 +186,13 @@ jobs:
               }
             });
           });
-          const bridgeResponse = await mobileCanvas.evaluate((canvas, nonce) => new Promise(resolve => {
-            const timeout = setTimeout(() => resolve(null), 5000);
+          await mobileCanvas.evaluate((canvas, nonce) => {
+            window.__mshinGoogleBridgeResult = null;
             const receive = event => {
               if (event.source !== window.parent || event.origin !== window.location.origin) return;
               if (!event.data || event.data.type !== 'mshin-google-auth-response' || event.data.nonce !== nonce) return;
-              clearTimeout(timeout);
               window.removeEventListener('message', receive);
-              resolve(event.data);
+              window.__mshinGoogleBridgeResult = event.data;
             };
             window.addEventListener('message', receive);
             window.parent.postMessage({
@@ -202,7 +201,16 @@ jobs:
               nonce,
               autoSelect: false
             }, window.location.origin);
-          }), bridgeNonce);
+          }, bridgeNonce);
+          const mockGoogleButton = page.locator('#mshin-google-render-button button');
+          await mockGoogleButton.waitFor({ state: 'visible', timeout: 5000 });
+          await mockGoogleButton.click();
+          await page.waitForFunction(() => {
+            const frame = document.getElementById('game-frame');
+            const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
+            return response?.credential === 'synthetic-google-id-token';
+          }, null, { timeout: 5000 });
+          const bridgeResponse = await mobileCanvas.evaluate(() => window.__mshinGoogleBridgeResult);
           if (!bridgeResponse || bridgeResponse.credential !== 'synthetic-google-id-token' || bridgeResponse.nonce !== bridgeNonce) {
             const diagnostics = await page.evaluate(() => window.__mshinGoogleBridgeDiagnostics);
             throw new Error('Top-level Google sign-in bridge did not return the nonce-bound credential to the game iframe: ' + JSON.stringify({ bridgeResponse, diagnostics }));
