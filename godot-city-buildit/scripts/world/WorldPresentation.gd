@@ -341,96 +341,9 @@ void fragment() {
 
 
 func _build_meadow_biome_overlays() -> void:
-	# Broad biome fields are baked into the terrain itself. The former scattered
-	# island overlay read as camouflage and is intentionally retired.
+	# Biome fields are rendered continuously by the terrain shader. Separate
+	# patch geometry caused camouflage-like islands and is intentionally absent.
 	return
-	# The compatibility renderer can flatten subtle procedural shader variation
-	# at the mobile overview distance. Add a single deterministic, vertex-colour
-	# patch mesh so meadow/soil/olive fields remain visibly distinct in WebGL.
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 20261122
-	var palette: Array[Color] = [
-		Color("#8E9568"), Color("#A18C61"), Color("#7E8C5D"),
-		Color("#6F8258"), Color("#9A795C"), Color("#B09A6B"),
-		Color("#879064")
-	]
-	var base_edge := Color("#89916D")
-	var patch_count := 190
-	for patch_index in range(patch_count):
-		var center_x := rng.randf_range(-112.0, 88.0)
-		var center_z := rng.randf_range(-136.0, 136.0)
-		if center_x > _coastline(center_z) - BEACH_WIDTH - 14.0:
-			continue
-		if absf(center_x - HIGHWAY_CENTER_X) < 15.5 or _is_city_road_footprint(center_x, center_z):
-			continue
-		var in_starter_city := absf(center_x) < 34.0 and absf(center_z) < 34.0
-		var radius_x := rng.randf_range(1.5, 2.8) if in_starter_city else rng.randf_range(5.5, 10.5)
-		var radius_z := radius_x * rng.randf_range(0.62, 1.42)
-		var rotation := rng.randf_range(0.0, TAU)
-		var patch_color: Color = palette[patch_index % palette.size()].lerp(base_edge, 0.12)
-		if in_starter_city:
-			# Keep future building plots readable: subtle sage and dry-grass
-			# islands add texture without looking like prebuilt landscaping.
-			patch_color = Color("#829064").lerp(Color("#B09A6B"), rng.randf_range(0.16, 0.48)).lerp(base_edge, 0.24)
-		var ring_levels := [0.0, 0.34, 0.68, 1.0]
-		var segments := 16
-		var ring_points: Array = []
-		for ring_value in ring_levels:
-			var ring: Array[Vector3] = []
-			for segment in range(segments):
-				var angle := TAU * float(segment) / float(segments)
-				var edge_noise := 1.0 + sin(angle * 2.0 + float(patch_index) * 0.71) * 0.20 + cos(angle * 5.0 - float(patch_index) * 0.37) * 0.14 + sin(angle * 9.0 + float(patch_index) * 0.23) * 0.075 + cos(angle * 13.0 - float(patch_index) * 0.19) * 0.045
-				var local_x := cos(angle) * radius_x * float(ring_value) * edge_noise
-				var local_z := sin(angle) * radius_z * float(ring_value) * edge_noise
-				var rotated_x := local_x * cos(rotation) - local_z * sin(rotation)
-				var rotated_z := local_x * sin(rotation) + local_z * cos(rotation)
-				var point_x := center_x + rotated_x
-				var point_z := center_z + rotated_z
-				ring.append(Vector3(point_x, _terrain_height(point_x, point_z) + 0.052, point_z))
-			ring_points.append(ring)
-		for ring_index in range(ring_levels.size() - 1):
-			var inner_ring: Array = ring_points[ring_index]
-			var outer_ring: Array = ring_points[ring_index + 1]
-			var inner_mix := float(ring_index) / float(ring_levels.size() - 1)
-			var outer_mix := float(ring_index + 1) / float(ring_levels.size() - 1)
-			for segment in range(segments):
-				var next_segment := (segment + 1) % segments
-				var angle := TAU * float(segment) / float(segments)
-				var tone := 1.0 + sin(float(patch_index) * 0.41 + float(ring_index) * 0.7 + angle * 3.0) * 0.045 + cos(angle * 7.0 - float(patch_index) * 0.37) * 0.025
-				var inner_color := (patch_color * tone).lerp(base_edge, inner_mix)
-				var outer_color := (patch_color * tone).lerp(base_edge, outer_mix)
-				var p00: Vector3 = inner_ring[segment]
-				var p01: Vector3 = inner_ring[next_segment]
-				var p10: Vector3 = outer_ring[segment]
-				var p11: Vector3 = outer_ring[next_segment]
-				surface.set_color(inner_color)
-				surface.add_vertex(p00)
-				surface.set_color(outer_color)
-				surface.add_vertex(p10)
-				surface.set_color(inner_color)
-				surface.add_vertex(p01)
-				surface.set_color(inner_color)
-				surface.add_vertex(p01)
-				surface.set_color(outer_color)
-				surface.add_vertex(p10)
-				surface.set_color(outer_color)
-				surface.add_vertex(p11)
-	surface.generate_normals()
-	var patches := MeshInstance3D.new()
-	patches.name = "MeadowBiomePatches"
-	patches.mesh = surface.commit()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.roughness = 1.0
-	patches.material_override = material
-	patches.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	patches.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-	add_child(patches)
-
 
 func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	# Stable world-space texture scale plus restrained relief outside the build grid.
@@ -1203,16 +1116,6 @@ float terrain_noise(vec2 p) {
 	float d = terrain_hash(cell + vec2(1.0, 1.0));
 	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
 }
-float terrain_fbm(vec2 p) {
-	float value = 0.0;
-	float amplitude = 0.5;
-	for (int octave = 0; octave < 4; octave++) {
-		value += terrain_noise(p) * amplitude;
-		p *= 2.03;
-		amplitude *= 0.5;
-	}
-	return value;
-}
 void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
@@ -1223,22 +1126,19 @@ void fragment() {
 	vec2 ground_uv = UV * 0.62;
 	vec2 world_xz = world_position.xz;
 
-	// A layered, world-space meadow: broad fields first, then irregular
-	// dry-grass islands, exposed earth, and fine mottling. These masks are
-	// deliberately high-contrast enough to survive the mobile overview camera.
-	float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0));
-	float mid_field = terrain_fbm(world_xz * 0.014 + vec2(23.0, 5.0));
-	float dry_field = terrain_noise(world_xz * 0.009 + vec2(47.0, 31.0));
-	float soil_field = terrain_noise(world_xz * 0.024 + vec2(11.0, 59.0));
-	float micro_grain = terrain_noise(world_xz * 1.65);
-	float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0));
+	// Five bounded value-noise samples replace the previous two four-octave
+	// FBM stacks plus four extra fields. Broad regions remain readable at mobile
+	// overview zoom without a per-pixel noise-loop hotspot.
+	float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0));
+	float mid_field = terrain_noise(world_xz * 0.016 + vec2(23.0, 5.0));
+	float dry_field = terrain_noise(world_xz * 0.0095 + vec2(47.0, 31.0));
+	float soil_field = terrain_noise(world_xz * 0.025 + vec2(11.0, 59.0));
+	float micro_grain = terrain_noise(world_xz * 0.72 + vec2(3.0, 71.0));
 
-	float sunlit_mask = smoothstep(0.37, 0.57, broad_field);
-	float olive_mask = smoothstep(0.38, 0.59, mid_field);
-	float dry_mask = smoothstep(0.39, 0.61, dry_field);
-	float soil_core = 1.0 - smoothstep(0.24, 0.47, cell_shape);
-	float soil_patch_mask = smoothstep(0.47, 0.64, soil_field) * (0.42 + soil_core * 0.58);
-	soil_patch_mask *= 0.72 + dry_mask * 0.28;
+	float sunlit_mask = smoothstep(0.39, 0.62, broad_field);
+	float olive_mask = smoothstep(0.38, 0.61, mid_field);
+	float dry_mask = smoothstep(0.40, 0.63, dry_field);
+	float soil_patch_mask = smoothstep(0.58, 0.72, soil_field) * (0.38 + dry_mask * 0.62);
 
 	vec3 deep_meadow = vec3(0.66, 0.68, 0.49);
 	vec3 sunlit_sage = vec3(0.78, 0.78, 0.60);
@@ -1250,16 +1150,12 @@ void fragment() {
 	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
 	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
 	meadow = mix(meadow, straw_grass, dry_mask * 0.66);
-	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.62, 0.0, 0.34));
+	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), min(soil_patch_mask * 0.62, 0.34));
 
-	// Retain the locally generated grass texture as a restrained fine-scale
-	// overlay; the world-space biome colors remain the dominant visual read.
 	vec3 sampled_grass = texture(grass_texture, ground_uv * 0.72).rgb;
 	meadow = mix(meadow, meadow * sampled_grass * 1.42, 0.08);
 	meadow *= 0.96 + micro_grain * 0.10;
 	meadow *= mix(0.98, 1.04, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
-	// Avoid multiplying the authored biome palette by the terrain vertex tint:
-	// the old double-darkening produced an emerald carpet in Compatibility.
 
 	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
 	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
