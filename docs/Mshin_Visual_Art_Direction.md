@@ -83,6 +83,14 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 - Keep all generated materials local and deterministic.
 - Validate with actual WebGL screenshots at overview, medium and near zoom. Reject the build if more than half of the visible natural ground reads as a single dark-green value group.
 
+### Phase A implementation checkpoint — 2026-11-23
+
+- [x] Move the broad sage, olive, dry-grass and exposed-soil fields into the primary world-space terrain material; remove the scattered biome-patch mesh path so the ground no longer depends on separate camouflage-like islands.
+- [x] Reduce the terrain fragment shader to five bounded value-noise samples and remove the two four-octave FBM stacks. Keep the large field scales readable at overview distance and preserve a separate fine-grain term.
+- [x] Align visual smoke and static validation with the continuous-shader approach; assert that no `MeadowBiomePatches` geometry is spawned.
+- [ ] Capture and inspect 844 × 390 WebGL screenshots at overview, medium and near zoom. Shader/source checks are not visual acceptance.
+- [ ] Measure frame time and GPU load on a physical Android device before claiming a performance improvement.
+
 ### Phase B — Ground dressing
 - Cluster multi-blade grass, low shrubs, small flowers, stones and occasional bare-earth patches.
 - Green terrain must never read as a smooth, uninterrupted flat sheet: build layered shrubland with overlapping low bush silhouettes, varied clump heights, irregular spacing and deliberate breathing gaps.
