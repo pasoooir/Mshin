@@ -122,7 +122,7 @@ func _ready() -> void:
 		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
 		"var secondary_patch := sin(point.x * 0.091 - point.z * 0.073)",
 		"var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)",
-		"Color(\"#A88B62\")",
+		"Color(\"#8E744F\")",
 		"func _create_natural_ground_material() -> StandardMaterial3D:",
 		"material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
 		"material.vertex_color_use_as_albedo = true",
