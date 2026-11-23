@@ -276,7 +276,7 @@ for contract in [
         errors.append(f"Coastal continuity and road-clearance contract is missing: {contract}")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 for contract in [
-    "camera.far = 1800.0",
+    "camera.far = 4000.0",
     "var _multi_touch_gesture_active: bool = false",
     "if _multi_touch_gesture_active:",
     "pan_velocity = Vector2.ZERO",
