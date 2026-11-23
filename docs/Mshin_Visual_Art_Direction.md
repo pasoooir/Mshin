@@ -85,7 +85,7 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 
 ### Phase A implementation checkpoint — 2026-11-23
 
-- [x] Extend continuous land coverage to 840 × 720 m so the maximum-zoom mobile camera cannot expose brown/empty background around the playable map; keep the Pacific coastline and offshore water continuous.
+- [x] Extend continuous land coverage to 530 × 1,520 m so the maximum-zoom mobile camera cannot expose brown/empty background around the playable map; keep the Pacific coastline and offshore water continuous.
 - [x] Expand the camera pan envelope with the land mesh and shift the outer meadow vertex palette from tan/brown toward natural Pacific greens while retaining small dry-soil accents.
 
 - [x] Move the broad sage, olive, dry-grass and exposed-soil fields into the primary world-space terrain material; remove the scattered biome-patch mesh path so the ground no longer depends on separate camouflage-like islands.
