@@ -6,6 +6,19 @@ const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.g
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
+	# Every visible inland field must belong to the same expandable city domain.
+	if not LandExpansionManager.is_cell_inside_coastal_build_boundary(Vector2i(-207, 0)):
+		push_error("[VisualPresentationSmoke] Western rendered land must remain expandable")
+		get_tree().quit(1)
+		return
+	if not LandExpansionManager.is_cell_inside_coastal_build_boundary(Vector2i(0, 159)):
+		push_error("[VisualPresentationSmoke] Northern/southern rendered land edge must remain expandable")
+		get_tree().quit(1)
+		return
+	if LandExpansionManager.is_cell_inside_coastal_build_boundary(Vector2i(0, 160)):
+		push_error("[VisualPresentationSmoke] Expansion must stop at the actual terrain edge")
+		get_tree().quit(1)
+		return
 	# The headless dummy renderer cannot return SurfaceTool.commit() meshes.
 	# Validate the exact generation bounds and tessellation inputs directly;
 	# real WebGL captures verify the resulting rendered surface.

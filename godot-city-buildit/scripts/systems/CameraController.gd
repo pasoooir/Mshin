@@ -8,7 +8,10 @@ extends Node3D
 @export var zoom_speed: float = 0.045
 @export var min_zoom: float = 12.0
 @export var max_zoom: float = 150.0
-@export var world_limit: float = 130.0
+@export var world_min_x: float = -300.0
+@export var world_max_x: float = 60.0
+@export var world_min_z: float = -240.0
+@export var world_max_z: float = 240.0
 @export_range(20.0, 75.0, 1.0) var camera_pitch_degrees: float = 42.0
 @export var pan_inertia_damping: float = 6.5
 @export var orbit_inertia_damping: float = 10.0
@@ -392,8 +395,8 @@ func _keep_ground_point_under_screen(ground_point: Vector3, screen_position: Vec
 	if after_transform == null:
 		return
 	global_position += ground_anchor_correction(ground_point, after_transform)
-	global_position.x = clampf(global_position.x, -world_limit, world_limit)
-	global_position.z = clampf(global_position.z, -world_limit, world_limit)
+	global_position.x = clampf(global_position.x, world_min_x, world_max_x)
+	global_position.z = clampf(global_position.z, world_min_z, world_max_z)
 
 func _pan_between_screen_points(previous_position: Vector2, current_position: Vector2) -> void:
 	if previous_position.distance_squared_to(current_position) <= 0.0001:
@@ -405,8 +408,8 @@ func _pan_between_screen_points(previous_position: Vector2, current_position: Ve
 	is_focus_animating = false
 	global_position += previous_ground - current_ground
 	global_position.y = 0.0
-	global_position.x = clampf(global_position.x, -world_limit, world_limit)
-	global_position.z = clampf(global_position.z, -world_limit, world_limit)
+	global_position.x = clampf(global_position.x, world_min_x, world_max_x)
+	global_position.z = clampf(global_position.z, world_min_z, world_max_z)
 
 func _pan(screen_delta: Vector2) -> void:
 	# Inertia is measured in screen pixels/second, but converted through the
