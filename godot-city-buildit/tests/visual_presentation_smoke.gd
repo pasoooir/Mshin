@@ -82,7 +82,7 @@ func _ready() -> void:
 	for required_trunk_contract in [
 		"func _build_chunk_trunks(",
 		"_trunk_material.albedo_texture = bark_texture",
-		"var crown_height_factor := CANOPY_CROWN_HEIGHT_FACTOR",
+		"func _get_tree_crown_height(species_id: int, stable_random: float) -> float:",
 		"trunks.set_instance_transform("
 	]:
 		if not trunk_foliage_source.contains(required_trunk_contract):
