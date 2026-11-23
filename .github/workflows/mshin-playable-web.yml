@@ -114,10 +114,10 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           mkdir -p artifacts/visual-acceptance
-          node --input-type=module <<'NODE'
+          timeout 300s node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
-          const browser = await chromium.launch({ headless: true });
+          const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
           const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
@@ -155,7 +155,7 @@ jobs:
           await page.screenshot({
             path: 'artifacts/visual-acceptance/desktop-pacific-entry.png',
             animations: 'disabled',
-            timeout: 60000
+            timeout: 20000
           });
           // The Godot canvas fills the 1280x720 game viewport. Move the pointer
           // directly instead of asking Playwright to calculate its bounding box.
