@@ -113,7 +113,7 @@ The brown inner coastal field is part of the city landmass and must be purchasab
 
 ## 5.1 Complete inland city expansion boundary
 
-The rendered landmass and the city expansion domain must agree. Keep the existing six-by-six starter tile ownership unchanged (96 × 96 m at 2 m per cell and 8 cells per tile). Expand only within the rendered landmass: X tiles -8…6 and Z tiles -9…8, with the curved coastline checked per tile and per cell. The inner brown coastal field is expandable; only the final 8 m shore ribbon is reserved. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
+The rendered landmass and the city expansion domain must agree. Keep the existing six-by-six starter tile ownership unchanged (96 × 96 m at 2 m per cell and 8 cells per tile). Expand across the complete rendered inland landmass: X tiles -26…5 and Z tiles -20…19, with the curved coastline checked per tile and per cell. The west/east cell bounds are -208…47 and the north/south bounds are -160…159; the final 8 m beach ribbon and the motorway reserve remain non-buildable. Camera panning must cover this full expansion domain. The inner brown coastal field is expandable; only the final 8 m shore ribbon is reserved. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
 
 ## 5. Terrain system specification
 
