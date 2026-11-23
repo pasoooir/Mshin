@@ -143,7 +143,8 @@ jobs:
           }
           // The page stays in its actual mobile landscape viewport from launch;
           // the game may own fullscreen after the Play button is pressed.
-          const canvasBounds = await page.frameLocator('#game-frame').locator('canvas').boundingBox();
+          const mobileCanvas = page.frameLocator('#game-frame').locator('canvas');
+          const canvasBounds = await mobileCanvas.boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
           }
