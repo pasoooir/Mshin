@@ -17,9 +17,8 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	presentation._build_meadow_biome_overlays()
-	var biome_patch_node := presentation.get_node_or_null("MeadowBiomePatches") as MeshInstance3D
-	if not is_instance_valid(biome_patch_node) or biome_patch_node.mesh == null or biome_patch_node.mesh.get_surface_count() != 1:
-		push_error("[VisualPresentationSmoke] WebGL meadow biome patchwork must generate one batched vertex-colour mesh")
+	if presentation.get_node_or_null("MeadowBiomePatches") != null:
+		push_error("[VisualPresentationSmoke] Disconnected biome islands must not be rendered over the continuous meadow")
 		get_tree().quit(1)
 		return
 	# Coastline regression: water geometry must follow the curved beach edge,
@@ -121,21 +120,15 @@ func _ready() -> void:
 		"float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0))",
 		"float terrain_noise(vec2 p)",
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"vec3 deep_meadow = vec3(0.57, 0.58, 0.43)",
-		"vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
-		"vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
-		"vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
-		"vec3 exposed_soil = vec3(0.61, 0.47, 0.35)",
+		"vec3 deep_meadow = vec3(0.66, 0.68, 0.49)",
+		"vec3 sunlit_sage = vec3(0.78, 0.78, 0.60)",
+		"vec3 dry_olive = vec3(0.82, 0.75, 0.54)",
+		"vec3 straw_grass = vec3(0.88, 0.81, 0.63)",
+		"vec3 exposed_soil = vec3(0.58, 0.46, 0.34)",
 		"float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
 		"func _build_meadow_biome_overlays() -> void:",
-		"var patch_count := 190",
-		"patches.name = \"MeadowBiomePatches\"",
-		"material.vertex_color_use_as_albedo = true",
 		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
 		"meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
-		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
-		"var fresh_grass := Color(\"#B3A071\")",
-		"var biome_soil_mask := smoothstep",
 		"SPECULAR = 0.12"
 	]:
 		if not terrain_material_source.contains(required_terrain_layer):
