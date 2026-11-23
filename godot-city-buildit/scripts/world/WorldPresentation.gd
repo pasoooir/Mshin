@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#6F8B4E"), Color("#829657"), Color("#A08E5C"),
-	Color("#607D49"), Color("#A79563"), Color("#887B59")
+	Color("#587B43"), Color("#6C8C4C"), Color("#8F9357"),
+	Color("#4D7040"), Color("#9A8A58"), Color("#7B8050")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -451,18 +451,18 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		# shader. This keeps terrain variation visible in WebGL/Compatibility.
 		var macro_patch := sin(point.x * 0.026 + point.z * 0.019) * cos(point.z * 0.034 - point.x * 0.021)
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
-		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
-		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#718C4F")
-		var fresh_grass := Color("#95A45E")
+		var patch_mix := clampf(0.5 + macro_patch * 0.50 + secondary_patch * 0.22, 0.0, 1.0)
+		var palette_index := int(abs(floor(point.x * 0.073 + point.z * 0.047))) % COASTAL_GREEN_PALETTE.size()
+		var deep_grass := Color("#4D7440")
+		var fresh_grass := Color("#91A75B")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
-		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.90)
-		var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
-		color = color.lerp(Color("#8E744F"), biome_soil_mask * 0.24)
+		color = meadow_color.lerp(COASTAL_GREEN_PALETTE[palette_index], 0.18)
+		var biome_soil_mask := smoothstep(0.22, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
+		color = color.lerp(Color("#9A8056"), biome_soil_mask * 0.28)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
-	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
-	color = color.lerp(Color("#927D58"), dry_patch_mask * 0.24)
+	var dry_patch_mask := smoothstep(0.36, 0.78, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
+	color = color.lerp(Color("#9A8056"), dry_patch_mask * 0.28)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
