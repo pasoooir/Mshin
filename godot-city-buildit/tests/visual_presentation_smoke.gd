@@ -168,8 +168,10 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Los Angeles coastal world is missing: " + required_coastal_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;"):
-		push_error("[VisualPresentationSmoke] Terrain sand mask must use the same curved coastline function as the shoreline mesh")
+	# The shader coastline assertion is obsolete: the Compatibility-safe
+	# vertex-colour terrain uses a dedicated beach mesh driven by _coastline().
+	if not world_visual_source.contains("return COASTLINE_BASE_X + sin(z * 0.032) * 7.0 + sin(z * 0.071) * 3.2 + sin(z * 0.013) * 4.0") or not world_visual_source.contains("var coast0 := _coastline(z0)") or not world_visual_source.contains("var coast1 := _coastline(z1)"):
+		push_error("[VisualPresentationSmoke] Sandy beach and shoreline must share the curved coastline function")
 		get_tree().quit(1)
 		return
 	if presentation._coastline(0.0) < 108.0 or presentation._coastline(0.0) > 112.0 or absf(presentation._coastline(-120.0) - presentation._coastline(120.0)) < 4.0:
