@@ -221,8 +221,12 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("range(2400)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
-		push_error("[VisualPresentationSmoke] Near-city grass, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
+	if not world_visual_source.contains("range(3600)") or not world_visual_source.contains("range(240)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
+		push_error("[VisualPresentationSmoke] Near-city grass, shrub, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
+		get_tree().quit(1)
+		return
+	if not world_visual_source.contains("LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z))"):
+		push_error("[VisualPresentationSmoke] Natural ground cover must never occupy purchased buildable plots")
 		get_tree().quit(1)
 		return
 	var main_scene := load("res://scenes/main.tscn") as PackedScene
