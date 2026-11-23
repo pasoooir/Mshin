@@ -121,6 +121,18 @@ jobs:
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
           const page = await browser.newPage({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 1, hasTouch: true });
+          // Preserve the WebGL drawing buffer so Chromium can export the actual
+          // game canvas directly. page.screenshot() invokes SwiftShader's
+          // compositor readback and can hang for 30s on hosted Linux runners.
+          await page.addInitScript(() => {
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, options) {
+              if (type === 'webgl2' || type === 'webgl' || type === 'experimental-webgl') {
+                options = { ...(options || {}), preserveDrawingBuffer: true };
+              }
+              return originalGetContext.call(this, type, options);
+            };
+          });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
           page.on('crash', () => console.log('[desktop diagnostics] page crashed'));
@@ -150,19 +162,22 @@ jobs:
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
           }
-          // Capture attempts are bounded: software-WebGL compositor readback can
-          // stall Chromium even while the game itself remains interactive. Never
-          // let visual evidence collection block the functional mobile smoke test.
+          // Export the live WebGL canvas itself instead of asking Chromium's
+          // software compositor to screenshot the entire page. The preserved
+          // drawing buffer makes this deterministic on SwiftShader CI runners.
           const captures = [];
-          const captureErrors = [];
           const capture = async path => {
-            try {
-              await page.screenshot({ path, timeout: 30000, animations: 'disabled', fullPage: false });
-              captures.push(path.split('/').pop());
-            } catch (error) {
-              captureErrors.push(path.split('/').pop() + ': ' + error.message);
-              console.log('[visual capture unavailable] ' + path + ' ' + error.message);
+            const dataUrl = await mobileCanvas.evaluate(canvas => canvas.toDataURL('image/png'));
+            if (!dataUrl.startsWith('data:image/png;base64,')) {
+              throw new Error('WebGL canvas did not return a PNG data URL');
             }
+            const png = Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64');
+            if (png.length < 4096 || png.readUInt32BE(16) < 320 || png.readUInt32BE(20) < 180) {
+              throw new Error('WebGL canvas capture is empty or below the mobile acceptance resolution');
+            }
+            await writeFile(path, png);
+            captures.push(path.split('/').pop());
+            console.log('[visual capture saved] ' + path + ' (' + png.length + ' bytes)');
           };
           await capture('artifacts/visual-acceptance/01-overview.png');
           const touchSession = await page.context().newCDPSession(page);
@@ -223,10 +238,13 @@ jobs:
             viewport: { width: 844, height: 390, deviceScaleFactor: 1, hasTouch: true },
             canvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
             captures,
-            captureErrors,
             interactions: ['mobile landscape Godot WebGL Compatibility launch', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
-            note: 'The mobile landscape viewport launches a live Godot Compatibility canvas and receives real browser touch events. Hosted software-WebGL pixel readback is excluded because it blocks Chromium.'
+            note: 'PNG evidence is exported from the preserved live WebGL canvas at the real 844x390 mobile landscape viewport.'
+
           }, null, 2));
+          if (captures.length !== 3) {
+            throw new Error('Visual acceptance requires all overview, near-zoom and medium-zoom PNG captures; received ' + captures.length);
+          }
           await browser.close();
           NODE
       - name: Upload real WebGL visual acceptance captures
