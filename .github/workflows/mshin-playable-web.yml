@@ -137,12 +137,16 @@ jobs:
             if (window.top === window) {
               let authConfig = null;
               window.google = { accounts: { id: {
-                initialize(config) { authConfig = config; },
+                initialize(config) { authConfig = config; window.__mshinGoogleBridgeDiagnostics.initialized = true; },
                 renderButton(target) {
                   const button = document.createElement('button');
                   button.type = 'button';
                   button.textContent = 'Continue with Google (CI)';
-                  button.addEventListener('click', () => authConfig?.callback?.({ credential: 'synthetic-google-id-token' }));
+                  button.addEventListener('click', () => {
+                    window.__mshinGoogleBridgeDiagnostics.mockButtonClicked = true;
+                    authConfig?.callback?.({ credential: 'synthetic-google-id-token' });
+                    window.__mshinGoogleBridgeDiagnostics.mockCallbackReturned = true;
+                  });
                   target.appendChild(button);
                 },
                 prompt(callback) { callback({ isNotDisplayed: () => true, isSkippedMoment: () => false }); }
@@ -218,11 +222,19 @@ jobs:
           if (!bridgeSurface.overlay || !bridgeSurface.button || !bridgeSurface.pointerHitsGoogleButton || !bridgeSurface.pointerHitsOverlay) {
             throw new Error('Google sign-in control is not the topmost tappable surface inside the fullscreen game: ' + JSON.stringify(bridgeSurface));
           }
-          await page.waitForFunction(() => {
-            const frame = document.getElementById('game-frame');
-            const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
-            return response?.credential === 'synthetic-google-id-token';
-          }, null, { timeout: 5000 });
+          try {
+            await page.waitForFunction(() => {
+              const frame = document.getElementById('game-frame');
+              const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
+              return response?.credential === 'synthetic-google-id-token';
+            }, null, { timeout: 5000 });
+          } catch (error) {
+            const diagnostics = await page.evaluate(() => {
+              const frame = document.getElementById('game-frame');
+              return { bridge: window.__mshinGoogleBridgeDiagnostics, childResponse: frame?.contentWindow?.__mshinGoogleBridgeResult || null };
+            });
+            throw new Error('Google callback did not return its ID token to the game frame: ' + JSON.stringify(diagnostics));
+          }
           const bridgeResponse = await mobileCanvas.evaluate(() => window.__mshinGoogleBridgeResult);
           if (!bridgeResponse || bridgeResponse.credential !== 'synthetic-google-id-token' || bridgeResponse.nonce !== bridgeNonce) {
             const diagnostics = await page.evaluate(() => window.__mshinGoogleBridgeDiagnostics);
