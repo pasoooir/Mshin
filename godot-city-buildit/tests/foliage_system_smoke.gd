@@ -30,6 +30,35 @@ func _run() -> void:
     if system.get_chunk_count() < 3:
         _fail("Foliage must be spatially partitioned into independent 64 m chunks.")
         return
+    var canopy_alignment_checked := false
+    for chunk in system.get_children():
+        if not chunk.name.begins_with("FoliageChunk_"):
+            continue
+        var canopy_lod := chunk.get_node_or_null("TreeCanopies_Species0_LOD0") as MultiMeshInstance3D
+        if canopy_lod != null and canopy_lod.multimesh != null and canopy_lod.multimesh.instance_count > 0:
+            var canopy_y := canopy_lod.multimesh.get_instance_transform(0).origin.y
+            if canopy_y > 8.5:
+                _fail("Broadleaf canopy crown is too high above its trunk attachment.")
+                return
+            canopy_alignment_checked = true
+    if not canopy_alignment_checked:
+        _fail("Foliage smoke did not find a broadleaf canopy for trunk alignment.")
+        return
+    var palm_alignment_checked := false
+    for chunk in system.get_children():
+        if not chunk.name.begins_with("FoliageChunk_"):
+            continue
+        var palm_lod := chunk.get_node_or_null("TreeCanopies_Species3_LOD0") as MultiMeshInstance3D
+        if palm_lod != null and palm_lod.multimesh != null and palm_lod.multimesh.instance_count > 0:
+            var palm_crown_y := palm_lod.multimesh.get_instance_transform(0).origin.y
+            if palm_crown_y > 3.5:
+                _fail("Palm frond crown is too high to connect to its tall trunk.")
+                return
+            palm_alignment_checked = true
+    if not palm_alignment_checked:
+        _fail("Foliage smoke did not find a palm crown for trunk alignment.")
+        return
+
     for lod in range(3):
         if system.get_lod_instance_count(lod) != sample_positions.size():
             _fail("Every tree must have exactly one instance in each LOD tier.")

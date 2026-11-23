@@ -3,6 +3,8 @@ class_name StylizedFoliageSystem
 
 const SeasonManagerScript = preload("res://scripts/world/FoliageSeasonManager.gd")
 const CHUNK_SIZE := 64.0
+const CANOPY_CROWN_HEIGHT_FACTOR := 3.0
+const PALM_CROWN_HEIGHT_FACTOR := 1.2
 const LOD_BEGIN := [0.0, 38.0, 108.0]
 const LOD_END := [46.0, 118.0, 280.0]
 const LOD_CARDS := [10, 6, 3]
@@ -116,7 +118,11 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                         scale_value * width_factor
                     )
                 )
-                var crown_position := local_position + Vector3(0.0, 3.55 * scale_value, 0.0)
+                var crown_height_factor := CANOPY_CROWN_HEIGHT_FACTOR
+                if species_id == 3:
+                    # Palm fronds radiate from a lower crown above the tall trunk.
+                    crown_height_factor = PALM_CROWN_HEIGHT_FACTOR
+                var crown_position := local_position + Vector3(0.0, crown_height_factor * scale_value, 0.0)
                 multimesh.set_instance_transform(
                     instance_index,
                     Transform3D(basis, crown_position)
