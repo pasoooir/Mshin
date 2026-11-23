@@ -910,6 +910,14 @@ if "Vector3(0.0, 0.018, 0.0)" not in world_source:
 if "multimesh.use_colors = true" not in world_source:
     errors.append("Tree instances must use per-instance natural color variation")
 
+terrain_shader_match = re.search(r"func _create_natural_ground_material\(\).*?(?=\nfunc |\Z)", world_source, re.S)
+if terrain_shader_match is None:
+    errors.append("Natural terrain material factory is missing")
+else:
+    terrain_shader_source = terrain_shader_match.group(0)
+    if terrain_shader_source.count("terrain_noise(world_xz *") != 5 or "terrain_fbm" in terrain_shader_source:
+        errors.append("Mobile terrain shader must stay within five value-noise samples and avoid FBM octave loops")
+
 # The permanent city-entry motorway and natural terrain are visual landmarks.
 for visual_contract in [
     "float broad_field = terrain_noise(world_xz * 0.0062 + vec2(7.0, 13.0))",
