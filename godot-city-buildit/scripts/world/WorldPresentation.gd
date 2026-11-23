@@ -7,9 +7,9 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 145.0
-const TERRAIN_LEFT := -120.0
-const TERRAIN_DIVISIONS := 128
+const TERRAIN_HALF_DEPTH := 360.0
+const TERRAIN_LEFT := -420.0
+const TERRAIN_DIVISIONS := 192
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#89966D"), Color("#A3A078"), Color("#A9956B"),
-	Color("#7F8B62"), Color("#B5A071"), Color("#987B5D")
+	Color("#718A55"), Color("#8FA56A"), Color("#A4AD72"),
+	Color("#667E4A"), Color("#B0AA70"), Color("#7D8D5A")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -366,16 +366,16 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#A0A77A")
-		var fresh_grass := Color("#C2B27D")
+		var deep_grass := Color("#718B52")
+		var fresh_grass := Color("#9FB86A")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.90)
 		var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
-		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.18)
+		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.10)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
-	color = color.lerp(Color("#B0A078"), dry_patch_mask * 0.22)
+	color = color.lerp(Color("#B0A078"), dry_patch_mask * 0.12)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
