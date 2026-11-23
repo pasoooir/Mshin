@@ -7,16 +7,21 @@ const MIN_EXPANSION_LEVEL := 10
 const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
 # Expand across the complete inland landmass, stopping before the sandy beach.
-const EXPANSION_MIN_TILE_X := -15
-const EXPANSION_MAX_TILE_X := 12
+# BuildManager cells are 2 m; each 8-cell expansion tile is therefore 16 m.
+# Match the actual terrain mesh: X starts at -120 m, shoreline varies near
+# 100–120 m, and the landmass spans Z=-145…145 m.
+const EXPANSION_MIN_TILE_X := -8
+const EXPANSION_MAX_TILE_X := 6
+const EXPANSION_MIN_TILE_Y := -9
+const EXPANSION_MAX_TILE_Y := 8
 const BUILDABLE_COAST_MARGIN := 8.0
 const COASTLINE_BASE_X := 110.0
-const EXPANSION_MIN_TILE_Y := -18
-const EXPANSION_MAX_TILE_Y := 17
-const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
-const MAX_CELL_X_EXCLUSIVE := (EXPANSION_MAX_TILE_X + 1) * TILE_CELLS
-const MIN_CELL_Y := EXPANSION_MIN_TILE_Y * TILE_CELLS
-const MAX_CELL_Y_EXCLUSIVE := (EXPANSION_MAX_TILE_Y + 1) * TILE_CELLS
+const TERRAIN_LEFT := -120.0
+const TERRAIN_HALF_DEPTH := 145.0
+const MIN_CELL_X := -60
+const MAX_CELL_X_EXCLUSIVE := 56
+const MIN_CELL_Y := -73
+const MAX_CELL_Y_EXCLUSIVE := 73
 const HIGHWAY_RESERVED_TILE_MIN_X := -5
 const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
@@ -52,7 +57,11 @@ func _coastline_x(world_z: float) -> float:
 func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:
 	var world_x := (float(cell.x) + 0.5) * BuildManager.GRID_SIZE
 	var world_z := (float(cell.y) + 0.5) * BuildManager.GRID_SIZE
-	return world_x <= _coastline_x(world_z) - BUILDABLE_COAST_MARGIN
+	return (
+		world_x - BuildManager.GRID_SIZE * 0.5 >= TERRAIN_LEFT
+		and absf(world_z) <= TERRAIN_HALF_DEPTH
+		and world_x + BuildManager.GRID_SIZE * 0.5 <= _coastline_x(world_z) - BUILDABLE_COAST_MARGIN
+	)
 
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
 	if (
