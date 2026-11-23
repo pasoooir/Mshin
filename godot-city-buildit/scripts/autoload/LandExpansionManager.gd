@@ -3,15 +3,20 @@ extends Node
 signal land_changed
 
 const TILE_CELLS := 8
-const MIN_TILE := -5
-const MAX_TILE := 4
 const MIN_EXPANSION_LEVEL := 10
 const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
-const EXPANSION_MIN_TILE_X := -3
-const EXPANSION_MAX_TILE_X := 2
-const EXPANSION_MIN_TILE_Y := -5
-const EXPANSION_MAX_TILE_Y := 4
+# Expand across the complete inland landmass, stopping before the sandy beach.
+const EXPANSION_MIN_TILE_X := -15
+const EXPANSION_MAX_TILE_X := 8
+const EXPANSION_MIN_TILE_Y := -18
+const EXPANSION_MAX_TILE_Y := 17
+const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
+const MAX_CELL_X_EXCLUSIVE := (EXPANSION_MAX_TILE_X + 1) * TILE_CELLS
+const MIN_CELL_Y := EXPANSION_MIN_TILE_Y * TILE_CELLS
+const MAX_CELL_Y_EXCLUSIVE := (EXPANSION_MAX_TILE_Y + 1) * TILE_CELLS
+const HIGHWAY_RESERVED_TILE_MIN_X := -5
+const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
@@ -40,7 +45,15 @@ func _tile_key(tile: Vector2i) -> String:
 	return "%d:%d" % [tile.x, tile.y]
 
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= MIN_TILE and tile.x <= MAX_TILE and tile.y >= MIN_TILE and tile.y <= MAX_TILE
+	return (
+		tile.x >= EXPANSION_MIN_TILE_X
+		and tile.x <= EXPANSION_MAX_TILE_X
+		and tile.y >= EXPANSION_MIN_TILE_Y
+		and tile.y <= EXPANSION_MAX_TILE_Y
+	)
+
+func _is_reserved_highway_tile(tile: Vector2i) -> bool:
+	return tile.x >= HIGHWAY_RESERVED_TILE_MIN_X and tile.x <= HIGHWAY_RESERVED_TILE_MAX_X
 
 func _reset_initial_land() -> void:
 	owned_tiles.clear()
@@ -55,7 +68,12 @@ func is_tile_owned(tile: Vector2i) -> bool:
 	return owned_tiles.has(_tile_key(tile))
 
 func is_cell_unlocked(cell: Vector2i) -> bool:
-	if cell.x < -40 or cell.x >= 40 or cell.y < -40 or cell.y >= 40:
+	if (
+		cell.x < MIN_CELL_X
+		or cell.x >= MAX_CELL_X_EXCLUSIVE
+		or cell.y < MIN_CELL_Y
+		or cell.y >= MAX_CELL_Y_EXCLUSIVE
+	):
 		return false
 	return is_tile_owned(get_tile_for_cell(cell))
 
@@ -94,7 +112,7 @@ func get_available_expansion_tiles() -> Array[Vector2i]:
 	for x in range(EXPANSION_MIN_TILE_X, EXPANSION_MAX_TILE_X + 1):
 		for y in range(EXPANSION_MIN_TILE_Y, EXPANSION_MAX_TILE_Y + 1):
 			var tile := Vector2i(x, y)
-			if not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
+			if not _is_reserved_highway_tile(tile) and not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
 				result.append(tile)
 	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 		var cost_a := _distance_from_initial_land(a)
@@ -125,6 +143,8 @@ func get_tile_error(tile: Vector2i) -> String:
 		return "This land is outside the expansion boundary."
 	if tile.x < EXPANSION_MIN_TILE_X or tile.x > EXPANSION_MAX_TILE_X or tile.y < EXPANSION_MIN_TILE_Y or tile.y > EXPANSION_MAX_TILE_Y:
 		return "This plot is reserved for the highway corridor or coastline."
+	if _is_reserved_highway_tile(tile):
+		return "This plot overlaps the permanent regional highway corridor."
 	if is_tile_owned(tile):
 		return "This land is already part of your city."
 	if not _is_adjacent_to_owned(tile):
@@ -157,7 +177,12 @@ func expand_tile(tile: Vector2i) -> bool:
 	return true
 
 func _own_legacy_cell(cell: Vector2i) -> bool:
-	if cell.x < -40 or cell.x >= 40 or cell.y < -40 or cell.y >= 40:
+	if (
+		cell.x < MIN_CELL_X
+		or cell.x >= MAX_CELL_X_EXCLUSIVE
+		or cell.y < MIN_CELL_Y
+		or cell.y >= MAX_CELL_Y_EXCLUSIVE
+	):
 		return false
 	var tile := get_tile_for_cell(cell)
 	if not _is_tile_in_bounds(tile) or is_tile_owned(tile):
