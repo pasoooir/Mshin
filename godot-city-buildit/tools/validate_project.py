@@ -901,7 +901,7 @@ else:
         "shadow_blur = 1.0",
         "shadow_bias = 0.045",
         "shadow_normal_bias = 0.85",
-        "directional_shadow_max_distance = 215.0"
+        "directional_shadow_max_distance = 140.0"
     ]:
         if visual_contract not in key_light.group(1):
             errors.append(f"Main key-light shadow contract is missing: {visual_contract}")
