@@ -110,29 +110,27 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)") or not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
-		push_error("[VisualPresentationSmoke] Pacific opening terrain and motorway must retain readable natural ground variation and dark asphalt contrast")
+	if not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
+		push_error("[VisualPresentationSmoke] Pacific motorway must retain dark asphalt contrast")
 		get_tree().quit(1)
 		return
+	# Compatibility/WebGL terrain is deliberately authored as lit vertex colours,
+	# not the procedural spatial shader that produced a dark green carpet.
 	var terrain_material_source := world_source
 	for required_terrain_layer in [
-		"float terrain_fbm(vec2 p)",
-		"float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0))",
-		"float terrain_noise(vec2 p)",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"vec3 deep_meadow = vec3(0.66, 0.68, 0.49)",
-		"vec3 sunlit_sage = vec3(0.78, 0.78, 0.60)",
-		"vec3 dry_olive = vec3(0.82, 0.75, 0.54)",
-		"vec3 straw_grass = vec3(0.88, 0.81, 0.63)",
-		"vec3 exposed_soil = vec3(0.58, 0.46, 0.34)",
-		"float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
-		"func _build_meadow_biome_overlays() -> void:",
-		"float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-		"meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
-		"SPECULAR = 0.12"
+		"func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:",
+		"var macro_patch := sin(point.x * 0.026 + point.z * 0.019)",
+		"var secondary_patch := sin(point.x * 0.091 - point.z * 0.073)",
+		"var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)",
+		"Color(\"#A88B62\")",
+		"func _create_natural_ground_material() -> StandardMaterial3D:",
+		"material.vertex_color_use_as_albedo = true",
+		"material.albedo_color = Color.WHITE",
+		"material.roughness = 0.98",
+		"func _build_meadow_biome_overlays() -> void:"
 	]:
 		if not terrain_material_source.contains(required_terrain_layer):
-			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
+			push_error("[VisualPresentationSmoke] Compatibility-safe vertex-colour meadow is incomplete: " + required_terrain_layer)
 			get_tree().quit(1)
 			return
 	if world_source.contains("cdn.meshy.ai") or road_source.contains("cdn.meshy.ai") or world_source.contains("HTTPRequest") or road_source.contains("HTTPRequest"):
