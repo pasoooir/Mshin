@@ -262,6 +262,10 @@ if "const HIGHWAY_LENGTH := 700.0" not in world_presentation_source or "for segm
     errors.append("Regional highway must remain visually continuous along the city gateway edge")
 world_presentation_source = (ROOT / "scripts/world/WorldPresentation.gd").read_text(encoding="utf-8")
 for contract in [
+    "func _build_shrubland_detail() -> void:",
+    "func _create_shrub_cluster_mesh() -> ArrayMesh:",
+    "CoastalMeadowShrubClusters",
+    "multimesh.use_colors = true",
     "func _create_coastal_water_mesh(",
     "var near_x0 := coast_x0 + shore_offset",
     "var far_x0 := coast_x0 + far_edge if far_edge <= 100.0 else far_edge",
