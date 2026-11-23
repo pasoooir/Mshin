@@ -12,7 +12,7 @@ const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliage
 # exposing the clear colour as a hard green void when users zoomed or panned.
 const TERRAIN_HALF_DEPTH := 320.0
 const TERRAIN_LEFT := -420.0
-const TERRAIN_DIVISIONS := 256
+const TERRAIN_DIVISIONS := 192
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
@@ -211,14 +211,14 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)
+	water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 180, 48, 0.015)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 280, 28, 0.008)
+	shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 180, 18, 0.008)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
@@ -269,8 +269,8 @@ func _build_sandy_beach() -> void:
 	# Compatibility renderer even when terrain shader detail is distance-culled.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	const Z_SEGMENTS := 220
-	const X_SEGMENTS := 10
+	const Z_SEGMENTS := 176
+	const X_SEGMENTS := 8
 	for row in range(Z_SEGMENTS):
 		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row) / float(Z_SEGMENTS))
 		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row + 1) / float(Z_SEGMENTS))

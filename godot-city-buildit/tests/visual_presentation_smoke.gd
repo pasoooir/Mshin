@@ -9,7 +9,7 @@ func _ready() -> void:
 	# The headless dummy renderer cannot return SurfaceTool.commit() meshes.
 	# Validate the exact generation bounds and tessellation inputs directly;
 	# real WebGL captures verify the resulting rendered surface.
-	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 256 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
+	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 192 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
 		push_error("[VisualPresentationSmoke] Terrain generation bounds must cover the complete mobile camera envelope and coastal edge")
 		get_tree().quit(1)
 		return
@@ -265,14 +265,14 @@ func _ready() -> void:
 		main_instance.free()
 		get_tree().quit(1)
 		return
-	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)
+	var wide_ocean: ArrayMesh = presentation._create_coastal_water_mesh(32.0, 1100.0, 180, 48, 0.015)
 	if wide_ocean == null or wide_ocean.get_aabb().size.x < 500.0 or wide_ocean.get_aabb().size.z < 280.0:
 		push_error("[VisualPresentationSmoke] Pacific ocean must form a broad visible water body, not a narrow shoreline strip")
 		main_instance.free()
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 320.0") or not ocean_source.contains("const BEACH_WIDTH := 8.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 320.0") or not ocean_source.contains("const BEACH_WIDTH := 8.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 180, 48, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)

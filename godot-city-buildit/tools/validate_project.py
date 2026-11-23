@@ -901,7 +901,7 @@ else:
         "shadow_blur = 1.0",
         "shadow_bias = 0.045",
         "shadow_normal_bias = 0.85",
-        "directional_shadow_max_distance = 215.0"
+        "directional_shadow_max_distance = 140.0"
     ]:
         if visual_contract not in key_light.group(1):
             errors.append(f"Main key-light shadow contract is missing: {visual_contract}")
@@ -933,14 +933,14 @@ for visual_contract in [
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
     "const TERRAIN_HALF_DEPTH := 320.0",
     "const TERRAIN_LEFT := -420.0",
-    "const TERRAIN_DIVISIONS := 256",
+    "const TERRAIN_DIVISIONS := 192",
     "const COASTLINE_BASE_X := 110.0",
     "const BEACH_WIDTH := 8.0", 
     "func _build_shoreline_foam() -> void:",
     "PacificShoreFoam",
     "_build_shoreline_foam()", 
-    "water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)",
-    "shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 280, 28, 0.008)",
+    "water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 180, 48, 0.015)",
+    "shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 180, 18, 0.008)",
     "vec3 coastal_teal = vec3(0.015, 0.16, 0.22)",
     "vec3 mediterranean_blue = vec3(0.005, 0.04, 0.17)",
     "vec3 pacific_blue = vec3(0.002, 0.014, 0.085)",
