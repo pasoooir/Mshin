@@ -1284,8 +1284,26 @@ for contract in [
     if contract not in save_manager_source:
         errors.append(f"Immediate player-profile save contract is missing: {contract}")
 launcher_source = (ROOT / "web/launcher.html").read_text(encoding="utf-8")
-if "identity-credentials-get" not in launcher_source:
-    errors.append("Google FedCM iframe permission is missing from the Web launcher.")
+for contract in [
+    "identity-credentials-get",
+    "mshin-google-auth-request",
+    "mshin-google-auth-response",
+    "event.source !== frame.contentWindow",
+    "event.origin !== location.origin",
+    "437590540762-utd1hbi5pcgvhl7p5u36ivmj9il7q9sm.apps.googleusercontent.com",
+    "window.google.accounts.id.renderButton",
+]:
+    if contract not in launcher_source:
+        errors.append(f"Top-level Google sign-in bridge contract is missing: {contract}")
+for contract in [
+    "window.parent.postMessage({",
+    'type: "mshin-google-auth-request"',
+    'data.type !== "mshin-google-auth-response"',
+    "event.source !== window.parent",
+    "event.origin !== window.location.origin",
+]:
+    if contract not in player_account_manager_source:
+        errors.append(f"Godot parent-window Google callback contract is missing: {contract}")
 for contract in [
     "func rotate_placement() -> bool:",
     "func get_building_size(type_id: String, rotation_quarters: int = 0) -> Vector2i:",

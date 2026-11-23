@@ -469,6 +469,26 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 				if (overlay) overlay.remove();
 			}
 		};
+		// The launcher owns Google Identity Services. Mobile browsers often refuse
+		// to deliver FedCM callbacks reliably into a cross-document game iframe.
+		// Keep the credential inside the same-origin parent/child boundary instead.
+		if (window.parent !== window) {
+			const receiveGoogleCredential = function (event) {
+				if (event.source !== window.parent || event.origin !== window.location.origin) return;
+				const data = event.data;
+				if (!data || data.type !== "mshin-google-auth-response" || data.nonce !== nonce) return;
+				window.removeEventListener("message", receiveGoogleCredential);
+				callback(typeof data.credential === "string" ? data.credential : null);
+			};
+			window.addEventListener("message", receiveGoogleCredential);
+			window.parent.postMessage({
+				type: "mshin-google-auth-request",
+					clientId: clientId,
+					nonce: nonce,
+					autoSelect: shouldAutoSelect
+			}, window.location.origin);
+			return;
+		}
 		const initialize = function () {
 			try {
 				if (!window.google || !window.google.accounts || !window.google.accounts.id) {

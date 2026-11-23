@@ -132,6 +132,26 @@ jobs:
               }
               return originalGetContext.call(this, type, options);
             };
+            // Deterministic fake GIS only in the CI top-level page. It exercises
+            // the real iframe/launcher message boundary without a real Gmail user.
+            if (window.top === window) {
+              let authConfig = null;
+              window.google = { accounts: { id: {
+                initialize(config) { authConfig = config; window.__mshinGoogleBridgeDiagnostics.initialized = true; },
+                renderButton(target) {
+                  const button = document.createElement('button');
+                  button.type = 'button';
+                  button.textContent = 'Continue with Google (CI)';
+                  button.addEventListener('click', () => {
+                    window.__mshinGoogleBridgeDiagnostics.mockButtonClicked = true;
+                    authConfig?.callback?.({ credential: 'synthetic-google-id-token' });
+                    window.__mshinGoogleBridgeDiagnostics.mockCallbackReturned = true;
+                  });
+                  target.appendChild(button);
+                },
+                prompt(callback) { callback({ isNotDisplayed: () => true, isSkippedMoment: () => false }); }
+              } } };
+            }
           });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
@@ -158,6 +178,68 @@ jobs:
           // The page stays in its actual mobile landscape viewport from launch;
           // the game may own fullscreen after the Play button is pressed.
           const mobileCanvas = page.frameLocator('#game-frame').locator('canvas');
+          // Prove the actual top-level Google bridge returns a credential only
+          // to the requesting same-origin game iframe.
+          const bridgeNonce = 'A'.repeat(43);
+          await page.evaluate(() => {
+            const frame = document.getElementById('game-frame');
+            window.__mshinGoogleBridgeDiagnostics = { topOrigin: location.origin, googleReady: !!window.google?.accounts?.id, iframeOrigin: frame?.contentWindow?.location?.origin || null, requests: [] };
+            window.addEventListener('message', event => {
+              if (event.data?.type === 'mshin-google-auth-request') {
+                window.__mshinGoogleBridgeDiagnostics.requests.push({ sourceMatches: event.source === frame.contentWindow, origin: event.origin, expectedOrigin: location.origin, clientId: event.data.clientId, nonceLength: String(event.data.nonce || '').length });
+              }
+            });
+          });
+          await mobileCanvas.evaluate((canvas, nonce) => {
+            window.__mshinGoogleBridgeResult = null;
+            const receive = event => {
+              if (event.source !== window.parent || event.origin !== window.location.origin) return;
+              if (!event.data || event.data.type !== 'mshin-google-auth-response' || event.data.nonce !== nonce) return;
+              window.removeEventListener('message', receive);
+              window.__mshinGoogleBridgeResult = event.data;
+            };
+            window.addEventListener('message', receive);
+            window.parent.postMessage({
+              type: 'mshin-google-auth-request',
+              clientId: '437590540762-utd1hbi5pcgvhl7p5u36ivmj9il7q9sm.apps.googleusercontent.com',
+              nonce,
+              autoSelect: false
+            }, window.location.origin);
+          }, bridgeNonce);
+          const bridgeSurface = await page.evaluate(() => {
+            const frame = document.getElementById('game-frame');
+            const doc = frame?.contentDocument;
+            const overlay = doc?.getElementById('mshin-google-signin-overlay');
+            const button = doc?.querySelector('#mshin-google-render-button button');
+            if (!overlay || !button) return { overlay: !!overlay, button: !!button };
+            const rect = button.getBoundingClientRect();
+            const hit = doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const pointerHitsGoogleButton = !!hit && (hit === button || button.contains(hit));
+            const pointerHitsOverlay = !!hit && overlay.contains(hit);
+            if (pointerHitsGoogleButton) button.click();
+            return { overlay: true, button: true, width: rect.width, height: rect.height, pointerHitsGoogleButton, pointerHitsOverlay, hitTag: hit?.tagName || null };
+          });
+          if (!bridgeSurface.overlay || !bridgeSurface.button || !bridgeSurface.pointerHitsGoogleButton || !bridgeSurface.pointerHitsOverlay) {
+            throw new Error('Google sign-in control is not the topmost tappable surface inside the fullscreen game: ' + JSON.stringify(bridgeSurface));
+          }
+          try {
+            await page.waitForFunction(() => {
+              const frame = document.getElementById('game-frame');
+              const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
+              return response?.credential === 'synthetic-google-id-token';
+            }, null, { timeout: 5000 });
+          } catch (error) {
+            const diagnostics = await page.evaluate(() => {
+              const frame = document.getElementById('game-frame');
+              return { bridge: window.__mshinGoogleBridgeDiagnostics, childResponse: frame?.contentWindow?.__mshinGoogleBridgeResult || null };
+            });
+            throw new Error('Google callback did not return its ID token to the game frame: ' + JSON.stringify(diagnostics));
+          }
+          const bridgeResponse = await mobileCanvas.evaluate(() => window.__mshinGoogleBridgeResult);
+          if (!bridgeResponse || bridgeResponse.credential !== 'synthetic-google-id-token' || bridgeResponse.nonce !== bridgeNonce) {
+            const diagnostics = await page.evaluate(() => window.__mshinGoogleBridgeDiagnostics);
+            throw new Error('Top-level Google sign-in bridge did not return the nonce-bound credential to the game iframe: ' + JSON.stringify({ bridgeResponse, diagnostics }));
+          }
           const canvasBounds = await mobileCanvas.boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
