@@ -79,7 +79,7 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 - Keep the base meadow in a visible mid-value sage range; do not let deep green dominate the full playable ground.
 - Use broad sage, olive, ochre/straw and warm-soil fields at approximately 150–250 m visual scale; each field must span a visible landscape region rather than appearing as scattered camouflage spots. The dominant meadow must not render as deep emerald green.
 - Build broad world-space biome regions with softened irregular boundaries, then layer medium exposed-earth islands and fine mottling without a dark-green carpet.
-- Preserve the flat 48 × 48 m starter build area and coastline alignment.
+- Preserve the flat 96 × 96 m starter build area and coastline alignment.
 - Keep all generated materials local and deterministic.
 - Validate with actual WebGL screenshots at overview, medium and near zoom. Reject the build if more than half of the visible natural ground reads as a single dark-green value group.
 
@@ -107,14 +107,18 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 - Snow accumulation only for arctic regions; dry soil and sparse scrub for desert; lush but still varied tropical ground.
 - Do not duplicate complete geometry for each season.
 
+## 5.2 Coastal build boundary and complete world visibility
+
+The brown inner coastal field is part of the city landmass and must be purchasable/buildable. Keep only the final 8 m shoreline ribbon as non-buildable dry/wet beach. The expansion domain follows the sampled curved coastline per tile and per cell; it must not use a single rectangular X cutoff that strands visible inland fields. Purchased expansion plots are flattened to a stable construction plane when terrain is rebuilt. Keep the camera's 4,000 m far clip so the complete offshore water mesh remains visible.
+
 ## 5.1 Complete inland city expansion boundary
 
-The rendered landmass and the city expansion domain must agree. Keep starter ownership at 48 × 48 m so existing progression and saves remain intact, but allow expansion across the complete inland terrain footprint: tile X -15…8 and tile Z -18…17 (8 m per tile). This makes the broad brown and olive inland fields part of the expandable city rather than permanently decorative scenery. Stop the east boundary at X=72 m, before the sandy beach ribbon and sampled shoreline. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
+The rendered landmass and the city expansion domain must agree. Keep the existing six-by-six starter tile ownership unchanged (96 × 96 m at 2 m per cell and 8 cells per tile). Expand only within the rendered landmass: X tiles -8…6 and Z tiles -9…8, with the curved coastline checked per tile and per cell. The inner brown coastal field is expandable; only the final 8 m shore ribbon is reserved. Keep the motorway asphalt reserve non-buildable, even when surrounding tiles are owned. Saved tile ownership remains sparse and unchanged; never auto-claim the whole map or discard legacy ownership.
 
 ## 5. Terrain system specification
 
 The terrain is divided into three visual bands:
-- **Buildable city**: 48 × 48 m, flat, neutral, clean and unobstructed.
+- **Buildable city**: 96 × 96 m, flat, neutral, clean and unobstructed.
 - **Natural transition**: rolling meadow, curated dirt tracks, creek channel, scrub clusters, fieldstones and irregular groves.
 - **Coast**: meadow-to-dune transition, sand, wet-sand edge, foam, shallow water and deep ocean.
 

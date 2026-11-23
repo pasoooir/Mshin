@@ -276,6 +276,7 @@ for contract in [
         errors.append(f"Coastal continuity and road-clearance contract is missing: {contract}")
 camera_controller_source = (ROOT / "scripts/systems/CameraController.gd").read_text(encoding="utf-8")
 for contract in [
+    "camera.far = 4000.0",
     "var _multi_touch_gesture_active: bool = false",
     "if _multi_touch_gesture_active:",
     "pan_velocity = Vector2.ZERO",
@@ -932,7 +933,7 @@ for visual_contract in [
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
     "const TERRAIN_DIVISIONS := 128",
     "const COASTLINE_BASE_X := 110.0",
-    "const BEACH_WIDTH := 26.0", 
+    "const BEACH_WIDTH := 8.0", 
     "func _build_shoreline_foam() -> void:",
     "PacificShoreFoam",
     "_build_shoreline_foam()", 
@@ -1840,6 +1841,10 @@ else:
     for contract in [
         "MIN_EXPANSION_LEVEL := 10",
         "TILE_CELLS := 8",
+        "EXPANSION_MIN_TILE_X := -8",
+        "EXPANSION_MAX_TILE_X := 6",
+        "BUILDABLE_COAST_MARGIN := 8.0",
+        "func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:",
         "func get_available_expansion_tiles()",
         "func get_owned_tiles() -> Array[Vector2i]",
         "func get_tile_cost(tile: Vector2i) -> Dictionary",
@@ -1892,7 +1897,7 @@ for contract in [
     "Global Trade must surface all three land expansion parts after Mayor Level 10.",
     "Land expansion special items must not appear as factory-manufacturable raw materials.",
     "A fully funded adjacent plot must be claimable.",
-    "Expansion choices must span the inland landmass while excluding the motorway and sandy coastline.",
+    "Expansion choices must span the inland landmass while excluding the motorway and following the curved sandy coastline.",
     "New roads must not be placed over the permanent highway asphalt.",
     "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.",
     "Claimed land must survive LandExpansionManager save/load serialization.",

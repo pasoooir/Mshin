@@ -25,7 +25,7 @@ func _ready() -> void:
 	# and the terrain must taper to the sea datum instead of overlapping it.
 	var coast_sample := presentation._coastline(0.0)
 	var owned_plot_ao := presentation._terrain_vertex_ao(0.0, 0.0)
-	var natural_terrain_ao := presentation._terrain_vertex_ao(40.0, 40.0)
+	var natural_terrain_ao := presentation._terrain_vertex_ao(54.0, 54.0)
 	if not is_equal_approx(owned_plot_ao, 1.0):
 		push_error("[VisualPresentationSmoke] Buildable starter plots must remain evenly lit without terrain cavity shading")
 		get_tree().quit(1)
@@ -157,7 +157,7 @@ func _ready() -> void:
 	var world_visual_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
 	for required_coastal_feature in [
 		"const COASTLINE_BASE_X := 110.0",
-		"const BEACH_WIDTH := 26.0",
+		"const BEACH_WIDTH := 8.0",
 		"func _build_shoreline_foam(",
 		"func _build_beach_palms(",
 		"func _create_palm_frond_mesh(",
@@ -245,7 +245,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var ocean_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
-	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 145.0") or not ocean_source.contains("const BEACH_WIDTH := 26.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
+	if not ocean_source.contains("const TERRAIN_HALF_DEPTH := 144.0") or not ocean_source.contains("const BEACH_WIDTH := 8.0") or not ocean_source.contains("_create_coastal_water_mesh(32.0, 1100.0, 280, 72, 0.015)") or not ocean_source.contains("cull_disabled, diffuse_burley, specular_schlick_ggx"):
 		push_error("[VisualPresentationSmoke] Expanded coastal world bounds and broad ocean mesh must remain in the playable scene")
 		main_instance.free()
 		get_tree().quit(1)

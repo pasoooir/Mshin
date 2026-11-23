@@ -7,8 +7,8 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 145.0
-const TERRAIN_LEFT := -120.0
+const TERRAIN_HALF_DEPTH := 144.0
+const TERRAIN_LEFT := -128.0
 const TERRAIN_DIVISIONS := 128
 const CITY_HALF_EXTENT := 40
 
@@ -32,7 +32,7 @@ const COASTAL_GREEN_PALETTE := [
 	Color("#4D7040"), Color("#9A8A58"), Color("#7B8050")
 ]
 const COASTLINE_BASE_X := 110.0
-const BEACH_WIDTH := 26.0
+const BEACH_WIDTH := 8.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
@@ -440,12 +440,14 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 	var fine_noise := sin(point.x * 0.73 + point.z * 0.91) * cos(point.z * 0.67 - point.x * 0.58)
 	var blend := clampf((broad_noise * 0.78 + fine_noise * 0.22 + 1.0) * 0.5, 0.0, 1.0)
 	var color: Color
-	if point.x > coast - 8.0:
+	if point.x > coast - 3.0:
 		color = Color("#B79A68").lerp(Color("#E7D2A2"), blend)
 	elif point.x > coast - BEACH_WIDTH:
 		color = Color("#C2AA78").lerp(Color("#E2CB98"), blend * 0.62)
-	elif point.x > coast - BEACH_WIDTH - 12.0:
-		color = Color("#6B9653").lerp(Color("#B1B978"), blend * 0.45)
+	elif point.x > coast - 26.0:
+		# The inner brown coastal field is playable city land, not beach.
+		# Only the final 8 m dry-sand ribbon remains reserved for the shore.
+		color = Color("#A18A61").lerp(Color("#B0A174"), blend * 0.38)
 	else:
 		# Bake broad biome patches into the mesh vertex colors as well as the
 		# shader. This keeps terrain variation visible in WebGL/Compatibility.
@@ -510,8 +512,11 @@ func _terrain_vertex_ao(x: float, z: float) -> float:
 
 
 func _terrain_height(x: float, z: float) -> float:
-	# The initial owned city is 48 x 48 m. Keep it level, then blend into
-	# visible rolling grassland immediately outside its true boundary.
+	# Every purchased plot becomes a level construction surface. This keeps
+	# roads and buildings stable as the city expands toward the coastal fields.
+	if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
+		return 0.0
+	# The starter city is 48 x 48 m. Keep it level, then blend into rolling land.
 	if absf(x - HIGHWAY_CENTER_X) < 14.0:
 		return 0.0
 	var distance_from_city := maxf(absf(x) - 24.0, absf(z) - 24.0)
