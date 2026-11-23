@@ -6,17 +6,11 @@ const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.g
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
-	# Build and inspect the real terrain mesh: source-only checks previously
-	# missed that the 238 x 288 m land patch ended inside the mobile camera view.
-	presentation._build_terrain()
-	var terrain_instance := presentation.get_node_or_null("NaturalTerrain") as MeshInstance3D
-	if terrain_instance == null or terrain_instance.mesh == null:
-		push_error("[VisualPresentationSmoke] Continuous world terrain mesh must be generated")
-		get_tree().quit(1)
-		return
-	var terrain_bounds := terrain_instance.mesh.get_aabb()
-	if terrain_bounds.position.x > -419.0 or terrain_bounds.position.z > -319.0 or terrain_bounds.end.x < 108.0 or terrain_bounds.end.z < 319.0 or terrain_bounds.size.x < 520.0:
-		push_error("[VisualPresentationSmoke] Terrain must cover the full mobile camera pan/zoom envelope and coastal edge; actual bounds=%s" % terrain_bounds)
+	# The headless dummy renderer cannot return SurfaceTool.commit() meshes.
+	# Validate the exact generation bounds and tessellation inputs directly;
+	# real WebGL captures verify the resulting rendered surface.
+	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 256 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
+		push_error("[VisualPresentationSmoke] Terrain generation bounds must cover the complete mobile camera envelope and coastal edge")
 		get_tree().quit(1)
 		return
 	var shrub_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
