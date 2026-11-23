@@ -915,9 +915,11 @@ if "Broad biome fields are baked into the terrain itself" not in world_source:
     errors.append("Meadow biome overlays must remain disabled until continuous field rendering is restored")
 for visual_contract in [
     "func _create_natural_ground_material() -> StandardMaterial3D:",
+    "material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED",
     "material.vertex_color_use_as_albedo = true",
     "material.roughness = 0.98",
-    'Color("#AEB58A"), Color("#C0B98C"), Color("#BBA77A")',
+    'Color("#6F8B4E"), Color("#829657"), Color("#A08E5C")',
+    "render_mode unshaded, cull_disabled;",
     'color = color.lerp(Color("#A5AD7B"), 0.16)',
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_LANE_COUNT := 6",
@@ -951,8 +953,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#AEB58A\")",
-    "Color(\"#BBA77A\")",
+    "Color(\"#6F8B4E\")",
+    "Color(\"#A08E5C\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
