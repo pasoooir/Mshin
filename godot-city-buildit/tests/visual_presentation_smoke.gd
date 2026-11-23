@@ -119,9 +119,10 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var terrain_material_source := world_source
-	var terrain_shader_start := world_source.find("shader.code =")
+	var terrain_material_start := world_source.find("func _create_natural_ground_material()")
+	var terrain_shader_start := world_source.find("shader.code =", terrain_material_start)
 	var terrain_shader_end := world_source.find("\n\tvar material := ShaderMaterial.new()", terrain_shader_start)
-	if terrain_shader_start < 0 or terrain_shader_end < 0:
+	if terrain_material_start < 0 or terrain_shader_start < terrain_material_start or terrain_shader_end < 0:
 		push_error("[VisualPresentationSmoke] Terrain shader source boundaries must be present")
 		get_tree().quit(1)
 		return
