@@ -473,12 +473,14 @@ func _request_google_nonce_and_launch(client_id: String, auto_select: bool = fal
 		// to deliver FedCM callbacks reliably into a cross-document game iframe.
 		// Keep the credential inside the same-origin parent/child boundary instead.
 		if (window.parent !== window) {
-			window.addEventListener("message", function (event) {
+			const receiveGoogleCredential = function (event) {
 				if (event.source !== window.parent || event.origin !== window.location.origin) return;
 				const data = event.data;
 				if (!data || data.type !== "mshin-google-auth-response" || data.nonce !== nonce) return;
+				window.removeEventListener("message", receiveGoogleCredential);
 				callback(typeof data.credential === "string" ? data.credential : null);
-			}, { once: true });
+			};
+			window.addEventListener("message", receiveGoogleCredential);
 			window.parent.postMessage({
 				type: "mshin-google-auth-request",
 					clientId: clientId,
