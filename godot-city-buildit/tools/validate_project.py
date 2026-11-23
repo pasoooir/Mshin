@@ -907,11 +907,11 @@ if "multimesh.use_colors = true" not in world_source:
 
 # The permanent city-entry motorway and natural terrain are visual landmarks.
 for visual_contract in [
-    "vec3 sunlit_sage = vec3(0.57, 0.59, 0.40)",
-    "vec3 dry_olive = vec3(0.66, 0.61, 0.43)",
-    "vec3 straw_grass = vec3(0.73, 0.66, 0.48)",
+    "vec3 sunlit_sage = vec3(0.70, 0.70, 0.54)",
+    "vec3 dry_olive = vec3(0.75, 0.68, 0.49)",
+    "vec3 straw_grass = vec3(0.82, 0.75, 0.57)",
     "float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0))",
-    "float soil_patch_mask = smoothstep(0.59, 0.79, soil_field)",
+    "float soil_patch_mask = smoothstep(0.47, 0.64, soil_field)",
     "meadow = mix(meadow, straw_grass, dry_mask * 0.66)",
     "const HIGHWAY_LANE_COUNT := 6",
     "const HIGHWAY_ASPHALT_WIDTH := 24.0",

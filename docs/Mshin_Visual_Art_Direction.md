@@ -75,13 +75,13 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 ## 4. Phased implementation roadmap
 
 ### Phase A — Visible terrain rescue (current)
-- Replace the low-contrast meadow shader with broad world-space biome fields.
+- Replace the low-contrast meadow shader with broad world-space biome fields whose sage, olive, straw and earth values remain distinct under Compatibility lighting.
 - Keep the base meadow in a visible mid-value sage range; do not let deep green dominate the full playable ground.
-- Use broad sage, olive, ochre/straw and warm-soil fields; each field must span a visible landscape region rather than appearing as scattered camouflage spots.
+- Use broad sage, olive, ochre/straw and warm-soil fields at approximately 150–250 m visual scale; each field must span a visible landscape region rather than appearing as scattered camouflage spots. The dominant meadow must not render as deep emerald green.
 - Build broad world-space biome regions with softened irregular boundaries, then layer medium exposed-earth islands and fine mottling without a dark-green carpet.
 - Preserve the flat 48 × 48 m starter build area and coastline alignment.
 - Keep all generated materials local and deterministic.
-- Validate with actual WebGL screenshots at overview, medium and near zoom.
+- Validate with actual WebGL screenshots at overview, medium and near zoom. Reject the build if more than half of the visible natural ground reads as a single dark-green value group.
 
 ### Phase B — Ground dressing
 - Cluster multi-blade grass, low shrubs, small flowers, stones and occasional bare-earth patches.

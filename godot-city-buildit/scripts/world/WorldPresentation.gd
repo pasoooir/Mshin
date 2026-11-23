@@ -1222,26 +1222,26 @@ void fragment() {
 	// A layered, world-space meadow: broad fields first, then irregular
 	// dry-grass islands, exposed earth, and fine mottling. These masks are
 	// deliberately high-contrast enough to survive the mobile overview camera.
-	float broad_field = terrain_fbm(world_xz * 0.011 + vec2(7.0, 13.0));
-	float mid_field = terrain_fbm(world_xz * 0.026 + vec2(23.0, 5.0));
-	float dry_field = terrain_noise(world_xz * 0.019 + vec2(47.0, 31.0));
-	float soil_field = terrain_noise(world_xz * 0.055 + vec2(11.0, 59.0));
+	float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0));
+	float mid_field = terrain_fbm(world_xz * 0.014 + vec2(23.0, 5.0));
+	float dry_field = terrain_noise(world_xz * 0.009 + vec2(47.0, 31.0));
+	float soil_field = terrain_noise(world_xz * 0.024 + vec2(11.0, 59.0));
 	float micro_grain = terrain_noise(world_xz * 1.65);
 	float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0));
 
-	float sunlit_mask = smoothstep(0.28, 0.63, broad_field);
-	float olive_mask = smoothstep(0.30, 0.64, mid_field);
-	float dry_mask = smoothstep(0.34, 0.62, dry_field);
+	float sunlit_mask = smoothstep(0.37, 0.57, broad_field);
+	float olive_mask = smoothstep(0.38, 0.59, mid_field);
+	float dry_mask = smoothstep(0.39, 0.61, dry_field);
 	float soil_core = 1.0 - smoothstep(0.24, 0.47, cell_shape);
-	float soil_patch_mask = smoothstep(0.59, 0.79, soil_field) * (0.42 + soil_core * 0.58);
+	float soil_patch_mask = smoothstep(0.47, 0.64, soil_field) * (0.42 + soil_core * 0.58);
 	soil_patch_mask *= 0.72 + dry_mask * 0.28;
 
-	vec3 deep_meadow = vec3(0.43, 0.47, 0.32);
-	vec3 sunlit_sage = vec3(0.57, 0.59, 0.40);
-	vec3 dry_olive = vec3(0.66, 0.61, 0.43);
-	vec3 straw_grass = vec3(0.73, 0.66, 0.48);
-	vec3 exposed_soil = vec3(0.53, 0.40, 0.29);
-	vec3 warm_earth = vec3(0.61, 0.47, 0.34);
+	vec3 deep_meadow = vec3(0.57, 0.58, 0.43);
+	vec3 sunlit_sage = vec3(0.70, 0.70, 0.54);
+	vec3 dry_olive = vec3(0.75, 0.68, 0.49);
+	vec3 straw_grass = vec3(0.82, 0.75, 0.57);
+	vec3 exposed_soil = vec3(0.61, 0.47, 0.35);
+	vec3 warm_earth = vec3(0.69, 0.53, 0.39);
 
 	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
 	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
