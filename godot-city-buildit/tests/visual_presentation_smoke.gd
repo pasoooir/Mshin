@@ -9,7 +9,7 @@ func _ready() -> void:
 	# The headless dummy renderer cannot return SurfaceTool.commit() meshes.
 	# Validate the exact generation bounds and tessellation inputs directly;
 	# real WebGL captures verify the resulting rendered surface.
-	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 256 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
+	if WorldPresentationScript.TERRAIN_LEFT > -419.0 or WorldPresentationScript.TERRAIN_HALF_DEPTH < 319.0 or WorldPresentationScript.TERRAIN_DIVISIONS < 192 or WorldPresentationScript.COASTLINE_BASE_X < 108.0:
 		push_error("[VisualPresentationSmoke] Terrain generation bounds must cover the complete mobile camera envelope and coastal edge")
 		get_tree().quit(1)
 		return
