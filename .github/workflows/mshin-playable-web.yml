@@ -202,6 +202,16 @@ jobs:
               autoSelect: false
             }, window.location.origin);
           }, bridgeNonce);
+          const gameAuthOverlay = page.frameLocator('#game-frame').locator('#mshin-google-signin-overlay');
+          try {
+            await gameAuthOverlay.waitFor({ state: 'visible', timeout: 5000 });
+          } catch (error) {
+            const diagnostics = await page.evaluate(() => {
+              const frame = document.getElementById('game-frame');
+              return { bridge: window.__mshinGoogleBridgeDiagnostics, childBody: frame?.contentDocument?.body?.innerHTML?.slice(-2500) || null };
+            });
+            throw new Error('Google auth overlay was not mounted inside the fullscreen game document: ' + JSON.stringify(diagnostics));
+          }
           const mockGoogleButton = page.frameLocator('#game-frame').locator('#mshin-google-render-button button');
           await mockGoogleButton.waitFor({ state: 'visible', timeout: 5000 });
           await mockGoogleButton.click();
