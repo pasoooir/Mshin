@@ -5805,7 +5805,7 @@ func _run_gameplay_test() -> void:
 	_check(road_system.restore_road(Vector2i(-24, 20)), "Legacy saved roads on the reserved asphalt edge must still restore without using the new placement action.")
 	_check(road_system.remove_road(Vector2i(-24, 20)), "The reserved-edge road restoration smoke fixture must clean up successfully.")
 	_check(LandExpansionManager.get_available_expansion_tiles().has(expansion_test_tile), "A plot directly adjacent to owned land must be available for expansion.")
-	_check(not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-16, 0)) and LandExpansionManager.get_available_expansion_tiles().has(Vector2i(3, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(10, 0)), "Expansion choices must span the inland landmass while stopping before the sandy coastline.")
+	_check(not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-16, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(-4, 0)) and LandExpansionManager.get_available_expansion_tiles().has(Vector2i(3, 0)) and not LandExpansionManager.get_available_expansion_tiles().has(Vector2i(10, 0)), "Expansion choices must span the inland landmass while excluding the motorway and sandy coastline.")
 	_check(not LandExpansionManager.expand_tile(expansion_test_tile), "Land expansion must reject a purchase when any required Dozer item is missing.")
 	_check(StorageManager.add_items(expansion_cost), "Could not seed the isolated expansion-item inventory test.")
 	_check(LandExpansionManager.can_expand_tile(expansion_test_tile), "The adjacent plot must become purchasable when all three expansion items are present.")
