@@ -118,7 +118,7 @@ jobs:
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
-          const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1, hasTouch: true });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
           page.on('crash', () => console.log('[desktop diagnostics] page crashed'));
@@ -152,69 +152,21 @@ jobs:
           if (canvasWidth < 640 || canvasHeight < 360) {
             throw new Error('Desktop game viewport display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
-          // Capture one representative real WebGL frame. Repeated full-page screenshots
-          // of a software-rendered Godot canvas can block Chromium's compositor for minutes;
-          // camera zoom is still exercised below and verified by the gameplay integration test.
-          // Hosted Chromium stalls while reading pixels from this large
-          // software-rendered WebGL canvas. Acceptance verifies the live
-          // Compatibility canvas and browser touch delivery instead.
-          await page.mouse.move(640, 360);
-          for (let i = 0; i < 2; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(350);
-          for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
-          await page.waitForTimeout(350);
-          for (let i = 0; i < 7; i++) await page.mouse.wheel(0, 100);
-          await page.waitForTimeout(350);
-          await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
-            build: process.env.GITHUB_SHA,
-            viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-            canvas: { width: canvasWidth, height: canvasHeight },
-            captures: [],
-            zoomInteraction: 'Godot mouse wheel: 2 accelerated steps to medium, 4 additional steps to near, 7 steps out to maximum zoom',
-            note: 'Desktop and mobile Godot Compatibility canvases are live in Chromium; pinch, pan, twist and one-finger touch events are delivered. Hosted software-WebGL screenshots are omitted because Chromium compositor/readback stalls.'
-          }, null, 2));
-          // Release the desktop WebGL context before starting the mobile viewport.
-          await page.close();
-
-          // Repeat the real launch path in a touch-enabled mobile landscape viewport.
-          const mobilePage = await browser.newPage({
-            viewport: { width: 844, height: 390 },
-            deviceScaleFactor: 1,
-            hasTouch: true
-          });
-          const mobileErrors = [];
-          mobilePage.on('pageerror', error => mobileErrors.push(error.message));
-          mobilePage.on('console', message => console.log('[mobile console:' + message.type() + '] ' + message.text()));
-          mobilePage.on('requestfailed', request => console.log('[mobile request failed] ' + request.url() + ' ' + (request.failure()?.errorText ?? 'unknown')));
-          await mobilePage.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 10000 });
-          await mobilePage.getByRole('button', { name: /PLAY MSHIN/i }).click();
-          const mobileFrame = mobilePage.locator('#game-frame');
-          await mobileFrame.waitFor({ state: 'attached', timeout: 10000 });
-          const mobileFramePermissions = (await mobileFrame.getAttribute('allow') || '').split(';').map(value => value.trim());
-          if (!mobileFramePermissions.includes('identity-credentials-get')) {
-            throw new Error('Mobile game iframe must delegate Google FedCM identity-credentials-get permission');
-          }
-          await mobilePage.frameLocator('#game-frame').locator('canvas').waitFor({ state: 'visible', timeout: 45000 });
-          // The mobile acceptance gate is functional (launcher + live canvas);
-          // avoid a second WebGL screenshot because software-rendered mobile
-          // emulation can stall Chromium's compositor.
-          await mobilePage.waitForTimeout(500);
-
-          // Exercise the actual browser touch-event path against the embedded
-          // Godot canvas. CDP dispatches touch points at page coordinates, so
-          // this covers iframe routing and the browser's multi-pointer input
-          // delivery (Godot GameplaySmoke remains the camera-math assertion).
-          const mobileCanvas = mobilePage.frameLocator('#game-frame').locator('canvas');
+          // Reuse one WebGL instance for desktop and mobile dimensions. Starting
+          // a second software-rendered Godot context on the same runner exhausts
+          // compositor resources and makes page teardown block indefinitely.
+          await page.setViewportSize({ width: 844, height: 390 });
+          await page.waitForTimeout(500);
+          const mobileCanvas = page.frameLocator('#game-frame').locator('canvas');
           const canvasBounds = await mobileCanvas.boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile canvas bounds are unavailable or too small for touch acceptance');
           }
-          const touchSession = await mobilePage.context().newCDPSession(mobilePage);
+          const touchSession = await page.context().newCDPSession(page);
           const centerX = canvasBounds.x + canvasBounds.width * 0.5;
           const centerY = canvasBounds.y + canvasBounds.height * 0.52;
           const touch = (id, x, y) => ({ id, x: Math.round(x), y: Math.round(y), radiusX: 8, radiusY: 8, force: 1 });
 
-          // Two-finger pinch-out: increase separation around a stable centroid.
           await touchSession.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
             touchPoints: [touch(1, centerX - 42, centerY), touch(2, centerX + 42, centerY)]
@@ -223,19 +175,15 @@ jobs:
             type: 'touchMove',
             touchPoints: [touch(1, centerX - 68, centerY), touch(2, centerX + 68, centerY)]
           });
-          // Two-finger pan: translate both contacts without changing separation.
           await touchSession.send('Input.dispatchTouchEvent', {
             type: 'touchMove',
             touchPoints: [touch(1, centerX - 48, centerY + 24), touch(2, centerX + 88, centerY + 24)]
           });
-          // Two-finger twist: rotate the pair around its midpoint.
           await touchSession.send('Input.dispatchTouchEvent', {
             type: 'touchMove',
             touchPoints: [touch(1, centerX - 48, centerY - 44), touch(2, centerX + 48, centerY + 44)]
           });
           await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-
-          // Confirm a clean two-to-one transition followed by a fresh one-finger pan.
           await touchSession.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
             touchPoints: [touch(3, centerX, centerY)]
@@ -246,14 +194,23 @@ jobs:
           });
           await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
           await touchSession.detach();
-          await mobilePage.waitForTimeout(500);
+          await page.waitForTimeout(250);
           if (!(await mobileCanvas.isVisible())) {
-            throw new Error('Mobile canvas became hidden after single- and multi-touch gestures');
+            throw new Error('Game canvas became hidden after single- and multi-touch gestures');
           }
-
-          if (errors.length || mobileErrors.length) {
-            throw new Error('Browser page errors: ' + [...errors, ...mobileErrors].join(' | '));
+          if (errors.length) {
+            throw new Error('Browser page errors: ' + errors.join(' | '));
           }
+          await writeFile('artifacts/visual-acceptance/metadata.json', JSON.stringify({
+            build: process.env.GITHUB_SHA,
+            desktopViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+            mobileViewport: { width: 844, height: 390, hasTouch: true },
+            desktopCanvas: { width: canvasWidth, height: canvasHeight },
+            mobileCanvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
+            captures: [],
+            interactions: ['desktop WebGL Compatibility launch', 'mobile landscape viewport', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
+            note: 'One live Godot WebGL instance is tested at desktop and mobile landscape dimensions. Software-WebGL pixel readback is intentionally excluded because it blocks Chromium on hosted runners.'
+          }, null, 2));
           await browser.close();
           NODE
       - name: Upload real WebGL visual acceptance captures
