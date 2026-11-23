@@ -25,7 +25,7 @@ func _ready() -> void:
 	# and the terrain must taper to the sea datum instead of overlapping it.
 	var coast_sample := presentation._coastline(0.0)
 	var owned_plot_ao := presentation._terrain_vertex_ao(0.0, 0.0)
-	var natural_terrain_ao := presentation._terrain_vertex_ao(40.0, 40.0)
+	var natural_terrain_ao := presentation._terrain_vertex_ao(54.0, 54.0)
 	if not is_equal_approx(owned_plot_ao, 1.0):
 		push_error("[VisualPresentationSmoke] Buildable starter plots must remain evenly lit without terrain cavity shading")
 		get_tree().quit(1)
