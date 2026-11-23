@@ -1188,18 +1188,38 @@ func _create_grass_texture() -> Texture2D:
 
 
 
+func _create_ground_detail_texture() -> Texture2D:
+	# Fine-scale soil/grass grain adds close-camera surface detail without
+	# replacing the large, continuous biome colors baked into terrain vertices.
+	# A near-neutral tile modulates the palette instead of tinting it green.
+	const TEXTURE_SIZE := 128
+	var image := Image.create(TEXTURE_SIZE, TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	for y in range(TEXTURE_SIZE):
+		var angle_y := TAU * float(y) / float(TEXTURE_SIZE)
+		for x in range(TEXTURE_SIZE):
+			var angle_x := TAU * float(x) / float(TEXTURE_SIZE)
+			var broad := sin(angle_x * 2.0 + cos(angle_y * 3.0)) * cos(angle_y * 2.0 - sin(angle_x * 3.0))
+			var fine := sin(angle_x * 29.0 + angle_y * 37.0) * 0.5 + cos(angle_x * 47.0 - angle_y * 31.0) * 0.5
+			var grain := fposmod(sin(float(x) * 127.1 + float(y) * 311.7) * 43758.5453, 1.0)
+			var value := clampf(0.965 + broad * 0.025 + fine * 0.018 + (grain - 0.5) * 0.012, 0.91, 1.0)
+			var texel := Color(value, value, value, 1.0)
+			if grain > 0.994:
+				texel = texel.lerp(Color(0.98, 0.93, 0.80, 1.0), 0.10)
+			image.set_pixel(x, y, texel)
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
 func _create_natural_ground_material() -> StandardMaterial3D:
-	# Use the mesh's authored biome vertex colors as the source of truth.
+	# Use authored biome vertex colors plus a restrained local detail tile.
 	# Compatibility/WebGL previously rendered the procedural terrain shader as
-	# a dark green carpet on mobile GPUs; this lit material is deterministic.
+	# a dark green carpet on mobile GPUs; this deterministic material preserves
+	# the intended palette while restoring visible grass/soil grain up close.
 	var material := StandardMaterial3D.new()
-	# Vertex colours are authored in the intended final palette. Unshaded
-	# rendering prevents stacked key/fill/ambient lights from clipping the
-	# meadow to pale white in WebGL Compatibility; cavity shading is baked into
-	# vertices and tree contact shadows are separate geometry.
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.vertex_color_use_as_albedo = true
 	material.albedo_color = Color.WHITE
+	material.albedo_texture = _create_ground_detail_texture()
 	material.roughness = 0.98
 	material.metallic = 0.0
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
