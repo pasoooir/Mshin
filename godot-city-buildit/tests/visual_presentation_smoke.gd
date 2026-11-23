@@ -134,7 +134,7 @@ func _ready() -> void:
 		"func _build_meadow_biome_overlays() -> void:",
 		"Biome fields are rendered continuously by the terrain shader",
 		"SPECULAR = 0.12"
-	]
+	]:
 		if not terrain_material_source.contains(required_terrain_layer):
 			push_error("[VisualPresentationSmoke] Natural terrain material is missing layered meadow/soil detail: " + required_terrain_layer)
 			get_tree().quit(1)
