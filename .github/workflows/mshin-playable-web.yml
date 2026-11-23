@@ -152,6 +152,12 @@ jobs:
           if (canvasWidth < 640 || canvasHeight < 360) {
             throw new Error('Desktop game viewport display size is too small: ' + canvasWidth + 'x' + canvasHeight);
           }
+          // The launcher delegates fullscreen to the game after the user click.
+          // Exit it before changing the emulated viewport; Chromium refuses
+          // setViewportSize while a page owns the fullscreen window.
+          await page.evaluate(async () => {
+            if (document.fullscreenElement) await document.exitFullscreen();
+          });
           // Reuse one WebGL instance for desktop and mobile dimensions. Starting
           // a second software-rendered Godot context on the same runner exhausts
           // compositor resources and makes page teardown block indefinitely.
