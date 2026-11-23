@@ -134,11 +134,8 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                         scale_value * width_factor
                     )
                 )
-                var crown_height_factor := CANOPY_CROWN_HEIGHT_FACTOR
-                if species_id == 3:
-                    # Palm fronds radiate from a lower crown above the tall trunk.
-                    crown_height_factor = PALM_CROWN_HEIGHT_FACTOR
-                var crown_position := local_position + Vector3(0.0, crown_height_factor * scale_value, 0.0)
+                var crown_height := _get_tree_crown_height(species_id, stable_random)
+                var crown_position := local_position + Vector3(0.0, crown_height, 0.0)
                 multimesh.set_instance_transform(
                     instance_index,
                     Transform3D(basis, crown_position)
@@ -180,6 +177,13 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
     _chunks[chunk_key] = chunk_root
 
 
+
+func _get_tree_crown_height(species_id: int, stable_random: float) -> float:
+    var scale_value := 2.05 + fposmod(stable_random * 17.0, 0.72)
+    var crown_height_factor := PALM_CROWN_HEIGHT_FACTOR if species_id == 3 else CANOPY_CROWN_HEIGHT_FACTOR
+    return crown_height_factor * scale_value
+
+
 func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> void:
     var entries: Array[Dictionary] = []
     for species_value in species_buckets.keys():
@@ -218,10 +222,7 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
             3:
                 width_factor = 1.18
 
-        var crown_height_factor := CANOPY_CROWN_HEIGHT_FACTOR
-        if species_id == 3:
-            crown_height_factor = PALM_CROWN_HEIGHT_FACTOR
-        var trunk_height := crown_height_factor * scale_value
+        var trunk_height := _get_tree_crown_height(species_id, stable_random)
         var width_scale := width_factor * (0.94 + fposmod(stable_random * 8.3, 0.12))
         var basis := Basis.IDENTITY.scaled(Vector3(width_scale, trunk_height, width_scale))
         trunks.set_instance_transform(
@@ -229,12 +230,7 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
             Transform3D(basis, local_position + Vector3(0.0, trunk_height * 0.5, 0.0))
         )
         trunks.set_instance_color(index, bark_palette[species_id] * (0.94 + stable_random * 0.10))
-        if index == 0:
-            print("[FoliageTrunkDebug] species=%d crown=%.3f scale=%.3f transform_y=%.3f origin_y=%.3f" % [
-                species_id, crown_height_factor, scale_value,
-                trunks.get_instance_transform(index).basis.y.length(),
-                trunks.get_instance_transform(index).origin.y
-            ])
+
 
     trunks.custom_aabb = AABB(
         Vector3(-6.0, -1.0, -6.0),
