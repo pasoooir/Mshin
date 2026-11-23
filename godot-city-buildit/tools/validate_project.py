@@ -1841,6 +1841,10 @@ else:
     for contract in [
         "MIN_EXPANSION_LEVEL := 10",
         "TILE_CELLS := 8",
+        "EXPANSION_MIN_TILE_X := -8",
+        "EXPANSION_MAX_TILE_X := 6",
+        "BUILDABLE_COAST_MARGIN := 8.0",
+        "func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:",
         "func get_available_expansion_tiles()",
         "func get_owned_tiles() -> Array[Vector2i]",
         "func get_tile_cost(tile: Vector2i) -> Dictionary",
