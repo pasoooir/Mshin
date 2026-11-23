@@ -449,26 +449,29 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		# Only the final 8 m dry-sand ribbon remains reserved for the shore.
 		color = Color("#A18A61").lerp(Color("#B0A174"), blend * 0.38)
 	else:
-		# Bake broad biome patches into the mesh vertex colors as well as the
-		# shader. This keeps terrain variation visible in WebGL/Compatibility.
-		# Continuous low-frequency fields avoid the hard rectangular colour
-		# changes produced by palette-index tiling at mobile overview distance.
-		var macro_field := sin(point.x * 0.018 + point.z * 0.014) * cos(point.z * 0.023 - point.x * 0.016)
-		var secondary_field := sin(point.x * 0.047 - point.z * 0.039) * cos(point.z * 0.055 + point.x * 0.031)
-		var field_mix := clampf(0.50 + macro_field * 0.38 + secondary_field * 0.12, 0.0, 1.0)
-		var deep_grass := Color("#587B45")
-		var sage_grass := Color("#87995D")
-		var sunlit_grass := Color("#A4A36A")
-		var meadow_color := deep_grass.lerp(sage_grass, smoothstep(0.08, 0.72, field_mix))
-		meadow_color = meadow_color.lerp(sunlit_grass, smoothstep(0.58, 0.96, field_mix) * 0.72)
+		# Bake large, continuous biome fields into vertex colors so the authored
+		# palette survives Godot Compatibility and WebGL lighting unchanged.
+		# The macro field controls 150-250 m landscape regions; a restrained
+		# secondary field softens boundaries without producing camouflage specks.
+		var macro_field := sin(point.x * 0.019 + point.z * 0.015) * cos(point.z * 0.022 - point.x * 0.017)
+		var secondary_field := sin(point.x * 0.043 - point.z * 0.037) * cos(point.z * 0.051 + point.x * 0.029)
+		var field_mix := clampf(0.50 + macro_field * 0.43 + secondary_field * 0.07, 0.0, 1.0)
+		var shaded_sage := Color("#829067")
+		var meadow_sage := Color("#89966D")
+		var dry_olive := Color("#A9956B")
+		var sunlit_straw := Color("#B5A071")
+		var meadow_color := shaded_sage.lerp(meadow_sage, smoothstep(0.12, 0.40, field_mix))
+		meadow_color = meadow_color.lerp(dry_olive, smoothstep(0.40, 0.70, field_mix))
+		meadow_color = meadow_color.lerp(sunlit_straw, smoothstep(0.68, 0.94, field_mix))
 		color = meadow_color
-		var soil_field := sin(point.x * 0.061 + point.z * 0.043) * cos(point.z * 0.079 - point.x * 0.052)
-		var biome_soil_mask := smoothstep(0.48, 0.78, soil_field) * (0.72 + smoothstep(0.0, 0.8, macro_field) * 0.28)
-		color = color.lerp(Color("#A18A61"), biome_soil_mask * 0.22)
-	# Broad dry-grass variation remains subordinate to the continuous meadow fields.
-	var rock_field := sin(point.x * 0.071 + point.z * 0.053) * cos(point.z * 0.089 - point.x * 0.067)
-	var dry_patch_mask := smoothstep(0.46, 0.82, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
-	color = color.lerp(Color("#A18A61"), dry_patch_mask * 0.20)
+		# Exposed soil is a secondary material, never a broad dark-green substitute.
+		var soil_field := sin(point.x * 0.057 + point.z * 0.041) * cos(point.z * 0.073 - point.x * 0.049)
+		var biome_soil_mask := smoothstep(0.58, 0.88, soil_field) * (0.68 + smoothstep(-0.1, 0.85, macro_field) * 0.32)
+		color = color.lerp(Color("#987B5D"), biome_soil_mask * 0.18)
+	# Warm dry-grass accents stay subordinate to the broad sage/olive/straw fields.
+	var rock_field := sin(point.x * 0.067 + point.z * 0.051) * cos(point.z * 0.083 - point.x * 0.063)
+	var dry_patch_mask := smoothstep(0.50, 0.84, rock_field) * smoothstep(24.0, 66.0, absf(point.z))
+	color = color.lerp(Color("#B5A071"), dry_patch_mask * 0.16)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
