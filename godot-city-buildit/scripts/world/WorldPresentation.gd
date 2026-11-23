@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#89966D"), Color("#A3A078"), Color("#A9956B"),
-	Color("#7F8B62"), Color("#B5A071"), Color("#987B5D")
+	Color("#AEB58A"), Color("#C0B98C"), Color("#BBA77A"),
+	Color("#9DAA7B"), Color("#C7B487"), Color("#B39A7B")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -470,16 +470,16 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		"desert":
 			color = color.lerp(Color("#B58B55"), 0.68)
 		"tropical":
-			color = color.lerp(Color("#2F6F43"), 0.30)
+			color = color.lerp(Color("#A5AD7B"), 0.16)
 		"lush":
-			color = color.lerp(Color("#3E783C"), 0.42)
+			color = color.lerp(Color("#A0AD78"), 0.18)
 		"mediterranean":
 			color = color.lerp(Color("#8C875B"), 0.38)
 	var park_edge := smoothstep(48.0, 82.0, absf(point.z))
 	if point.x < 58.0 and point.x > -112.0:
 		color = color.lerp(Color("#637A4B"), 0.08 + park_edge * 0.05)
 	if not LandExpansionManager.is_world_position_unlocked(point):
-		color = color.lerp(Color("#36523A"), 0.12)
+		color = color.lerp(Color("#78835E"), 0.05)
 	var terrain_point := point
 	terrain_point.y = _terrain_height(point.x, point.z)
 	# Compatibility-safe baked-style cavity shading: preserve a perfectly level build zone.
@@ -1179,103 +1179,17 @@ func _create_grass_texture() -> Texture2D:
 
 
 
-func _create_natural_ground_material() -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = """
-shader_type spatial;
-render_mode cull_back;
-uniform sampler2D grass_texture : source_color, filter_linear_mipmap;
-uniform sampler2D sand_texture : source_color, filter_linear_mipmap;
-varying vec3 world_position;
-
-float terrain_hash(vec2 p) {
-	p = fract(p * vec2(123.34, 456.21));
-	p += dot(p, p + 45.32);
-	return fract(p.x * p.y);
-}
-float terrain_noise(vec2 p) {
-	vec2 cell = floor(p);
-	vec2 local = fract(p);
-	local = local * local * (3.0 - 2.0 * local);
-	float a = terrain_hash(cell);
-	float b = terrain_hash(cell + vec2(1.0, 0.0));
-	float c = terrain_hash(cell + vec2(0.0, 1.0));
-	float d = terrain_hash(cell + vec2(1.0, 1.0));
-	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
-}
-float terrain_fbm(vec2 p) {
-	float value = 0.0;
-	float amplitude = 0.5;
-	for (int octave = 0; octave < 4; octave++) {
-		value += terrain_noise(p) * amplitude;
-		p *= 2.03;
-		amplitude *= 0.5;
-	}
-	return value;
-}
-void vertex() {
-	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-}
-void fragment() {
-	float coastline = 110.0 + sin(world_position.z * 0.032) * 7.0 + sin(world_position.z * 0.071) * 3.2 + sin(world_position.z * 0.013) * 4.0;
-	float transition_noise = sin(world_position.z * 0.19 + world_position.x * 0.07) * 1.4;
-	float sand_mask = smoothstep(coastline - 26.0 + transition_noise, coastline + 1.4 + transition_noise, world_position.x);
-	vec2 ground_uv = UV * 0.62;
-	vec2 world_xz = world_position.xz;
-
-	// A layered, world-space meadow: broad fields first, then irregular
-	// dry-grass islands, exposed earth, and fine mottling. These masks are
-	// deliberately high-contrast enough to survive the mobile overview camera.
-	float broad_field = terrain_fbm(world_xz * 0.0058 + vec2(7.0, 13.0));
-	float mid_field = terrain_fbm(world_xz * 0.014 + vec2(23.0, 5.0));
-	float dry_field = terrain_noise(world_xz * 0.009 + vec2(47.0, 31.0));
-	float soil_field = terrain_noise(world_xz * 0.024 + vec2(11.0, 59.0));
-	float micro_grain = terrain_noise(world_xz * 1.65);
-	float cell_shape = terrain_noise(world_xz * 0.041 + vec2(37.0, 19.0));
-
-	float sunlit_mask = smoothstep(0.37, 0.57, broad_field);
-	float olive_mask = smoothstep(0.38, 0.59, mid_field);
-	float dry_mask = smoothstep(0.39, 0.61, dry_field);
-	float soil_core = 1.0 - smoothstep(0.24, 0.47, cell_shape);
-	float soil_patch_mask = smoothstep(0.47, 0.64, soil_field) * (0.42 + soil_core * 0.58);
-	soil_patch_mask *= 0.72 + dry_mask * 0.28;
-
-	vec3 deep_meadow = vec3(0.66, 0.68, 0.49);
-	vec3 sunlit_sage = vec3(0.78, 0.78, 0.60);
-	vec3 dry_olive = vec3(0.82, 0.75, 0.54);
-	vec3 straw_grass = vec3(0.88, 0.81, 0.63);
-	vec3 exposed_soil = vec3(0.58, 0.46, 0.34);
-	vec3 warm_earth = vec3(0.66, 0.52, 0.39);
-
-	vec3 meadow = mix(deep_meadow, sunlit_sage, sunlit_mask);
-	meadow = mix(meadow, dry_olive, olive_mask * 0.68);
-	meadow = mix(meadow, straw_grass, dry_mask * 0.66);
-	meadow = mix(meadow, mix(exposed_soil, warm_earth, soil_field), clamp(soil_patch_mask * 0.62, 0.0, 0.34));
-
-	// Retain the locally generated grass texture as a restrained fine-scale
-	// overlay; the world-space biome colors remain the dominant visual read.
-	vec3 sampled_grass = texture(grass_texture, ground_uv * 0.72).rgb;
-	meadow = mix(meadow, meadow * sampled_grass * 1.42, 0.08);
-	meadow *= 0.96 + micro_grain * 0.10;
-	meadow *= mix(0.98, 1.04, terrain_noise(world_xz * 0.34 + vec2(3.0, 71.0)));
-	// Do not multiply the authored biome palette by terrain vertex tint: this
-	// double-darkened the meadow into an emerald carpet in Compatibility.
-
-	vec3 sand = texture(sand_texture, ground_uv * 0.38).rgb * COLOR.rgb;
-	float wet_sand = smoothstep(coastline - 8.0, coastline - 0.7, world_position.x);
-	vec3 damp_sand = sand * vec3(0.78, 0.82, 0.83);
-	sand = mix(sand, damp_sand, wet_sand * 0.72);
-	float dune_ripple = sin(world_position.z * 0.42 + world_position.x * 0.16) * 0.018;
-	sand += vec3(dune_ripple);
-	ALBEDO = mix(meadow, sand, sand_mask);
-	ROUGHNESS = mix(0.98, 0.84, sand_mask);
-	SPECULAR = 0.12;
-}
-"""
-	var material := ShaderMaterial.new()
-	material.shader = shader
-	material.set_shader_parameter("grass_texture", _create_grass_texture())
-	material.set_shader_parameter("sand_texture", _create_sand_texture())
+func _create_natural_ground_material() -> StandardMaterial3D:
+	# Use the mesh's authored biome vertex colors as the source of truth.
+	# Compatibility/WebGL previously rendered the procedural terrain shader as
+	# a dark green carpet on mobile GPUs; this lit material is deterministic.
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.albedo_color = Color.WHITE
+	material.roughness = 0.98
+	material.metallic = 0.0
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 	return material
 
 
