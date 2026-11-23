@@ -6,6 +6,16 @@ const WorldPresentationScript = preload("res://scripts/world/WorldPresentation.g
 func _ready() -> void:
 	var presentation := WorldPresentationScript.new()
 	add_child(presentation)
+	var shrub_source := FileAccess.get_file_as_string("res://scripts/world/WorldPresentation.gd")
+	if not shrub_source.contains("_build_shrubland_detail()") or not shrub_source.contains("CoastalMeadowShrubClusters"):
+		push_error("[VisualPresentationSmoke] Natural meadow must include the batched coastal shrubland layer")
+		get_tree().quit(1)
+		return
+	var shrub_mesh := presentation._create_shrub_cluster_mesh()
+	if shrub_mesh == null or shrub_mesh.get_surface_count() != 1:
+		push_error("[VisualPresentationSmoke] Shrub clusters must use one shared low-poly mesh surface")
+		get_tree().quit(1)
+		return
 	presentation._build_meadow_biome_overlays()
 	var biome_patch_node := presentation.get_node_or_null("MeadowBiomePatches") as MeshInstance3D
 	if not is_instance_valid(biome_patch_node) or biome_patch_node.mesh == null or biome_patch_node.mesh.get_surface_count() != 1:

@@ -85,9 +85,12 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 
 ### Phase B — Ground dressing
 - Cluster multi-blade grass, low shrubs, small flowers, stones and occasional bare-earth patches.
-- Use natural clusters and empty breathing spaces, not uniform scatter.
+- Green terrain must never read as a smooth, uninterrupted flat sheet: build layered shrubland with overlapping low bush silhouettes, varied clump heights, irregular spacing and deliberate breathing gaps.
+- Use an artistic but natural green family: shaded woodland green, eucalyptus/sage, olive, muted sunlit leaf tips and occasional warm dry-grass accents. Avoid neon green and avoid a single repeated hue.
+- Blend shrub density gradually from the sandy/dune edge into the meadow: sparse salt-tolerant scrub near the coast, mixed low grasses and shrubs in the transition, richer clustered meadow vegetation farther inland.
+- Use natural clusters and empty breathing spaces, not uniform scatter or a repeating grid.
 - Keep roads, building plots and camera interaction clear.
-- Use MultiMesh batches and distance-based density/LOD.
+- Use shared low-poly cluster meshes, MultiMesh batches and distance-based density/LOD; do not create one scene node per bush or grass blade.
 
 ### Phase C — Trees and landscape framing
 - Distinct broadleaf, conifer, umbrella and palm silhouettes.
