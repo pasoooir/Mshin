@@ -7,9 +7,12 @@ const CargoShipVisualScript = preload("res://scripts/world/CargoShipVisual.gd")
 const MeadowLivestockScript = preload("res://scripts/world/MeadowLivestock.gd")
 const StylizedFoliageSystemScript = preload("res://scripts/world/StylizedFoliageSystem.gd")
 
-const TERRAIN_HALF_DEPTH := 144.0
-const TERRAIN_LEFT := -128.0
-const TERRAIN_DIVISIONS := 128
+# Cover the complete mobile pan/zoom envelope with continuous terrain.
+# The old 238 x 288 m patch was narrower than the 844x390 overview frustum,
+# exposing the clear colour as a hard green void when users zoomed or panned.
+const TERRAIN_HALF_DEPTH := 320.0
+const TERRAIN_LEFT := -420.0
+const TERRAIN_DIVISIONS := 256
 const CITY_HALF_EXTENT := 40
 
 # Permanent six-lane divided motorway at the city entrance. Keep the access
