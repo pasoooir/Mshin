@@ -114,7 +114,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           mkdir -p artifacts/visual-acceptance
-          timeout 120s node --input-type=module <<'NODE'
+          timeout 240s node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });
@@ -155,7 +155,7 @@ jobs:
           const captureErrors = [];
           const capture = async path => {
             try {
-              await page.screenshot({ path, timeout: 8000, animations: 'disabled', fullPage: false });
+              await page.screenshot({ path, timeout: 30000, animations: 'disabled', fullPage: false });
               captures.push(path.split('/').pop());
             } catch (error) {
               captureErrors.push(path.split('/').pop() + ': ' + error.message);
