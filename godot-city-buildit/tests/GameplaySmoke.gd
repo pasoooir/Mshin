@@ -5907,10 +5907,12 @@ func _test_world_presentation_mobile_shadow_budget() -> void:
 			var foliage_batch := foliage_node as MultiMeshInstance3D
 			if foliage_batch.name.begins_with("TreeCanopies_"):
 				canopy_batch_count += 1
-				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Chunked canopy LOD batches must not add redundant real-time shadow casters.")
+				var is_near_lod := foliage_batch.name.ends_with("_LOD0")
+				var expected_shadow := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if is_near_lod else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				_check(foliage_batch.cast_shadow == expected_shadow, "Only detailed near canopy LOD may cast real-time shadows.")
 			elif foliage_batch.name == "TreeTrunks":
 				trunk_batch_count += 1
-				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Chunked trunk batches must not add redundant real-time shadow casters.")
+				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Batched trunk geometry must use the dedicated contact-shadow treatment, not duplicate real-time shadow casters.")
 	_check(canopy_batch_count > 0, "Stylized foliage system must produce chunked canopy LOD MultiMeshes.")
 	_check(trunk_batch_count > 0, "Stylized foliage system must produce chunked crown-aligned trunk MultiMeshes.")
 	var contact_shadows := presentation.get_node_or_null("TreeContactShadows") as MultiMeshInstance3D

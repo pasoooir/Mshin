@@ -160,7 +160,10 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
             renderer.name = "TreeCanopies_Species%d_LOD%d" % [species_id, lod]
             renderer.multimesh = multimesh
             renderer.material_override = _material
-            renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            # Only the near, detailed canopy tier casts shadows. This gives trees
+            # contact and volume at player zoom without multiplying shadow-map cost
+            # across the medium/far LOD batches on mobile Compatibility.
+            renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
             renderer.visibility_range_begin = LOD_BEGIN[lod]
             renderer.visibility_range_end = LOD_END[lod]
             renderer.visibility_range_begin_margin = 7.0
@@ -240,6 +243,8 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
     trunk_renderer.name = "TreeTrunks"
     trunk_renderer.multimesh = trunks
     trunk_renderer.material_override = _trunk_material
+    # Root-base/contact-shadow geometry grounds trunks; keep the visible trunk
+    # batch shadow-free so it remains available through the full tree LOD range.
     trunk_renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     trunk_renderer.visibility_range_end = LOD_END[2]
     trunk_renderer.visibility_range_end_margin = 8.0

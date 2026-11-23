@@ -34,6 +34,34 @@ func _run() -> void:
     for chunk in system.get_children():
         if not chunk.name.begins_with("FoliageChunk_"):
             continue
+        var near_lod_count := 0
+        var medium_lod_count := 0
+        var far_lod_count := 0
+        for child in chunk.get_children():
+            if not child is MultiMeshInstance3D or not child.name.begins_with("TreeCanopies_"):
+                continue
+            if child.name.ends_with("_LOD0"):
+                near_lod_count += 1
+                if child.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON:
+                    _fail("Near canopy LOD must cast shadows to ground the tree silhouette.")
+                    return
+            elif child.name.ends_with("_LOD1"):
+                medium_lod_count += 1
+                if child.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+                    _fail("Medium canopy LOD must not add mobile shadow-map cost.")
+                    return
+            elif child.name.ends_with("_LOD2"):
+                far_lod_count += 1
+                if child.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+                    _fail("Far canopy LOD must not add mobile shadow-map cost.")
+                    return
+        if near_lod_count == 0 or medium_lod_count == 0 or far_lod_count == 0:
+            _fail("Every populated foliage chunk must expose all three canopy LOD tiers.")
+            return
+        var shadow_trunks := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
+        if shadow_trunks == null or shadow_trunks.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+            _fail("Batched trunks must stay shadow-free; the near canopy is the only tree shadow caster.")
+            return
         var canopy_lod := chunk.get_node_or_null("TreeCanopies_Species0_LOD0") as MultiMeshInstance3D
         if canopy_lod != null and canopy_lod.multimesh != null and canopy_lod.multimesh.instance_count > 0:
             var canopy_y := canopy_lod.multimesh.get_instance_transform(0).origin.y
