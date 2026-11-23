@@ -933,7 +933,7 @@ for visual_contract in [
     "const HIGHWAY_SHOULDER_WIDTH := 26.8",
     "const TERRAIN_DIVISIONS := 128",
     "const COASTLINE_BASE_X := 110.0",
-    "const BEACH_WIDTH := 26.0", 
+    "const BEACH_WIDTH := 8.0", 
     "func _build_shoreline_foam() -> void:",
     "PacificShoreFoam",
     "_build_shoreline_foam()", 
