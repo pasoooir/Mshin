@@ -243,10 +243,10 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
     trunk_renderer.name = "TreeTrunks"
     trunk_renderer.multimesh = trunks
     trunk_renderer.material_override = _trunk_material
-    # Trunks are one MultiMesh per 64 m chunk, so enabling their shadows
-    # adds one caster per chunk rather than one draw node per tree.
-    trunk_renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-    trunk_renderer.visibility_range_end = LOD_END[0]
+    # Root-base/contact-shadow geometry grounds trunks; keep the visible trunk
+    # batch shadow-free so it remains available through the full tree LOD range.
+    trunk_renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    trunk_renderer.visibility_range_end = LOD_END[2]
     trunk_renderer.visibility_range_end_margin = 8.0
     trunk_renderer.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
     chunk_root.add_child(trunk_renderer)
