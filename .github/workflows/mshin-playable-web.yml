@@ -132,6 +132,22 @@ jobs:
               }
               return originalGetContext.call(this, type, options);
             };
+            // Deterministic fake GIS only in the CI top-level page. It exercises
+            // the real iframe/launcher message boundary without a real Gmail user.
+            if (window.top === window) {
+              let authConfig = null;
+              window.google = { accounts: { id: {
+                initialize(config) { authConfig = config; },
+                renderButton(target) {
+                  const button = document.createElement('button');
+                  button.type = 'button';
+                  button.textContent = 'Continue with Google (CI)';
+                  button.addEventListener('click', () => authConfig?.callback?.({ credential: 'synthetic-google-id-token' }));
+                  target.appendChild(button);
+                },
+                prompt(callback) { callback({ isNotDisplayed: () => true, isSkippedMoment: () => false }); }
+              } } };
+            }
           });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
@@ -158,6 +174,29 @@ jobs:
           // The page stays in its actual mobile landscape viewport from launch;
           // the game may own fullscreen after the Play button is pressed.
           const mobileCanvas = page.frameLocator('#game-frame').locator('canvas');
+          // Prove the actual top-level Google bridge returns a credential only
+          // to the requesting same-origin game iframe.
+          const bridgeNonce = 'A'.repeat(43);
+          const bridgeResponse = await mobileCanvas.evaluate((canvas, nonce) => new Promise(resolve => {
+            const timeout = setTimeout(() => resolve(null), 5000);
+            const receive = event => {
+              if (event.source !== window.parent || event.origin !== window.location.origin) return;
+              if (!event.data || event.data.type !== 'mshin-google-auth-response' || event.data.nonce !== nonce) return;
+              clearTimeout(timeout);
+              window.removeEventListener('message', receive);
+              resolve(event.data);
+            };
+            window.addEventListener('message', receive);
+            window.parent.postMessage({
+              type: 'mshin-google-auth-request',
+              clientId: '437590540762-utd1hbi5pcgvhl7p5u36ivmj9il7q9sm.apps.googleusercontent.com',
+              nonce,
+              autoSelect: false
+            }, window.location.origin);
+          }), bridgeNonce);
+          if (!bridgeResponse || bridgeResponse.credential !== 'synthetic-google-id-token' || bridgeResponse.nonce !== bridgeNonce) {
+            throw new Error('Top-level Google sign-in bridge did not return the nonce-bound credential to the game iframe');
+          }
           const canvasBounds = await mobileCanvas.boundingBox();
           if (!canvasBounds || canvasBounds.width < 320 || canvasBounds.height < 180) {
             throw new Error('Mobile landscape canvas bounds are unavailable or too small for touch acceptance');
