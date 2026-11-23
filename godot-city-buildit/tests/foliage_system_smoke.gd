@@ -59,6 +59,47 @@ func _run() -> void:
         _fail("Foliage smoke did not find a palm crown for trunk alignment.")
         return
 
+    var trunk_instances_checked := 0
+    for chunk in system.get_children():
+        if not chunk.name.begins_with("FoliageChunk_"):
+            continue
+        var trunk_renderer := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
+        if trunk_renderer == null or trunk_renderer.multimesh == null:
+            _fail("Every foliage chunk must contain a batched trunk renderer.")
+            return
+        var expected_chunk_trees := 0
+        for species_id in range(4):
+            var canopy := chunk.get_node_or_null("TreeCanopies_Species%d_LOD0" % species_id) as MultiMeshInstance3D
+            if canopy == null or canopy.multimesh == null:
+                continue
+            expected_chunk_trees += canopy.multimesh.instance_count
+            for canopy_index in range(canopy.multimesh.instance_count):
+                var canopy_transform := canopy.multimesh.get_instance_transform(canopy_index)
+                var matching_trunk_found := false
+                for trunk_index in range(trunk_renderer.multimesh.instance_count):
+                    var trunk_transform := trunk_renderer.multimesh.get_instance_transform(trunk_index)
+                    var horizontal_delta := Vector2(
+                        trunk_transform.origin.x - canopy_transform.origin.x,
+                        trunk_transform.origin.z - canopy_transform.origin.z
+                    )
+                    if horizontal_delta.length() > 0.001:
+                        continue
+                    var trunk_top_y := trunk_transform.origin.y + trunk_transform.basis.y.length() * 0.5
+                    if absf(trunk_top_y - canopy_transform.origin.y) > 0.02:
+                        _fail("Tree trunk top must meet the exact canopy crown height.")
+                        return
+                    matching_trunk_found = true
+                    trunk_instances_checked += 1
+                    break
+                if not matching_trunk_found:
+                    _fail("Every canopy instance must have a grounded trunk at the same world position.")
+                    return
+        if trunk_renderer.multimesh.instance_count != expected_chunk_trees:
+            _fail("Trunk batch count must equal the number of canopy trees in its chunk.")
+            return
+    if trunk_instances_checked != sample_positions.size():
+        _fail("Every supplied tree position must have one crown-aligned trunk.")
+
     for lod in range(3):
         if system.get_lod_instance_count(lod) != sample_positions.size():
             _fail("Every tree must have exactly one instance in each LOD tier.")
