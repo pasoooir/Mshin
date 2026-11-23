@@ -220,7 +220,8 @@ jobs:
             build: process.env.GITHUB_SHA,
             viewport: { width: 844, height: 390, deviceScaleFactor: 1, hasTouch: true },
             canvas: { width: Math.round(canvasBounds.width), height: Math.round(canvasBounds.height) },
-            captures,\n            captureErrors,
+            captures,
+            captureErrors,
             interactions: ['mobile landscape Godot WebGL Compatibility launch', 'two-finger pinch', 'two-finger pan', 'two-finger twist', 'one-finger pan'],
             note: 'The mobile landscape viewport launches a live Godot Compatibility canvas and receives real browser touch events. Hosted software-WebGL pixel readback is excluded because it blocks Chromium.'
           }, null, 2));
