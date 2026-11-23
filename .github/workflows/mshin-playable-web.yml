@@ -202,19 +202,22 @@ jobs:
               autoSelect: false
             }, window.location.origin);
           }, bridgeNonce);
-          const gameAuthOverlay = page.frameLocator('#game-frame').locator('#mshin-google-signin-overlay');
-          try {
-            await gameAuthOverlay.waitFor({ state: 'visible', timeout: 5000 });
-          } catch (error) {
-            const diagnostics = await page.evaluate(() => {
-              const frame = document.getElementById('game-frame');
-              return { bridge: window.__mshinGoogleBridgeDiagnostics, childBody: frame?.contentDocument?.body?.innerHTML?.slice(-2500) || null };
-            });
-            throw new Error('Google auth overlay was not mounted inside the fullscreen game document: ' + JSON.stringify(diagnostics));
+          const bridgeSurface = await page.evaluate(() => {
+            const frame = document.getElementById('game-frame');
+            const doc = frame?.contentDocument;
+            const overlay = doc?.getElementById('mshin-google-signin-overlay');
+            const button = doc?.querySelector('#mshin-google-render-button button');
+            if (!overlay || !button) return { overlay: !!overlay, button: !!button };
+            const rect = button.getBoundingClientRect();
+            const hit = doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const pointerHitsGoogleButton = !!hit && (hit === button || button.contains(hit));
+            const pointerHitsOverlay = !!hit && overlay.contains(hit);
+            if (pointerHitsGoogleButton) button.click();
+            return { overlay: true, button: true, width: rect.width, height: rect.height, pointerHitsGoogleButton, pointerHitsOverlay, hitTag: hit?.tagName || null };
+          });
+          if (!bridgeSurface.overlay || !bridgeSurface.button || !bridgeSurface.pointerHitsGoogleButton || !bridgeSurface.pointerHitsOverlay) {
+            throw new Error('Google sign-in control is not the topmost tappable surface inside the fullscreen game: ' + JSON.stringify(bridgeSurface));
           }
-          const mockGoogleButton = page.frameLocator('#game-frame').locator('#mshin-google-render-button button');
-          await mockGoogleButton.waitFor({ state: 'visible', timeout: 5000 });
-          await mockGoogleButton.click();
           await page.waitForFunction(() => {
             const frame = document.getElementById('game-frame');
             const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
