@@ -28,8 +28,8 @@ const ENVIRONMENT_SMALL_DETAIL_MARGIN := 22.0
 const TREE_BELT_DETAIL_END := 420.0
 const TREE_BELT_DETAIL_MARGIN := 36.0
 const COASTAL_GREEN_PALETTE := [
-	Color("#AEB58A"), Color("#C0B98C"), Color("#BBA77A"),
-	Color("#9DAA7B"), Color("#C7B487"), Color("#B39A7B")
+	Color("#6F8B4E"), Color("#829657"), Color("#A08E5C"),
+	Color("#607D49"), Color("#A79563"), Color("#887B59")
 ]
 const COASTLINE_BASE_X := 110.0
 const BEACH_WIDTH := 26.0
@@ -317,7 +317,7 @@ func _build_sandy_beach() -> void:
 	var beach_shader := Shader.new()
 	beach_shader.code = """
 shader_type spatial;
-render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode unshaded, cull_disabled;
 varying vec3 beach_world;
 void vertex() {
 	beach_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -453,16 +453,16 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		var secondary_patch := sin(point.x * 0.091 - point.z * 0.073) * cos(point.z * 0.107 + point.x * 0.063)
 		var patch_mix := clampf(0.5 + macro_patch * 0.34 + secondary_patch * 0.16, 0.0, 1.0)
 		var palette_index := int(abs(floor(point.x * 0.31 + point.z * 0.19))) % COASTAL_GREEN_PALETTE.size()
-		var deep_grass := Color("#A0A77A")
-		var fresh_grass := Color("#C2B27D")
+		var deep_grass := Color("#718C4F")
+		var fresh_grass := Color("#95A45E")
 		var meadow_color := deep_grass.lerp(fresh_grass, patch_mix)
 		color = COASTAL_GREEN_PALETTE[palette_index].lerp(meadow_color, 0.90)
 		var biome_soil_mask := smoothstep(0.18, 0.68, macro_patch * 0.72 + secondary_patch * 0.28)
-		color = color.lerp(Color("#A88B62"), biome_soil_mask * 0.18)
+		color = color.lerp(Color("#8E744F"), biome_soil_mask * 0.24)
 	# Visible baked soil/grass breakup supplements the shader texture at every camera distance.
 	var rock_field := sin(point.x * 0.105 + point.z * 0.071) * cos(point.z * 0.137 - point.x * 0.063)
 	var dry_patch_mask := smoothstep(0.48, 0.82, rock_field) * smoothstep(30.0, 70.0, absf(point.z))
-	color = color.lerp(Color("#B0A078"), dry_patch_mask * 0.22)
+	color = color.lerp(Color("#927D58"), dry_patch_mask * 0.24)
 	var climate := str(RegionManager.get_active_region().get("climate", "temperate"))
 	match climate:
 		"arctic":
@@ -477,7 +477,7 @@ func _add_terrain_vertex(surface: SurfaceTool, point: Vector3) -> void:
 			color = color.lerp(Color("#8C875B"), 0.38)
 	var park_edge := smoothstep(48.0, 82.0, absf(point.z))
 	if point.x < 58.0 and point.x > -112.0:
-		color = color.lerp(Color("#637A4B"), 0.08 + park_edge * 0.05)
+		color = color.lerp(Color("#587244"), 0.12 + park_edge * 0.08)
 	if not LandExpansionManager.is_world_position_unlocked(point):
 		color = color.lerp(Color("#78835E"), 0.05)
 	var terrain_point := point
@@ -1184,6 +1184,11 @@ func _create_natural_ground_material() -> StandardMaterial3D:
 	# Compatibility/WebGL previously rendered the procedural terrain shader as
 	# a dark green carpet on mobile GPUs; this lit material is deterministic.
 	var material := StandardMaterial3D.new()
+	# Vertex colours are authored in the intended final palette. Unshaded
+	# rendering prevents stacked key/fill/ambient lights from clipping the
+	# meadow to pale white in WebGL Compatibility; cavity shading is baked into
+	# vertices and tree contact shadows are separate geometry.
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.vertex_color_use_as_albedo = true
 	material.albedo_color = Color.WHITE
 	material.roughness = 0.98
