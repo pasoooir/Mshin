@@ -100,9 +100,11 @@ func is_cell_unlocked(cell: Vector2i) -> bool:
 		or cell.y >= MAX_CELL_Y_EXCLUSIVE
 	):
 		return false
-	if not is_cell_inside_coastal_build_boundary(cell):
+	# Most terrain cells are unowned. Check the sparse ownership dictionary
+	# before evaluating the curved shoreline trigonometry.
+	if not is_tile_owned(get_tile_for_cell(cell)):
 		return false
-	return is_tile_owned(get_tile_for_cell(cell))
+	return is_cell_inside_coastal_build_boundary(cell)
 
 func is_cell_buildable(cell: Vector2i) -> bool:
 	if not is_cell_unlocked(cell):
