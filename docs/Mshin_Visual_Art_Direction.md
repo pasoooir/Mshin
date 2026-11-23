@@ -109,7 +109,7 @@ No single hue may dominate the entire visible ground. Every overview frame shoul
 
 ## 5.2 Coastal build boundary and complete world visibility
 
-The brown inner coastal field is part of the city landmass and must be purchasable/buildable. Keep only the final 8 m shoreline ribbon as non-buildable dry/wet beach. The expansion domain follows the sampled curved coastline per tile and per cell; it must not use a single rectangular X cutoff that strands visible inland fields. Purchased expansion plots are flattened to a stable construction plane when terrain is rebuilt. The camera far clip must reach beyond the 1,100 m offshore water mesh (use at least 1,800 m) so zooming out never clips the sea or the far side of the landmass. Do not solve clipping by shrinking the water mesh or hiding terrain.
+The brown inner coastal field is part of the city landmass and must be purchasable/buildable. Keep only the final 8 m shoreline ribbon as non-buildable dry/wet beach. The expansion domain follows the sampled curved coastline per tile and per cell; it must not use a single rectangular X cutoff that strands visible inland fields. Purchased expansion plots are flattened to a stable construction plane when terrain is rebuilt. The camera far clip must reach beyond the 1,100 m offshore water mesh (retain at least 4,000 m) so zooming out never clips the sea or the far side of the landmass. Do not solve clipping by shrinking the water mesh or hiding terrain.
 
 ## 5.1 Complete inland city expansion boundary
 
