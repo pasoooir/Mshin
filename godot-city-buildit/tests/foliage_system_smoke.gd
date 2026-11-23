@@ -30,6 +30,18 @@ func _run() -> void:
     if system.get_chunk_count() < 3:
         _fail("Foliage must be spatially partitioned into independent 64 m chunks.")
         return
+
+    var grounded_trunk_count := 0
+    for chunk in system.get_children():
+        var trunk_renderer := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
+        if trunk_renderer == null or trunk_renderer.multimesh == null:
+            _fail("Every foliage chunk must render grounded trunks in a batched MultiMesh.")
+            return
+        grounded_trunk_count += trunk_renderer.multimesh.instance_count
+    if grounded_trunk_count != sample_positions.size():
+        _fail("Every canopy must have exactly one grounded trunk instance.")
+        return
+
     for lod in range(3):
         if system.get_lod_instance_count(lod) != sample_positions.size():
             _fail("Every tree must have exactly one instance in each LOD tier.")
