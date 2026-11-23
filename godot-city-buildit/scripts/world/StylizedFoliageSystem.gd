@@ -10,6 +10,8 @@ const LOD_SEGMENTS_X := [3, 2, 1]
 const LOD_SEGMENTS_Y := [4, 3, 2]
 
 var _material: ShaderMaterial
+var _trunk_material: StandardMaterial3D
+var _trunk_mesh: CylinderMesh
 var _mesh_cache: Dictionary = {}
 var _chunks: Dictionary = {}
 var _leaf_emitters: Array[CPUParticles3D] = []
@@ -33,6 +35,19 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026)
     _material.set_shader_parameter("wind_strength", 0.10)
     _material.set_shader_parameter("wind_speed", 0.85)
     _material.set_shader_parameter("fake_sss_strength", 0.28)
+
+    # One tapered low-poly trunk batch per chunk grounds canopy cards without
+    # introducing one scene node per tree.
+    _trunk_material = StandardMaterial3D.new()
+    _trunk_material.vertex_color_use_as_albedo = true
+    _trunk_material.albedo_color = Color("#806044")
+    _trunk_material.roughness = 1.0
+    _trunk_mesh = CylinderMesh.new()
+    _trunk_mesh.top_radius = 0.095
+    _trunk_mesh.bottom_radius = 0.235
+    _trunk_mesh.height = 4.6
+    _trunk_mesh.radial_segments = 7
+    _trunk_mesh.rings = 2
 
     var rng := RandomNumberGenerator.new()
     rng.seed = seed_value
@@ -150,11 +165,77 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
             chunk_root.add_child(renderer)
             _lod_instance_counts[lod] += entries.size()
 
+    _build_chunk_trunks(chunk_root, species_buckets)
     var leaf_emitter := _create_leaf_fall_emitter()
     leaf_emitter.name = "SeasonalLeafFall"
     chunk_root.add_child(leaf_emitter)
     _leaf_emitters.append(leaf_emitter)
     _chunks[chunk_key] = chunk_root
+
+
+func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> void:
+    var entries: Array[Dictionary] = []
+    for species_value in species_buckets.keys():
+        var species_id := int(species_value)
+        for entry_value in species_buckets[species_value]:
+            entries.append({
+                "species": species_id,
+                "position": entry_value["position"],
+                "seed": float(entry_value["seed"])
+            })
+    if entries.is_empty():
+        return
+
+    var trunks := MultiMesh.new()
+    trunks.transform_format = MultiMesh.TRANSFORM_3D
+    trunks.use_colors = true
+    trunks.mesh = _trunk_mesh
+    trunks.instance_count = entries.size()
+    var bark_palette := [
+        Color("#806044"), Color("#70513C"),
+        Color("#6B5846"), Color("#9A7650")
+    ]
+    for index in range(entries.size()):
+        var entry: Dictionary = entries[index]
+        var species_id := int(entry["species"])
+        var world_position: Vector3 = entry["position"]
+        var local_position := world_position - chunk_root.position
+        var stable_random := float(entry["seed"])
+        var height_scale := 1.0
+        var width_scale := 1.0
+        match species_id:
+            1:
+                height_scale = 1.12
+                width_scale = 0.86
+            2:
+                height_scale = 1.08
+                width_scale = 0.94
+            3:
+                height_scale = 1.28
+                width_scale = 0.76
+        height_scale *= 0.94 + fposmod(stable_random * 5.7, 0.12)
+        width_scale *= 0.92 + fposmod(stable_random * 8.3, 0.16)
+        var basis := Basis.IDENTITY.scaled(Vector3(width_scale, height_scale, width_scale))
+        var trunk_height := _trunk_mesh.height * height_scale
+        trunks.set_instance_transform(
+            index,
+            Transform3D(basis, local_position + Vector3(0.0, trunk_height * 0.5, 0.0))
+        )
+        trunks.set_instance_color(index, bark_palette[species_id] * (0.94 + stable_random * 0.10))
+
+    trunks.custom_aabb = AABB(
+        Vector3(-6.0, -1.0, -6.0),
+        Vector3(CHUNK_SIZE + 12.0, 18.0, CHUNK_SIZE + 12.0)
+    )
+    var trunk_renderer := MultiMeshInstance3D.new()
+    trunk_renderer.name = "TreeTrunks"
+    trunk_renderer.multimesh = trunks
+    trunk_renderer.material_override = _trunk_material
+    trunk_renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    trunk_renderer.visibility_range_end = LOD_END[2]
+    trunk_renderer.visibility_range_end_margin = 8.0
+    trunk_renderer.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+    chunk_root.add_child(trunk_renderer)
 
 
 func _create_canopy_mesh(species_id: int, card_count: int, segments_x: int, segments_y: int) -> ArrayMesh:
@@ -325,6 +406,8 @@ func clear_foliage() -> void:
     _tree_count = 0
     _season_manager = null
     _material = null
+    _trunk_material = null
+    _trunk_mesh = null
 
 
 func get_chunk_count() -> int:
