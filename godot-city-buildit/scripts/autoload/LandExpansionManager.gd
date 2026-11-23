@@ -3,15 +3,18 @@ extends Node
 signal land_changed
 
 const TILE_CELLS := 8
-const MIN_TILE := -5
-const MAX_TILE := 4
 const MIN_EXPANSION_LEVEL := 10
 const INITIAL_TILE_MIN := -3
 const INITIAL_TILE_MAX := 2
-const EXPANSION_MIN_TILE_X := -3
-const EXPANSION_MAX_TILE_X := 2
-const EXPANSION_MIN_TILE_Y := -5
-const EXPANSION_MAX_TILE_Y := 4
+# Expand across the complete inland landmass, stopping before the sandy beach.
+const EXPANSION_MIN_TILE_X := -15
+const EXPANSION_MAX_TILE_X := 9
+const EXPANSION_MIN_TILE_Y := -18
+const EXPANSION_MAX_TILE_Y := 17
+const MIN_CELL_X := EXPANSION_MIN_TILE_X * TILE_CELLS
+const MAX_CELL_X_EXCLUSIVE := (EXPANSION_MAX_TILE_X + 1) * TILE_CELLS
+const MIN_CELL_Y := EXPANSION_MIN_TILE_Y * TILE_CELLS
+const MAX_CELL_Y_EXCLUSIVE := (EXPANSION_MAX_TILE_Y + 1) * TILE_CELLS
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
@@ -40,7 +43,12 @@ func _tile_key(tile: Vector2i) -> String:
 	return "%d:%d" % [tile.x, tile.y]
 
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= MIN_TILE and tile.x <= MAX_TILE and tile.y >= MIN_TILE and tile.y <= MAX_TILE
+	return (
+		tile.x >= EXPANSION_MIN_TILE_X
+		and tile.x <= EXPANSION_MAX_TILE_X
+		and tile.y >= EXPANSION_MIN_TILE_Y
+		and tile.y <= EXPANSION_MAX_TILE_Y
+	)
 
 func _reset_initial_land() -> void:
 	owned_tiles.clear()
@@ -55,7 +63,12 @@ func is_tile_owned(tile: Vector2i) -> bool:
 	return owned_tiles.has(_tile_key(tile))
 
 func is_cell_unlocked(cell: Vector2i) -> bool:
-	if cell.x < -40 or cell.x >= 40 or cell.y < -40 or cell.y >= 40:
+	if (
+		cell.x < MIN_CELL_X
+		or cell.x >= MAX_CELL_X_EXCLUSIVE
+		or cell.y < MIN_CELL_Y
+		or cell.y >= MAX_CELL_Y_EXCLUSIVE
+	):
 		return false
 	return is_tile_owned(get_tile_for_cell(cell))
 
@@ -157,7 +170,12 @@ func expand_tile(tile: Vector2i) -> bool:
 	return true
 
 func _own_legacy_cell(cell: Vector2i) -> bool:
-	if cell.x < -40 or cell.x >= 40 or cell.y < -40 or cell.y >= 40:
+	if (
+		cell.x < MIN_CELL_X
+		or cell.x >= MAX_CELL_X_EXCLUSIVE
+		or cell.y < MIN_CELL_Y
+		or cell.y >= MAX_CELL_Y_EXCLUSIVE
+	):
 		return false
 	var tile := get_tile_for_cell(cell)
 	if not _is_tile_in_bounds(tile) or is_tile_owned(tile):
