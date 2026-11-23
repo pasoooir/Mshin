@@ -155,11 +155,17 @@ jobs:
           // Capture one representative real WebGL frame. Repeated full-page screenshots
           // of a software-rendered Godot canvas can block Chromium's compositor for minutes;
           // camera zoom is still exercised below and verified by the gameplay integration test.
-          await page.screenshot({
-            path: 'artifacts/visual-acceptance/desktop-pacific-entry.png',
-            animations: 'disabled',
-            timeout: 20000
-          });
+          // Read the live WebGL drawing buffer directly. Chromium's page compositor
+          // screenshot stalls on this software-rendered scene, while canvas readback
+          // is deterministic and preserves the actual rendered game pixels.
+          const frameCanvas = await page.frameLocator('#game-frame').locator('canvas').evaluate(canvas => canvas.toDataURL('image/png'));
+          if (!frameCanvas.startsWith('data:image/png;base64,') || frameCanvas.length < 10000) {
+            throw new Error('Desktop WebGL canvas did not produce a valid rendered PNG frame');
+          }
+          await writeFile(
+            'artifacts/visual-acceptance/desktop-pacific-entry.png',
+            Buffer.from(frameCanvas.slice('data:image/png;base64,'.length), 'base64')
+          );
           await page.mouse.move(640, 360);
           for (let i = 0; i < 2; i++) await page.mouse.wheel(0, -100);
           await page.waitForTimeout(350);
