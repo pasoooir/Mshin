@@ -229,6 +229,12 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
             Transform3D(basis, local_position + Vector3(0.0, trunk_height * 0.5, 0.0))
         )
         trunks.set_instance_color(index, bark_palette[species_id] * (0.94 + stable_random * 0.10))
+        if index == 0:
+            print("[FoliageTrunkDebug] species=%d crown=%.3f scale=%.3f transform_y=%.3f origin_y=%.3f" % [
+                species_id, crown_height_factor, scale_value,
+                trunks.get_instance_transform(index).basis.y.length(),
+                trunks.get_instance_transform(index).origin.y
+            ])
 
     trunks.custom_aabb = AABB(
         Vector3(-6.0, -1.0, -6.0),
