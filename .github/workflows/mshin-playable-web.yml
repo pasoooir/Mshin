@@ -202,7 +202,7 @@ jobs:
               autoSelect: false
             }, window.location.origin);
           }, bridgeNonce);
-          const mockGoogleButton = page.locator('#mshin-google-render-button button');
+          const mockGoogleButton = page.frameLocator('#game-frame').locator('#mshin-google-render-button button');
           await mockGoogleButton.waitFor({ state: 'visible', timeout: 5000 });
           await mockGoogleButton.click();
           await page.waitForFunction(() => {
