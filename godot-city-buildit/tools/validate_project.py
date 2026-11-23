@@ -951,8 +951,8 @@ for visual_contract in [
     "highway_mesh.subdivide_depth = 32",
     "material.normal_enabled = true",
     "normal_image.generate_mipmaps()",
-    "Color(\"#89966D\")",
-    "Color(\"#A9956B\")",
+    "Color(\"#AEB58A\")",
+    "Color(\"#BBA77A\")",
     "func _build_creek_channel(",
     "func _build_dirt_tracks(",
     "func _create_meadow_grass_clump_mesh(",
@@ -1875,7 +1875,7 @@ for contract in [
     'LandExpansionManager.from_save_dict(land_expansion_data)',
     'LandExpansionManager.get_owned_tiles()',
     '_build_city_grid()',
-    'color = color.lerp(Color("#36523A"), 0.12)',
+    'color = color.lerp(Color("#78835E"), 0.05)',
 ]:
     if contract not in build_manager and contract not in save_manager_source and contract not in world_source:
         errors.append(f"Land ownership persistence/visual contract is missing: {contract}")
