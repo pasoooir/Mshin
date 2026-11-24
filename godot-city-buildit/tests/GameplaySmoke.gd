@@ -5922,8 +5922,9 @@ func _test_world_presentation_mobile_shadow_budget() -> void:
 			if foliage_batch.name.begins_with("TreeCanopies_"):
 				canopy_batch_count += 1
 				var is_near_lod := foliage_batch.name.ends_with("_LOD0")
-				var expected_shadow := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if is_near_lod else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-				_check(foliage_batch.cast_shadow == expected_shadow, "Only detailed near canopy LOD may cast real-time shadows.")
+				var is_shadow_budget_species := foliage_batch.name.begins_with("TreeCanopies_Species0_") or foliage_batch.name.begins_with("TreeCanopies_Species6_")
+				var expected_shadow := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if is_near_lod and is_shadow_budget_species else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				_check(foliage_batch.cast_shadow == expected_shadow, "Only the two authored near-canopy species batches may cast real-time shadows.")
 			elif foliage_batch.name == "TreeTrunks":
 				trunk_batch_count += 1
 				_check(foliage_batch.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Batched trunk geometry must use the dedicated contact-shadow treatment, not duplicate real-time shadow casters.")
