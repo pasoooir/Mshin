@@ -305,6 +305,12 @@ func _ready() -> void:
 				failures.append("SimCash could not buy the required expansion Special Item: " + str(item_id))
 	if not LandExpansionManager.expand_tile(expansion_tile):
 		failures.append("purchased dozer Special Items did not satisfy the normal land expansion transaction")
+	else:
+		var newly_owned_cell := Vector2i(expansion_tile.x * LandExpansionManager.TILE_CELLS + 2, expansion_tile.y * LandExpansionManager.TILE_CELLS + 2)
+		if not LandExpansionManager.is_cell_buildable(newly_owned_cell) or not LandExpansionManager.is_cell_road_buildable(newly_owned_cell):
+			failures.append("claiming a land plot did not immediately unlock its interior for buildings and roads")
+		if LandExpansionManager.get_tile_state(expansion_tile) != "owned":
+			failures.append("successfully purchased plot did not transition to owned state")
 	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
 	var locked_special := EconomyManager.buy_special_item_with_simcash("dozer_wheel", 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
 	if bool(locked_special.get("success", true)):
