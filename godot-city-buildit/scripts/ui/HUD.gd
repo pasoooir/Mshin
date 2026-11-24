@@ -5677,7 +5677,7 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(48, 48) * compact_scale
+	close.custom_minimum_size = Vector2.ONE * maxf(44.0, 48.0 * compact_scale)
 	close.tooltip_text = "Close settings"
 	close.focus_mode = Control.FOCUS_ALL
 	close.add_theme_stylebox_override("focus", _settings_close_style(Color("#2D789D")))
@@ -5697,7 +5697,7 @@ func _show_settings_panel() -> void:
 	tabs.clip_tabs = false
 	tabs.add_theme_constant_override("h_separation", 8 * compact_scale)
 	var settings_tab_bar := tabs.get_tab_bar()
-	settings_tab_bar.custom_minimum_size.y = 54.0 * compact_scale
+	settings_tab_bar.custom_minimum_size.y = maxf(48.0, 54.0 * compact_scale)
 	settings_tab_bar.focus_mode = Control.FOCUS_ALL
 	settings_tab_bar.add_theme_constant_override("h_separation", 8 * compact_scale)
 	var tab_selected := StyleBoxFlat.new()
@@ -6101,7 +6101,7 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 
 
 func _add_settings_switch(parent: GridContainer, node_name: String, caption: String, enabled: bool, setter: Callable) -> void:
-	var compact_scale := minf(1.0, get_viewport().get_visible_rect().size.y / 520.0)
+	var compact_scale := clampf(get_viewport().get_visible_rect().size.y / 520.0, 0.86, 1.0)
 	var row := HBoxContainer.new()
 	row.name = node_name + "Row"
 	row.add_theme_constant_override("separation", 20)
@@ -6112,7 +6112,7 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.toggle_mode = true
 	toggle.button_pressed = enabled
 	toggle.text = "On" if enabled else "Off"
-	toggle.custom_minimum_size = Vector2(90, 52 * compact_scale)
+	toggle.custom_minimum_size = Vector2(96, maxf(44.0, 52.0 * compact_scale))
 	toggle.add_theme_font_size_override("font_size", _settings_font_size(20))
 	toggle.add_theme_color_override("font_color", Color("#FFFFFF"))
 	toggle.add_theme_color_override("font_shadow_color", Color("#385C00"))
@@ -6740,7 +6740,7 @@ func _add_audio_setting_slider(parent: VBoxContainer, node_name: String, label_t
 	slider.max_value = 100
 	slider.step = 1
 	slider.value = initial_value * 100.0
-	slider.custom_minimum_size.y = 28 * _ui_scale
+	slider.custom_minimum_size.y = 44.0
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slider.value_changed.connect(func(next_value: float) -> void:
 		setter.call(next_value / 100.0)
