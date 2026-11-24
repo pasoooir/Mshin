@@ -929,6 +929,26 @@ func _build_tree_belts() -> void:
 				continue
 			positions.append(Vector3(x, _terrain_height(x, z), z))
 
+
+	# Dense secondary woodland layer fills the large empty lawn between the
+	# perimeter belts and the starter-city boundary. Deterministic low-discrepancy
+	# placement avoids clumps while preserving clear roads, beach and owned plots.
+	for index in range(420):
+		var x := -118.0 + fposmod(float(index) * 31.73, 194.0)
+		var z := -132.0 + fposmod(float(index) * 47.91, 264.0)
+		if absf(x) < 29.0 and absf(z) < 29.0:
+			continue
+		if absf(x - HIGHWAY_CENTER_X) < 17.0:
+			continue
+		if x > _coastline(z) - BEACH_WIDTH - 12.0:
+			continue
+		if _is_city_road_footprint(x, z):
+			continue
+		var candidate := Vector3(x, 0.0, z)
+		if LandExpansionManager.is_world_position_unlocked(candidate):
+			continue
+		positions.append(Vector3(x, _terrain_height(x, z), z))
+
 	var root_mesh := CylinderMesh.new()
 	root_mesh.top_radius = 0.24
 	root_mesh.bottom_radius = 0.34
