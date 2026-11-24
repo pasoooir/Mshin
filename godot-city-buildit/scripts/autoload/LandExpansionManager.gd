@@ -169,9 +169,11 @@ func get_tile_state(tile: Vector2i) -> String:
 		return "unavailable"
 	if is_tile_owned(tile):
 		return "owned"
-	if _is_adjacent_to_owned(tile):
-		return "available"
-	return "locked"
+	if not _is_adjacent_to_owned(tile):
+		return "locked"
+	if GameManager.level < MIN_EXPANSION_LEVEL:
+		return "level_locked"
+	return "available"
 
 func get_tile_cost(tile: Vector2i) -> Dictionary:
 	var distance := _distance_from_initial_land(tile)
