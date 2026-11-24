@@ -2231,8 +2231,10 @@ func _popup_font_size(base_size: float) -> int:
 
 
 func _settings_font_size(base_size: float) -> int:
-	# Settings text remains comfortably readable on phone landscape, tablets and desktop.
-	return maxi(20, roundi(base_size * clampf(_ui_scale, 1.0, 1.2)))
+	# Preserve readable text while allowing the compact landscape layout to fit.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var responsive_scale := clampf(minf(viewport_size.x / 960.0, viewport_size.y / 520.0), 0.82, 1.12)
+	return maxi(16, roundi(base_size * responsive_scale))
 
 
 func open_production_panel(building: Building) -> void:
@@ -5543,9 +5545,24 @@ func _close_settings_panel() -> void:
 	var city_modal := get_node_or_null("ChangeCityNameDialog")
 	if is_instance_valid(city_modal):
 		city_modal.queue_free()
-	if is_instance_valid(settings_overlay):
-		settings_overlay.queue_free()
+	if not is_instance_valid(settings_overlay):
+		settings_overlay = null
+		return
+	var closing_overlay := settings_overlay
 	settings_overlay = null
+	closing_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var closing_panel := closing_overlay.find_child("SettingsPanel", true, false) as Control
+	var closing_backdrop := closing_overlay.find_child("SettingsBackdrop", true, false) as Control
+	if is_instance_valid(closing_panel):
+		closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var close_tween := create_tween().set_parallel(true)
+		close_tween.tween_property(closing_panel, "scale", Vector2(0.985, 0.985), 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		close_tween.tween_property(closing_panel, "modulate:a", 0.0, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		if is_instance_valid(closing_backdrop):
+			close_tween.tween_property(closing_backdrop, "color:a", 0.0, 0.12)
+		close_tween.finished.connect(closing_overlay.queue_free)
+	else:
+		closing_overlay.queue_free()
 
 func _show_settings_panel() -> void:
 	_close_settings_dialogs()
@@ -5553,9 +5570,10 @@ func _show_settings_panel() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	# Settings is designed for the game's landscape-first mobile viewport.
 	# Keep the dialog comfortably inset and avoid oversized desktop proportions.
-	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.92)
-	var compact_scale := clampf(minf(viewport_size.x / 760.0, viewport_size.y / 430.0), 0.68, 1.0)
-	var panel_height := viewport_size.y * 0.92
+	var safe_inset := clampf(minf(viewport_size.x, viewport_size.y) * 0.035, 14.0, 28.0)
+	var panel_width := minf(1120.0, viewport_size.x - safe_inset * 2.0)
+	var panel_height := minf(760.0, viewport_size.y - safe_inset * 2.0)
+	var compact_scale := clampf(minf(viewport_size.x / 1040.0, viewport_size.y / 560.0), 0.72, 1.0)
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
 	settings_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5590,27 +5608,29 @@ func _show_settings_panel() -> void:
 	panel_style.bg_color = Color("#10243A")
 	panel_style.border_color = Color("#3B91B5")
 	panel_style.set_border_width_all(1)
-	panel_style.set_corner_radius_all(22)
-	panel_style.shadow_color = Color(0.01, 0.06, 0.14, 0.55)
-	panel_style.shadow_size = 26
-	panel_style.shadow_offset = Vector2(0, 9)
-	panel_style.content_margin_left = 22 * compact_scale
-	panel_style.content_margin_right = 22 * compact_scale
-	panel_style.content_margin_top = 14 * compact_scale
-	panel_style.content_margin_bottom = 14 * compact_scale
+	panel_style.set_corner_radius_all(24)
+	panel_style.shadow_color = Color(0.005, 0.025, 0.065, 0.62)
+	panel_style.shadow_size = 24
+	panel_style.shadow_offset = Vector2(0, 8)
+	panel_style.content_margin_left = 24 * compact_scale
+	panel_style.content_margin_right = 24 * compact_scale
+	panel_style.content_margin_top = 18 * compact_scale
+	panel_style.content_margin_bottom = 18 * compact_scale
 	panel.add_theme_stylebox_override("panel", panel_style)
 	settings_overlay.add_child(panel)
 	var entrance := create_tween().set_parallel(true)
-	entrance.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	entrance.tween_property(panel, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	entrance.tween_property(panel, "scale", Vector2.ONE, 0.20).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	entrance.tween_property(panel, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	var layout := VBoxContainer.new()
 	layout.name = "SettingsLayout"
-	layout.add_theme_constant_override("separation", 7 * compact_scale)
+	layout.add_theme_constant_override("separation", 14 * compact_scale)
 	panel.add_child(layout)
 
 	var heading := HBoxContainer.new()
 	heading.name = "SettingsHeading"
+	heading.custom_minimum_size.y = 58.0 * compact_scale
+	heading.add_theme_constant_override("separation", 16 * compact_scale)
 	layout.add_child(heading)
 	var avatar_frame := PanelContainer.new()
 	avatar_frame.name = "SettingsProfileAvatarFrame"
@@ -5657,7 +5677,10 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(46, 46) * compact_scale
+	close.custom_minimum_size = Vector2(48, 48) * compact_scale
+	close.tooltip_text = "Close settings"
+	close.focus_mode = Control.FOCUS_ALL
+	close.add_theme_stylebox_override("focus", _settings_close_style(Color("#2D789D")))
 	close.add_theme_font_size_override("font_size", _settings_font_size(25))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
@@ -5671,25 +5694,30 @@ func _show_settings_panel() -> void:
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tabs.add_theme_font_size_override("font_size", _settings_font_size(16))
 	tabs.tab_alignment = TabBar.ALIGNMENT_CENTER
-	tabs.add_theme_constant_override("h_separation", 7 * compact_scale)
+	tabs.clip_tabs = false
+	tabs.add_theme_constant_override("h_separation", 8 * compact_scale)
+	var settings_tab_bar := tabs.get_tab_bar()
+	settings_tab_bar.custom_minimum_size.y = 54.0 * compact_scale
+	settings_tab_bar.focus_mode = Control.FOCUS_ALL
+	settings_tab_bar.add_theme_constant_override("h_separation", 8 * compact_scale)
 	var tab_selected := StyleBoxFlat.new()
 	tab_selected.bg_color = Color("#39BDE2")
 	tab_selected.border_color = Color("#8CEBFF")
 	tab_selected.set_border_width_all(1)
 	tab_selected.set_corner_radius_all(12)
-	tab_selected.content_margin_left = 18 * compact_scale
-	tab_selected.content_margin_right = 18 * compact_scale
-	tab_selected.content_margin_top = 9 * compact_scale
-	tab_selected.content_margin_bottom = 9 * compact_scale
+	tab_selected.content_margin_left = 20 * compact_scale
+	tab_selected.content_margin_right = 20 * compact_scale
+	tab_selected.content_margin_top = 11 * compact_scale
+	tab_selected.content_margin_bottom = 11 * compact_scale
 	var tab_idle := StyleBoxFlat.new()
 	tab_idle.bg_color = Color("#1A3854")
 	tab_idle.border_color = Color("#315A78")
 	tab_idle.set_border_width_all(1)
 	tab_idle.set_corner_radius_all(12)
-	tab_idle.content_margin_left = 18 * compact_scale
-	tab_idle.content_margin_right = 18 * compact_scale
-	tab_idle.content_margin_top = 9 * compact_scale
-	tab_idle.content_margin_bottom = 9 * compact_scale
+	tab_idle.content_margin_left = 20 * compact_scale
+	tab_idle.content_margin_right = 20 * compact_scale
+	tab_idle.content_margin_top = 11 * compact_scale
+	tab_idle.content_margin_bottom = 11 * compact_scale
 	var tab_hover := tab_idle.duplicate() as StyleBoxFlat
 	tab_hover.bg_color = Color("#285675")
 	tabs.add_theme_stylebox_override("tab_selected", tab_selected)
@@ -5698,15 +5726,16 @@ func _show_settings_panel() -> void:
 	tabs.add_theme_color_override("font_selected_color", Color("#082B3D"))
 	tabs.add_theme_color_override("font_unselected_color", Color("#C6DFEF"))
 	tabs.add_theme_color_override("font_hovered_color", Color("#FFFFFF"))
+	tabs.add_theme_color_override("font_disabled_color", Color("#7895A8"))
 	var tabs_panel := StyleBoxFlat.new()
 	tabs_panel.bg_color = Color("#142D46")
 	tabs_panel.border_color = Color("#294D68")
 	tabs_panel.set_border_width_all(1)
-	tabs_panel.set_corner_radius_all(14)
-	tabs_panel.content_margin_left = 14 * compact_scale
-	tabs_panel.content_margin_right = 14 * compact_scale
-	tabs_panel.content_margin_top = 12 * compact_scale
-	tabs_panel.content_margin_bottom = 12 * compact_scale
+	tabs_panel.set_corner_radius_all(16)
+	tabs_panel.content_margin_left = 8 * compact_scale
+	tabs_panel.content_margin_right = 8 * compact_scale
+	tabs_panel.content_margin_top = 8 * compact_scale
+	tabs_panel.content_margin_bottom = 8 * compact_scale
 	tabs.add_theme_stylebox_override("panel", tabs_panel)
 	layout.add_child(tabs)
 
@@ -5718,8 +5747,8 @@ func _show_settings_panel() -> void:
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 12 * compact_scale)
-	city_scroll.add_child(content)
+	content.add_theme_constant_override("separation", 16 * compact_scale)
+	_settings_add_page_padding(city_scroll, content, compact_scale)
 	tabs.add_child(city_scroll)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "City")
 
@@ -5731,8 +5760,8 @@ func _show_settings_panel() -> void:
 	var audio_content := VBoxContainer.new()
 	audio_content.name = "SoundSettingsContent"
 	audio_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	audio_content.add_theme_constant_override("separation", 12 * compact_scale)
-	sound_scroll.add_child(audio_content)
+	audio_content.add_theme_constant_override("separation", 16 * compact_scale)
+	_settings_add_page_padding(sound_scroll, audio_content, compact_scale)
 	tabs.add_child(sound_scroll)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "Sound")
 
@@ -5744,8 +5773,8 @@ func _show_settings_panel() -> void:
 	var account_content := VBoxContainer.new()
 	account_content.name = "AccountSettingsContent"
 	account_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	account_content.add_theme_constant_override("separation", 12 * compact_scale)
-	account_scroll.add_child(account_content)
+	account_content.add_theme_constant_override("separation", 16 * compact_scale)
+	_settings_add_page_padding(account_scroll, account_content, compact_scale)
 	tabs.add_child(account_scroll)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "Account")
 
@@ -5757,8 +5786,8 @@ func _show_settings_panel() -> void:
 	var more_content := VBoxContainer.new()
 	more_content.name = "MoreSettingsContent"
 	more_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	more_content.add_theme_constant_override("separation", 12 * compact_scale)
-	more_scroll.add_child(more_content)
+	more_content.add_theme_constant_override("separation", 16 * compact_scale)
+	_settings_add_page_padding(more_scroll, more_content, compact_scale)
 	tabs.add_child(more_scroll)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "More")
 
@@ -5770,7 +5799,17 @@ func _show_settings_panel() -> void:
 	audio_row.add_theme_constant_override("v_separation", 8)
 	audio_content.add_child(audio_row)
 	_add_settings_switch(audio_row, "MusicToggle", "Music", AudioManager.music_enabled, AudioManager.set_music_enabled)
-	_add_settings_switch(audio_row, "SfxToggle", "Sounds", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
+	_add_settings_switch(audio_row, "SfxToggle", "Sound effects", AudioManager.sfx_enabled, AudioManager.set_sfx_enabled)
+	var volume_heading := Label.new()
+	volume_heading.name = "SettingsVolumeHeading"
+	volume_heading.text = "VOLUME LEVELS"
+	volume_heading.add_theme_font_size_override("font_size", _settings_font_size(18))
+	volume_heading.add_theme_color_override("font_color", Color("#A9E9FA"))
+	audio_content.add_child(volume_heading)
+	_add_audio_setting_slider(audio_content, "SettingsMasterVolume", "Master volume", AudioManager.master_volume, AudioManager.set_master_volume)
+	_add_audio_setting_slider(audio_content, "SettingsMusicVolume", "Music volume", AudioManager.music_volume, AudioManager.set_music_volume)
+	_add_audio_setting_slider(audio_content, "SettingsAmbientVolume", "City ambience", AudioManager.ambient_volume, AudioManager.set_ambient_volume)
+	_add_audio_setting_slider(audio_content, "SettingsSfxVolume", "Sound effects", AudioManager.sfx_volume, AudioManager.set_sfx_volume)
 
 	var actions := GridContainer.new()
 	actions.name = "SettingsMainActions"
@@ -5781,9 +5820,7 @@ func _show_settings_panel() -> void:
 	actions.add_theme_constant_override("v_separation", 7 * compact_scale)
 	content.add_child(actions)
 	_add_settings_action(actions, "SettingsChangeCityNameButton", "Change City Name", _show_change_city_name)
-	_add_settings_action(actions, "SettingsHelpButton", "Help", _show_settings_help)
-	_add_settings_action(actions, "SettingsNotificationsButton", "Notification Settings", _show_notification_settings)
-	_add_settings_action(actions, "SettingsWalletButton", "Wallet", _show_wallet_panel)
+	_add_settings_action(actions, "SettingsHelpButton", "Help & Tutorials", _show_settings_help)
 
 	var more_heading := Label.new()
 	more_heading.text = "MORE OPTIONS"
@@ -5792,11 +5829,13 @@ func _show_settings_panel() -> void:
 	more_content.add_child(more_heading)
 	var more_actions := GridContainer.new()
 	more_actions.name = "SettingsMoreActions"
-	more_actions.columns = 1
+	more_actions.columns = 2
 	more_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	more_actions.add_theme_constant_override("v_separation", 10 * compact_scale)
 	more_content.add_child(more_actions)
-	_add_settings_action(more_actions, "SettingsAboutButton", "About & Advanced Settings", _show_settings_about)
+	_add_settings_action(more_actions, "SettingsNotificationsButton", "Notifications", _show_notification_settings)
+	_add_settings_action(more_actions, "SettingsWalletButton", "City Wallet", _show_wallet_panel)
+	_add_settings_action(more_actions, "SettingsAboutButton", "About & Advanced", _show_settings_about)
 
 	_settings_account_status = Label.new()
 	_settings_account_status.name = "SettingsAccountStatus"
@@ -5813,7 +5852,9 @@ func _show_settings_panel() -> void:
 	_settings_account_action.add_theme_stylebox_override("normal", _settings_google_button_style(Color("#FFFFFF")))
 	_settings_account_action.add_theme_stylebox_override("hover", _settings_google_button_style(Color("#FFF1F0")))
 	_settings_account_action.add_theme_stylebox_override("pressed", _settings_google_button_style(Color("#FFE0DD")))
-	_settings_account_action.focus_mode = Control.FOCUS_NONE
+	_settings_account_action.focus_mode = Control.FOCUS_ALL
+	_settings_account_action.tooltip_text = "Connect or disconnect your Google account"
+	_settings_account_action.add_theme_stylebox_override("focus", _settings_google_button_style(Color("#FFF1F0")))
 	_settings_account_action.pressed.connect(_on_settings_account_action_pressed)
 	var gmail_content := HBoxContainer.new()
 	gmail_content.name = "GmailButtonContent"
@@ -5849,6 +5890,8 @@ func _show_settings_panel() -> void:
 	# Guests must land on Account so the Google sign-in action is immediately visible.
 	# Keep the City tab as the default for authenticated Mayors.
 	tabs.current_tab = 2 if not PlayerAccountManager.is_authenticated() else 0
+	tabs.tab_changed.connect(_on_settings_tab_changed.bind(tabs))
+	_on_settings_tab_changed(tabs.current_tab, tabs)
 
 
 func _refresh_settings_profile_avatar() -> void:
@@ -5916,6 +5959,30 @@ func _restore_settings_profile_avatar_fallback() -> void:
 			avatar_frame.show()
 
 
+func _settings_add_page_padding(scroll: ScrollContainer, content: Control, compact_scale: float) -> void:
+	var padding := MarginContainer.new()
+	padding.name = "SettingsPagePadding"
+	padding.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	padding.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	padding.add_theme_constant_override("margin_left", roundi(14.0 * compact_scale))
+	padding.add_theme_constant_override("margin_right", roundi(14.0 * compact_scale))
+	padding.add_theme_constant_override("margin_top", roundi(12.0 * compact_scale))
+	padding.add_theme_constant_override("margin_bottom", roundi(12.0 * compact_scale))
+	scroll.add_child(padding)
+	padding.add_child(content)
+
+
+func _on_settings_tab_changed(tab_index: int, tabs: TabContainer) -> void:
+	if not is_instance_valid(tabs) or tab_index < 0 or tab_index >= tabs.get_tab_count():
+		return
+	var page := tabs.get_tab_control(tab_index) as Control
+	if not is_instance_valid(page):
+		return
+	page.modulate.a = 0.72
+	var tween := create_tween()
+	tween.tween_property(page, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
 func _settings_google_button_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
@@ -5980,16 +6047,17 @@ func _settings_close_style(fill: Color) -> StyleBoxFlat:
 func _settings_button_hover(button: Control, hovered: bool) -> void:
 	if not is_instance_valid(button):
 		return
+	var target := Color(1.045, 1.065, 1.08, 1.0) if hovered else Color.WHITE
 	var tween := button.create_tween()
-	tween.tween_property(button, "scale", Vector2(1.025, 1.025) if hovered else Vector2.ONE, 0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "modulate", target, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _settings_button_press(button: Control) -> void:
 	if not is_instance_valid(button):
 		return
 	var tween := button.create_tween()
-	tween.tween_property(button, "scale", Vector2(0.97, 0.97), 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(button, "scale", Vector2.ONE, 0.11).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "modulate", Color(0.88, 0.94, 0.98, 1.0), 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "modulate", Color.WHITE, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _add_settings_action(parent: GridContainer, node_name: String, caption: String, action: Callable) -> void:
@@ -6021,7 +6089,9 @@ func _add_settings_action(parent: GridContainer, node_name: String, caption: Str
 	button.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#23658B")))
 	button.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#2C85AF")))
 	button.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#164A6D")))
-	button.focus_mode = Control.FOCUS_NONE
+	button.focus_mode = Control.FOCUS_ALL
+	button.tooltip_text = caption
+	button.add_theme_stylebox_override("focus", _settings_green_button_style(Color("#2C85AF")))
 	button.pivot_offset = button.custom_minimum_size * 0.5
 	button.mouse_entered.connect(func() -> void: _settings_button_hover(button, true))
 	button.mouse_exited.connect(func() -> void: _settings_button_hover(button, false))
@@ -6051,7 +6121,9 @@ func _add_settings_switch(parent: GridContainer, node_name: String, caption: Str
 	toggle.add_theme_stylebox_override("normal", _settings_green_button_style(Color("#286D91")))
 	toggle.add_theme_stylebox_override("hover", _settings_green_button_style(Color("#3598BD")))
 	toggle.add_theme_stylebox_override("pressed", _settings_green_button_style(Color("#175273")))
-	toggle.focus_mode = Control.FOCUS_NONE
+	toggle.focus_mode = Control.FOCUS_ALL
+	toggle.tooltip_text = caption
+	toggle.add_theme_stylebox_override("focus", _settings_green_button_style(Color("#3598BD")))
 	toggle.pivot_offset = toggle.custom_minimum_size * 0.5
 	toggle.mouse_entered.connect(func() -> void: _settings_button_hover(toggle, true))
 	toggle.mouse_exited.connect(func() -> void: _settings_button_hover(toggle, false))
