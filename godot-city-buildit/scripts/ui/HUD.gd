@@ -5802,7 +5802,10 @@ func _show_settings_panel() -> void:
 	_settings_account_action.mouse_exited.connect(func() -> void: _settings_button_hover(_settings_account_action, false))
 	_settings_account_action.pressed.connect(func() -> void: _settings_button_press(_settings_account_action))
 	account_content.add_child(_settings_account_action)
-	_refresh_settings_account_section()
+	_refresh_settings_account_section()	
+	# Guests must land on Account so the Google sign-in action is immediately visible.
+	# Keep the City tab as the default for authenticated Mayors.
+	tabs.current_tab = 2 if not PlayerAccountManager.is_authenticated() else 0
 
 
 func _refresh_settings_profile_avatar() -> void:
