@@ -48,6 +48,13 @@ const QUALITY_PRESETS := {
 }
 
 var quality := "balanced"
+var _adaptive_sample_elapsed := 0.0
+var _slow_fps_windows := 0
+var _fast_fps_windows := 0
+
+const LOW_SCALE_MIN := 0.48
+const LOW_SCALE_MAX := 0.62
+const ADAPTIVE_SAMPLE_SECONDS := 2.0
 
 func _ready() -> void:
 	quality = _default_quality()
@@ -74,6 +81,40 @@ func _on_node_added(node: Node) -> void:
 		var preset := get_quality_preset(quality)
 		node.shadow_enabled = bool(preset.get("shadows", true))
 
+
+func _process(delta: float) -> void:
+	if quality != "low" or delta <= 0.0:
+		return
+	_adaptive_sample_elapsed += delta
+	if _adaptive_sample_elapsed < ADAPTIVE_SAMPLE_SECONDS:
+		return
+	_adaptive_sample_elapsed = 0.0
+	var measured_fps := float(Engine.get_frames_per_second())
+	if measured_fps > 0.0 and measured_fps < 28.0:
+		_slow_fps_windows += 1
+		_fast_fps_windows = 0
+	elif measured_fps >= 54.0:
+		_fast_fps_windows += 1
+		_slow_fps_windows = 0
+	else:
+		_slow_fps_windows = 0
+		_fast_fps_windows = 0
+	if _slow_fps_windows >= 2 or _fast_fps_windows >= 8:
+		var viewport := get_tree().root
+		if viewport != null:
+			viewport.scaling_3d_scale = adaptive_low_scale(viewport.scaling_3d_scale, measured_fps)
+		_slow_fps_windows = 0
+		_fast_fps_windows = 0
+
+
+static func adaptive_low_scale(current_scale: float, measured_fps: float) -> float:
+	var current := clampf(current_scale, LOW_SCALE_MIN, LOW_SCALE_MAX)
+	if measured_fps > 0.0 and measured_fps < 28.0:
+		return maxf(LOW_SCALE_MIN, current - 0.06)
+	if measured_fps >= 54.0:
+		return minf(LOW_SCALE_MAX, current + 0.02)
+	return current
+
 func set_quality(value: String) -> bool:
 	if not QUALITY_PRESETS.has(value):
 		return false
@@ -97,6 +138,10 @@ func _apply_quality() -> void:
 	viewport.scaling_3d_scale = float(preset.get("scale", 0.62))
 	viewport.msaa_3d = int(preset.get("msaa", Viewport.MSAA_DISABLED))
 	Engine.max_fps = 60
+	_adaptive_sample_elapsed = 0.0
+	_slow_fps_windows = 0
+	_fast_fps_windows = 0
+	set_process(quality == "low")
 	var scene := get_tree().current_scene
 	if is_instance_valid(scene):
 		for light in scene.find_children("*", "DirectionalLight3D", true, false):
