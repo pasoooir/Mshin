@@ -250,8 +250,9 @@ func _ready() -> void:
 			push_error("[VisualPresentationSmoke] Coastal city ground is missing a required near-camera feature: " + required_visual_feature)
 			get_tree().quit(1)
 			return
-	if not world_visual_source.contains("range(3600)") or not world_visual_source.contains("range(240)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)"):
-		push_error("[VisualPresentationSmoke] Near-city grass, shrub, scrub and fieldstone density must remain materially higher than the previous sparse edge dressing")
+	var graphics_quality_source := FileAccess.get_file_as_string("res://scripts/autoload/GraphicsSettingsManager.gd")
+	if not world_visual_source.contains("range(grass_instance_count)") or not world_visual_source.contains("range(cluster_count)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)") or not graphics_quality_source.contains('"grass_instances": 3600') or not graphics_quality_source.contains('"shrub_clusters": 240'):
+		push_error("[VisualPresentationSmoke] Quality-scaled ground cover must retain full high-preset density while allowing the low mobile preset to reduce draw cost")
 		get_tree().quit(1)
 		return
 	if not world_visual_source.contains("LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z))"):
