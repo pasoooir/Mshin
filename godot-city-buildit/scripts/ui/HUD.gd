@@ -5456,6 +5456,9 @@ func _refresh_settings_account_section() -> void:
 		var google_name := PlayerAccountManager.google_display_name if not PlayerAccountManager.google_display_name.is_empty() else "Google player"
 		_settings_account_status.text = "Connected securely · %s · Mayor #%d\nWelcome and daily rewards are claimed automatically." % [google_name, PlayerAccountManager.player_id]
 		_refresh_settings_profile_avatar()
+		var avatar_frame := _settings_profile_avatar.get_parent() as Control if is_instance_valid(_settings_profile_avatar) else null
+		if is_instance_valid(avatar_frame):
+			avatar_frame.visible = true
 		_settings_account_action.text = "Sign out"
 		if is_instance_valid(_settings_account_action.get_node_or_null("GmailButtonContent")):
 			_settings_account_action.get_node("GmailButtonContent").hide()
@@ -5611,7 +5614,7 @@ func _show_settings_panel() -> void:
 	layout.add_child(heading)
 	var avatar_frame := PanelContainer.new()
 	avatar_frame.name = "SettingsProfileAvatarFrame"
-	avatar_frame.custom_minimum_size = Vector2(58, 58) * compact_scale
+	avatar_frame.custom_minimum_size = Vector2(72, 72) * compact_scale
 	avatar_frame.visible = PlayerAccountManager.is_authenticated()
 	avatar_frame.clip_contents = true
 	var avatar_frame_style := StyleBoxFlat.new()

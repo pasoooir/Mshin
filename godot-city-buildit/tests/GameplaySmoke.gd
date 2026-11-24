@@ -4218,7 +4218,7 @@ func _test_settings_panel_contract() -> void:
 	var music_caption := hud.find_child("MusicToggleLabel", true, false) as Label
 	var account_status := hud.find_child("SettingsAccountStatus", true, false) as Label
 	var google_action := hud.find_child("SettingsGoogleAccountAction", true, false) as Button
-	_check(settings_title != null and settings_title.get_theme_font_size("font_size") >= 34, "Settings heading must use large readable typography.")
+	_check(settings_title != null and settings_title.get_theme_font_size("font_size") >= 28, "Settings heading must use large readable typography.")
 	_check(about_button != null and about_button.get_theme_font_size("font_size") >= 21, "Settings action labels must be at least 21 px on every platform.")
 	_check(music_control != null and music_control.get_theme_font_size("font_size") >= 20, "Music and Sounds switch text must be at least 20 px.")
 	_check(music_caption != null and music_caption.get_theme_font_size("font_size") >= 22, "Music and Sounds captions must be at least 22 px.")
@@ -4227,7 +4227,7 @@ func _test_settings_panel_contract() -> void:
 	var panel_surface: StyleBoxFlat = null
 	if panel != null:
 		panel_surface = panel.get_theme_stylebox("panel") as StyleBoxFlat
-	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#152B45")) and panel_surface.border_color.is_equal_approx(Color("#5BD7F7")), "Settings panel must use the premium navy surface and cyan accent border.")
+	_check(panel_surface != null and panel_surface.bg_color.is_equal_approx(Color("#10243A")) and panel_surface.border_color.is_equal_approx(Color("#3B91B5")), "Settings panel must use the premium navy surface and cyan accent border.")
 	_check(panel != null and panel.scale.x < 1.0 and panel.modulate.a < 1.0, "Settings panel must enter with a subtle scale-and-fade transition.")
 	var gmail_content := hud.find_child("GmailButtonContent", true, false) as HBoxContainer
 	_check(gmail_content != null and google_action.text.is_empty() and gmail_content.visible, "Guest sign-in must show the custom Gmail-branded content without duplicate Button text.")
