@@ -39,6 +39,14 @@ const BEACH_WIDTH := 8.0
 const PROMENADE_OFFSET := 12.0
 const PALM_COUNT := 24
 
+func _is_low_graphics() -> bool:
+	return GraphicsSettingsManager.quality == "low"
+
+
+func _quality_preset() -> Dictionary:
+	return GraphicsSettingsManager.get_quality_preset(GraphicsSettingsManager.quality)
+
+
 func _ready() -> void:
 	# Headless CI validates simulation and placement logic, not GPU geometry.
 	# Preserve the stable scene contract with lightweight Node3D markers while
@@ -178,7 +186,7 @@ func _on_land_expansion_changed() -> void:
 func _build_terrain() -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var divisions := TERRAIN_DIVISIONS
+	var divisions := int(_quality_preset().get("terrain_divisions", TERRAIN_DIVISIONS))
 	for z_index in range(divisions):
 		var z0 := -TERRAIN_HALF_DEPTH + (float(z_index) / divisions) * TERRAIN_HALF_DEPTH * 2.0
 		var z1 := -TERRAIN_HALF_DEPTH + (float(z_index + 1) / divisions) * TERRAIN_HALF_DEPTH * 2.0
@@ -211,14 +219,16 @@ func _build_terrain() -> void:
 	# without exposing terrain slivers or burying the shoreline.
 	var water := MeshInstance3D.new()
 	water.name = "CoastalWater"
-	water.mesh = _create_coastal_water_mesh(32.0, 1100.0, 180, 48, 0.015)
+	var water_rows := int(_quality_preset().get("water_rows", 180))
+	var water_columns := int(_quality_preset().get("water_columns", 48))
+	water.mesh = _create_coastal_water_mesh(32.0, 1100.0, water_rows, water_columns, 0.015)
 	water.material_override = _create_water_material()
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 
 	var shallow_water := MeshInstance3D.new()
 	shallow_water.name = "ShallowWater"
-	shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, 180, 18, 0.008)
+	shallow_water.mesh = _create_coastal_water_mesh(0.16, 34.0, water_rows, maxi(12, int(water_columns / 2)), 0.008)
 	shallow_water.material_override = _create_shallow_water_material()
 	shallow_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shallow_water)
@@ -269,16 +279,16 @@ func _build_sandy_beach() -> void:
 	# Compatibility renderer even when terrain shader detail is distance-culled.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	const Z_SEGMENTS := 176
-	const X_SEGMENTS := 8
-	for row in range(Z_SEGMENTS):
-		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row) / float(Z_SEGMENTS))
-		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row + 1) / float(Z_SEGMENTS))
+	var z_segments := 128 if _is_low_graphics() else 176
+	var x_segments := 5 if _is_low_graphics() else 8
+	for row in range(z_segments):
+		var z0 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row) / float(z_segments))
+		var z1 := lerpf(-TERRAIN_HALF_DEPTH, TERRAIN_HALF_DEPTH, float(row + 1) / float(z_segments))
 		var coast0 := _coastline(z0)
 		var coast1 := _coastline(z1)
-		for column in range(X_SEGMENTS):
-			var u0 := float(column) / float(X_SEGMENTS)
-			var u1 := float(column + 1) / float(X_SEGMENTS)
+		for column in range(x_segments):
+			var u0 := float(column) / float(x_segments)
+			var u1 := float(column + 1) / float(x_segments)
 			var x00 := lerpf(coast0 - BEACH_WIDTH, coast0 + 0.42, u0)
 			var x10 := lerpf(coast0 - BEACH_WIDTH, coast0 + 0.42, u1)
 			var x01 := lerpf(coast1 - BEACH_WIDTH, coast1 + 0.42, u0)
@@ -296,22 +306,22 @@ func _build_sandy_beach() -> void:
 			var c01 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness0 * 0.52)
 			var c11 := dry_sand.lerp(Color(0.55, 0.52, 0.42), wetness1 * 0.52)
 			surface.set_color(c00)
-			surface.set_uv(Vector2(u0 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u0 * 3.0, float(row) / z_segments * 8.0))
 			surface.add_vertex(p00)
 			surface.set_color(c01)
-			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / z_segments * 8.0))
 			surface.add_vertex(p01)
 			surface.set_color(c10)
-			surface.set_uv(Vector2(u1 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u1 * 3.0, float(row) / z_segments * 8.0))
 			surface.add_vertex(p10)
 			surface.set_color(c10)
-			surface.set_uv(Vector2(u1 * 3.0, float(row) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u1 * 3.0, float(row) / z_segments * 8.0))
 			surface.add_vertex(p10)
 			surface.set_color(c01)
-			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u0 * 3.0, float(row + 1) / z_segments * 8.0))
 			surface.add_vertex(p01)
 			surface.set_color(c11)
-			surface.set_uv(Vector2(u1 * 3.0, float(row + 1) / Z_SEGMENTS * 8.0))
+			surface.set_uv(Vector2(u1 * 3.0, float(row + 1) / z_segments * 8.0))
 			surface.add_vertex(p11)
 	surface.generate_normals()
 	var beach := MeshInstance3D.new()
@@ -1003,6 +1013,15 @@ func _build_tree_belts() -> void:
 			continue
 		positions.append(Vector3(x, _terrain_height(x, z), z))
 
+	var tree_density := clampf(float(_quality_preset().get("tree_density", 1.0)), 0.1, 1.0)
+	if tree_density < 0.999:
+		var reduced_positions: Array[Vector3] = []
+		for index in range(positions.size()):
+			var sample := fposmod(float(index) * 0.61803398875, 1.0)
+			if sample < tree_density:
+				reduced_positions.append(positions[index])
+		positions = reduced_positions
+
 	var root_mesh := CylinderMesh.new()
 	root_mesh.top_radius = 0.24
 	root_mesh.bottom_radius = 0.34
@@ -1015,13 +1034,14 @@ func _build_tree_belts() -> void:
 	# Keep roots and contact shadows as single inexpensive batches. Trunks are
 	# generated inside the foliage renderer so each one shares the exact seeded
 	# species scale and crown height used by its corresponding canopy.
-	var tree_shadows := _create_tree_shadow_multimesh(positions)
-	add_child(tree_shadows)
+	if not _is_low_graphics():
+		var tree_shadows := _create_tree_shadow_multimesh(positions)
+		add_child(tree_shadows)
 	var roots := _create_tree_multimesh("TreeRootBases", root_mesh, positions, 0.08)
 
 	var foliage_system := StylizedFoliageSystemScript.new()
 	foliage_system.name = "StylizedFoliageSystem"
-	foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)
+	foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture, _is_low_graphics())
 	add_child(foliage_system)
 	add_child(roots)
 
@@ -1486,7 +1506,8 @@ func _build_shrubland_detail() -> void:
 	]
 	# Cluster centers are distributed across the natural meadow, with deliberate
 	# breathing gaps. A cluster contains several low shrubs rather than one ball.
-	for cluster_index in range(240):
+	var cluster_count := int(_quality_preset().get("shrub_clusters", 240))
+	for cluster_index in range(cluster_count):
 		var center_x := rng.randf_range(-116.0, 88.0)
 		var center_z := rng.randf_range(-136.0, 136.0)
 		if LandExpansionManager.is_world_position_unlocked(Vector3(center_x, 0.0, center_z)):
@@ -1590,7 +1611,8 @@ func _build_grass_detail() -> void:
 	blade_material.roughness = 0.98
 	blade_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var positions: Array[Vector3] = []
-	for index in range(3600):
+	var grass_instance_count := int(_quality_preset().get("grass_instances", 3600))
+	for index in range(grass_instance_count):
 		var x := -118.0 + fposmod(float(index) * 19.37, 194.0)
 		var z := -88.0 + fposmod(float(index) * 31.73, 176.0)
 		if LandExpansionManager.is_world_position_unlocked(Vector3(x, 0.0, z)):
