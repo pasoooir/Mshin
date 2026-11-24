@@ -123,7 +123,7 @@ func _rebuild_panel() -> void:
 		plot.name = "ExpansionPlot_%d_%d" % [tile.x, tile.y]
 		plot.custom_minimum_size.y = 42
 		plot.add_theme_font_size_override("font_size", 15)
-		plot.text = "PLOT %d · %d m² · RING %d" % [tile.x, LandExpansionManager.get_tile_area_square_meters(), LandExpansionManager.get_tile_distance(tile) + 1]
+		plot.text = "PLOT %d, %d · RING %d" % [tile.x, tile.y, LandExpansionManager.get_tile_distance(tile) + 1]
 		plot.tooltip_text = "Adjacent plot · %d m² · equipment cost increases with distance from your starter city." % LandExpansionManager.get_tile_area_square_meters()
 		plot.pressed.connect(_select_tile.bind(tile))
 		card_layout.add_child(plot)
