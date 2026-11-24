@@ -16,11 +16,15 @@ uniform float fake_sss_strength : hint_range(0.0, 1.0) = 0.28;
 varying vec3 bent_world_normal;
 varying float wind_weight;
 varying vec4 instance_data;
+varying vec4 canopy_vertex_color;
+varying float volumetric_canopy;
 
 void vertex() {
     vec3 world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
     wind_weight = UV2.x;
     instance_data = INSTANCE_CUSTOM;
+    canopy_vertex_color = COLOR;
+    volumetric_canopy = UV2.y;
 
     // Each tree receives a stable phase from MultiMesh INSTANCE_CUSTOM.b.
     float phase = world_position.x * 0.115
@@ -40,12 +44,13 @@ void vertex() {
 
 void fragment() {
     vec4 leaf = texture(leaf_atlas, UV);
+    bool is_solid_crown = volumetric_canopy > 0.5;
 
     float instance_variation = mix(0.88, 1.12, instance_data.r);
     float instance_density = mix(0.84, 1.0, instance_data.g);
     float instance_brightness = mix(0.92, 1.08, instance_data.a);
 
-    vec3 foliage = leaf.rgb * seasonal_tint.rgb;
+    vec3 foliage = (is_solid_crown ? canopy_vertex_color.rgb : leaf.rgb) * seasonal_tint.rgb;
     foliage *= instance_variation * instance_brightness;
 
     // Snow is biased toward upward-facing bent normals.
@@ -53,7 +58,7 @@ void fragment() {
     foliage = mix(foliage, vec3(0.82, 0.88, 0.91), snow_amount * upward * 0.78);
 
     ALBEDO = foliage;
-    ALPHA = leaf.a * leaf_density * instance_density;
+    ALPHA = is_solid_crown ? 1.0 : leaf.a * leaf_density * instance_density;
     ALPHA_SCISSOR_THRESHOLD = 0.32;
 
     ROUGHNESS = 0.94;

@@ -377,9 +377,18 @@ func _add_volume_vertex(surface: SurfaceTool, species_id: int, angle: float, v: 
     var point := Vector3(cos(angle) * radius, center_y - height * 0.5 + v * height, sin(angle) * radius)
     var uv := Vector2(angle / TAU, v)
     var wind_weight := 0.18 + v * 0.82
+    surface.set_color(_species_canopy_color(species_id))
     surface.set_uv(uv)
-    surface.set_uv2(Vector2(wind_weight, 0.0))
+    surface.set_uv2(Vector2(wind_weight, 1.0))
     surface.add_vertex(point)
+
+
+func _species_canopy_color(species_id: int) -> Color:
+    var palette: Array[Color] = [
+        Color("#4F984F"), Color("#65A85A"), Color("#477F48"), Color("#3F8C52"),
+        Color("#78AD58"), Color("#55934B"), Color("#3E8148"), Color("#86B75C")
+    ]
+    return palette[clampi(species_id, 0, palette.size() - 1)]
 
 
 func _create_palm_canopy_mesh(species_id: int, card_count: int, segments_x: int, segments_y: int) -> ArrayMesh:
