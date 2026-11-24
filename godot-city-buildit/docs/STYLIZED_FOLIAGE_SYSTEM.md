@@ -32,7 +32,7 @@ Each 64 m foliage chunk owns one tapered-trunk MultiMesh. Trunk transforms use t
 
 The non-palm crowns are closed 3D shells with species-specific vertical profiles and subtle angular lobes. This preserves visible volume while keeping the polygon count bounded at each LOD. The palm retains its radial frond silhouette instead of being forced into a spherical crown.
 
-Trees are grouped by 64×64 m world chunks and species. Every chunk owns its MultiMesh bounds and visibility ranges. The same tree placement appears once in each LOD tier; the engine selects visibility by range. The renderer does not create a per-tree Node3D.
+Trees are grouped by 64×64 m world chunks and species. Every chunk owns its MultiMesh bounds and visibility ranges. The same tree placement appears once in each LOD tier; the engine selects visibility by range. Only two species batches per chunk enter the real shadow pass, preventing the expanded silhouette set from multiplying mobile shadow cost. The renderer does not create a per-tree Node3D.
 
 ## Shader and materials
 - Soft alpha is authored in the local atlas; Alpha Scissor avoids expensive blended foliage.
@@ -40,7 +40,7 @@ Trees are grouped by 64×64 m world chunks and species. Every chunk owns its Mul
 - `INSTANCE_CUSTOM` carries per-tree hue variation, density variation, wind phase and brightness.
 - Wind is a low-amplitude vertex offset weighted toward the upper canopy.
 - Snow is biased toward upward-facing bent normals.
-- Canopy shadow casting is disabled for the high-card batches; the existing single batched soft contact-shadow pass remains in place.
+- Only the round broadleaf and willow near-canopy batches cast real shadows; the other six species and all medium/far LODs remain shadow-free. The existing batched soft contact-shadow pass continues to ground the full tree set.
 
 ## Seasonal controls
 The `StylizedFoliageSystem` exposes `set_season(season_index, duration)`:
