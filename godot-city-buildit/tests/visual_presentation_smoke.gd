@@ -96,7 +96,7 @@ func _ready() -> void:
 		return
 	for required_foliage_integration in [
 		"StylizedFoliageSystemScript",
-		"foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)",
+		"foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture, _is_low_graphics())",
 		"TreeRootBases"
 	]:
 		if not world_source.contains(required_foliage_integration):
