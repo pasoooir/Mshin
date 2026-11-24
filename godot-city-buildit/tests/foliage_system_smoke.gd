@@ -43,8 +43,10 @@ func _run() -> void:
                 continue
             if child.name.ends_with("_LOD0"):
                 near_lod_count += 1
-                if child.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_ON:
-                    _fail("Near canopy LOD must cast shadows to ground the tree silhouette.")
+                var is_shadow_budget_species := child.name.begins_with("TreeCanopies_Species0_") or child.name.begins_with("TreeCanopies_Species6_")
+                var should_cast_shadow := child.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+                if should_cast_shadow != is_shadow_budget_species:
+                    _fail("Only the two authored near-canopy shadow batches may cast real shadows.")
                     return
             elif child.name.ends_with("_LOD1"):
                 medium_lod_count += 1
