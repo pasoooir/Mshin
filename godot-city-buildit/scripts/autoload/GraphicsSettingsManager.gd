@@ -1,6 +1,6 @@
 extends Node
-## User-selectable 3D render quality. UI remains at native resolution; only
-## the 3D render buffer and MSAA level are changed.
+## User-selectable render tiers. UI stays at native resolution while 3D
+## resolution, shadows and procedural world detail follow device capability.
 
 signal quality_changed(quality: String, settings: Dictionary)
 
