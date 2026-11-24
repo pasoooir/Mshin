@@ -5548,9 +5548,11 @@ func _show_settings_panel() -> void:
 	_close_settings_dialogs()
 	_close_settings_panel()
 	var viewport_size := get_viewport().get_visible_rect().size
-	var panel_width := minf(1360.0 * _ui_scale, viewport_size.x * 0.94)
-	var compact_scale := minf(1.0, viewport_size.y / 520.0)
-	var panel_height := viewport_size.y * 0.94
+	# Settings is designed for the game's landscape-first mobile viewport.
+	# Keep the dialog comfortably inset and avoid oversized desktop proportions.
+	var panel_width := minf(1120.0 * _ui_scale, viewport_size.x * 0.92)
+	var compact_scale := clampf(minf(viewport_size.x / 760.0, viewport_size.y / 430.0), 0.68, 1.0)
+	var panel_height := viewport_size.y * 0.92
 	settings_overlay = Control.new()
 	settings_overlay.name = "SettingsOverlay"
 	settings_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5582,10 +5584,10 @@ func _show_settings_panel() -> void:
 	panel.scale = Vector2(0.965, 0.965)
 	panel.modulate.a = 0.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#152B45")
-	panel_style.border_color = Color("#5BD7F7")
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(28)
+	panel_style.bg_color = Color("#10243A")
+	panel_style.border_color = Color("#3B91B5")
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(22)
 	panel_style.shadow_color = Color(0.01, 0.06, 0.14, 0.55)
 	panel_style.shadow_size = 26
 	panel_style.shadow_offset = Vector2(0, 9)
@@ -5609,7 +5611,7 @@ func _show_settings_panel() -> void:
 	layout.add_child(heading)
 	var avatar_frame := PanelContainer.new()
 	avatar_frame.name = "SettingsProfileAvatarFrame"
-	avatar_frame.custom_minimum_size = Vector2(78, 78) * compact_scale
+	avatar_frame.custom_minimum_size = Vector2(58, 58) * compact_scale
 	avatar_frame.visible = PlayerAccountManager.is_authenticated()
 	avatar_frame.clip_contents = true
 	var avatar_frame_style := StyleBoxFlat.new()
@@ -5643,7 +5645,7 @@ func _show_settings_panel() -> void:
 	title.name = "SettingsTitle"
 	title.text = "SETTINGS"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", _settings_font_size(34))
+	title.add_theme_font_size_override("font_size", _settings_font_size(28))
 	title.add_theme_color_override("font_color", Color("#F5FBFF"))
 	title.add_theme_color_override("font_shadow_color", Color("#48CFF5"))
 	title.add_theme_constant_override("shadow_offset_x", 1)
@@ -5652,7 +5654,7 @@ func _show_settings_panel() -> void:
 	var close := Button.new()
 	close.name = "SettingsClose"
 	close.text = "✖"
-	close.custom_minimum_size = Vector2(54, 54) * compact_scale
+	close.custom_minimum_size = Vector2(46, 46) * compact_scale
 	close.add_theme_font_size_override("font_size", _settings_font_size(25))
 	close.add_theme_stylebox_override("normal", _settings_close_style(Color("#244C6C")))
 	close.add_theme_stylebox_override("hover", _settings_close_style(Color("#2D789D")))
@@ -5664,7 +5666,45 @@ func _show_settings_panel() -> void:
 	tabs.name = "SettingsCategories"
 	tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	tabs.add_theme_font_size_override("font_size", _settings_font_size(19))
+	tabs.add_theme_font_size_override("font_size", _settings_font_size(16))
+	tabs.tab_alignment = TabBar.ALIGNMENT_CENTER
+	tabs.add_theme_constant_override("h_separation", 7 * compact_scale)
+	var tab_selected := StyleBoxFlat.new()
+	tab_selected.bg_color = Color("#39BDE2")
+	tab_selected.border_color = Color("#8CEBFF")
+	tab_selected.set_border_width_all(1)
+	tab_selected.set_corner_radius_all(12)
+	tab_selected.content_margin_left = 18 * compact_scale
+	tab_selected.content_margin_right = 18 * compact_scale
+	tab_selected.content_margin_top = 9 * compact_scale
+	tab_selected.content_margin_bottom = 9 * compact_scale
+	var tab_idle := StyleBoxFlat.new()
+	tab_idle.bg_color = Color("#1A3854")
+	tab_idle.border_color = Color("#315A78")
+	tab_idle.set_border_width_all(1)
+	tab_idle.set_corner_radius_all(12)
+	tab_idle.content_margin_left = 18 * compact_scale
+	tab_idle.content_margin_right = 18 * compact_scale
+	tab_idle.content_margin_top = 9 * compact_scale
+	tab_idle.content_margin_bottom = 9 * compact_scale
+	var tab_hover := tab_idle.duplicate() as StyleBoxFlat
+	tab_hover.bg_color = Color("#285675")
+	tabs.add_theme_stylebox_override("tab_selected", tab_selected)
+	tabs.add_theme_stylebox_override("tab_unselected", tab_idle)
+	tabs.add_theme_stylebox_override("tab_hovered", tab_hover)
+	tabs.add_theme_color_override("font_selected_color", Color("#082B3D"))
+	tabs.add_theme_color_override("font_unselected_color", Color("#C6DFEF"))
+	tabs.add_theme_color_override("font_hovered_color", Color("#FFFFFF"))
+	var tabs_panel := StyleBoxFlat.new()
+	tabs_panel.bg_color = Color("#142D46")
+	tabs_panel.border_color = Color("#294D68")
+	tabs_panel.set_border_width_all(1)
+	tabs_panel.set_corner_radius_all(14)
+	tabs_panel.content_margin_left = 14 * compact_scale
+	tabs_panel.content_margin_right = 14 * compact_scale
+	tabs_panel.content_margin_top = 12 * compact_scale
+	tabs_panel.content_margin_bottom = 12 * compact_scale
+	tabs.add_theme_stylebox_override("panel", tabs_panel)
 	layout.add_child(tabs)
 
 	var city_scroll := ScrollContainer.new()
@@ -5675,7 +5715,7 @@ func _show_settings_panel() -> void:
 	var content := VBoxContainer.new()
 	content.name = "SettingsContent"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 9 * compact_scale)
+	content.add_theme_constant_override("separation", 12 * compact_scale)
 	city_scroll.add_child(content)
 	tabs.add_child(city_scroll)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, "City")
