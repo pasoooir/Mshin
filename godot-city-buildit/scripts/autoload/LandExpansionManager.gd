@@ -28,6 +28,9 @@ const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
+# Coastal parcel geometry is immutable; cache each result so the world overlay
+# and purchase panel share one boundary evaluation per plot.
+var _tile_bounds_cache: Dictionary = {}
 
 func _ready() -> void:
 	_register_expansion_items()
@@ -65,22 +68,33 @@ func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:
 	)
 
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
+	var key := _tile_key(tile)
+	if _tile_bounds_cache.has(key):
+		return bool(_tile_bounds_cache[key])
 	if (
 		tile.x < EXPANSION_MIN_TILE_X
 		or tile.x > EXPANSION_MAX_TILE_X
 		or tile.y < EXPANSION_MIN_TILE_Y
 		or tile.y > EXPANSION_MAX_TILE_Y
 	):
+		_tile_bounds_cache[key] = false
 		return false
-	# A plot is a single purchasable parcel: do not offer a tile whose far edge
-	# crosses the curved beach boundary. Checking every cell also keeps the
-	# buildable footprint and the ownership overlay in agreement.
+	# The shoreline predicate is monotonic in X for a fixed Z row. Therefore
+	# testing the parcel's east edge once per row is mathematically equivalent
+	# to checking all 64 cells, while avoiding 8x redundant trigonometry.
 	var first_cell_x := tile.x * TILE_CELLS
+	var right_edge_world_x := float(first_cell_x + TILE_CELLS) * BuildManager.GRID_SIZE
+	var left_edge_world_x := float(first_cell_x) * BuildManager.GRID_SIZE
+	if left_edge_world_x < TERRAIN_LEFT:
+		_tile_bounds_cache[key] = false
+		return false
 	var first_cell_y := tile.y * TILE_CELLS
-	for cell_x in range(first_cell_x, first_cell_x + TILE_CELLS):
-		for cell_y in range(first_cell_y, first_cell_y + TILE_CELLS):
-			if not is_cell_inside_coastal_build_boundary(Vector2i(cell_x, cell_y)):
-				return false
+	for cell_y in range(first_cell_y, first_cell_y + TILE_CELLS):
+		var world_z := (float(cell_y) + 0.5) * BuildManager.GRID_SIZE
+		if absf(world_z) > TERRAIN_HALF_DEPTH or right_edge_world_x > _coastline_x(world_z) - BUILDABLE_COAST_MARGIN:
+			_tile_bounds_cache[key] = false
+			return false
+	_tile_bounds_cache[key] = true
 	return true
 
 func _is_reserved_highway_tile(tile: Vector2i) -> bool:
