@@ -21,22 +21,17 @@ var _leaf_emitters: Array[CPUParticles3D] = []
 var _lod_instance_counts := [0, 0, 0]
 var _tree_count := 0
 var _season_manager: Node
+var _low_quality := false
 var _lod_cards: Array = LOD_CARDS
 var _lod_segments_x: Array = LOD_SEGMENTS_X
 var _lod_segments_y: Array = LOD_SEGMENTS_Y
 
 
-func _is_low_graphics() -> bool:
-    if not is_inside_tree():
-        return false
-    var manager := get_tree().root.get_node_or_null("GraphicsSettingsManager")
-    return manager != null and str(manager.get("quality")) == "low"
-
-
-func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026, bark_texture: Texture2D = null) -> void:
+func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026, bark_texture: Texture2D = null, low_quality: bool = false) -> void:
     clear_foliage()
     _tree_count = positions.size()
-    if _is_low_graphics():
+    _low_quality = low_quality
+    if _low_quality:
         _lod_cards = [6, 4, 2]
         _lod_segments_x = [2, 1, 1]
         _lod_segments_y = [3, 2, 2]
@@ -205,7 +200,7 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
             _lod_instance_counts[lod] += entries.size()
 
     _build_chunk_trunks(chunk_root, species_buckets)
-    if not _is_low_graphics():
+    if not _low_quality:
         var leaf_emitter := _create_leaf_fall_emitter()
         leaf_emitter.name = "SeasonalLeafFall"
         chunk_root.add_child(leaf_emitter)
