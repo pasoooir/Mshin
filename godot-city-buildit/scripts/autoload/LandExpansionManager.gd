@@ -72,11 +72,16 @@ func _is_tile_in_bounds(tile: Vector2i) -> bool:
 		or tile.y > EXPANSION_MAX_TILE_Y
 	):
 		return false
-	var center_cell := Vector2i(
-		tile.x * TILE_CELLS + TILE_CELLS / 2,
-		tile.y * TILE_CELLS + TILE_CELLS / 2
-	)
-	return is_cell_inside_coastal_build_boundary(center_cell)
+	# A plot is a single purchasable parcel: do not offer a tile whose far edge
+	# crosses the curved beach boundary. Checking every cell also keeps the
+	# buildable footprint and the ownership overlay in agreement.
+	var first_cell_x := tile.x * TILE_CELLS
+	var first_cell_y := tile.y * TILE_CELLS
+	for cell_x in range(first_cell_x, first_cell_x + TILE_CELLS):
+		for cell_y in range(first_cell_y, first_cell_y + TILE_CELLS):
+			if not is_cell_inside_coastal_build_boundary(Vector2i(cell_x, cell_y)):
+				return false
+	return true
 
 func _is_reserved_highway_tile(tile: Vector2i) -> bool:
 	return tile.x >= HIGHWAY_RESERVED_TILE_MIN_X and tile.x <= HIGHWAY_RESERVED_TILE_MAX_X
@@ -142,7 +147,12 @@ func get_available_expansion_tiles() -> Array[Vector2i]:
 	for x in range(EXPANSION_MIN_TILE_X, EXPANSION_MAX_TILE_X + 1):
 		for y in range(EXPANSION_MIN_TILE_Y, EXPANSION_MAX_TILE_Y + 1):
 			var tile := Vector2i(x, y)
-			if not _is_reserved_highway_tile(tile) and not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
+			if (
+				_is_tile_in_bounds(tile)
+				and not _is_reserved_highway_tile(tile)
+				and not is_tile_owned(tile)
+				and _is_adjacent_to_owned(tile)
+			):
 				result.append(tile)
 	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 		var cost_a := _distance_from_initial_land(a)
