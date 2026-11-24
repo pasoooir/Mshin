@@ -31,6 +31,7 @@ func _run() -> void:
         _fail("Foliage must be spatially partitioned into independent 64 m chunks.")
         return
     var canopy_alignment_checked := false
+    var species_seen: Dictionary = {}
     for chunk in system.get_children():
         if not chunk.name.begins_with("FoliageChunk_"):
             continue
@@ -58,6 +59,16 @@ func _run() -> void:
         if near_lod_count == 0 or medium_lod_count == 0 or far_lod_count == 0:
             _fail("Every populated foliage chunk must expose all three canopy LOD tiers.")
             return
+        for species_id in range(8):
+            var species_canopy := chunk.get_node_or_null("TreeCanopies_Species%d_LOD0" % species_id) as MultiMeshInstance3D
+            if species_canopy != null and species_canopy.multimesh != null and species_canopy.multimesh.instance_count > 0:
+                species_seen[species_id] = true
+                if species_id != 3:
+                    var crown_mesh := species_canopy.multimesh.mesh as ArrayMesh
+                    var crown_bounds := crown_mesh.get_aabb() if crown_mesh != null else AABB()
+                    if crown_mesh == null or crown_bounds.size.x < 1.5 or crown_bounds.size.z < 1.5 or crown_bounds.size.y < 1.2:
+                        _fail("Broadleaf and conifer crowns must use real three-dimensional canopy geometry.")
+                        return
         var shadow_trunks := chunk.get_node_or_null("TreeTrunks") as MultiMeshInstance3D
         if shadow_trunks == null or shadow_trunks.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
             _fail("Batched trunks must stay shadow-free; the near canopy is the only tree shadow caster.")
@@ -87,6 +98,10 @@ func _run() -> void:
         _fail("Foliage smoke did not find a palm crown for trunk alignment.")
         return
 
+    if species_seen.size() != 8:
+        _fail("The starter foliage set must expose all eight authored tree silhouettes.")
+        return
+
     var trunk_instances_checked := 0
     for chunk in system.get_children():
         if not chunk.name.begins_with("FoliageChunk_"):
@@ -96,7 +111,7 @@ func _run() -> void:
             _fail("Every foliage chunk must contain a batched trunk renderer.")
             return
         var expected_chunk_trees := 0
-        for species_id in range(4):
+        for species_id in range(8):
             var canopy := chunk.get_node_or_null("TreeCanopies_Species%d_LOD0" % species_id) as MultiMeshInstance3D
             if canopy != null and canopy.multimesh != null:
                 expected_chunk_trees += canopy.multimesh.instance_count
@@ -154,8 +169,9 @@ func _run() -> void:
     if season_manager == null or int(season_manager.get("current_season")) != 2:
         _fail("Autumn season transition did not reach its requested state.")
         return
-    print("[FoliageSystemSmoke] PASS trees=%d chunks=%d lod_instances=%d/%d/%d winter_density=%.2f" % [
+    print("[FoliageSystemSmoke] PASS trees=%d species=%d chunks=%d lod_instances=%d/%d/%d winter_density=%.2f" % [
         system.get_tree_count(),
+        species_seen.size(),
         system.get_chunk_count(),
         system.get_lod_instance_count(0),
         system.get_lod_instance_count(1),
