@@ -146,6 +146,10 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return
+	if not expansion_panel_source.contains('Icons.make_item_icon("special"') or not expansion_panel_source.contains("ExpansionItemInventory") or not expansion_panel_source.contains("ExpansionPlotCard_"):
+		push_error("[VisualPresentationSmoke] Land expansion selection must show distinct item PNGs and per-plot quantities")
+		get_tree().quit(1)
+		return
 	if not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
 		push_error("[VisualPresentationSmoke] Pacific motorway must retain dark asphalt contrast")
 		get_tree().quit(1)
