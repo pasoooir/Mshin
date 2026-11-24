@@ -58,3 +58,14 @@ Mshin ships original, locally bundled transparent PNG artwork for these three it
 The expansion plot picker shows all three quantities on every adjacent available plot. Selecting a plot shows each required quantity beside the player's current City Storage quantity. The SimCash shop uses the same icon catalog, and purchases still add the real Special Item to City Storage; they never bypass the normal expansion transaction.
 
 The existing progression contract remains authoritative: Mayor Level 10, adjacency to owned land, the curved-coast/highway exclusions, each plot's own item requirements, atomic item consumption, ownership update, and save/load persistence.
+
+
+## Complete visible plot-ownership layer
+
+- The expansion preview now shades every valid inland parcel, not only the next purchasable ring.
+- Owned parcels use a restrained green overlay, adjacent purchasable parcels use a high-contrast gold fill/border, and non-adjacent future parcels remain visibly locked with a muted dark overlay.
+- All parcel overlays and borders are batched into two mesh surfaces; no per-plot scene nodes are created. The permanent highway corridor and coastal reserve remain excluded.
+- Each parcel represents 8×8 cells at 2 m per cell (256 m²). The panel shows coordinates and expansion ring, and the selected plot shows its area and live Dozer Wheel/Blade/Exhaust stock-versus-cost.
+- Equipment requirements remain location-based: the ring distance from the free starter district drives the item counts. The player can only claim a plot adjacent to currently owned land, so the city grows as a connected network.
+- Plot ownership, expansion purchases, legacy migration, and build/road placement validation continue to use the same authoritative LandExpansionManager state. The overlay is a view of that state, not a second ownership database.
+- Automated regression coverage now checks owned/available/locked classification, the 256 m² parcel size, and the presence of the batched ownership overlay.

@@ -544,30 +544,84 @@ func _coastline(z: float) -> float:
 
 
 func _build_land_expansion_markers() -> void:
-	var tiles := LandExpansionManager.get_available_expansion_tiles()
+	# Render the complete purchasable land grid as one batched fill mesh and one
+	# batched outline mesh. Players can distinguish owned, immediately available,
+	# and future locked plots before opening the purchase panel.
+	var available: Dictionary = {}
+	for tile in LandExpansionManager.get_available_expansion_tiles():
+		available["%d:%d" % [tile.x, tile.y]] = true
+
+	var fills := SurfaceTool.new()
+	fills.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var lines := SurfaceTool.new()
 	lines.begin(Mesh.PRIMITIVE_LINES)
-	for tile in tiles:
-		var x0 := float(tile.x * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
-		var z0 := float(tile.y * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
-		var x1 := x0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
-		var z1 := z0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
-		var corners := [Vector3(x0, 0.055, z0), Vector3(x1, 0.055, z0), Vector3(x1, 0.055, z1), Vector3(x0, 0.055, z1)]
-		for edge in range(4):
-			lines.set_color(Color(1.0, 0.76, 0.30, 0.86))
-			lines.add_vertex(corners[edge])
-			lines.add_vertex(corners[(edge + 1) % 4])
-	var marker := MeshInstance3D.new()
-	marker.name = "LandExpansionMarkers"
-	marker.mesh = lines.commit()
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.vertex_color_use_as_albedo = true
-	material.no_depth_test = false
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	marker.material_override = material
-	marker.visible = _expansion_preview_active
-	add_child(marker)
+	for x in range(LandExpansionManager.EXPANSION_MIN_TILE_X, LandExpansionManager.EXPANSION_MAX_TILE_X + 1):
+		for y in range(LandExpansionManager.EXPANSION_MIN_TILE_Y, LandExpansionManager.EXPANSION_MAX_TILE_Y + 1):
+			var tile := Vector2i(x, y)
+			if not LandExpansionManager._is_tile_in_bounds(tile) or LandExpansionManager._is_reserved_highway_tile(tile):
+				continue
+			var key := "%d:%d" % [tile.x, tile.y]
+			var is_owned := LandExpansionManager.is_tile_owned(tile)
+			var is_available := available.has(key) and GameManager.level >= LandExpansionManager.MIN_EXPANSION_LEVEL
+			var is_level_locked := available.has(key) and not is_available
+			var tint := Color(0.20, 0.66, 0.42, 0.075)
+			var border := Color(0.42, 0.72, 0.58, 0.30)
+			if is_available:
+				tint = Color(1.0, 0.69, 0.20, 0.19)
+				border = Color(1.0, 0.76, 0.30, 0.92)
+			elif is_level_locked:
+				tint = Color(0.48, 0.34, 0.17, 0.12)
+				border = Color(0.86, 0.69, 0.43, 0.45)
+			elif not is_owned:
+				tint = Color(0.075, 0.13, 0.17, 0.115)
+				border = Color(0.72, 0.80, 0.82, 0.34)
+
+			var x0 := float(tile.x * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+			var z0 := float(tile.y * LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+			var x1 := x0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+			var z1 := z0 + float(LandExpansionManager.TILE_CELLS) * BuildManager.GRID_SIZE
+			var a := Vector3(x0, 0.052, z0)
+			var b := Vector3(x1, 0.052, z0)
+			var c := Vector3(x1, 0.052, z1)
+			var d := Vector3(x0, 0.052, z1)
+			for point in [a, b, c, a, c, d]:
+				fills.set_color(tint)
+				fills.set_normal(Vector3.UP)
+				fills.add_vertex(point)
+			var corners := [Vector3(x0, 0.061, z0), Vector3(x1, 0.061, z0), Vector3(x1, 0.061, z1), Vector3(x0, 0.061, z1)]
+			for edge in range(4):
+				lines.set_color(border)
+				lines.add_vertex(corners[edge])
+				lines.add_vertex(corners[(edge + 1) % 4])
+
+	var marker_root := Node3D.new()
+	marker_root.name = "LandExpansionMarkers"
+	var fill_instance := MeshInstance3D.new()
+	fill_instance.name = "PlotOwnershipOverlay"
+	fill_instance.mesh = fills.commit()
+	var fill_material := StandardMaterial3D.new()
+	fill_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	fill_material.vertex_color_use_as_albedo = true
+	fill_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	fill_material.no_depth_test = false
+	fill_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	fill_instance.material_override = fill_material
+	fill_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	marker_root.add_child(fill_instance)
+
+	var border_instance := MeshInstance3D.new()
+	border_instance.name = "PlotOwnershipBorders"
+	border_instance.mesh = lines.commit()
+	var border_material := StandardMaterial3D.new()
+	border_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	border_material.vertex_color_use_as_albedo = true
+	border_material.no_depth_test = false
+	border_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	border_instance.material_override = border_material
+	border_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	marker_root.add_child(border_instance)
+	marker_root.visible = _expansion_preview_active
+	add_child(marker_root)
 
 func set_expansion_preview_visible(active: bool) -> void:
 	_expansion_preview_active = active

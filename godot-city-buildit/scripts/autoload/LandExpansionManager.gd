@@ -158,6 +158,23 @@ func _distance_from_initial_land(tile: Vector2i) -> int:
 	var dy := maxi(0, maxi(INITIAL_TILE_MIN - tile.y, tile.y - INITIAL_TILE_MAX))
 	return maxi(dx, dy)
 
+func get_tile_distance(tile: Vector2i) -> int:
+	return _distance_from_initial_land(tile)
+
+func get_tile_area_square_meters() -> int:
+	return TILE_CELLS * TILE_CELLS * int(BuildManager.GRID_SIZE * BuildManager.GRID_SIZE)
+
+func get_tile_state(tile: Vector2i) -> String:
+	if not _is_tile_in_bounds(tile) or _is_reserved_highway_tile(tile):
+		return "unavailable"
+	if is_tile_owned(tile):
+		return "owned"
+	if not _is_adjacent_to_owned(tile):
+		return "locked"
+	if GameManager.level < MIN_EXPANSION_LEVEL:
+		return "level_locked"
+	return "available"
+
 func get_tile_cost(tile: Vector2i) -> Dictionary:
 	var distance := _distance_from_initial_land(tile)
 	var variation := absi(tile.x * 7 + tile.y * 11) % 2

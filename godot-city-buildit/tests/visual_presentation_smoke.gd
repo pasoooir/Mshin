@@ -142,7 +142,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	var expansion_panel_source := FileAccess.get_file_as_string("res://scripts/ui/LandExpansionPanel.gd")
-	if not world_source.contains("marker.visible = _expansion_preview_active") or not world_source.contains("func set_expansion_preview_visible(active: bool)") or not expansion_panel_source.contains("_set_world_expansion_preview(true)") or not expansion_panel_source.contains("_set_world_expansion_preview(false)"):
+	if not world_source.contains("marker_root.visible = _expansion_preview_active") or not world_source.contains("PlotOwnershipOverlay") or not world_source.contains("PlotOwnershipBorders") or not world_source.contains("LandExpansionManager.get_available_expansion_tiles()") or not world_source.contains("func set_expansion_preview_visible(active: bool)") or not expansion_panel_source.contains("_set_world_expansion_preview(true)") or not expansion_panel_source.contains("_set_world_expansion_preview(false)"):
 		push_error("[VisualPresentationSmoke] Expansion plot outlines must stay hidden during normal play and appear only while the land-expansion panel is open")
 		get_tree().quit(1)
 		return

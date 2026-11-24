@@ -274,6 +274,29 @@ func _ready() -> void:
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
 	EconomyManager.sim_cash = 500
 	var expansion_tile := LandExpansionManager.get_available_expansion_tiles()[0]
+	if LandExpansionManager.get_tile_state(expansion_tile) != "available":
+		failures.append("adjacent unowned plot was not classified as immediately available")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
+	if LandExpansionManager.get_tile_state(expansion_tile) != "level_locked":
+		failures.append("adjacent expansion plot was not visibly classified as Mayor-Level locked")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
+	if LandExpansionManager.get_tile_state(LandExpansionManager.get_owned_tiles()[0]) != "owned":
+		failures.append("starter land was not classified as owned")
+	if LandExpansionManager.get_tile_area_square_meters() != 256:
+		failures.append("8x8 plot dimensions no longer resolve to a 256 m² land parcel")
+	var found_locked_plot := false
+	for plot_x in range(LandExpansionManager.EXPANSION_MIN_TILE_X, LandExpansionManager.EXPANSION_MAX_TILE_X + 1):
+		for plot_y in range(LandExpansionManager.EXPANSION_MIN_TILE_Y, LandExpansionManager.EXPANSION_MAX_TILE_Y + 1):
+			var candidate := Vector2i(plot_x, plot_y)
+			if LandExpansionManager.get_tile_state(candidate) == "locked":
+				found_locked_plot = true
+				break
+		if found_locked_plot:
+			break
+	if not found_locked_plot:
+		failures.append("future non-adjacent plots are not represented as locked land")
+	if LandExpansionManager.get_tile_distance(expansion_tile) < 1:
+		failures.append("expansion ring distance must be measured from the free starter area")
 	var expansion_cost := LandExpansionManager.get_tile_cost(expansion_tile)
 	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
 		for _unit in range(int(expansion_cost[item_id])):
@@ -282,6 +305,12 @@ func _ready() -> void:
 				failures.append("SimCash could not buy the required expansion Special Item: " + str(item_id))
 	if not LandExpansionManager.expand_tile(expansion_tile):
 		failures.append("purchased dozer Special Items did not satisfy the normal land expansion transaction")
+	else:
+		var newly_owned_cell := Vector2i(expansion_tile.x * LandExpansionManager.TILE_CELLS + 2, expansion_tile.y * LandExpansionManager.TILE_CELLS + 2)
+		if not LandExpansionManager.is_cell_buildable(newly_owned_cell) or not LandExpansionManager.is_cell_road_buildable(newly_owned_cell):
+			failures.append("claiming a land plot did not immediately unlock its interior for buildings and roads")
+		if LandExpansionManager.get_tile_state(expansion_tile) != "owned":
+			failures.append("successfully purchased plot did not transition to owned state")
 	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
 	var locked_special := EconomyManager.buy_special_item_with_simcash("dozer_wheel", 24, LandExpansionManager.MIN_EXPANSION_LEVEL)
 	if bool(locked_special.get("success", true)):
