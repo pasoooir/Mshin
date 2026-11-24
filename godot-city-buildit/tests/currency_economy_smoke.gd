@@ -276,6 +276,10 @@ func _ready() -> void:
 	var expansion_tile := LandExpansionManager.get_available_expansion_tiles()[0]
 	if LandExpansionManager.get_tile_state(expansion_tile) != "available":
 		failures.append("adjacent unowned plot was not classified as immediately available")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL - 1
+	if LandExpansionManager.get_tile_state(expansion_tile) != "level_locked":
+		failures.append("adjacent expansion plot was not visibly classified as Mayor-Level locked")
+	GameManager.level = LandExpansionManager.MIN_EXPANSION_LEVEL
 	if LandExpansionManager.get_tile_state(LandExpansionManager.get_owned_tiles()[0]) != "owned":
 		failures.append("starter land was not classified as owned")
 	if LandExpansionManager.get_tile_area_square_meters() != 256:
