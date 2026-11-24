@@ -403,7 +403,8 @@ func _ready() -> void:
 		var expansion_texture := ResourceLoader.load(expansion_icon_path) as Texture2D
 		if expansion_texture == null or expansion_texture.get_image() == null or expansion_texture.get_image().is_empty():
 			failures.append("land expansion PNG icon failed to import: " + str(expansion_item_id))
-	if Icons.get_icon_tex("dozer_wheel") == null or Icons.get_icon_tex("dozer_blade") == null or Icons.get_icon_tex("dozer_exhaust") == null:
+	var icon_catalog: Script = load("res://scripts/ui/Icons.gd")
+	if icon_catalog.get_icon_tex("dozer_wheel") == null or icon_catalog.get_icon_tex("dozer_blade") == null or icon_catalog.get_icon_tex("dozer_exhaust") == null:
 		failures.append("land expansion item catalog does not resolve all three dozer icons")
 
 	StorageManager.from_save_dict(original_storage)
