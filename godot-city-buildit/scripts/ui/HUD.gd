@@ -5551,6 +5551,12 @@ func _close_settings_panel() -> void:
 	var closing_overlay := settings_overlay
 	settings_overlay = null
 	closing_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Disabling only the root/panel does not disable their child Buttons and
+	# TabBar controls. Make the entire fading modal input-transparent so the
+	# next screen (for example the city coach) can receive taps immediately.
+	for descendant in closing_overlay.find_children("*", "Control", true, false):
+		var control := descendant as Control
+		control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var closing_panel := closing_overlay.find_child("SettingsPanel", true, false) as Control
 	var closing_backdrop := closing_overlay.find_child("SettingsBackdrop", true, false) as Control
 	if is_instance_valid(closing_panel):
