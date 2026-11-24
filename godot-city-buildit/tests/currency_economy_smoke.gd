@@ -274,6 +274,25 @@ func _ready() -> void:
 	StorageManager.from_save_dict({"capacity": 100, "items": {}})
 	EconomyManager.sim_cash = 500
 	var expansion_tile := LandExpansionManager.get_available_expansion_tiles()[0]
+	if LandExpansionManager.get_tile_state(expansion_tile) != "available":
+		failures.append("adjacent unowned plot was not classified as immediately available")
+	if LandExpansionManager.get_tile_state(LandExpansionManager.get_owned_tiles()[0]) != "owned":
+		failures.append("starter land was not classified as owned")
+	if LandExpansionManager.get_tile_area_square_meters() != 256:
+		failures.append("8x8 plot dimensions no longer resolve to a 256 m² land parcel")
+	var found_locked_plot := false
+	for plot_x in range(LandExpansionManager.EXPANSION_MIN_TILE_X, LandExpansionManager.EXPANSION_MAX_TILE_X + 1):
+		for plot_y in range(LandExpansionManager.EXPANSION_MIN_TILE_Y, LandExpansionManager.EXPANSION_MAX_TILE_Y + 1):
+			var candidate := Vector2i(plot_x, plot_y)
+			if LandExpansionManager.get_tile_state(candidate) == "locked":
+				found_locked_plot = true
+				break
+		if found_locked_plot:
+			break
+	if not found_locked_plot:
+		failures.append("future non-adjacent plots are not represented as locked land")
+	if LandExpansionManager.get_tile_distance(expansion_tile) < 1:
+		failures.append("expansion ring distance must be measured from the free starter area")
 	var expansion_cost := LandExpansionManager.get_tile_cost(expansion_tile)
 	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
 		for _unit in range(int(expansion_cost[item_id])):
