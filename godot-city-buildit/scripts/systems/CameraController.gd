@@ -13,10 +13,10 @@ extends Node3D
 @export var world_min_z: float = -240.0
 @export var world_max_z: float = 240.0
 @export_range(20.0, 75.0, 1.0) var camera_pitch_degrees: float = 42.0
-@export var pan_inertia_damping: float = 6.5
+@export var pan_inertia_damping: float = 8.0
 @export var orbit_inertia_damping: float = 10.0
 @export var focus_smoothing: float = 8.0
-@export_range(0.1, 1.0, 0.05) var pan_screen_sensitivity: float = 0.95
+@export_range(0.1, 1.0, 0.05) var pan_screen_sensitivity: float = 0.85
 
 @onready var camera: Camera3D = $Camera3D
 
@@ -41,7 +41,7 @@ const TWO_FINGER_PAN_DEADZONE := 0.8
 const PINCH_DEADZONE := 0.35
 const TWIST_DEADZONE := 0.002
 const MAX_CAMERA_STEP := 1.0 / 20.0
-const MAX_PAN_INERTIA_SPEED := 1600.0
+const MAX_PAN_INERTIA_SPEED := 950.0
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, -45.0, 0.0)
@@ -131,6 +131,19 @@ static func clamp_pan_velocity(velocity: Vector2) -> Vector2:
 	if velocity.length_squared() <= MAX_PAN_INERTIA_SPEED * MAX_PAN_INERTIA_SPEED:
 		return velocity
 	return velocity.normalized() * MAX_PAN_INERTIA_SPEED
+
+
+static func scale_pan_delta(world_delta: Vector3, sensitivity: float) -> Vector3:
+	var factor := clampf(sensitivity, 0.1, 1.0)
+	return Vector3(world_delta.x * factor, 0.0, world_delta.z * factor)
+
+
+func _effective_pan_sensitivity() -> float:
+	if GraphicsSettingsManager != null:
+		var preset := GraphicsSettingsManager.get_quality_preset(GraphicsSettingsManager.quality)
+		if not preset.is_empty():
+			return float(preset.get("camera_pan_sensitivity", pan_screen_sensitivity))
+	return pan_screen_sensitivity
 
 static func interpolate_focus(current: Vector3, target: Vector3, delta: float, smoothing: float) -> Vector3:
 	var weight := 1.0 - exp(-maxf(0.0, smoothing) * maxf(0.0, delta))
@@ -277,7 +290,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_pan_between_screen_points(previous_single_position, event.position)
 				orbit_velocity = 0.0
 				var frame_delta := maxf(get_process_delta_time(), 1.0 / 120.0)
-				pan_velocity = clamp_pan_velocity(event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta)
+				var measured_velocity: Vector2 = event.screen_velocity if event.screen_velocity.length_squared() > 0.0 else event.relative / frame_delta
+				# Smooth noisy touch-driver velocity before releasing into inertia.
+				pan_velocity = clamp_pan_velocity(pan_velocity.lerp(measured_velocity, 0.38))
 			_last_single_touch_position = event.position
 		elif touch_points.size() >= 2:
 			_update_pinch()
@@ -406,7 +421,8 @@ func _pan_between_screen_points(previous_position: Vector2, current_position: Ve
 	if previous_ground == null or current_ground == null:
 		return
 	is_focus_animating = false
-	global_position += previous_ground - current_ground
+	var world_delta: Vector3 = previous_ground - current_ground
+	global_position += scale_pan_delta(world_delta, _effective_pan_sensitivity())
 	global_position.y = 0.0
 	global_position.x = clampf(global_position.x, world_min_x, world_max_x)
 	global_position.z = clampf(global_position.z, world_min_z, world_max_z)
