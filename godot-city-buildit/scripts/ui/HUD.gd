@@ -5614,7 +5614,7 @@ func _show_settings_panel() -> void:
 	layout.add_child(heading)
 	var avatar_frame := PanelContainer.new()
 	avatar_frame.name = "SettingsProfileAvatarFrame"
-	avatar_frame.custom_minimum_size = Vector2(58, 58) * compact_scale
+	avatar_frame.custom_minimum_size = Vector2(72, 72) * compact_scale
 	avatar_frame.visible = PlayerAccountManager.is_authenticated()
 	avatar_frame.clip_contents = true
 	var avatar_frame_style := StyleBoxFlat.new()
