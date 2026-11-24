@@ -1041,7 +1041,7 @@ func _build_tree_belts() -> void:
 
 	var foliage_system := StylizedFoliageSystemScript.new()
 	foliage_system.name = "StylizedFoliageSystem"
-	foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture)
+	foliage_system.configure_tree_positions(positions, 2026, bark_material.albedo_texture, _is_low_graphics())
 	add_child(foliage_system)
 	add_child(roots)
 
