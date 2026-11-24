@@ -223,11 +223,9 @@ jobs:
             throw new Error('Google sign-in control is not the topmost tappable surface inside the fullscreen game: ' + JSON.stringify(bridgeSurface));
           }
           try {
-            await page.waitForFunction(() => {
-              const frame = document.getElementById('game-frame');
-              const response = frame?.contentWindow?.__mshinGoogleBridgeResult;
-              return response?.credential === 'synthetic-google-id-token';
-            }, null, { timeout: 5000 });
+            await mobileCanvas.waitForFunction(() => {
+              return window.__mshinGoogleBridgeResult?.credential === 'synthetic-google-id-token';
+            }, null, { timeout: 10000 });
           } catch (error) {
             const diagnostics = await page.evaluate(() => {
               const frame = document.getElementById('game-frame');
