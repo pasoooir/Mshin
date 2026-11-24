@@ -1,5 +1,20 @@
 extends Node
 
+func _reference_plot_in_bounds(tile: Vector2i) -> bool:
+	if (
+		tile.x < LandExpansionManager.EXPANSION_MIN_TILE_X
+		or tile.x > LandExpansionManager.EXPANSION_MAX_TILE_X
+		or tile.y < LandExpansionManager.EXPANSION_MIN_TILE_Y
+		or tile.y > LandExpansionManager.EXPANSION_MAX_TILE_Y
+	):
+		return false
+	for cell_x in range(tile.x * LandExpansionManager.TILE_CELLS, (tile.x + 1) * LandExpansionManager.TILE_CELLS):
+		for cell_y in range(tile.y * LandExpansionManager.TILE_CELLS, (tile.y + 1) * LandExpansionManager.TILE_CELLS):
+			if not LandExpansionManager.is_cell_inside_coastal_build_boundary(Vector2i(cell_x, cell_y)):
+				return false
+	return true
+
+
 func _audit_all_production_chains(failures: Array[String]) -> void:
 	var raw_values: Dictionary = ProductionManager.raw_materials
 	var recipes: Dictionary = ProductionManager.crafted_items
@@ -314,7 +329,11 @@ func _ready() -> void:
 	for plot_x in range(LandExpansionManager.EXPANSION_MIN_TILE_X, LandExpansionManager.EXPANSION_MAX_TILE_X + 1):
 		for plot_y in range(LandExpansionManager.EXPANSION_MIN_TILE_Y, LandExpansionManager.EXPANSION_MAX_TILE_Y + 1):
 			var candidate := Vector2i(plot_x, plot_y)
-			if not LandExpansionManager._is_tile_in_bounds(candidate) and available_keys.has("%d:%d" % [plot_x, plot_y]):
+			var expected_bounds := _reference_plot_in_bounds(candidate)
+			var actual_bounds := LandExpansionManager._is_tile_in_bounds(candidate)
+			if actual_bounds != expected_bounds:
+				failures.append("cached coastal parcel boundary differs from exhaustive 64-cell reference at %s" % str(candidate))
+			if not actual_bounds and available_keys.has("%d:%d" % [plot_x, plot_y]):
 				failures.append("coastal boundary plot was incorrectly exposed as purchasable")
 	if available_tiles.is_empty():
 		failures.append("starter city has no adjacent expansion plots")
