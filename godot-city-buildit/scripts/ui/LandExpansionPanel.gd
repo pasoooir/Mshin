@@ -87,7 +87,7 @@ func _rebuild_panel() -> void:
 	header.add_child(close)
 
 	var hint := Label.new()
-	hint.text = "Choose a plot connected to your current city limits. Each plot has its own equipment cost."
+	hint.text = "Owned plots are green, available plots are gold, and locked plots are shaded. Expand outward one connected plot at a time."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_color_override("font_color", Color("#405B6C"))
 	hint.add_theme_font_size_override("font_size", 17)
@@ -123,8 +123,8 @@ func _rebuild_panel() -> void:
 		plot.name = "ExpansionPlot_%d_%d" % [tile.x, tile.y]
 		plot.custom_minimum_size.y = 42
 		plot.add_theme_font_size_override("font_size", 15)
-		plot.text = "PLOT %d, %d" % [tile.x, tile.y]
-		plot.tooltip_text = "Select this adjacent plot to inspect its expansion requirements."
+		plot.text = "PLOT %d · %d m² · RING %d" % [tile.x, LandExpansionManager.get_tile_area_square_meters(), LandExpansionManager.get_tile_distance(tile) + 1]
+		plot.tooltip_text = "Adjacent plot · %d m² · equipment cost increases with distance from your starter city." % LandExpansionManager.get_tile_area_square_meters()
 		plot.pressed.connect(_select_tile.bind(tile))
 		card_layout.add_child(plot)
 		var item_strip := HBoxContainer.new()
@@ -163,7 +163,7 @@ func _rebuild_panel() -> void:
 	layout.add_child(requirements_row)
 	status_label = Label.new()
 	status_label.name = "ExpansionStatus"
-	status_label.text = "Owned plots: %d" % LandExpansionManager.get_owned_tile_count()
+	status_label.text = "Owned plots: %d · %d m² of city land" % [LandExpansionManager.get_owned_tile_count(), LandExpansionManager.get_owned_tile_count() * LandExpansionManager.get_tile_area_square_meters()]
 	status_label.add_theme_color_override("font_color", Color("#28799C"))
 	status_label.add_theme_font_size_override("font_size", 16)
 	layout.add_child(status_label)
@@ -179,7 +179,7 @@ func _rebuild_panel() -> void:
 func _select_tile(tile: Vector2i) -> void:
 	selected_tile = tile
 	var cost: Dictionary = LandExpansionManager.get_tile_cost(tile)
-	selection_label.text = "Selected plot (%d, %d)" % [tile.x, tile.y]
+	selection_label.text = "Selected plot (%d, %d) · %d m² · expansion ring %d" % [tile.x, tile.y, LandExpansionManager.get_tile_area_square_meters(), LandExpansionManager.get_tile_distance(tile) + 1]
 	requirement_label.text = "Expansion equipment · required / in storage"
 	for child in requirements_row.get_children():
 		child.queue_free()
