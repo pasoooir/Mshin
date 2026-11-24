@@ -562,12 +562,16 @@ func _build_land_expansion_markers() -> void:
 				continue
 			var key := "%d:%d" % [tile.x, tile.y]
 			var is_owned := LandExpansionManager.is_tile_owned(tile)
-			var is_available := available.has(key)
+			var is_available := available.has(key) and GameManager.level >= LandExpansionManager.MIN_EXPANSION_LEVEL
+			var is_level_locked := available.has(key) and not is_available
 			var tint := Color(0.20, 0.66, 0.42, 0.075)
 			var border := Color(0.42, 0.72, 0.58, 0.30)
 			if is_available:
 				tint = Color(1.0, 0.69, 0.20, 0.19)
 				border = Color(1.0, 0.76, 0.30, 0.92)
+			elif is_level_locked:
+				tint = Color(0.48, 0.34, 0.17, 0.12)
+				border = Color(0.86, 0.69, 0.43, 0.45)
 			elif not is_owned:
 				tint = Color(0.075, 0.13, 0.17, 0.115)
 				border = Color(0.72, 0.80, 0.82, 0.34)
