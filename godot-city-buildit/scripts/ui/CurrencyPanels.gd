@@ -394,7 +394,8 @@ func _add_expansion_item_shop() -> void:
 	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
 		var definition := LandExpansionManager.get_expansion_item_definition(item_id)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
+		row.add_theme_constant_override("separation", 10)
+		row.add_child(Icons.make_item_icon("special", item_id, Vector2(52, 52) * _scale))
 		var info := VBoxContainer.new()
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.add_child(_label(str(definition.get("name", item_id)), 14, Color.WHITE))
