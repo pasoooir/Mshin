@@ -3,6 +3,7 @@ class_name StylizedFoliageSystem
 
 const SeasonManagerScript = preload("res://scripts/world/FoliageSeasonManager.gd")
 const CHUNK_SIZE := 64.0
+const TREE_SPECIES_COUNT := 8
 const CANOPY_CROWN_HEIGHT_FACTOR := 3.0
 const PALM_CROWN_HEIGHT_FACTOR := 1.2
 const LOD_BEGIN := [0.0, 38.0, 108.0]
@@ -64,7 +65,7 @@ func configure_tree_positions(positions: Array[Vector3], seed_value: int = 2026,
         )
         if not buckets.has(chunk_key):
             buckets[chunk_key] = {}
-        var species_id := index % 4
+        var species_id := index % TREE_SPECIES_COUNT
         var species_bucket: Dictionary = buckets[chunk_key]
         if not species_bucket.has(species_id):
             species_bucket[species_id] = []
@@ -126,6 +127,18 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
                     3: # Fan-palm fronds; beach palms remain separate coastal landmarks.
                         width_factor = 1.18
                         height_factor = 0.88
+                    4: # Broad umbrella crown.
+                        width_factor = 1.28
+                        height_factor = 0.86
+                    5: # Narrow columnar ornamental tree.
+                        width_factor = 0.76
+                        height_factor = 1.28
+                    6: # Wide, softly drooping willow crown.
+                        width_factor = 1.30
+                        height_factor = 0.94
+                    7: # Compact rounded street tree.
+                        width_factor = 0.88
+                        height_factor = 0.82
 
                 var basis := Basis(Vector3.UP, yaw).scaled(
                     Vector3(
@@ -207,7 +220,9 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
     trunks.instance_count = entries.size()
     var bark_palette := [
         Color("#806044"), Color("#70513C"),
-        Color("#6B5846"), Color("#9A7650")
+        Color("#6B5846"), Color("#9A7650"),
+        Color("#76563D"), Color("#876548"),
+        Color("#69513F"), Color("#94704E")
     ]
     for index in range(entries.size()):
         var entry: Dictionary = entries[index]
@@ -224,6 +239,14 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
                 width_factor = 0.96
             3:
                 width_factor = 1.18
+            4:
+                width_factor = 1.28
+            5:
+                width_factor = 0.76
+            6:
+                width_factor = 1.30
+            7:
+                width_factor = 0.88
 
         var trunk_height := _get_tree_crown_height(species_id, stable_random)
         var width_scale := width_factor * (0.94 + fposmod(stable_random * 8.3, 0.12))
@@ -253,6 +276,109 @@ func _build_chunk_trunks(chunk_root: Node3D, species_buckets: Dictionary) -> voi
 
 
 func _create_canopy_mesh(species_id: int, card_count: int, segments_x: int, segments_y: int) -> ArrayMesh:
+    # Seven broadleaf/conifer silhouettes use a closed, low-poly 3D crown shell.
+    # Only the fan palm retains radial crossed fronds. This removes the flat
+    # billboard-like read when the camera orbits around a tree.
+    if species_id != 3:
+        return _create_volumetric_canopy_mesh(species_id, card_count, segments_y)
+    return _create_palm_canopy_mesh(species_id, card_count, segments_x, segments_y)
+
+
+func _create_volumetric_canopy_mesh(species_id: int, lod_radial_segments: int, lod_vertical_segments: int) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var radial_segments := maxi(lod_radial_segments, 6)
+    var vertical_segments := maxi(lod_vertical_segments, 2)
+
+    for y_step in range(vertical_segments):
+        var v0 := float(y_step) / float(vertical_segments)
+        var v1 := float(y_step + 1) / float(vertical_segments)
+        for x_step in range(radial_segments):
+            var u0 := float(x_step) / float(radial_segments)
+            var u1 := float(x_step + 1) / float(radial_segments)
+            var angle0 := u0 * TAU
+            var angle1 := u1 * TAU
+            _add_volume_triangle(surface, species_id, angle0, v0, angle0, v1, angle1, v0)
+            _add_volume_triangle(surface, species_id, angle1, v0, angle0, v1, angle1, v1)
+
+    surface.generate_normals()
+    return surface.commit()
+
+
+func _add_volume_triangle(
+    surface: SurfaceTool,
+    species_id: int,
+    angle_a: float, v_a: float,
+    angle_b: float, v_b: float,
+    angle_c: float, v_c: float
+) -> void:
+    _add_volume_vertex(surface, species_id, angle_a, v_a)
+    _add_volume_vertex(surface, species_id, angle_b, v_b)
+    _add_volume_vertex(surface, species_id, angle_c, v_c)
+
+
+func _add_volume_vertex(surface: SurfaceTool, species_id: int, angle: float, v: float) -> void:
+    var width := 1.28
+    var height := 2.20
+    var center_y := 0.04
+    match species_id:
+        1:
+            width = 1.10
+            height = 2.65
+            center_y = 0.12
+        2:
+            width = 1.30
+            height = 2.42
+            center_y = 0.02
+        4:
+            width = 1.48
+            height = 1.95
+            center_y = 0.02
+        5:
+            width = 0.98
+            height = 2.82
+            center_y = 0.12
+        6:
+            width = 1.58
+            height = 2.38
+            center_y = -0.02
+        7:
+            width = 1.16
+            height = 1.88
+            center_y = 0.02
+
+    var normalized_height := v * 2.0 - 1.0
+    var round_profile := sqrt(maxf(0.025, 1.0 - normalized_height * normalized_height))
+    var profile := round_profile
+    match species_id:
+        1:
+            profile = pow(round_profile, 0.62)
+        2:
+            profile = pow(maxf(0.015, 1.0 - v), 0.82) * (0.92 + 0.08 * cos(v * PI * 5.0))
+        4:
+            if v < 0.22:
+                profile = lerpf(0.12, 1.0, v / 0.22)
+            else:
+                profile = sqrt(maxf(0.025, 1.0 - pow((v - 0.53) / 0.58, 2.0)))
+        5:
+            profile = pow(maxf(0.025, sin(PI * v)), 0.34) * 0.88
+        6:
+            profile = pow(round_profile, 0.48) * (1.0 - 0.10 * v)
+        7:
+            profile = pow(round_profile, 1.18)
+
+    var lobes := 1.0 + 0.065 * sin(angle * 5.0 + float(species_id) * 1.7)
+    lobes += 0.028 * sin(angle * 9.0 - float(species_id) * 0.8)
+    var radius := maxf(0.025, profile * width * lobes)
+    var point := Vector3(cos(angle) * radius, center_y - height * 0.5 + v * height, sin(angle) * radius)
+    var uv := Vector2(angle / TAU, v)
+    var wind_weight := 0.18 + v * 0.82
+    surface.set_uv(uv)
+    surface.set_uv2(Vector2(wind_weight, 0.0))
+    surface.add_vertex(point)
+
+
+func _create_palm_canopy_mesh(species_id: int, card_count: int, segments_x: int, segments_y: int) -> ArrayMesh:
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 
