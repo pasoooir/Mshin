@@ -223,8 +223,12 @@ jobs:
             throw new Error('Google sign-in control is not the topmost tappable surface inside the fullscreen game: ' + JSON.stringify(bridgeSurface));
           }
           try {
-            await mobileCanvas.waitForFunction(() => {
-              return window.__mshinGoogleBridgeResult?.credential === 'synthetic-google-id-token';
+            // The bridge response is owned by the game iframe. Poll it from
+            // the parent page through the same-origin frame reference so the
+            // wait and the diagnostics observe exactly the same JS context.
+            await page.waitForFunction(() => {
+              const frame = document.getElementById('game-frame');
+              return frame?.contentWindow?.__mshinGoogleBridgeResult?.credential === 'synthetic-google-id-token';
             }, null, { timeout: 10000 });
           } catch (error) {
             const diagnostics = await page.evaluate(() => {
@@ -325,7 +329,15 @@ jobs:
           if (captures.length !== 3) {
             throw new Error('Visual acceptance requires all overview, near-zoom and medium-zoom PNG captures; received ' + captures.length);
           }
-          await browser.close();
+          // SwiftShader can leave Chromium's GPU utility process alive after
+          // the page has closed. All assertions and PNG writes are complete at
+          // this point; bound browser teardown and terminate the test process
+          // so CI never burns the remaining step timeout on orphaned GPU work.
+          await Promise.race([
+            browser.close(),
+            new Promise(resolve => setTimeout(resolve, 2000))
+          ]);
+          process.exit(0);
           NODE
       - name: Upload real WebGL visual acceptance captures
         uses: actions/upload-artifact@v4
