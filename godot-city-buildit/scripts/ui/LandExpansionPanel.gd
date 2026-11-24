@@ -1,11 +1,14 @@
 extends Control
 
+const Icons = preload("res://scripts/ui/Icons.gd")
+
 var selected_tile := Vector2i(999, 999)
 var requirement_label: Label
 var confirm_button: Button
 var selection_label: Label
 var tile_grid: GridContainer
 var status_label: Label
+var requirements_row: HBoxContainer
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -96,7 +99,7 @@ func _rebuild_panel() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroll)
 	tile_grid = GridContainer.new()
-	tile_grid.columns = 3
+	tile_grid.columns = 2
 	tile_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile_grid.add_theme_constant_override("h_separation", 8)
 	tile_grid.add_theme_constant_override("v_separation", 8)
@@ -104,14 +107,41 @@ func _rebuild_panel() -> void:
 
 	for tile in LandExpansionManager.get_available_expansion_tiles():
 		var cost: Dictionary = LandExpansionManager.get_tile_cost(tile)
+		var card := PanelContainer.new()
+		card.name = "ExpansionPlotCard_%d_%d" % [tile.x, tile.y]
+		card.custom_minimum_size = Vector2(250, 112)
+		var card_style := StyleBoxFlat.new()
+		card_style.bg_color = Color("#EAF1F4")
+		card_style.border_color = Color("#C6D5DC")
+		card_style.set_border_width_all(1)
+		card_style.set_corner_radius_all(12)
+		card.add_theme_stylebox_override("panel", card_style)
+		var card_layout := VBoxContainer.new()
+		card_layout.add_theme_constant_override("separation", 5)
+		card.add_child(card_layout)
 		var plot := Button.new()
 		plot.name = "ExpansionPlot_%d_%d" % [tile.x, tile.y]
-		plot.custom_minimum_size = Vector2(190, 92)
-		plot.add_theme_font_size_override("font_size", 16)
-		plot.text = "PLOT %d, %d\nW %d · B %d · E %d" % [tile.x, tile.y, int(cost["dozer_wheel"]), int(cost["dozer_blade"]), int(cost["dozer_exhaust"])]
+		plot.custom_minimum_size.y = 42
+		plot.add_theme_font_size_override("font_size", 15)
+		plot.text = "PLOT %d, %d" % [tile.x, tile.y]
 		plot.tooltip_text = "Select this adjacent plot to inspect its expansion requirements."
 		plot.pressed.connect(_select_tile.bind(tile))
-		tile_grid.add_child(plot)
+		card_layout.add_child(plot)
+		var item_strip := HBoxContainer.new()
+		item_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+		item_strip.add_theme_constant_override("separation", 12)
+		card_layout.add_child(item_strip)
+		for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
+			var item_group := HBoxContainer.new()
+			item_group.add_theme_constant_override("separation", 3)
+			item_group.add_child(Icons.make_item_icon("special", str(item_id), Vector2(28, 28)))
+			var amount := Label.new()
+			amount.text = str(int(cost[item_id]))
+			amount.add_theme_font_size_override("font_size", 15)
+			amount.add_theme_color_override("font_color", Color("#17364A"))
+			item_group.add_child(amount)
+			item_strip.add_child(item_group)
+		tile_grid.add_child(card)
 
 	selection_label = Label.new()
 	selection_label.name = "ExpansionSelection"
@@ -127,6 +157,10 @@ func _rebuild_panel() -> void:
 	requirement_label.add_theme_color_override("font_color", Color("#526D7D"))
 	requirement_label.add_theme_font_size_override("font_size", 16)
 	layout.add_child(requirement_label)
+	requirements_row = HBoxContainer.new()
+	requirements_row.name = "ExpansionItemInventory"
+	requirements_row.add_theme_constant_override("separation", 14)
+	layout.add_child(requirements_row)
 	status_label = Label.new()
 	status_label.name = "ExpansionStatus"
 	status_label.text = "Owned plots: %d" % LandExpansionManager.get_owned_tile_count()
@@ -146,10 +180,20 @@ func _select_tile(tile: Vector2i) -> void:
 	selected_tile = tile
 	var cost: Dictionary = LandExpansionManager.get_tile_cost(tile)
 	selection_label.text = "Selected plot (%d, %d)" % [tile.x, tile.y]
-	requirement_label.text = "Required: %d Dozer Wheels · %d Dozer Blades · %d Dozer Exhausts\nIn storage: %d · %d · %d" % [
-		int(cost["dozer_wheel"]), int(cost["dozer_blade"]), int(cost["dozer_exhaust"]),
-		StorageManager.get_count("dozer_wheel"), StorageManager.get_count("dozer_blade"), StorageManager.get_count("dozer_exhaust")
-	]
+	requirement_label.text = "Expansion equipment · required / in storage"
+	for child in requirements_row.get_children():
+		child.queue_free()
+	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
+		var item_group := VBoxContainer.new()
+		item_group.add_theme_constant_override("separation", 2)
+		item_group.add_child(Icons.make_item_icon("special", str(item_id), Vector2(42, 42)))
+		var count := Label.new()
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count.text = "%d / %d" % [StorageManager.get_count(str(item_id)), int(cost[item_id])]
+		count.add_theme_font_size_override("font_size", 14)
+		count.add_theme_color_override("font_color", Color("#17364A"))
+		item_group.add_child(count)
+		requirements_row.add_child(item_group)
 	var error := LandExpansionManager.get_tile_error(tile)
 	if error.is_empty():
 		status_label.text = "All requirements met. Confirm to claim this land."

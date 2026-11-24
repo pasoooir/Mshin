@@ -4,6 +4,7 @@ const ROOT := "res://assets/icons/"
 const FALLBACK := "res://assets/icons/ui/placeholder.png"
 const ROOT_IDS := ["bulldozer", "commercial", "fallback", "fire", "hard_hat", "industrial", "park", "parks", "power", "residential", "road", "services"]
 const UI_VECTOR_IDS := ["regions"]
+const SPECIAL_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 const RAW_IDS := ["metal", "wood", "plastic", "seeds", "minerals", "chemicals", "textiles", "sugar_spices", "glass", "animal_feed", "electrical", "coconut", "snowberry", "cactus_fruit", "herbs", "olives"]
 const CRAFTED_IDS := ["nails", "planks", "bricks", "cement", "glue", "paint", "hammer", "measuring_tape", "shovel", "cooking_utensils", "ladder", "drill", "chair", "table", "home_textiles", "cupboard", "couch", "vegetables", "flour_bag", "cream", "corn", "cheese", "beef", "ice_cream_sandwich", "pizza", "burger", "cheese_fries", "lemonade_bottle", "popcorn", "bread_roll", "bbq_grill", "microwave_oven", "fruit_berries", "tree_sapling", "donuts", "green_smoothie", "cherry_cheesecake", "frozen_yogurt", "coffee", "refrigerator", "lighting_system", "tv", "grass", "garden_furniture", "lawn_mower", "fire_pit", "garden_gnome", "cap", "shoes", "watch", "business_suit", "backpack", "tennis_racket", "sports_drink", "soccer_shoes", "protein_bar", "ping_pong_table", "block_letters", "kite", "teddy_bear", "game_console", "forged_iron", "carved_wood", "cut_stone", "tapestries", "stained_glass", "wool_shirt", "picnic_basket", "apple_jam", "tiramisu", "churros", "profiterole", "mochi", "pavlova"]
@@ -63,6 +64,8 @@ static func category_for_id(id: String) -> String:
 		return "specializations"
 	if id in ["road", "road_build", "road_upgrade", "road_bulldoze"]:
 		return "roads"
+	if SPECIAL_IDS.has(id):
+		return "special"
 	return "ui"
 
 static func resolved_id(id: String) -> String:
@@ -110,7 +113,7 @@ static func get_icon_keys() -> Array[String]:
 	var keys: Array[String] = []
 	for icon_id in UI_IDS:
 		keys.append(str(icon_id))
-	for icon_id in RAW_IDS + CRAFTED_IDS + RESIDENTIAL_IDS + COMMERCIAL_IDS + INDUSTRIAL_IDS + SERVICE_IDS + SPECIALIZATION_IDS:
+	for icon_id in RAW_IDS + CRAFTED_IDS + RESIDENTIAL_IDS + COMMERCIAL_IDS + INDUSTRIAL_IDS + SERVICE_IDS + SPECIALIZATION_IDS + SPECIAL_IDS:
 		if not keys.has(str(icon_id)):
 			keys.append(str(icon_id))
 	return keys
@@ -136,7 +139,8 @@ static func validate_all_icons() -> bool:
 		"services": SERVICE_IDS,
 		"specializations": SPECIALIZATION_IDS,
 		"roads": ROAD_IDS,
-		"status": STATUS_IDS
+		"status": STATUS_IDS,
+		"special": SPECIAL_IDS
 	}
 	for category in catalog:
 		for icon_id in catalog[category]:

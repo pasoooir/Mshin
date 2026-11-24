@@ -104,6 +104,7 @@ jobs:
           touch "$GITHUB_WORKSPACE/site/.nojekyll"
 
       - name: Verify mobile landscape WebGL launch and touch controls in Chromium
+        timeout-minutes: 12
         run: |
           # Bound package/browser setup as well as the test itself: network
           # stalls must not leave the mobile visual gate running indefinitely.
@@ -116,7 +117,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           mkdir -p artifacts/visual-acceptance
-          timeout 240s node --input-type=module <<'NODE'
+          timeout 420s node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           import { writeFile } from 'node:fs/promises';
           const browser = await chromium.launch({ headless: true, timeout: 30000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader'] });

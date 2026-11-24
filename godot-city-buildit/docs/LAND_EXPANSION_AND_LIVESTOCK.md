@@ -44,3 +44,17 @@ The camera pan boundary now reaches the map edge (90 world units), so players ca
 
 
 The visible build grid is generated from owned plots rather than a fixed starter rectangle. When a plot is purchased, its build grid appears immediately; locked plots remain shaded and do not receive build-grid lines.
+
+
+## City expansion equipment presentation
+
+The land-expansion economy uses the three SimCity BuildIt-style bulldozer Special Items:
+- `dozer_wheel` — Dozer Wheel
+- `dozer_blade` — Dozer Blade
+- `dozer_exhaust` — Dozer Exhaust
+
+Mshin ships original, locally bundled transparent PNG artwork for these three items in `assets/icons/special/`. The images are authored for this project and are not copied from EA artwork. They are imported as local Godot resources so the Web build does not depend on a runtime CDN request or network availability.
+
+The expansion plot picker shows all three quantities on every adjacent available plot. Selecting a plot shows each required quantity beside the player's current City Storage quantity. The SimCash shop uses the same icon catalog, and purchases still add the real Special Item to City Storage; they never bypass the normal expansion transaction.
+
+The existing progression contract remains authoritative: Mayor Level 10, adjacency to owned land, the curved-coast/highway exclusions, each plot's own item requirements, atomic item consumption, ownership update, and save/load persistence.

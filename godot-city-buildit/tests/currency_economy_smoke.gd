@@ -394,6 +394,18 @@ func _ready() -> void:
 		var path: String = "res://assets/icons/ui/currency/" + asset
 		if not ResourceLoader.exists(path) or ResourceLoader.load(path) == null:
 			failures.append("3D currency icon failed to load: " + asset)
+	# City expansion uses the three distinct bulldozer Special Items as local PNGs.
+	for expansion_item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
+		var expansion_icon_path := "res://assets/icons/special/%s.png" % str(expansion_item_id)
+		if not ResourceLoader.exists(expansion_icon_path):
+			failures.append("land expansion PNG icon is missing: " + str(expansion_item_id))
+			continue
+		var expansion_texture := ResourceLoader.load(expansion_icon_path) as Texture2D
+		if expansion_texture == null or expansion_texture.get_image() == null or expansion_texture.get_image().is_empty():
+			failures.append("land expansion PNG icon failed to import: " + str(expansion_item_id))
+	var icon_catalog: Script = load("res://scripts/ui/Icons.gd")
+	if icon_catalog.get_icon_tex("dozer_wheel") == null or icon_catalog.get_icon_tex("dozer_blade") == null or icon_catalog.get_icon_tex("dozer_exhaust") == null:
+		failures.append("land expansion item catalog does not resolve all three dozer icons")
 
 	StorageManager.from_save_dict(original_storage)
 	GameManager.level = original_level
