@@ -28,6 +28,9 @@ const HIGHWAY_RESERVED_TILE_MAX_X := -4
 const EXPANSION_ITEM_IDS := ["dozer_wheel", "dozer_blade", "dozer_exhaust"]
 
 var owned_tiles: Dictionary = {}
+# Coastal parcel geometry is immutable; cache each result so the world overlay
+# and purchase panel share one boundary evaluation per plot.
+var _tile_bounds_cache: Dictionary = {}
 
 func _ready() -> void:
 	_register_expansion_items()
@@ -65,18 +68,34 @@ func is_cell_inside_coastal_build_boundary(cell: Vector2i) -> bool:
 	)
 
 func _is_tile_in_bounds(tile: Vector2i) -> bool:
+	var key := _tile_key(tile)
+	if _tile_bounds_cache.has(key):
+		return bool(_tile_bounds_cache[key])
 	if (
 		tile.x < EXPANSION_MIN_TILE_X
 		or tile.x > EXPANSION_MAX_TILE_X
 		or tile.y < EXPANSION_MIN_TILE_Y
 		or tile.y > EXPANSION_MAX_TILE_Y
 	):
+		_tile_bounds_cache[key] = false
 		return false
-	var center_cell := Vector2i(
-		tile.x * TILE_CELLS + TILE_CELLS / 2,
-		tile.y * TILE_CELLS + TILE_CELLS / 2
-	)
-	return is_cell_inside_coastal_build_boundary(center_cell)
+	# The shoreline predicate is monotonic in X for a fixed Z row. Therefore
+	# testing the parcel's east edge once per row is mathematically equivalent
+	# to checking all 64 cells, while avoiding 8x redundant trigonometry.
+	var first_cell_x := tile.x * TILE_CELLS
+	var right_edge_world_x := float(first_cell_x + TILE_CELLS) * BuildManager.GRID_SIZE
+	var left_edge_world_x := float(first_cell_x) * BuildManager.GRID_SIZE
+	if left_edge_world_x < TERRAIN_LEFT:
+		_tile_bounds_cache[key] = false
+		return false
+	var first_cell_y := tile.y * TILE_CELLS
+	for cell_y in range(first_cell_y, first_cell_y + TILE_CELLS):
+		var world_z := (float(cell_y) + 0.5) * BuildManager.GRID_SIZE
+		if absf(world_z) > TERRAIN_HALF_DEPTH or right_edge_world_x > _coastline_x(world_z) - BUILDABLE_COAST_MARGIN:
+			_tile_bounds_cache[key] = false
+			return false
+	_tile_bounds_cache[key] = true
+	return true
 
 func _is_reserved_highway_tile(tile: Vector2i) -> bool:
 	return tile.x >= HIGHWAY_RESERVED_TILE_MIN_X and tile.x <= HIGHWAY_RESERVED_TILE_MAX_X
@@ -142,7 +161,12 @@ func get_available_expansion_tiles() -> Array[Vector2i]:
 	for x in range(EXPANSION_MIN_TILE_X, EXPANSION_MAX_TILE_X + 1):
 		for y in range(EXPANSION_MIN_TILE_Y, EXPANSION_MAX_TILE_Y + 1):
 			var tile := Vector2i(x, y)
-			if not _is_reserved_highway_tile(tile) and not is_tile_owned(tile) and _is_adjacent_to_owned(tile):
+			if (
+				_is_tile_in_bounds(tile)
+				and not _is_reserved_highway_tile(tile)
+				and not is_tile_owned(tile)
+				and _is_adjacent_to_owned(tile)
+			):
 				result.append(tile)
 	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 		var cost_a := _distance_from_initial_land(a)

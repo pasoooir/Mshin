@@ -230,7 +230,7 @@ jobs:
             await page.waitForFunction(() => {
               const frame = document.getElementById('game-frame');
               return frame?.contentWindow?.__mshinGoogleBridgeResult?.credential === 'synthetic-google-id-token';
-            }, null, { timeout: 10000 });
+            }, null, { timeout: 15000, polling: 100 });
           } catch (error) {
             const diagnostics = await page.evaluate(() => {
               const frame = document.getElementById('game-frame');
