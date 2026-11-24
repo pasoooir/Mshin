@@ -1425,7 +1425,7 @@ func _test_camera_inertia_math() -> void:
 	_check(is_equal_approx(hitch_step, 0.05), "Camera inertia must cap only long stalls to prevent a visible teleport.")
 	var reported_velocity := Vector2(3000.0, 4000.0)
 	var bounded_velocity := CameraControllerScript.clamp_pan_velocity(reported_velocity)
-	_check(is_equal_approx(bounded_velocity.length(), 1600.0), "Android touch velocity spikes must be bounded before applying camera inertia.")
+	_check(is_equal_approx(bounded_velocity.length(), 950.0), "Android touch velocity spikes must be bounded before applying camera inertia.")
 	_check(CameraControllerScript.clamp_pan_velocity(Vector2(300.0, -200.0)).is_equal_approx(Vector2(300.0, -200.0)), "Normal camera drag velocity must remain unchanged by the safety clamp.")
 	var initial_pan := Vector2(120.0, -60.0)
 	var damped_pan := CameraControllerScript.decay_pan_velocity(initial_pan, 0.1, 8.0)
