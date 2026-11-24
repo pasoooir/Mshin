@@ -4208,10 +4208,24 @@ func _test_settings_panel_contract() -> void:
 	if categories != null and categories.get_tab_count() == 4:
 		_check(categories.get_tab_title(0) == "City" and categories.get_tab_title(1) == "Sound" and categories.get_tab_title(2) == "Account" and categories.get_tab_title(3) == "More", "Settings category tabs must have clear, stable labels.")
 		_check(categories.get_tab_control(0).name == "CitySettingsScroll" and categories.get_tab_control(1).name == "SoundSettingsScroll" and categories.get_tab_control(2).name == "AccountSettingsScroll" and categories.get_tab_control(3).name == "MoreSettingsScroll", "Each settings category must have its own independently scrollable page.")
-	_check(settings_content != null and settings_content.get_parent().name == "CitySettingsScroll", "City actions must remain inside the City category.")
+		var tab_bar := categories.get_tab_bar()
+		_check(tab_bar.custom_minimum_size.y >= 48.0, "Settings tabs must provide a comfortable mobile touch target.")
+		for tab_index in range(categories.get_tab_count()):
+			categories.current_tab = tab_index
+			await get_tree().process_frame
+			var active_page := categories.get_tab_control(tab_index) as Control
+			_check(active_page.visible, "Selecting Settings tab %d must reveal its own page." % tab_index)
+			_check(active_page.get_child_count() > 0 and active_page.get_child(0) is MarginContainer, "Every Settings page must have a consistent padded content boundary.")
+			for other_index in range(categories.get_tab_count()):
+				if other_index != tab_index:
+					_check(not (categories.get_tab_control(other_index) as Control).visible, "Inactive Settings tabs must not overlap the active page.")
+		categories.current_tab = 2 if not PlayerAccountManager.is_authenticated() else 0
+	_check(settings_content != null and settings_content.get_parent().name == "SettingsPagePadding", "City actions must remain padded inside the City category.")
 	_check(heading != null and categories != null and heading.get_parent() == categories.get_parent(), "Settings heading and category tabs must share the same fixed modal layout.")
 	_check(hud.find_child("SettingsMainActions", true, false) is GridContainer, "City settings must use the reference-style two-column action grid.")
-	_check(hud.find_child("SettingsMoreActions", true, false) is GridContainer, "More settings must expose the About and advanced settings action.")
+	_check(hud.find_child("SettingsMoreActions", true, false) is GridContainer, "More settings must expose useful account-independent actions.")
+	_check(hud.find_child("SettingsNotificationsButton", true, false) is Button and hud.find_child("SettingsWalletButton", true, false) is Button, "More tab must expose working notification and wallet destinations.")
+	_check(hud.find_child("SettingsMasterVolume", true, false) is HSlider and hud.find_child("SettingsMusicVolume", true, false) is HSlider and hud.find_child("SettingsAmbientVolume", true, false) is HSlider and hud.find_child("SettingsSfxVolume", true, false) is HSlider, "Sound tab must expose independent live volume controls, not only On/Off toggles.")
 	var settings_title := hud.find_child("SettingsTitle", true, false) as Label
 	var about_button := hud.find_child("SettingsAboutButton", true, false) as Button
 	var music_control := hud.find_child("MusicToggle", true, false) as Button
