@@ -176,7 +176,8 @@ func _build_chunk(chunk_key: Vector2i, species_buckets: Dictionary) -> void:
             # Only the near, detailed canopy tier casts shadows. This gives trees
             # contact and volume at player zoom without multiplying shadow-map cost
             # across the medium/far LOD batches on mobile Compatibility.
-            renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            var casts_near_shadow := lod == 0 and (species_id == 0 or species_id == 6)
+            renderer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts_near_shadow else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
             renderer.visibility_range_begin = LOD_BEGIN[lod]
             renderer.visibility_range_end = LOD_END[lod]
             renderer.visibility_range_begin_margin = 7.0
@@ -369,7 +370,10 @@ func _add_volume_vertex(surface: SurfaceTool, species_id: int, angle: float, v: 
 
     var lobes := 1.0 + 0.065 * sin(angle * 5.0 + float(species_id) * 1.7)
     lobes += 0.028 * sin(angle * 9.0 - float(species_id) * 0.8)
-    var radius := maxf(0.025, profile * width * lobes)
+    var radius := profile * width * lobes
+    # Collapse the top and bottom rings to poles so the canopy is a closed shell.
+    if v <= 0.0001 or v >= 0.9999:
+        radius = 0.0
     var point := Vector3(cos(angle) * radius, center_y - height * 0.5 + v * height, sin(angle) * radius)
     var uv := Vector2(angle / TAU, v)
     var wind_weight := 0.18 + v * 0.82
