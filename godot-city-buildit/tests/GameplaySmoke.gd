@@ -120,6 +120,8 @@ func _test_camera_gesture_math() -> void:
 	_check(int(low_graphics.get("terrain_divisions", 0)) < int(high_graphics.get("terrain_divisions", 0)), "Low graphics must reduce terrain mesh complexity.")
 	_check(int(low_graphics.get("grass_instances", 0)) < int(high_graphics.get("grass_instances", 0)), "Low graphics must reduce ground-cover instance count.")
 	_check(not bool(low_graphics.get("shadows", true)), "Low graphics must disable real-time directional shadows to protect mobile GPUs.")
+	_check(is_equal_approx(GraphicsSettingsManager.adaptive_low_scale(0.62, 24.0), 0.56), "Sustained low frame rate must lower 3D resolution without reducing UI resolution.")
+	_check(is_equal_approx(GraphicsSettingsManager.adaptive_low_scale(0.50, 60.0), 0.52), "A sustained performance headroom signal must restore resolution gradually without exceeding the mobile baseline.")
 	var camera_reset_probe := CameraControllerScript.new()
 	camera_reset_probe.touch_points[2] = Vector2(40.0, 50.0)
 	camera_reset_probe.pan_velocity = Vector2(300.0, 120.0)
