@@ -297,6 +297,28 @@ func _ready() -> void:
 		failures.append("future non-adjacent plots are not represented as locked land")
 	if LandExpansionManager.get_tile_distance(expansion_tile) < 1:
 		failures.append("expansion ring distance must be measured from the free starter area")
+	# Only complete inland parcels may appear in the purchase list. This
+	# catches regressions where the UI shows coastal/partial tiles that the
+	# transaction itself would later reject.
+	var available_tiles := LandExpansionManager.get_available_expansion_tiles()
+	var available_keys: Dictionary = {}
+	for available_tile in available_tiles:
+		var available_key := "%d:%d" % [available_tile.x, available_tile.y]
+		if available_keys.has(available_key):
+			failures.append("expansion purchase list contains a duplicate plot")
+		available_keys[available_key] = true
+		if not LandExpansionManager._is_tile_in_bounds(available_tile):
+			failures.append("expansion purchase list contains a plot crossing the coastline")
+		if LandExpansionManager.is_tile_owned(available_tile) or not LandExpansionManager._is_adjacent_to_owned(available_tile):
+			failures.append("expansion purchase list contains owned or disconnected land")
+	for plot_x in range(LandExpansionManager.EXPANSION_MIN_TILE_X, LandExpansionManager.EXPANSION_MAX_TILE_X + 1):
+		for plot_y in range(LandExpansionManager.EXPANSION_MIN_TILE_Y, LandExpansionManager.EXPANSION_MAX_TILE_Y + 1):
+			var candidate := Vector2i(plot_x, plot_y)
+			if not LandExpansionManager._is_tile_in_bounds(candidate) and available_keys.has("%d:%d" % [plot_x, plot_y]):
+				failures.append("coastal boundary plot was incorrectly exposed as purchasable")
+	if available_tiles.is_empty():
+		failures.append("starter city has no adjacent expansion plots")
+
 	var expansion_cost := LandExpansionManager.get_tile_cost(expansion_tile)
 	for item_id in LandExpansionManager.EXPANSION_ITEM_IDS:
 		for _unit in range(int(expansion_cost[item_id])):
