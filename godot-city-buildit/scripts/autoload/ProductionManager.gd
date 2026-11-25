@@ -1052,7 +1052,7 @@ func get_factory_order_cost(item_id: String) -> int:
 	var definition: Dictionary = raw_materials.get(item_id, {})
 	if definition.is_empty():
 		return -1
-	var duration_seconds := maxi(1, int(definition.get("time_sec", 0)))
+	var duration_seconds := int(definition.get("time_sec", 0))
 	if duration_seconds <= 0:
 		return -1
 	return maxi(1, int(ceil(float(duration_seconds) / 60.0))) * FACTORY_ORDER_COST_PER_MINUTE
