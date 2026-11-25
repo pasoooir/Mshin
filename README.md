@@ -16,7 +16,8 @@
 - Tapping an unlocked factory product submits the order directly to the first available slot. Production uses the catalog's configured duration and continues to show a live timer until the player collects the finished item.
 - Mshin factory order fee: **5 Simoleons per started production minute** (minimum 5). This is an explicit Mshin balancing rule, separate from the community reference maximum Trade Depot sale value. The exact fee is displayed on each product and stored with the order; insufficient funds must leave both balance and slot unchanged.
 - The factory panel exposes the active order count, paid order total, current Simoleons balance, per-order state/cost, timers, progress and Collect action. Panel padding and spacing were increased without adding per-frame rendering work.
-- [ ] Do not mark this workflow complete until Godot production/economy smoke tests, Web export, Chromium mobile/desktop tests and Pages deployment pass. Physical Android touch review remains a separate acceptance check.
+- [x] Godot parsing/startup, GameplaySmoke, currency/economy smoke, Android Debug APK export, Web export, Chromium mobile landscape/touch checks and Pages artifact all passed: [Validation run 45647227584](https://github.com/pasoooir/Mshin/actions/runs/45647227584) · [Web run 45647227562](https://github.com/pasoooir/Mshin/actions/runs/45647227562).
+- [ ] Physical Android touch-device review remains a separate acceptance check; Chromium is not a substitute for a real phone.
 
 # Pasoo City BuildIt 🏙️
 
