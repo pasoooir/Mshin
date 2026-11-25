@@ -360,6 +360,8 @@ func _ready() -> void:
 	GameManager.level = 1
 	EconomyManager.sim_cash = 10
 
+	# Run a clean factory -> store -> residential-material transaction chain.
+	StorageManager.from_save_dict({"capacity": 100, "items": {}})
 	# SimCash production acceleration uses remaining time, spends once and
 	# leaves the completed item on its production slot until collection.
 	EconomyManager.sim_cash = 10
@@ -387,6 +389,41 @@ func _ready() -> void:
 			failures.append("SimCash did not complete the active factory timer for the quoted cost")
 		if not factory.collect(0) or StorageManager.get_count("metal") != 1:
 			failures.append("speeded-up production did not collect exactly one item")
+		else:
+			var collected_metal_cost := StorageManager.get_cost_basis({"metal": 1})
+			if not bool(collected_metal_cost.get("known", false)) or int(collected_metal_cost.get("total_cost", -1)) != expected_metal_order_cost:
+				failures.append("collected factory material did not retain the exact paid order fee in its warehouse cost batch")
+		# Produce a second Metal, then consume both units in the Nails recipe.
+		if not factory.start_factory("metal", 1):
+			failures.append("factory could not start the second Metal needed by the store recipe")
+		else:
+			factory.speed_up_slot(1)
+			if not factory.collect(1):
+				failures.append("second factory Metal could not be collected")
+		var chain_store := ProductionComponent.new()
+		chain_store.is_factory = false
+		chain_store.shop_id = "building_supplies"
+		chain_store.slot_count = 2
+		add_child(chain_store)
+		await get_tree().process_frame
+		var metal_before_store := StorageManager.get_count("metal")
+		if metal_before_store != 2 or not chain_store.start_craft("nails", 0):
+			failures.append("Building Supplies did not accept Nails after exactly two Metal reached City Storage")
+		else:
+			if StorageManager.get_count("metal") != 0 or not chain_store.get_slot(0).has("item_id"):
+				failures.append("store order did not reserve its complete two-Metal recipe exactly once")
+			var active_store_slot := chain_store.get_slot(0)
+			active_store_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			chain_store.slots[0] = active_store_slot
+			chain_store.refresh_slots()
+			if not chain_store.collect(0) or StorageManager.get_count("nails") != 1:
+				failures.append("completed Nails order did not transfer exactly one crafted item to City Storage")
+			else:
+				var nails_cost := StorageManager.get_cost_basis({"nails": 1})
+				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != expected_metal_order_cost * 2:
+					failures.append("store output did not inherit both factory material costs")
+		chain_store.queue_free()
+		await get_tree().process_frame
 	var balance_before_rejected_order := EconomyManager.simoleons
 	EconomyManager.simoleons = 0
 	var rejected_for_funds := factory.start_factory("metal", 1)
