@@ -3177,7 +3177,7 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	# A store order with missing intermediate inputs can be explicitly started
 	# as a dependency chain. The player remains in control; no ingredients are
 	# silently fabricated and the scheduler only uses real connected suppliers.
-	if not is_factory and slot_index >= 0 and not recipe.is_empty() and lock_reason.is_empty() and are_recipe_inputs_unlocked(recipe) and not missing.is_empty():
+	if not is_factory and slot_index >= 0 and not recipe.is_empty() and lock_reason.is_empty() and ProductionManager.are_recipe_inputs_unlocked(recipe) and not missing.is_empty():
 		var chain_button := Button.new()
 		chain_button.name = "StartAutomaticProductionChain"
 		chain_button.text = "PRODUCE FULL CHAIN"
