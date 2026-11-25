@@ -833,7 +833,7 @@ for upgrade_contract in [
     'func get_residential_upgrade_block_reason() -> String:',
     'ServiceManager.is_home_served_by_group(self, str(rule.group))',
     'StorageManager.storage_changed.connect(_on_upgrade_dependencies_changed)',
-    'ServiceManager.power_changed.connect(_on_upgrade_dependencies_changed)',
+    'ServiceManager.power_changed.connect(_on_service_capacity_changed)',
 ]:
     if upgrade_contract not in building_source:
         errors.append(f"Residential upgrade/service contract is missing: {upgrade_contract}")
