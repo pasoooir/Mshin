@@ -252,7 +252,7 @@ func _ready() -> void:
 			return
 	var graphics_quality_source := FileAccess.get_file_as_string("res://scripts/autoload/GraphicsSettingsManager.gd")
 	var low_mobile_preset := GraphicsSettingsManager.get_quality_preset("low")
-	if int(low_mobile_preset.get("terrain_divisions", 999)) > 96 or int(low_mobile_preset.get("grass_instances", 999)) != 0 or int(low_mobile_preset.get("shrub_clusters", 999)) != 0 or float(low_mobile_preset.get("tree_density", 1.0)) != 0.0:
+	if int(low_mobile_preset.get("terrain_divisions", 999)) > 96 or int(low_mobile_preset.get("grass_instances", 999)) != 0 or int(low_mobile_preset.get("shrub_clusters", 999)) != 0 or float(low_mobile_preset.get("tree_density", 1.0)) != 0.0 or float(low_mobile_preset.get("camera_pan_sensitivity", 1.0)) > 0.70:
 		push_error("[VisualPresentationSmoke] Entry-level mobile preset must remove ground-cover and minimize terrain tessellation")
 		get_tree().quit(1)
 		return
