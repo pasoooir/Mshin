@@ -480,6 +480,28 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	component.slots_changed.emit()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
 
+func _get_automatic_chain_required_input_total(item_id: String) -> int:
+	# Aggregate the still-unconsumed demand across every pending automatic job.
+	# Counting only already-reserved outputs is insufficient: two different
+	# branches may each consume the same raw input (e.g. Nails and Hammer both
+	# consume Metal). Their requirements must be added before reserving supply.
+	var total := 0
+	if not is_inside_tree():
+		return total
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")).is_empty():
+				continue
+			if bool(slot.get("ready", false)) or bool(slot.get("auto_chain_started", false)):
+				continue
+			var recipe := get_recipe(str(slot.get("item_id", "")))
+			for input_variant in recipe.get("inputs", {}).keys():
+				if str(input_variant) == item_id:
+					total += int(recipe.inputs[input_variant])
+	return total
+
 func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: String, ancestry: Dictionary) -> bool:
 	if amount <= 0:
 		return true
@@ -491,14 +513,15 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
-			# Dependencies are shared across independent roots. A raw/intermediate
-			# output already reserved by any active chain satisfies part of the
-			# global outstanding demand, preventing duplicate parallel production.
-			# If another root consumes that output first, its next scheduler pass
-			# will request the remaining unit(s) normally.
 			if not str(slot.get("auto_chain_id", "")).is_empty() and str(slot.get("item_id", "")) == item_id:
 				outstanding += 1
-	var needed := maxi(0, amount - outstanding)
+	# Reconcile inventory, all pending consumers, and already-reserved outputs.
+	# This prevents one branch's Metal reservation from being incorrectly
+	# treated as available to a sibling branch that also consumes that Metal.
+	var total_demand := _get_automatic_chain_required_input_total(item_id)
+	if total_demand <= 0:
+		total_demand = amount
+	var needed := maxi(0, total_demand - StorageManager.get_count(item_id) - outstanding)
 	if needed <= 0:
 		return true
 	if raw_materials.has(item_id):
