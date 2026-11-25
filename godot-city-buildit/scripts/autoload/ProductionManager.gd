@@ -480,7 +480,7 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	component.slots_changed.emit()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
 
-func _get_automatic_chain_required_input_total(item_id: String) -> int:
+func _get_automatic_chain_required_input_total(item_id: String, chain_id: String) -> int:
 	# Aggregate the still-unconsumed demand across every pending automatic job.
 	# Counting only already-reserved outputs is insufficient: two different
 	# branches may each consume the same raw input (e.g. Nails and Hammer both
@@ -492,7 +492,7 @@ func _get_automatic_chain_required_input_total(item_id: String) -> int:
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
-			if str(slot.get("auto_chain_id", "")).is_empty():
+			if str(slot.get("auto_chain_id", "")) != chain_id:
 				continue
 			if bool(slot.get("ready", false)) or bool(slot.get("auto_chain_started", false)):
 				continue
@@ -518,7 +518,7 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 	# Reconcile inventory, all pending consumers, and already-reserved outputs.
 	# This prevents one branch's Metal reservation from being incorrectly
 	# treated as available to a sibling branch that also consumes that Metal.
-	var total_demand := _get_automatic_chain_required_input_total(item_id)
+	var total_demand := _get_automatic_chain_required_input_total(item_id, chain_id)
 	if total_demand <= 0:
 		total_demand = amount
 	var needed := maxi(0, total_demand - StorageManager.get_count(item_id) - outstanding)
