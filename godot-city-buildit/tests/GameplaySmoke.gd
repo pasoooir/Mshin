@@ -5430,8 +5430,8 @@ func _run_gameplay_test() -> void:
 	_check(queued_metal_icon != null and queued_metal_icon.texture != null and queued_metal_icon.custom_minimum_size.x >= 40.0, "The live order card must immediately show the actual Metal artwork at a readable size.")
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
+	var balance_before_second_factory_tap := EconomyManager.simoleons
 	if second_metal_button:
-		var balance_before_second_factory_tap := EconomyManager.simoleons
 		var second_touch_position: Vector2 = second_metal_button.get_global_transform_with_canvas() * (second_metal_button.size * 0.5)
 		var second_touch_down := InputEventScreenTouch.new()
 		second_touch_down.index = 0
