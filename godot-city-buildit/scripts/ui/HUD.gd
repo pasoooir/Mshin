@@ -2281,6 +2281,8 @@ func open_production_panel(building: Building) -> void:
 	if selected_component.is_factory:
 		_open_factory_production_panel(building, selected_component)
 		return
+	_open_store_production_panel(building, selected_component)
+	return
 
 	# Production is a true modal interaction state: retain the city as a
 	# visible 3D backdrop, dim it by exactly 50%, and consume pointer input so
@@ -3134,6 +3136,385 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 	root.add_child(footer)
 
 
+
+
+func _open_store_production_panel(building: Building, component: ProductionComponent) -> void:
+	# Commercial stores use the same focused, touch-first workspace as factories.
+	# Ingredient quantities and live City Storage counts are visible on every card.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var compact := viewport_size.y <= 600.0 or viewport_size.x <= 900.0
+	var panel_width := minf(viewport_size.x * 0.96, 1080.0 * _ui_scale)
+	var panel_height := minf(viewport_size.y * 0.94, 760.0 * _ui_scale)
+
+	production_overlay = Control.new()
+	production_overlay.name = "ProductionOverlay"
+	production_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	production_overlay.z_index = 100
+	production_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(production_overlay)
+
+	var shade := ColorRect.new()
+	shade.name = "ProductionBackdrop"
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.035, 0.055, 0.78)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	production_overlay.add_child(shade)
+
+	production_panel = PanelContainer.new()
+	production_panel.name = "BuildingProductionPanel"
+	production_panel.anchor_left = 0.5
+	production_panel.anchor_right = 0.5
+	production_panel.anchor_top = 1.0
+	production_panel.anchor_bottom = 1.0
+	production_panel.offset_left = -panel_width * 0.5
+	production_panel.offset_right = panel_width * 0.5
+	production_panel.offset_top = -panel_height - 12.0 * _ui_scale
+	production_panel.offset_bottom = -12.0 * _ui_scale
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#F4F8FB")
+	panel_style.border_color = Color("#B8D5E4")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(22)
+	panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.42)
+	panel_style.shadow_size = 18
+	panel_style.shadow_offset = Vector2(0, 5)
+	panel_style.content_margin_left = 18.0 * _ui_scale
+	panel_style.content_margin_right = 18.0 * _ui_scale
+	panel_style.content_margin_top = 14.0 * _ui_scale
+	panel_style.content_margin_bottom = 14.0 * _ui_scale
+	production_panel.add_theme_stylebox_override("panel", panel_style)
+	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	production_overlay.add_child(production_panel)
+
+	var margin := MarginContainer.new()
+	margin.name = "StoreProductionMargins"
+	margin.add_theme_constant_override("margin_left", 4)
+	margin.add_theme_constant_override("margin_right", 4)
+	margin.add_theme_constant_override("margin_top", 3)
+	margin.add_theme_constant_override("margin_bottom", 3)
+	production_panel.add_child(margin)
+	var root := VBoxContainer.new()
+	root.name = "StoreProductionLayout"
+	root.add_theme_constant_override("separation", 10 if not compact else 7)
+	margin.add_child(root)
+
+	var header := PanelContainer.new()
+	header.name = "StoreProductionHeader"
+	header.add_theme_stylebox_override("panel", _toolbar_style(Color("#123F59"), Color("#2F7898")))
+	root.add_child(header)
+	var header_margin := MarginContainer.new()
+	header_margin.add_theme_constant_override("margin_left", 10)
+	header_margin.add_theme_constant_override("margin_right", 10)
+	header_margin.add_theme_constant_override("margin_top", 7)
+	header_margin.add_theme_constant_override("margin_bottom", 7)
+	header.add_child(header_margin)
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 10)
+	header_margin.add_child(header_row)
+	var icon := Icons.make_icon(building.building_type, Vector2(42, 42) * _ui_scale)
+	icon.name = "ProductionBuildingIcon"
+	header_row.add_child(icon)
+	var title_stack := VBoxContainer.new()
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_stack.add_theme_constant_override("separation", 2)
+	header_row.add_child(title_stack)
+	var title := Label.new()
+	title.text = str(building.definition.get("name", "Store")).to_upper()
+	title.add_theme_font_size_override("font_size", _popup_font_size(19 if not compact else 16))
+	title.add_theme_color_override("font_color", Color.WHITE)
+	title_stack.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "Choose a product. Required materials are taken from City Storage when the order starts."
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", _popup_font_size(11 if compact else 12))
+	subtitle.add_theme_color_override("font_color", Color("#C7E1EC"))
+	title_stack.add_child(subtitle)
+	if ProductionManager.is_store_star_upgrade_supported(str(component.shop_id)):
+		var star_status := Label.new()
+		star_status.name = "StoreStarStatus"
+		star_status.text = "★".repeat(component.store_star_level) + "☆".repeat(3 - component.store_star_level)
+		star_status.add_theme_font_size_override("font_size", _popup_font_size(13))
+		star_status.add_theme_color_override("font_color", Color("#FFE08A"))
+		header_row.add_child(star_status)
+		var star_offer := ProductionManager.get_store_star_offer(str(component.shop_id), component.store_star_level)
+		if not star_offer.is_empty():
+			var star_button := Button.new()
+			star_button.name = "UpgradeStoreStar"
+			star_button.text = "UPGRADE"
+			star_button.disabled = GameManager.level < int(star_offer.get("level", 999)) or EconomyManager.simoleons < int(star_offer.get("cost", 0))
+			star_button.tooltip_text = "Level %d · §%s · %d%% faster" % [int(star_offer.get("level", 999)), _format_count(int(star_offer.get("cost", 0))), int(star_offer.get("reduction", 0))]
+			star_button.add_theme_font_size_override("font_size", _popup_font_size(11))
+			star_button.pressed.connect(_upgrade_store_star.bind(building))
+			header_row.add_child(star_button)
+	var close := Button.new()
+	close.name = "ProductionClose"
+	close.text = "✕"
+	close.custom_minimum_size = Vector2(42, 42) * _ui_scale
+	close.add_theme_font_size_override("font_size", _popup_font_size(20))
+	close.add_theme_stylebox_override("normal", _toolbar_style(Color("#EAF3F7"), Color("#B8D5E4")))
+	close.add_theme_color_override("font_color", Color("#17394D"))
+	close.pressed.connect(_close_production_panel)
+	header_row.add_child(close)
+
+	var products_heading := HBoxContainer.new()
+	products_heading.name = "StoreProductsHeading"
+	root.add_child(products_heading)
+	var products_title := Label.new()
+	products_title.text = "AVAILABLE PRODUCTS"
+	products_title.add_theme_font_size_override("font_size", _popup_font_size(15))
+	products_title.add_theme_color_override("font_color", Color("#234B60"))
+	products_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	products_heading.add_child(products_title)
+	var products_hint := Label.new()
+	products_hint.text = "Tap once to make"
+	products_hint.add_theme_font_size_override("font_size", _popup_font_size(12))
+	products_hint.add_theme_color_override("font_color", Color("#66808E"))
+	products_heading.add_child(products_hint)
+
+	var products_scroll := ScrollContainer.new()
+	products_scroll.name = "StoreProductsScroll"
+	products_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	products_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	products_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	products_scroll.custom_minimum_size.y = (150.0 if compact else 205.0) * _ui_scale
+	root.add_child(products_scroll)
+	var products_grid := GridContainer.new()
+	products_grid.name = "StoreProductsGrid"
+	products_grid.columns = 3 if viewport_size.x < 700.0 else (4 if viewport_size.x < 1100.0 else 5)
+	products_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	products_grid.add_theme_constant_override("h_separation", 10)
+	products_grid.add_theme_constant_override("v_separation", 10)
+	products_scroll.add_child(products_grid)
+
+	var item_ids := ProductionManager.get_store_catalog_ids(str(component.shop_id))
+	var free_slot := _find_first_available_production_slot(component)
+	for item_variant in item_ids:
+		var item_id := str(item_variant)
+		var recipe := ProductionManager.get_recipe(item_id)
+		var data: Dictionary = ProductionManager.get_store_item_definition(str(component.shop_id), item_id)
+		if recipe.is_empty() or str(recipe.get("store", "")) != str(component.shop_id):
+			continue
+		var inputs: Dictionary = recipe.get("inputs", {})
+		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level)
+		var inputs_unlocked := ProductionManager.are_recipe_inputs_unlocked(recipe)
+		var missing_count := 0
+		var ingredient_parts: Array[String] = []
+		for input_variant in inputs.keys():
+			var input_id := str(input_variant)
+			var required := int(inputs[input_variant])
+			var owned := StorageManager.get_count(input_id)
+			missing_count += maxi(0, required - owned)
+			var input_data := ProductionManager.get_item_definition(input_id)
+			ingredient_parts.append("%s %d/%d" % [str(input_data.get("name", input_id.capitalize())), owned, required])
+		var ingredients_text := " · ".join(ingredient_parts)
+		var can_make := missing_count == 0 and lock_reason.is_empty() and inputs_unlocked and free_slot >= 0
+		var card := Button.new()
+		card.name = "Slot%d_%s" % [free_slot, item_id]
+		card.custom_minimum_size = Vector2(150, 142 if not compact else 132) * _ui_scale
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.focus_mode = Control.FOCUS_NONE
+		card.disabled = not lock_reason.is_empty() or not inputs_unlocked or recipe.is_empty() or free_slot < 0
+		card.add_theme_stylebox_override("normal", _toolbar_style(Color("#FFFFFF"), Color("#D1E0E8")))
+		card.add_theme_stylebox_override("hover", _toolbar_style(Color("#EAF7FC"), Color("#55A4C6")))
+		card.add_theme_stylebox_override("pressed", _toolbar_style(Color("#D9EFF8"), Color("#287DA2")))
+		card.add_theme_stylebox_override("disabled", _toolbar_style(Color("#EEF1F3"), Color("#CDD6DB")))
+		card.add_theme_color_override("font_color", Color("#24495B"))
+		var card_margin := MarginContainer.new()
+		card_margin.add_theme_constant_override("margin_left", 8)
+		card_margin.add_theme_constant_override("margin_right", 8)
+		card_margin.add_theme_constant_override("margin_top", 7)
+		card_margin.add_theme_constant_override("margin_bottom", 7)
+		card.add_child(card_margin)
+		var card_content := VBoxContainer.new()
+		card_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		card_content.add_theme_constant_override("separation", 3)
+		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_margin.add_child(card_content)
+		var product_icon := Icons.make_item_icon("crafted", item_id, Vector2(44, 44) * _ui_scale)
+		product_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_content.add_child(product_icon)
+		var product_name := Label.new()
+		product_name.text = str(data.get("name", item_id.capitalize()))
+		product_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		product_name.add_theme_font_size_override("font_size", _popup_font_size(13))
+		product_name.add_theme_color_override("font_color", Color("#203F50"))
+		card_content.add_child(product_name)
+		var duration := Label.new()
+		duration.text = _format_duration(int(ceil(component.get_item_production_time(item_id))))
+		duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		duration.add_theme_font_size_override("font_size", _popup_font_size(10))
+		duration.add_theme_color_override("font_color", Color("#5B7482"))
+		card_content.add_child(duration)
+		var ingredients := Label.new()
+		ingredients.name = "Ingredients_%s" % item_id
+		ingredients.text = ingredients_text if not ingredients_text.is_empty() else "Recipe inputs not verified"
+		ingredients.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ingredients.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		ingredients.add_theme_font_size_override("font_size", _popup_font_size(9))
+		ingredients.add_theme_color_override("font_color", Color("#34734D") if can_make else Color("#A33A36"))
+		card_content.add_child(ingredients)
+		var state := Label.new()
+		state.name = "StoreProductState_%s" % item_id
+		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("NO FREE SLOT" if free_slot < 0 else ("%d INGREDIENT(S) MISSING" % missing_count)))
+		state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		state.add_theme_font_size_override("font_size", _popup_font_size(9))
+		state.add_theme_color_override("font_color", Color("#34734D") if can_make else Color("#A33A36"))
+		card_content.add_child(state)
+		card.set_meta("production_item_id", item_id)
+		card.set_meta("production_building_id", building.get_instance_id())
+		card.pressed.connect(_on_production_item_pressed.bind(building, item_id, -1, card))
+		products_grid.add_child(card)
+
+	var basket_header := HBoxContainer.new()
+	basket_header.name = "ProductionQueueHeading"
+	root.add_child(basket_header)
+	var basket_title := Label.new()
+	basket_title.text = "PRODUCTION QUEUE"
+	basket_title.add_theme_font_size_override("font_size", _popup_font_size(15))
+	basket_title.add_theme_color_override("font_color", Color("#234B60"))
+	basket_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	basket_header.add_child(basket_title)
+	var queue_count := Label.new()
+	queue_count.name = "ProductionQueueCount"
+	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
+	queue_count.add_theme_font_size_override("font_size", _popup_font_size(13))
+	queue_count.add_theme_color_override("font_color", Color("#526D7D"))
+	basket_header.add_child(queue_count)
+	var next_slot_cost := component.get_next_store_queue_slot_cost()
+	var add_slot := Button.new()
+	add_slot.name = "PurchaseQueueSlot"
+	add_slot.text = ("+ SLOT · %d SC" % next_slot_cost) if next_slot_cost > 0 else ("MAX SLOTS" if component.get_slot_count() >= ProductionComponent.MAX_STORE_QUEUE_SLOTS else "UNAVAILABLE")
+	add_slot.disabled = next_slot_cost <= 0 or EconomyManager.sim_cash < next_slot_cost
+	add_slot.tooltip_text = "Add one queue slot." if next_slot_cost > 0 else "Maximum capacity or no verified price for this custom store."
+	add_slot.add_theme_font_size_override("font_size", _popup_font_size(11))
+	add_slot.pressed.connect(_purchase_store_queue_slot.bind(building))
+	basket_header.add_child(add_slot)
+
+	var orders_scroll := ScrollContainer.new()
+	orders_scroll.name = "ProductionOrdersScroll"
+	orders_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	orders_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	orders_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	orders_scroll.custom_minimum_size.y = (100.0 if compact else 140.0) * _ui_scale
+	root.add_child(orders_scroll)
+	var orders_list := VBoxContainer.new()
+	orders_list.name = "ProductionOrdersList"
+	orders_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	orders_list.add_theme_constant_override("separation", 8)
+	orders_scroll.add_child(orders_list)
+
+	var visible_orders := 0
+	for slot_index in range(component.get_slot_count()):
+		var slot: Dictionary = component.get_slot(slot_index)
+		if slot.is_empty():
+			continue
+		visible_orders += 1
+		var item_id := str(slot.get("item_id", ""))
+		var item_data := ProductionManager.get_item_definition(item_id)
+		var item_name := str(item_data.get("name", item_id.capitalize()))
+		var ready := bool(slot.get("ready", false))
+		var waiting := not ready and int(slot.get("finish_unix", 0)) <= 0
+		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
+		var order_card := PanelContainer.new()
+		order_card.name = "QueueSlot%d" % slot_index
+		order_card.custom_minimum_size = Vector2(120, 100) * _ui_scale
+		order_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#FFFFFF"), Color("#D3E0E7")))
+		orders_list.add_child(order_card)
+		var order_margin := MarginContainer.new()
+		order_margin.add_theme_constant_override("margin_left", 10)
+		order_margin.add_theme_constant_override("margin_right", 10)
+		order_margin.add_theme_constant_override("margin_top", 7)
+		order_margin.add_theme_constant_override("margin_bottom", 7)
+		order_card.add_child(order_margin)
+		var order_row := HBoxContainer.new()
+		order_row.add_theme_constant_override("separation", 10)
+		order_margin.add_child(order_row)
+		var order_icon := Icons.make_item_icon("crafted", item_id, Vector2(46, 46) * _ui_scale)
+		order_icon.name = "QueueItemIcon%d" % slot_index
+		order_row.add_child(order_icon)
+		var order_details := VBoxContainer.new()
+		order_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		order_details.add_theme_constant_override("separation", 2)
+		order_row.add_child(order_details)
+		var order_name := Label.new()
+		order_name.text = item_name
+		order_name.add_theme_font_size_override("font_size", _popup_font_size(14))
+		order_name.add_theme_color_override("font_color", Color("#24495B"))
+		order_details.add_child(order_name)
+		var state := Label.new()
+		state.name = "OrderState%d" % slot_index
+		state.text = "READY TO COLLECT" if ready else ("WAITING IN QUEUE" if waiting else "IN PRODUCTION")
+		state.add_theme_font_size_override("font_size", _popup_font_size(11))
+		state.add_theme_color_override("font_color", Color("#28734A") if ready else Color("#587487"))
+		order_details.add_child(state)
+		if not ready and not waiting:
+			var timer := Label.new()
+			timer.name = "TimerSlot%d" % slot_index
+			timer.set_meta("slot_index", slot_index)
+			timer.text = _format_clock_duration(remaining)
+			timer.add_theme_font_size_override("font_size", _popup_font_size(17))
+			timer.add_theme_color_override("font_color", Color("#A87516"))
+			order_details.add_child(timer)
+			var progress := ProgressBar.new()
+			progress.name = "ProgressSlot%d" % slot_index
+			progress.set_meta("slot_index", slot_index)
+			progress.show_percentage = false
+			progress.custom_minimum_size.y = 7.0 * _ui_scale
+			progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			progress.max_value = 1.0
+			var total := maxf(1.0, component.get_item_production_time(item_id))
+			var started := int(slot.get("start_unix", int(slot.get("finish_unix", 0)) - int(total)))
+			progress.value = clampf(1.0 - float(remaining) / total, 0.0, 1.0)
+			progress.set_meta("start_unix", started)
+			progress.set_meta("finish_unix", int(slot.get("finish_unix", 0)))
+			order_details.add_child(progress)
+			_production_timer_labels.append(timer)
+			_production_progress_bars.append(progress)
+		if ready:
+			var collect := Button.new()
+			collect.name = "CollectSlot%d" % slot_index
+			var has_room := StorageManager.can_add(item_id, 1)
+			collect.text = "COLLECT" if has_room else "STORAGE FULL"
+			collect.disabled = not has_room
+			collect.custom_minimum_size = Vector2(112, 44) * _ui_scale
+			collect.add_theme_font_size_override("font_size", _popup_font_size(12))
+			collect.add_theme_stylebox_override("normal", _toolbar_style(Color("#F1CB59"), Color("#E4B43B")))
+			collect.add_theme_color_override("font_color", Color("#3B2D0A"))
+			collect.pressed.connect(func():
+				if component.collect(slot_index):
+					status_label.text = "Collected %s into City Storage." % item_name
+				else:
+					status_label.text = "Storage full — free space in City Storage first."
+				open_production_panel(building)
+			)
+			order_row.add_child(collect)
+
+	if visible_orders == 0:
+		var empty_card := PanelContainer.new()
+		empty_card.name = "ProductionOrdersEmptyState"
+		empty_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#FFFFFF"), Color("#D3E0E7")))
+		orders_list.add_child(empty_card)
+		var empty_margin := MarginContainer.new()
+		empty_margin.add_theme_constant_override("margin_left", 10)
+		empty_margin.add_theme_constant_override("margin_right", 10)
+		empty_margin.add_theme_constant_override("margin_top", 9)
+		empty_margin.add_theme_constant_override("margin_bottom", 9)
+		empty_card.add_child(empty_margin)
+		var empty_text := Label.new()
+		empty_text.text = "No active orders. Tap a product when all required ingredients are in City Storage."
+		empty_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_text.add_theme_font_size_override("font_size", _popup_font_size(12))
+		empty_text.add_theme_color_override("font_color", Color("#607987"))
+		empty_margin.add_child(empty_text)
+
+	var footer := Label.new()
+	footer.text = "Ingredients are deducted once when an order starts. Collect finished products into City Storage."
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	footer.add_theme_font_size_override("font_size", _popup_font_size(10))
+	footer.add_theme_color_override("font_color", Color("#607987"))
+	root.add_child(footer)
 
 
 func _purchase_store_queue_slot(building: Building) -> void:
