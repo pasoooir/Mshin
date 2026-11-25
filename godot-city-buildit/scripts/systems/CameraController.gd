@@ -122,7 +122,7 @@ func focus_on(target_position: Vector3, target_zoom: float = -1.0) -> void:
 static func camera_step_delta(delta: float) -> float:
 	# Preserve the full elapsed time at 20 FPS and above. The old 1/30 s cap
 	# silently discarded camera travel on slower phones, making inertia lag.
-	# A 50 ms ceiling still prevents a long app pause from causing a teleport.
+	# A 100 ms ceiling preserves low-end frame travel while preventing resume teleports.
 	return minf(maxf(delta, 0.0), MAX_CAMERA_STEP)
 
 static func clamp_pan_velocity(velocity: Vector2) -> Vector2:
