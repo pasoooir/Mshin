@@ -5752,10 +5752,27 @@ func _run_gameplay_test() -> void:
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
+	# At the next residential tier, a Level 5 city must have local fire coverage.
+	var level_after_first_upgrade := GameManager.level
+	var previous_fire_coverage: Dictionary = ServiceManager.fire_served_ids.duplicate(true)
+	GameManager.level = maxi(GameManager.level, 5)
+	ServiceManager.fire_served_ids.clear()
+	var fire_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	_check(fire_block_reason.contains("Fire protection"), "A Level 5 residential development must require nearby Fire protection coverage.")
+	ServiceManager.fire_served_ids = previous_fire_coverage
+	GameManager.level = level_after_first_upgrade
+	if home != null:
+		home._check_upgrade_ready()
+
+	# Isolate the material/Save test from later service-unlock milestones; the
+	# explicit Fire gate above is tested separately and remains active in-game.
+	var second_upgrade_level := GameManager.level
+	GameManager.level = 2
 	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
 	StorageManager.add_item("planks",1)
 	StorageManager.add_item("wood",1)
 	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
+	GameManager.level = second_upgrade_level
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
 
