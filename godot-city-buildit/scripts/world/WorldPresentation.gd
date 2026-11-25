@@ -69,9 +69,8 @@ func _ready() -> void:
 	_build_city_grid()
 	_build_coastal_highway()
 	_build_highway_lighting()
-	_build_tree_belts()
-	_build_grass_detail()
-	_build_shrubland_detail()
+	# Keep the playable city visually clear and avoid hundreds of decorative
+	# MultiMesh instances on low-end phones. Beach palms remain as coastal landmarks.
 	# Retire the isolated timber strip; render a proper surf edge instead.
 	_build_shoreline_foam()
 	_build_beach_palms()
