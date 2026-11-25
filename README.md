@@ -10,6 +10,14 @@
 >
 > این اصل برای تمام توسعه‌های آینده Mshin الزام‌آور است و بر افزودن جلوه‌ها یا قابلیت‌های غیرضروری اولویت دارد.
 
+## Factory ordering — root-cause correction
+
+- Factory production is gated by completion, catalog unlock, an available slot and Gateway-connected road access. It is **not** blocked by residential utility/workforce allocation; that earlier coupling prevented the starter factory from accepting orders before city services were unlocked.
+- Tapping an unlocked factory product submits the order directly to the first available slot. Production uses the catalog's configured duration and continues to show a live timer until the player collects the finished item.
+- Mshin factory order fee: **5 Simoleons per started production minute** (minimum 5). This is an explicit Mshin balancing rule, separate from the community reference maximum Trade Depot sale value. The exact fee is displayed on each product and stored with the order; insufficient funds must leave both balance and slot unchanged.
+- The factory panel exposes the active order count, paid order total, current Simoleons balance, per-order state/cost, timers, progress and Collect action. Panel padding and spacing were increased without adding per-frame rendering work.
+- [ ] Do not mark this workflow complete until Godot production/economy smoke tests, Web export, Chromium mobile/desktop tests and Pages deployment pass. Physical Android touch review remains a separate acceptance check.
+
 # Pasoo City BuildIt 🏙️
 
 **نسخه بازی: 1.0.3 — رشته‌کوه پیوسته و تونل بزرگراه**
