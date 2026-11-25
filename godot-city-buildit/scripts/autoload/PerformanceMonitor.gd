@@ -18,6 +18,18 @@ var _rendered_object_samples: Array[float] = []
 var _rendered_primitive_samples: Array[float] = []
 var _video_memory_samples: Array[float] = []
 var _node_count_samples: Array[float] = []
+var _process_time_ms_samples: Array[float] = []
+var _physics_process_time_ms_samples: Array[float] = []
+var _texture_memory_samples: Array[float] = []
+var _buffer_memory_samples: Array[float] = []
+var _static_memory_samples: Array[float] = []
+var _camera_previous_position := Vector3.ZERO
+var _camera_has_previous_position := false
+var _camera_movement_frames := 0
+var _camera_total_distance := 0.0
+var _camera_min_zoom := INF
+var _camera_max_zoom := -INF
+var _camera_active_frames := 0
 
 func start_benchmark(duration_seconds: float = 30.0) -> bool:
 	if benchmark_running:
@@ -25,6 +37,7 @@ func start_benchmark(duration_seconds: float = 30.0) -> bool:
 	benchmark_duration_seconds = clampf(duration_seconds, 5.0, 120.0)
 	elapsed_seconds = 0.0
 	_clear_samples()
+	_reset_camera_metrics()
 	benchmark_running = true
 	benchmark_started.emit(benchmark_duration_seconds)
 	return true
@@ -41,6 +54,11 @@ func _clear_samples() -> void:
 	_rendered_primitive_samples.clear()
 	_video_memory_samples.clear()
 	_node_count_samples.clear()
+	_process_time_ms_samples.clear()
+	_physics_process_time_ms_samples.clear()
+	_texture_memory_samples.clear()
+	_buffer_memory_samples.clear()
+	_static_memory_samples.clear()
 
 func _capture_render_metrics() -> void:
 	# Performance monitors expose the most recently rendered frame. Sampling
@@ -50,12 +68,54 @@ func _capture_render_metrics() -> void:
 	_rendered_primitive_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
 	_video_memory_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)))
 	_node_count_samples.append(maxf(0.0, Performance.get_monitor(Performance.OBJECT_NODE_COUNT)))
+	_process_time_ms_samples.append(maxf(0.0, Performance.get_monitor(Performance.TIME_PROCESS)) * 1000.0)
+	_physics_process_time_ms_samples.append(maxf(0.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0)
+	_texture_memory_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED)))
+	_buffer_memory_samples.append(maxf(0.0, Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED)))
+	_static_memory_samples.append(maxf(0.0, Performance.get_monitor(Performance.MEMORY_STATIC)))
+
+func _capture_camera_metrics() -> void:
+	var scene := get_tree().current_scene
+	if not is_instance_valid(scene):
+		return
+	var camera_rig := scene.get_node_or_null("CameraRig")
+	if not is_instance_valid(camera_rig):
+		return
+	var camera_position: Vector3 = camera_rig.global_position
+	if _camera_has_previous_position:
+		var distance := camera_position.distance_to(_camera_previous_position)
+		if distance > 0.02:
+			_camera_movement_frames += 1
+			_camera_total_distance += distance
+	_camera_previous_position = camera_position
+	_camera_has_previous_position = true
+	var zoom_value := float(camera_rig.get("current_zoom"))
+	if zoom_value > 0.0:
+		_camera_min_zoom = minf(_camera_min_zoom, zoom_value)
+		_camera_max_zoom = maxf(_camera_max_zoom, zoom_value)
+	var touch_points: Variant = camera_rig.get("touch_points")
+	var is_panning := bool(camera_rig.get("is_mouse_panning")) or (touch_points is Dictionary and not touch_points.is_empty())
+	var pan_velocity: Variant = camera_rig.get("pan_velocity")
+	if pan_velocity is Vector2 and pan_velocity.length() > 6.0:
+		is_panning = true
+	if is_panning:
+		_camera_active_frames += 1
+
+func _reset_camera_metrics() -> void:
+	_camera_previous_position = Vector3.ZERO
+	_camera_has_previous_position = false
+	_camera_movement_frames = 0
+	_camera_total_distance = 0.0
+	_camera_min_zoom = INF
+	_camera_max_zoom = -INF
+	_camera_active_frames = 0
 
 func _process(delta: float) -> void:
 	if not benchmark_running or delta <= 0.0:
 		return
 	_frame_times.append(delta)
 	_capture_render_metrics()
+	_capture_camera_metrics()
 	var previous_second := int(elapsed_seconds)
 	elapsed_seconds += delta
 	if int(elapsed_seconds) > previous_second:
@@ -84,8 +144,14 @@ func _finish_benchmark() -> void:
 		"graphics_quality": GraphicsSettingsManager.quality,
 		"graphics_preset": GraphicsSettingsManager.get_quality_preset(GraphicsSettingsManager.quality),
 		"render_metrics": _build_render_metrics_report(),
+		"cpu_metrics": _build_cpu_metrics_report(),
+		"memory_metrics": _build_memory_metrics_report(),
+		"camera_metrics": _build_camera_metrics_report(),
+		"gpu_timing": {"available": false, "note": "Godot 4.3 GL Compatibility does not expose portable per-frame GPU execution time or GPU utilization. Video/texture/buffer memory are reported separately."},
+		"scenario": "manual_camera_pan_and_zoom",
+		"instructions": "During the full benchmark, continuously pan across the city and perform several zoom-in/zoom-out gestures. Keep the game in the foreground.",
 		"report_path": REPORT_PATH,
-		"scope": "Foreground gameplay frame loop on the device that ran this benchmark; not a CI or synthetic scene benchmark."
+		"scope": "Foreground gameplay frame loop on the physical device that ran this benchmark; not a CI or synthetic scene benchmark."
 	}
 	var file := FileAccess.open(REPORT_PATH, FileAccess.WRITE)
 	if file != null:
@@ -111,6 +177,34 @@ func _build_render_metrics_report() -> Dictionary:
 		"draw_calls_last_frame": int(_last_sample(_draw_call_samples)),
 		"rendered_objects_last_frame": int(_last_sample(_rendered_object_samples)),
 		"rendered_primitives_last_frame": int(_last_sample(_rendered_primitive_samples))
+	}
+
+func _build_cpu_metrics_report() -> Dictionary:
+	return {
+		"process_time_ms": summarize_numeric_samples(_process_time_ms_samples),
+		"physics_process_time_ms": summarize_numeric_samples(_physics_process_time_ms_samples),
+		"note": "Engine process-time monitors are reported in milliseconds; they are not total Android CPU utilization."
+	}
+
+func _build_memory_metrics_report() -> Dictionary:
+	return {
+		"texture_memory_bytes": summarize_numeric_samples(_texture_memory_samples),
+		"render_buffer_memory_bytes": summarize_numeric_samples(_buffer_memory_samples),
+		"static_memory_bytes": summarize_numeric_samples(_static_memory_samples),
+		"video_memory_bytes": summarize_numeric_samples(_video_memory_samples)
+	}
+
+func _build_camera_metrics_report() -> Dictionary:
+	var movement_percent := float(_camera_movement_frames) * 100.0 / float(_frame_times.size()) if not _frame_times.is_empty() else 0.0
+	var active_percent := float(_camera_active_frames) * 100.0 / float(_frame_times.size()) if not _frame_times.is_empty() else 0.0
+	return {
+		"movement_frames": _camera_movement_frames,
+		"movement_frame_percent": snappedf(movement_percent, 0.1),
+		"active_pan_frames": _camera_active_frames,
+		"active_pan_frame_percent": snappedf(active_percent, 0.1),
+		"total_camera_distance_world_units": snappedf(_camera_total_distance, 0.01),
+		"zoom_min": snappedf(_camera_min_zoom, 0.01) if _camera_min_zoom != INF else 0.0,
+		"zoom_max": snappedf(_camera_max_zoom, 0.01) if _camera_max_zoom != -INF else 0.0
 	}
 
 static func _last_sample(samples: Array[float]) -> float:
