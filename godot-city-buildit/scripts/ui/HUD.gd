@@ -2698,8 +2698,15 @@ func open_production_panel(building: Building) -> void:
 		state_label.add_theme_font_size_override("font_size", _popup_font_size(11))
 		state_label.add_theme_color_override("font_color", Color("#28734A") if is_ready else Color("#587487"))
 		var paid_order_cost := int(slot.get("order_cost", 0))
-		state_label.text = ("READY TO COLLECT" if is_ready else ("WAITING IN QUEUE" if is_waiting else "IN PRODUCTION")) + ("  ·  PAID §%s" % _format_count(paid_order_cost) if component.is_factory else "")
+		state_label.text = "READY TO COLLECT" if is_ready else ("WAITING IN QUEUE" if is_waiting else "IN PRODUCTION")
 		order_details.add_child(state_label)
+		if component.is_factory and paid_order_cost > 0:
+			var payment_label := Label.new()
+			payment_label.name = "OrderPayment%d" % slot_index
+			payment_label.text = "ORDER PAID  §%s" % _format_count(paid_order_cost)
+			payment_label.add_theme_font_size_override("font_size", _popup_font_size(10))
+			payment_label.add_theme_color_override("font_color", Color("#A87516"))
+			order_details.add_child(payment_label)
 		if not is_ready and not is_waiting:
 			var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
 			var timer_label := Label.new()
