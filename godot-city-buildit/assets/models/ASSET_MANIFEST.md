@@ -33,3 +33,19 @@ These generated maps are procedural texture patterns, not photographic scans or 
 ## License
 
 CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+## Los Angeles architectural variety — first playable pack
+
+The first LA-inspired showcase pack adds six locally authored Godot scenes, all driven by the shared low-overhead BuildingAssetModel.gd mesh builder. These are original stylized interpretations of common Southern California architecture, not replicas of named buildings.
+
+| Model | Runtime path | Game type | Visual identity |
+|---|---|---|---|
+| LA glass residential tower | residential/la_glass_tower.tscn | la_glass_tower | Tall blue-green curtain wall, light mullions, podium and stepped crown |
+| Dome crown residential tower | residential/la_dome_tower.tscn | la_dome_tower | Warm stone mid-rise with a glazed spherical dome and ringed cornice |
+| Modern apartment | residential/la_modern_apartment.tscn | la_modern_apartment | Four-floor contemporary block, recessed glazing and projecting balcony slabs |
+| Roof-garden villa | residential/la_roof_garden_villa.tscn | la_roof_garden_villa | Low horizontal glass villa with planted roof and compact rooftop trees |
+| LA office tower | commercial/la_office_tower.tscn | la_office_tower | Rectilinear office slab, glass curtain wall, horizontal floor bands and roof plant |
+| Coastal commercial arcade | commercial/la_commercial_arcade.tscn | la_commercial_arcade | Low retail pavilion, broad shopfront glazing, timber colonnade and shaded forecourt |
+
+Geometry is generated once when each building is instantiated. The pack uses simple box, cylinder and sphere primitives, shared cached local surface maps, no animated geometry, no dynamic lights, and no real-time shadow casters added by these scenes. It is a first architectural pack, not completion of the full per-catalog asset matrix. Web/CI performance and visual review are still required before claiming device-level acceptance.
