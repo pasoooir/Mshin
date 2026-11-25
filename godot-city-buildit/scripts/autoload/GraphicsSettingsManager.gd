@@ -137,7 +137,7 @@ func _apply_quality() -> void:
 	viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	viewport.scaling_3d_scale = float(preset.get("scale", 0.62))
 	viewport.msaa_3d = int(preset.get("msaa", Viewport.MSAA_DISABLED))
-	Engine.max_fps = 45 if quality == "low" else 60
+	Engine.max_fps = 60
 	_adaptive_sample_elapsed = 0.0
 	_slow_fps_windows = 0
 	_fast_fps_windows = 0
