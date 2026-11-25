@@ -517,7 +517,13 @@ func _test_residential_upgrade_cancel_ui() -> void:
 			additions[item_id] = int(additions.get(item_id, 0)) + missing
 	if not additions.is_empty():
 		_check(StorageManager.add_items(additions), "Could not provision residential upgrade materials for cancellation UI test.")
-	_check(home.try_upgrade(), "Residential upgrade must start with its complete material bill.")
+	# This helper verifies the cancel/refund UI only. Service milestone gates are
+	# exercised by the main progression test, so isolate this material workflow.
+	var previous_level := GameManager.level
+	GameManager.level = 1
+	var cancel_test_upgrade_started: bool = home.try_upgrade()
+	_check(cancel_test_upgrade_started, "Residential upgrade must start with its complete material bill. Block reason: %s" % home.get_residential_upgrade_block_reason())
+	GameManager.level = previous_level
 	if not home.upgrade_in_progress:
 		StorageManager.from_save_dict(previous_storage)
 		return
