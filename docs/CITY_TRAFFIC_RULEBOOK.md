@@ -26,7 +26,7 @@ This is a game traffic policy. It is not a claim that every clause of a particul
 
 - TrafficManager owns the active fleet, network load observations, route selection and junction reservations.
 - Road-cell load is measured from the current and next route segment of active city, highway and emergency vehicles whenever those segments occupy the connected city-road graph.
-- Highway lane indices apply only on the motorway. After merging into the city connector, highway vehicles use the same city-lane identity and following-gap checks as other city traffic.
+- Highway lane indices apply only on the motorway. Three lane centres per carriageway are offset 2, 5 and 8 m from the motorway centreline; the rendered divider markings sit at the 3.5 and 6.5 m midpoints, with a separate shoulder boundary at 9.5 m. The simulation grid column and world-space motorway centreline must coincide. After merging into the city connector, highway vehicles use the same city-lane identity and following-gap checks as other city traffic.
 - Route cost combines road capacity (road level), live vehicle load and a junction traversal penalty.
 - build_route_between uses a weighted shortest-path search over Gateway-connected roads. A longer alternative may be selected when the shortest road is materially more congested.
 - Round-trip traffic destinations are rotated among farthest reachable cells so all vehicles do not repeatedly target one identical endpoint.
