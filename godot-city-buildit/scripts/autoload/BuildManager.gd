@@ -172,9 +172,9 @@ var moving_building: Building = null
 var moving_original_grid: Vector2i = Vector2i.ZERO
 var moving_preview_valid: bool = false
 const MOVABLE_BUILDING_TYPES := [
-	"residential_1", "residential_villa", "residential_apartment", "residential_farm", "island_cottage", "fjord_chalet", "desert_hacienda", "valley_eco_home", "cliffside_villa",
+	"residential_1", "residential_villa", "residential_apartment", "residential_farm", "la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa", "island_cottage", "fjord_chalet", "desert_hacienda", "valley_eco_home", "cliffside_villa",
 	"building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
-	"art_supplies", "hardware_store", "farmers_market", "furniture_store",
+	"art_supplies", "hardware_store", "farmers_market", "furniture_store", "la_office_tower", "la_commercial_arcade",
 	"factory_small", "factory_basic", "factory_mass", "factory_hightech", "factory_nano", "industrial_1", "industrial_2", "industrial_3", "coconut_grove", "snowberry_farm", "cactus_farm", "herb_garden", "olive_grove",
 	"power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear", "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall", "epic_projects_department", "trade_depot", "global_trade_hq", "cargo_port",
 	"park_small"
