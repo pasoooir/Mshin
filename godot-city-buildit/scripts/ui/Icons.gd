@@ -21,11 +21,24 @@ const STATUS_IDS := ["smoke", "no_power", "no_water", "no_fire_coverage", "stora
 static var _texture_cache: Dictionary = {}
 
 static func path(category: String, id: String) -> String:
+	var icon_id := id
+	if category == "residential":
+		icon_id = {
+			"la_glass_tower": "residential_apartment",
+			"la_dome_tower": "residential_2",
+			"la_modern_apartment": "residential_apartment",
+			"la_roof_garden_villa": "residential_villa"
+		}.get(id, id)
+	elif category == "commercial":
+		icon_id = {
+			"la_office_tower": "restoration_office",
+			"la_commercial_arcade": "shop_chain"
+		}.get(id, id)
 	if category == "root":
-		return "%s%s.png" % [ROOT, id]
+		return "%s%s.png" % [ROOT, icon_id]
 	if category == "ui_vector":
-		return "%sui/%s_from_svg.png" % [ROOT, id]
-	return "%s%s/%s.png" % [ROOT, category, id]
+		return "%sui/%s_from_svg.png" % [ROOT, icon_id]
+	return "%s%s/%s.png" % [ROOT, category, icon_id]
 
 static func get_tex(category: String, id: String) -> Texture2D:
 	var icon_path := path(category, id)
