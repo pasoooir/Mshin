@@ -2819,6 +2819,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 		card_margin.add_theme_constant_override("margin_right", 8)
 		card_margin.add_theme_constant_override("margin_top", 7)
 		card_margin.add_theme_constant_override("margin_bottom", 7)
+		card_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		card.add_child(card_margin)
 		var card_content := VBoxContainer.new()
 		card_content.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2850,7 +2851,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 		card_content.add_child(ingredients)
 		var state := Label.new()
 		state.name = "StoreProductState_%s" % item_id
-		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("NO FREE SLOT" if free_slot < 0 else ("%d INGREDIENT(S) MISSING" % missing_count)))
+		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("INGREDIENT LOCKED" if not inputs_unlocked else ("NO FREE SLOT" if free_slot < 0 else ("%d INGREDIENT(S) MISSING" % missing_count))))
 		state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		state.add_theme_font_size_override("font_size", _popup_font_size(9))
 		state.add_theme_color_override("font_color", Color("#34734D") if can_make else Color("#A33A36"))
