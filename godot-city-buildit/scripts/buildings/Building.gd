@@ -75,6 +75,50 @@ func _ready() -> void:
 	if hard_hat:
 		hard_hat.visible = false
 
+func _connect_upgrade_dependency_signals() -> void:
+	# Upgrade readiness is event-driven. Do not rescan every home and every
+	# service-coverage map on every rendered frame.
+	if not StorageManager.storage_changed.is_connected(_on_upgrade_dependencies_changed):
+		StorageManager.storage_changed.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.power_changed.is_connected(_on_service_capacity_changed):
+		ServiceManager.power_changed.connect(_on_service_capacity_changed)
+	if not ServiceManager.water_changed.is_connected(_on_service_capacity_changed):
+		ServiceManager.water_changed.connect(_on_service_capacity_changed)
+	if not ServiceManager.sewage_changed.is_connected(_on_service_capacity_changed):
+		ServiceManager.sewage_changed.connect(_on_service_capacity_changed)
+	if not ServiceManager.waste_changed.is_connected(_on_service_capacity_changed):
+		ServiceManager.waste_changed.connect(_on_service_capacity_changed)
+	if not ServiceManager.workforce_changed.is_connected(_on_workforce_changed):
+		ServiceManager.workforce_changed.connect(_on_workforce_changed)
+	if not BuildManager.building_placed.is_connected(_on_city_building_placed):
+		BuildManager.building_placed.connect(_on_city_building_placed)
+	if not BuildManager.building_removed.is_connected(_on_city_building_removed):
+		BuildManager.building_removed.connect(_on_city_building_removed)
+	if not BuildManager.construction_finished.is_connected(_on_city_construction_finished):
+		BuildManager.construction_finished.connect(_on_city_construction_finished)
+
+func _refresh_upgrade_readiness() -> void:
+	if str(definition.get("category", "")) == "residential" and status == "completed":
+		_check_upgrade_ready()
+
+func _on_upgrade_dependencies_changed() -> void:
+	_refresh_upgrade_readiness()
+
+func _on_service_capacity_changed(_total: int, _demand: int) -> void:
+	_refresh_upgrade_readiness()
+
+func _on_workforce_changed(_available: int, _demand: int, _employed: int) -> void:
+	_refresh_upgrade_readiness()
+
+func _on_city_building_placed(_building_data: Dictionary) -> void:
+	_refresh_upgrade_readiness()
+
+func _on_city_building_removed(_building_id: String) -> void:
+	_refresh_upgrade_readiness()
+
+func _on_city_construction_finished(_building_id: String) -> void:
+	_refresh_upgrade_readiness()
+
 func _create_visual_labels() -> void:
 	if production_icon == null:
 		production_icon = Label3D.new()
@@ -133,6 +177,8 @@ func setup(data: Dictionary) -> void:
 	grid_pos = data.get("grid_pos", Vector2i.ZERO)
 	rotation.y = float(data.get("rotation_y", 0.0))
 	definition = data.get("definition", {})
+	if str(definition.get("category", "")) == "residential":
+		_connect_upgrade_dependency_signals()
 	status = data.get("status", "constructing")
 	build_time = definition.get("build_time", 10.0)
 	upgrade_stage = data.get("upgrade_stage", 1)
@@ -156,6 +202,8 @@ func setup(data: Dictionary) -> void:
 		_start_construction()
 	else:
 		_on_construction_finished()
+	if str(definition.get("category", "")) == "residential":
+		_check_upgrade_ready()
 
 
 func set_epic_tier(tier: int) -> void:
@@ -315,7 +363,18 @@ func _create_visual() -> void:
 				var is_farm := subtype == "farm"
 				var residential_body_h := height
 				if is_apartment:
-					var residential_floors := 3 if upgrade_stage < 5 else 4
+					# The apartment silhouette grows from a low podium into a
+					# 12-storey LA-style glass tower across the six home levels.
+					var residential_floors := 3
+					match upgrade_stage:
+						3:
+							residential_floors = 5
+						4:
+							residential_floors = 7
+						5:
+							residential_floors = 9
+						6:
+							residential_floors = 12
 					residential_body_h = maxf(height, float(residential_floors) * 1.35)
 				elif is_farm:
 					residential_body_h = minf(height, 1.85)
@@ -565,8 +624,9 @@ func _build_residential_level_architecture(
 		return
 
 	if is_apartment:
-		# Apartment tiers add visibly different massing: podium, offset wings,
-		# glass corner core, then a stepped contemporary tower crown.
+		# Los Angeles-inspired residential tower progression: stepped podiums,
+		# blue curtain-wall glazing, restrained mullions, planted terraces and
+		# a sculptural glazed dome. Keep every added feature static and shadow-free.
 		if stage >= 2:
 			_add_box(Vector3(w * 1.02, 0.34, d * 0.98), Vector3(0, 0.52, 0), accent)
 			for floor in range(3):
@@ -576,15 +636,35 @@ func _build_residential_level_architecture(
 		if stage >= 3:
 			_add_box(Vector3(w * 0.34, 1.35, d * 0.70), Vector3(-w * 0.31, body_h + 0.68, 0), modern_white)
 			_add_box(Vector3(w * 0.38, 0.12, d * 0.74), Vector3(-w * 0.31, body_h + 1.38, 0), accent)
+			# One continuous reflective curtain-wall panel instead of dozens of panes.
+			_add_box(Vector3(w * 0.78, body_h * 0.90, 0.055),
+				Vector3(0, body_h * 0.52 + 0.34, front + 0.065), glass_blue, "glass")
+			for mullion in range(4):
+				var mullion_x := -w * 0.34 + float(mullion) * (w * 0.68 / 3.0)
+				_add_box(Vector3(0.045, body_h * 0.88, 0.075),
+					Vector3(mullion_x, body_h * 0.52 + 0.34, front + 0.105), frame, "painted_metal")
+			for floor_band in range(1, 4):
+				var band_y := 0.34 + body_h * float(floor_band) / 4.0
+				_add_box(Vector3(w * 0.82, 0.055, 0.075),
+					Vector3(0, band_y, front + 0.11), graphite, "painted_metal")
 		if stage >= 4:
-			_add_box(Vector3(0.34, body_h * 0.72, 0.30), Vector3(side * 0.66, body_h * 0.52 + 0.34, front + 0.06), glass_blue)
+			_add_box(Vector3(0.34, body_h * 0.72, 0.30), Vector3(side * 0.66, body_h * 0.52 + 0.34, front + 0.06), glass_blue, "glass")
 			_add_box(Vector3(w * 1.08, 0.16, d * 0.20), Vector3(0, body_h + 0.84, -d * 0.34), warm_wood)
+			# Roof deck and planted edges: three low planters, no animated foliage.
+			_add_box(Vector3(w * 0.78, 0.10, d * 0.68), Vector3(0, body_h + 0.16, -d * 0.06), Color(0.25, 0.38, 0.30))
+			for planter in range(3):
+				_add_box(Vector3(0.42, 0.24, 0.34),
+					Vector3(-w * 0.28 + float(planter) * w * 0.28, body_h + 0.32, -d * 0.28), Color(0.30, 0.50, 0.31))
 		if stage >= 5:
 			_add_box(Vector3(w * 0.52, 1.45, d * 0.70), Vector3(w * 0.22, body_h + 1.08, -d * 0.06), modern_white)
 			_add_box(Vector3(w * 0.56, 0.18, d * 0.76), Vector3(w * 0.22, body_h + 1.82, -d * 0.06), graphite)
+			_add_box(Vector3(w * 0.42, 1.22, 0.055), Vector3(w * 0.22, body_h + 1.12, d * 0.31), glass_blue, "glass")
 		if stage >= 6:
-			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue)
+			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue, "glass")
 			_add_box(Vector3(w * 0.40, 0.20, d * 0.56), Vector3(-w * 0.22, body_h + 3.18, 0), accent)
+			_add_residential_glass_dome(
+				Vector3(-w * 0.22, body_h + 3.30, -d * 0.05), maxf(0.52, w * 0.16)
+			)
 		return
 
 	match stage:
@@ -631,6 +711,40 @@ func _build_residential_level_architecture(
 			_add_box(Vector3(w * 0.46, 0.16, d * 0.46), Vector3(0, body_h + 2.16, -d * 0.05), accent)
 			for column in [-1.0, 1.0]:
 				_add_box(Vector3(0.10, 1.88, 0.10), Vector3(column * w * 0.34, body_h + 1.00, front + 0.12), frame)
+
+
+func _add_residential_glass_dome(base_position: Vector3, radius: float) -> void:
+	# A single low-poly SphereMesh and one base ring create a recognizable
+	# glazed observatory crown without lights, per-frame work or extra materials per pane.
+	var ring := MeshInstance3D.new()
+	var ring_mesh := CylinderMesh.new()
+	ring_mesh.top_radius = radius * 1.02
+	ring_mesh.bottom_radius = radius * 1.02
+	ring_mesh.height = 0.10
+	ring_mesh.radial_segments = 12
+	ring.mesh = ring_mesh
+	ring.position = base_position
+	ring.material_override = _make_surface_material(Color(0.68, 0.76, 0.78), "painted_metal")
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mesh_root.add_child(ring)
+
+	var dome := MeshInstance3D.new()
+	var dome_mesh := SphereMesh.new()
+	dome_mesh.radius = radius
+	dome_mesh.height = radius * 1.45
+	dome_mesh.radial_segments = 12
+	dome_mesh.rings = 6
+	dome.mesh = dome_mesh
+	var dome_material := StandardMaterial3D.new()
+	dome_material.albedo_color = Color(0.22, 0.54, 0.68, 0.84)
+	dome_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dome_material.metallic = 0.38
+	dome_material.roughness = 0.18
+	dome_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	dome.material_override = dome_material
+	dome.position = base_position + Vector3(0, radius * 0.32, 0)
+	dome.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mesh_root.add_child(dome)
 
 
 # Level 1 starter home: a compact, colourful Sims-like villa with distinct facade,
@@ -1887,8 +2001,7 @@ func _process(delta: float) -> void:
 			production_ready.emit(current_product)
 	if upgrade_in_progress:
 		update_upgrade_access_state()
-	if definition.get("category") == "residential" and status == "completed" and upgrade_stage < max_stage:
-		_check_upgrade_ready()
+	# Residential upgrade readiness is refreshed by inventory, service and city events.
 
 func update_upgrade_access_state(now_unix: int = -1) -> void:
 	if not upgrade_in_progress:
@@ -1908,16 +2021,60 @@ func update_upgrade_access_state(now_unix: int = -1) -> void:
 		else:
 			_finish_non_residential_upgrade()
 
-func _check_upgrade_ready() -> void:
+func get_residential_upgrade_service_status() -> Array:
+	var result: Array = []
+	if str(definition.get("category", "")) != "residential" or upgrade_stage >= max_stage:
+		return result
+	var target_stage := mini(upgrade_stage + 1, max_stage)
+	# Service gates are Mshin progression rules, not claims about EA's hidden
+	# density formula. Only require systems after their city unlock and at the
+	# corresponding residential development milestone.
+	var service_rules: Array[Dictionary] = [
+		{"group":"power", "label":"Power", "stage":2, "unlock":2},
+		{"group":"water", "label":"Water", "stage":2, "unlock":2},
+		{"group":"fire", "label":"Fire protection", "stage":3, "unlock":5},
+		{"group":"sewage", "label":"Sewage", "stage":3, "unlock":8},
+		{"group":"police", "label":"Police", "stage":4, "unlock":12},
+		{"group":"waste", "label":"Waste collection", "stage":5, "unlock":14},
+		{"group":"health", "label":"Healthcare", "stage":6, "unlock":16}
+	]
+	for rule in service_rules:
+		if target_stage < int(rule.stage) or GameManager.level < int(rule.unlock):
+			continue
+		var served := ServiceManager.is_home_served_by_group(self, str(rule.group))
+		result.append({
+			"group":str(rule.group),
+			"label":str(rule.label),
+			"served":served,
+			"unlock_level":int(rule.unlock)
+		})
+	return result
+
+func get_residential_upgrade_block_reason() -> String:
+	if str(definition.get("category", "")) != "residential":
+		return "This building is not residential."
+	if status != "completed":
+		return "Finish construction before upgrading this home."
+	if is_epic_building:
+		return "Epic buildings use the Epic Project system."
+	if upgrade_stage >= max_stage:
+		return "This home has reached its maximum level."
+	if upgrade_in_progress:
+		return "This home is already being upgraded."
 	if not BuildManager.is_building_operational(self):
-		upgrade_ready = false
-		if hard_hat: hard_hat.visible = false
-		return
-	if upgrade_stage >= max_stage or upgrade_in_progress:
-		upgrade_ready = false
-		if hard_hat: hard_hat.visible = false
-		return
-	upgrade_ready = ProductionManager.can_afford_upgrade(upgrade_stage)
+		return "Connect this home to a Gateway-connected road."
+	var missing_services: Array[String] = []
+	for service in get_residential_upgrade_service_status():
+		if not bool(service.get("served", false)):
+			missing_services.append(str(service.get("label", service.get("group", "Service"))))
+	if not missing_services.is_empty():
+		return "Restore city coverage for: " + ", ".join(missing_services)
+	if not ProductionManager.can_afford_upgrade(upgrade_stage):
+		return "Required upgrade materials are missing from City Storage."
+	return ""
+
+func _check_upgrade_ready() -> void:
+	upgrade_ready = get_residential_upgrade_block_reason().is_empty()
 	# Show the blue plan marker only while this home's upgrade plan is selected.
 	if hard_hat:
 		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
@@ -1936,6 +2093,8 @@ func try_upgrade() -> bool:
 	var consumed_bom: Dictionary = {}
 	var consumed_simoleons := 0
 	if category == "residential":
+		if not get_residential_upgrade_block_reason().is_empty():
+			return false
 		if not ProductionManager.can_afford_upgrade(upgrade_stage):
 			print("[Building] Need materials for residential upgrade to stage ", upgrade_stage + 1)
 			return false

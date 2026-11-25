@@ -819,9 +819,26 @@ for level_contract in [
     'if is_farm:',
     'if is_apartment:',
     'CylinderMesh.new()',
+    'func _add_residential_glass_dome(',
+    'dome_mesh.radial_segments = 12',
+    'Los Angeles-inspired residential tower progression',
 ]:
     if level_contract not in building_source:
         errors.append(f"Residential level architecture contract is missing: {level_contract}")
+
+# Residential upgrade prerequisites must include city-service coverage and
+# must refresh from state-change signals rather than every rendered frame.
+for upgrade_contract in [
+    'func get_residential_upgrade_service_status() -> Array:',
+    'func get_residential_upgrade_block_reason() -> String:',
+    'ServiceManager.is_home_served_by_group(self, str(rule.group))',
+    'StorageManager.storage_changed.connect(_on_upgrade_dependencies_changed)',
+    'ServiceManager.power_changed.connect(_on_service_capacity_changed)',
+]:
+    if upgrade_contract not in building_source:
+        errors.append(f"Residential upgrade/service contract is missing: {upgrade_contract}")
+if '_check_upgrade_ready()' in re.search(r'func _process\(delta: float\) -> void:(.*?)(?=\nfunc )', building_source, re.S).group(1):
+    errors.append("Residential upgrade readiness must not be polled every rendered frame.")
 
 # Every non-residential category also has a type-specific identity path.
 for identity_contract in [

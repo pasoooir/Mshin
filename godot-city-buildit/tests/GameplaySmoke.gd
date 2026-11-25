@@ -517,7 +517,13 @@ func _test_residential_upgrade_cancel_ui() -> void:
 			additions[item_id] = int(additions.get(item_id, 0)) + missing
 	if not additions.is_empty():
 		_check(StorageManager.add_items(additions), "Could not provision residential upgrade materials for cancellation UI test.")
-	_check(home.try_upgrade(), "Residential upgrade must start with its complete material bill.")
+	# This helper verifies the cancel/refund UI only. Service milestone gates are
+	# exercised by the main progression test, so isolate this material workflow.
+	var previous_level := GameManager.level
+	GameManager.level = 1
+	var cancel_test_upgrade_started: bool = home.try_upgrade()
+	_check(cancel_test_upgrade_started, "Residential upgrade must start with its complete material bill. Block reason: %s" % home.get_residential_upgrade_block_reason())
+	GameManager.level = previous_level
 	if not home.upgrade_in_progress:
 		StorageManager.from_save_dict(previous_storage)
 		return
@@ -5714,6 +5720,23 @@ func _run_gameplay_test() -> void:
 	hardware.queue_free()
 	GameManager.level = previous_level
 
+	# Residential development must use real city service coverage, not materials alone.
+	# Temporarily remove the home's Level 2 utility coverage and verify that the
+	# upgrade explains the missing infrastructure; restore the live service snapshot.
+	var previous_upgrade_level := GameManager.level
+	var previous_power_coverage: Dictionary = ServiceManager.power_served_ids.duplicate(true)
+	var previous_water_coverage: Dictionary = ServiceManager.water_served_ids.duplicate(true)
+	GameManager.level = maxi(GameManager.level, 2)
+	ServiceManager.power_served_ids.clear()
+	ServiceManager.water_served_ids.clear()
+	var service_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	_check(service_block_reason.contains("Power") or service_block_reason.contains("Water"), "A Level 2 residential upgrade must be blocked with a clear missing Power/Water coverage reason.")
+	ServiceManager.power_served_ids = previous_power_coverage
+	ServiceManager.water_served_ids = previous_water_coverage
+	GameManager.level = previous_upgrade_level
+	if home != null:
+		home._check_upgrade_ready()
+
 	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("nails",1)
@@ -5735,10 +5758,30 @@ func _run_gameplay_test() -> void:
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
-	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
+	# At the next residential tier, a Level 5 city must have local fire coverage.
+	var level_after_first_upgrade := GameManager.level
+	var previous_fire_coverage: Dictionary = ServiceManager.fire_served_ids.duplicate(true)
+	GameManager.level = maxi(GameManager.level, 5)
+	ServiceManager.fire_served_ids.clear()
+	var fire_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	_check(fire_block_reason.contains("Fire protection"), "A Level 5 residential development must require nearby Fire protection coverage.")
+	ServiceManager.fire_served_ids = previous_fire_coverage
+	GameManager.level = level_after_first_upgrade
+	if home != null:
+		home._check_upgrade_ready()
+
+	# Isolate the material/Save test from later service-unlock milestones; the
+	# explicit Fire gate above is tested separately and remains active in-game.
+	var second_upgrade_level := GameManager.level
+	GameManager.level = 1
+	# Save a second material-only upgrade while its scaffold timer is active;
+	# service gates are asserted above, independently from this save-path test.
 	StorageManager.add_item("planks",1)
 	StorageManager.add_item("wood",1)
-	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
+	var second_upgrade_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	var second_upgrade_started: bool = home != null and home.try_upgrade()
+	_check(second_upgrade_started, "Second residential upgrade could not start with Planks and Wood. Block reason: %s" % second_upgrade_block_reason)
+	GameManager.level = second_upgrade_level
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
 
