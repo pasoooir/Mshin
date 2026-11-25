@@ -391,8 +391,8 @@ func _ready() -> void:
 			failures.append("speeded-up production did not collect exactly one item")
 		else:
 			var collected_metal_cost := StorageManager.get_cost_basis({"metal": 1})
-			if not bool(collected_metal_cost.get("known", false)) or int(collected_metal_cost.get("total_cost", -1)) != expected_metal_order_cost:
-				failures.append("collected factory material did not retain the exact paid order fee in its warehouse cost batch")
+			if not bool(collected_metal_cost.get("known", false)) or int(collected_metal_cost.get("total_cost", -1)) != 0:
+				failures.append("factory-produced raw material must retain a known zero direct item cost; its Simoleon operating fee is audited separately")
 		# Produce a second Metal, then consume both units in the Nails recipe.
 		if not factory.start_factory("metal", 1):
 			failures.append("factory could not start the second Metal needed by the store recipe")
@@ -420,8 +420,8 @@ func _ready() -> void:
 				failures.append("completed Nails order did not transfer exactly one crafted item to City Storage")
 			else:
 				var nails_cost := StorageManager.get_cost_basis({"nails": 1})
-				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != expected_metal_order_cost * 2:
-					failures.append("store output did not inherit both factory material costs")
+				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != 0:
+					failures.append("store output did not preserve the known zero direct item cost of factory-produced raw inputs")
 		# The starter home requires Nails + Metal. Produce the extra raw Metal
 		# and verify the same atomic reservation path used by Building.try_upgrade.
 		if not factory.start_factory("metal", 0):
