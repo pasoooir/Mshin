@@ -2969,7 +2969,10 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 		card_content.add_child(state)
 		product_card.set_meta("production_item_id", item_id)
 		product_card.set_meta("production_building_id", building.get_instance_id())
-		product_card.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, free_slot, product_card))
+		# Use BaseButton.pressed as the single activation path for both mouse
+		# and the HUD native ScreenTouch router. This keeps touch taps independent
+		# of the legacy world-orbit drag state.
+		product_card.pressed.connect(_on_production_item_pressed.bind(building, item_id, free_slot, product_card))
 		products_grid.add_child(product_card)
 
 	var detail_scroll := ScrollContainer.new()
