@@ -3606,7 +3606,7 @@ func _test_building_model_loader_contract() -> void:
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[8], "The small-factory archetype must select the local factory model.")
 	var la_showcase_ids := ["la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa", "la_office_tower", "la_commercial_arcade"]
 	for showcase_index in range(la_showcase_ids.size()):
-		var showcase_id := la_showcase_ids[showcase_index]
+		var showcase_id: String = str(la_showcase_ids[showcase_index])
 		_check(str(BuildManager.building_types[showcase_id].get("model_path", "")) == model_paths[10 + showcase_index], "LA showcase type must select its own dedicated local model: " + showcase_id)
 	_check(BuildingModelLoader.load_model_scene(model_paths[10]) != null and BuildingModelLoader.load_model_scene(model_paths[15]) != null, "The LA showcase scene pack must be locally loadable.")
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
