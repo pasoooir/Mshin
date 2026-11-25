@@ -205,6 +205,12 @@ else:
         "func _build_hardware_store() -> void:",
         "func _build_farmers_market() -> void:",
         "func _build_furniture_store() -> void:",
+        "func _build_la_glass_tower() -> void:",
+        "func _build_la_dome_tower() -> void:",
+        "func _build_la_modern_apartment() -> void:",
+        "func _build_la_roof_garden_villa() -> void:",
+        "func _build_la_office_tower() -> void:",
+        "func _build_la_commercial_arcade() -> void:",
         'material.normal_texture = maps["normal"]',
         'material.roughness_texture = maps["roughness"]',
         'material.metallic_texture = maps["metallic"]',
@@ -216,7 +222,7 @@ model_loader_source = (ROOT / "scripts/buildings/BuildingModelLoader.gd").read_t
 if 'or extension == "tscn"' not in model_loader_source:
     errors.append("Local authored building scenes must be accepted by BuildingModelLoader")
 
-commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"]
+commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store", "la_office_tower", "la_commercial_arcade"]
 build_manager_for_assets = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 for asset_id in commercial_asset_ids:
     scene_path = ROOT / "assets/models/commercial" / f"{asset_id}.tscn"
@@ -228,6 +234,18 @@ for asset_id in commercial_asset_ids:
         errors.append(f"Dedicated commercial scene has the wrong asset type: {asset_id}")
     if f'"{asset_id}": "res://assets/models/commercial/{asset_id}.tscn"' not in build_manager_for_assets:
         errors.append(f"Exact building model registry entry is missing: {asset_id}")
+
+residential_showcase_ids = ["la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa"]
+for asset_id in residential_showcase_ids:
+    scene_path = ROOT / "assets/models/residential" / f"{asset_id}.tscn"
+    if not scene_path.is_file():
+        errors.append(f"Dedicated residential showcase scene is missing: {scene_path.relative_to(ROOT)}")
+        continue
+    scene_source = scene_path.read_text(encoding="utf-8")
+    if f'asset_type = "{asset_id}"' not in scene_source:
+        errors.append(f"Dedicated residential scene has the wrong asset type: {asset_id}")
+    if f'"{asset_id}": "res://assets/models/residential/{asset_id}.tscn"' not in build_manager_for_assets:
+        errors.append(f"Exact residential model registry entry is missing: {asset_id}")
 
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
