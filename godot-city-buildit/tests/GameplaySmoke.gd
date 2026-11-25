@@ -5773,7 +5773,7 @@ func _run_gameplay_test() -> void:
 	StorageManager.add_item("planks",1)
 	StorageManager.add_item("wood",1)
 	var second_upgrade_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
-	var second_upgrade_started := home != null and home.try_upgrade()
+	var second_upgrade_started: bool = home != null and home.try_upgrade()
 	_check(second_upgrade_started, "Second residential upgrade could not start with Planks and Wood. Block reason: %s" % second_upgrade_block_reason)
 	GameManager.level = second_upgrade_level
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
