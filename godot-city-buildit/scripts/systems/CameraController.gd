@@ -40,8 +40,8 @@ const ORBIT_INERTIA_STOP_SPEED := 0.01
 const TWO_FINGER_PAN_DEADZONE := 0.8
 const PINCH_DEADZONE := 0.35
 const TWIST_DEADZONE := 0.002
-const MAX_CAMERA_STEP := 1.0 / 20.0
-const MAX_PAN_INERTIA_SPEED := 950.0
+const MAX_CAMERA_STEP := 1.0 / 10.0
+const MAX_PAN_INERTIA_SPEED := 700.0
 
 func _ready() -> void:
 	rotation_degrees = Vector3(0.0, -45.0, 0.0)
