@@ -701,21 +701,26 @@ func _build_coastal_highway() -> void:
 	shoulder.material_override = shoulder_material
 	add_child(shoulder)
 
-	var highway := MeshInstance3D.new()
-	highway.name = "CoastalHighway"
-	var highway_mesh := BoxMesh.new()
-	highway_mesh.size = Vector3(HIGHWAY_ASPHALT_WIDTH, 0.16, HIGHWAY_LENGTH)
-	highway_mesh.subdivide_width = 2
-	highway_mesh.subdivide_depth = 32
-	highway.mesh = highway_mesh
-	highway.position = Vector3(HIGHWAY_CENTER_X, 0.075, 0.0)
+	# Two independent carriageways replace the old single slab. The central
+	# reservation stays physically open only at the city access crossing.
 	var highway_asphalt := _create_asphalt_material()
-	# Keep the motorway visibly asphalt-dark under the bright Pacific sun.
-	highway_asphalt.albedo_color = Color("#737A76")
-	highway_asphalt.uv1_scale = Vector3(12.0, 96.0, 1.0)
-	highway.material_override = highway_asphalt
-	highway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	add_child(highway)
+	highway_asphalt.albedo_color = Color("#555C59")
+	highway_asphalt.uv1_scale = Vector3(9.0, 72.0, 1.0)
+	const CARRIAGEWAY_WIDTH := 11.2
+	const CARRIAGEWAY_OFFSET := 6.0
+	for direction_index in range(2):
+		var side := -1.0 if direction_index == 0 else 1.0
+		var carriageway := MeshInstance3D.new()
+		carriageway.name = "HighwayCarriageway_Westbound" if direction_index == 0 else "HighwayCarriageway_Eastbound"
+		var carriageway_mesh := BoxMesh.new()
+		carriageway_mesh.size = Vector3(CARRIAGEWAY_WIDTH, 0.16, HIGHWAY_LENGTH)
+		carriageway_mesh.subdivide_width = 2
+		carriageway_mesh.subdivide_depth = 32
+		carriageway.mesh = carriageway_mesh
+		carriageway.position = Vector3(HIGHWAY_CENTER_X + side * CARRIAGEWAY_OFFSET, 0.075, 0.0)
+		carriageway.material_override = highway_asphalt
+		carriageway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		add_child(carriageway)
 
 	# Contrasting shoulder strips sit just inside the asphalt edge and are
 	# batched into one draw call for mobile rendering.
@@ -747,17 +752,19 @@ func _build_coastal_highway() -> void:
 	for median_line_x in [HIGHWAY_CENTER_X - 0.52, HIGHWAY_CENTER_X + 0.52]:
 		_add_road_marking(Vector3(median_line_x, 0.164, 0.0), Vector3(0.085, 0.012, HIGHWAY_LENGTH - 2.0), Color("#F2C84B"))
 
-	# Concrete median is interrupted only at the city access crossing.
+	# Two full-height concrete median sections leave an 8 m opening exactly
+	# where the city connector crosses the motorway.
 	var median_mesh := BoxMesh.new()
-	median_mesh.size = Vector3(HIGHWAY_MEDIAN_WIDTH, 0.56, HIGHWAY_LENGTH)
+	const MEDIAN_OPENING_LENGTH := 8.0
+	const MEDIAN_SEGMENT_LENGTH := (HIGHWAY_LENGTH - MEDIAN_OPENING_LENGTH) * 0.5
+	median_mesh.size = Vector3(HIGHWAY_MEDIAN_WIDTH, 0.56, MEDIAN_SEGMENT_LENGTH)
 	var median_multimesh := MultiMesh.new()
 	median_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	median_multimesh.mesh = median_mesh
 	median_multimesh.instance_count = 2
 	for index in range(2):
 		var side := -1.0 if index == 0 else 1.0
-		var basis := Basis.IDENTITY.scaled(Vector3(1.0, 1.0, 0.48))
-		median_multimesh.set_instance_transform(index, Transform3D(basis, Vector3(HIGHWAY_CENTER_X, 0.435, side * 178.0)))
+		median_multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, Vector3(HIGHWAY_CENTER_X, 0.435, side * (MEDIAN_OPENING_LENGTH * 0.5 + MEDIAN_SEGMENT_LENGTH * 0.5))))
 	var median := MultiMeshInstance3D.new()
 	median.name = "HighwayConcreteMedian"
 	median.multimesh = median_multimesh

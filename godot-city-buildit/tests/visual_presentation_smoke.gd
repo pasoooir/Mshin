@@ -150,8 +150,19 @@ func _ready() -> void:
 		push_error("[VisualPresentationSmoke] Land expansion selection must show distinct item PNGs and per-plot quantities")
 		get_tree().quit(1)
 		return
-	if not world_source.contains("highway_asphalt.albedo_color = Color(\"#737A76\")"):
-		push_error("[VisualPresentationSmoke] Pacific motorway must retain dark asphalt contrast")
+	for highway_contract in [
+		"HighwayCarriageway_Westbound",
+		"HighwayCarriageway_Eastbound",
+		"const CARRIAGEWAY_WIDTH := 11.2",
+		"const MEDIAN_OPENING_LENGTH := 8.0",
+		"MEDIAN_SEGMENT_LENGTH * 0.5"
+	]:
+		if not world_source.contains(highway_contract):
+			push_error("[VisualPresentationSmoke] Divided regional motorway geometry is incomplete: " + highway_contract)
+			get_tree().quit(1)
+			return
+	if not world_source.contains('highway_asphalt.albedo_color = Color("#555C59")'):
+		push_error("[VisualPresentationSmoke] Pacific motorway must retain charcoal asphalt contrast")
 		get_tree().quit(1)
 		return
 	# Compatibility/WebGL terrain uses authored, unshaded vertex colours so the palette
