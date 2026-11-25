@@ -3583,6 +3583,8 @@ func _test_building_model_loader_contract() -> void:
 			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
 			if model_path.ends_with(".tscn"):
 				_check(mesh_nodes.size() >= 10, "Dedicated commercial scene must contain enough architectural and trade-specific mesh details: " + model_path)
+			if model_path.contains("/la_"):
+				_check(mesh_nodes.size() <= 20, "LA showcase architecture must stay within the 20-mesh per-building mobile budget: " + model_path)
 			var surfaces_found := 0
 			for mesh_node in mesh_nodes:
 				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
