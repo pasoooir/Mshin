@@ -713,6 +713,14 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.slots[0].erase("paused_at_unix")
 	var ready_delay := queue_probe.get_queue_delay_seconds()
 	_check(ready_delay >= 3000.0 and ready_delay < 3030.0, "Ready products must not block subsequent store orders.")
+	queue_probe.slots = [
+		{},
+		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":1},
+		{"item_id":"nails", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":2}
+	]
+	_check(queue_probe._start_next_store_order(), "A store with waiting orders must start the next eligible order.")
+	_check(int(queue_probe.slots[1].get("finish_unix", 0)) > now and int(queue_probe.slots[2].get("finish_unix", 0)) == 0, "A newer order in a lower free slot must not jump an older queued order.")
+
 
 	var factory_probe = ProductionComponentScript.new()
 	factory_probe.is_factory = true
