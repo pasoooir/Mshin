@@ -67,7 +67,6 @@ var action_notification_label: Label3D
 @onready var stage_label: Label3D = get_node_or_null("StageLabel") as Label3D
 
 func _ready() -> void:
-	_connect_upgrade_dependency_signals()
 	if DisplayServer.get_name() == "headless":
 		if is_instance_valid(hard_hat):
 			hard_hat.visible = false
@@ -160,6 +159,8 @@ func setup(data: Dictionary) -> void:
 	grid_pos = data.get("grid_pos", Vector2i.ZERO)
 	rotation.y = float(data.get("rotation_y", 0.0))
 	definition = data.get("definition", {})
+	if str(definition.get("category", "")) == "residential":
+		_connect_upgrade_dependency_signals()
 	status = data.get("status", "constructing")
 	build_time = definition.get("build_time", 10.0)
 	upgrade_stage = data.get("upgrade_stage", 1)
@@ -183,7 +184,8 @@ func setup(data: Dictionary) -> void:
 		_start_construction()
 	else:
 		_on_construction_finished()
-	_check_upgrade_ready()
+	if str(definition.get("category", "")) == "residential":
+		_check_upgrade_ready()
 
 
 func set_epic_tier(tier: int) -> void:
