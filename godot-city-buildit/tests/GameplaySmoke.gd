@@ -5961,6 +5961,11 @@ func _test_performance_monitor_aggregation() -> void:
 	_check(is_equal_approx(float(summary.get("p95", 0.0)), 40.0), "Render metrics must report the nearest-rank p95 across all frames.")
 	_check(is_equal_approx(float(summary.get("max", 0.0)), 40.0), "Render metrics must preserve the worst sampled frame.")
 	_check(is_equal_approx(float(summary.get("last", 0.0)), 40.0), "Render metrics must retain the last sample for backward compatibility.")
+	var mixed_frame_times: Array[float] = [1.0 / 60.0, 1.0 / 60.0, 1.0 / 30.0]
+	var frame_summary: Dictionary = PerformanceMonitorScript.summarize_frame_times(mixed_frame_times)
+	_check(not bool(frame_summary.get("target_60fps_pass", true)), "A 30 FPS frame must fail the strict 60 FPS target.")
+	_check(bool(frame_summary.get("target_30fps_pass", false)), "A 30 FPS average with P95 at 33.33 ms must pass the entry-level mobile target.")
+	_check(float(frame_summary.get("frames_within_30fps_budget_percent", 0.0)) >= 99.0, "The benchmark must report the percentage of frames within the 33.33 ms low-end budget.")
 	var empty_samples: Array[float] = []
 	var empty_summary: Dictionary = PerformanceMonitorScript.summarize_numeric_samples(empty_samples)
 	_check(int(empty_summary.get("sample_count", -1)) == 0 and is_equal_approx(float(empty_summary.get("p95", -1.0)), 0.0), "An empty render sample set must produce safe zero metrics.")
