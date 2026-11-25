@@ -20,7 +20,11 @@ The inventory below is based on `building_types` in `scripts/autoload/BuildManag
 | `residential_villa` | Premium villa; different footprint composition, roofline, glazing and landscaped yard |
 | `residential_2` | Mid-rise apartment block; multiple balconies, repeated but varied windows, lobby |
 | `residential_apartment` | Distinct contemporary apartment building; different facade rhythm and roof silhouette |
-| `residential_farm` | Farmstead; farmhouse, barn/shed, crop rows and rural yard |\n| `la_glass_tower` | Tall blue-green curtain-wall residential tower with podium and stepped crown |\n| `la_dome_tower` | Warm stone residential tower with a glazed dome crown and ringed cornice |\n| `la_modern_apartment` | Four-floor contemporary apartment with balcony slabs and recessed glazing |\n| `la_roof_garden_villa` | Low horizontal villa with extensive planted roof and rooftop trees |
+| `residential_farm` | Farmstead; farmhouse, barn/shed, crop rows and rural yard |
+| `la_glass_tower` | Tall blue-green curtain-wall residential tower with podium and stepped crown |
+| `la_dome_tower` | Warm stone residential tower with a glazed dome crown and ringed cornice |
+| `la_modern_apartment` | Four-floor contemporary apartment with balcony slabs and recessed glazing |
+| `la_roof_garden_villa` | Low horizontal villa with extensive planted roof and rooftop trees |
 
 ### Commercial / shops
 
@@ -44,7 +48,9 @@ Every shop below must be identifiable by its actual trade, not by a generic shop
 | `toy_store` | Toy store; playful but polished color blocking, display windows and playful roof/sign silhouette |
 | `restoration_office` | Restoration/conservation office; professional civic-commercial architecture and workshop annex |
 | `farmers_store` | Country store; rural timber/stone details, porch and agricultural goods display |
-| `dessert_shop` | Dessert/patisserie; refined pastel facade, display windows and distinctive canopy |\n| `la_office_tower` | Glass office slab with horizontal floor bands, podium and rooftop plant |\n| `la_commercial_arcade` | Coastal retail pavilion with broad storefront glazing, colonnade and shaded forecourt |
+| `dessert_shop` | Dessert/patisserie; refined pastel facade, display windows and distinctive canopy |
+| `la_office_tower` | Glass office slab with horizontal floor bands, podium and rooftop plant |
+| `la_commercial_arcade` | Coastal retail pavilion with broad storefront glazing, colonnade and shaded forecourt |
 
 ### Industrial / factories
 
@@ -101,7 +107,11 @@ Each service facility needs a building form that communicates its function at a 
 
 As new park, recreation, entertainment, education, transport, beach, mountain, or landmark types are added to the catalog, each must be added to this matrix before being marked visually complete. The current BuildManager inventory only confirms `park_small`; it does not establish that a larger park catalog already exists.
 
-## First LA showcase pack implemented\n\nThe first six LA-inspired building scenes are implemented and assigned through exact type IDs: four residential silhouettes (glass tower, dome tower, modern apartment, roof-garden villa) and two commercial/office silhouettes (office tower and coastal arcade). Their geometry is created once per instance using low-complexity primitives and cached local materials. The new entries are available through the residential and commercial catalog ID arrays. This is a first playable pack, not full catalog completion; all remaining player-placeable types still need per-type review and many need dedicated assets.\n\n## Current verified gap
+## First LA showcase pack implemented
+
+The first six LA-inspired building scenes are implemented and assigned through exact type IDs: four residential silhouettes (glass tower, dome tower, modern apartment, roof-garden villa) and two commercial/office silhouettes (office tower and coastal arcade). Their geometry is created once per instance using low-complexity primitives and cached local materials. The new entries are available through the residential and commercial catalog ID arrays. This is a first playable pack, not full catalog completion; all remaining player-placeable types still need per-type review and many need dedicated assets.
+
+## Current verified gap
 
 `BuildManager.BUILDING_MODEL_REGISTRY` now maps available GLTF assets by exact gameplay type ID instead of applying one model to every entry in a category. The villa and apartment archetypes, `shop_chain`, `factory_small` (plus explicit legacy save IDs), and five trade-specific commercial scene assets (`restaurant_traditional`, `fast_food`, `hardware_store`, `farmers_market`, `furniture_store`) are now mapped by exact type ID. Other commercial types retain their own type-specific procedural identity geometry; larger factory tiers retain distinct industrial procedural designs; Farm, regional homes, services and parks also remain procedural. The five new commercial scenes are local Godot 3D scenes with unique silhouettes and trade-specific props, not GLTF files. This prevents an unrelated shop or factory from silently inheriting a generic model, but it does **not** complete the asset matrix: most player-placeable types still need their own dedicated GLB/GLTF assets, documented scale, materials, import checks and visual review.
 
