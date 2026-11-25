@@ -114,6 +114,8 @@ func _test_camera_gesture_math() -> void:
 	var scaled_pan := CameraControllerScript.scale_pan_delta(Vector3(10.0, 5.0, -20.0), 0.8)
 	_check(scaled_pan.distance_to(Vector3(8.0, 0.0, -16.0)) <= 0.0001, "Camera pan sensitivity must scale horizontal movement without introducing vertical drift.")
 	_check(GraphicsSettingsManager._default_quality() == "low", "Every fresh install must start in Low graphics on desktop, mobile and WebGL browsers.")
+	_check(GraphicsSettingsManager.resolve_initial_quality("balanced", false) == "low", "Legacy auto-selected Balanced settings must migrate to Low instead of overriding the new safe default.")
+	_check(GraphicsSettingsManager.resolve_initial_quality("high", true) == "high", "An explicitly selected graphics tier must survive save/load migration.")
 	var low_graphics := GraphicsSettingsManager.get_quality_preset("low")
 	var balanced_graphics := GraphicsSettingsManager.get_quality_preset("balanced")
 	var high_graphics := GraphicsSettingsManager.get_quality_preset("high")
