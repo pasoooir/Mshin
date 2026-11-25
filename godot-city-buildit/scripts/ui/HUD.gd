@@ -2761,7 +2761,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 	products_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	products_heading.add_child(products_title)
 	var products_hint := Label.new()
-	products_hint.text = "Tap once to make"
+	products_hint.text = "Tap to make · missing inputs offer a full chain"
 	products_hint.add_theme_font_size_override("font_size", _popup_font_size(12))
 	products_hint.add_theme_color_override("font_color", Color("#66808E"))
 	products_heading.add_child(products_hint)
@@ -2851,7 +2851,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 		card_content.add_child(ingredients)
 		var state := Label.new()
 		state.name = "StoreProductState_%s" % item_id
-		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("INGREDIENT LOCKED" if not inputs_unlocked else ("NO FREE SLOT" if free_slot < 0 else ("%d INGREDIENT(S) MISSING" % missing_count))))
+		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("INGREDIENT LOCKED" if not inputs_unlocked else ("NO FREE SLOT" if free_slot < 0 else ("TAP FOR FULL CHAIN" if missing_count > 0 else "NOT AVAILABLE"))))
 		state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		state.add_theme_font_size_override("font_size", _popup_font_size(9))
 		state.add_theme_color_override("font_color", Color("#34734D") if can_make else Color("#A33A36"))
