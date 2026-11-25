@@ -385,8 +385,10 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 	# per-chain outstanding slots prevent duplicate dependency scheduling.
 	_automatic_chain_sequence += 1
 	var chain_id := "chain_%d_%d" % [int(Time.get_unix_time_from_system()), _automatic_chain_sequence]
+	component._queue_sequence_counter += 1
 	component.slots[slot_index] = {
 		"item_id": recipe_id,
+		"queue_sequence": component._queue_sequence_counter,
 		"start_unix": 0,
 		"finish_unix": 0,
 		"ready": false,
@@ -395,7 +397,7 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 		"auto_chain_root": true,
 		"auto_chain_started": false
 	}
-	component.slots_changed.emit()
+	component._emit_slots_changed()
 	automatic_chain_changed.emit(chain_id, "accepted")
 	return true
 
@@ -428,6 +430,8 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	if not component._owner_has_road_access() or slot_index < 0 or slot_index >= component.slots.size():
 		return
 	var slot: Dictionary = component.slots[slot_index]
+	if not component.is_oldest_waiting_store_order(slot_index):
+		return
 	if bool(slot.get("auto_chain_started", false)):
 		return
 	var recipe_id := str(slot.get("item_id", ""))
@@ -477,7 +481,7 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	slot["cost_known"] = bool(input_cost.get("known", false))
 	slot["cost_total"] = int(input_cost.get("total_cost", 0))
 	component.slots[slot_index] = slot
-	component.slots_changed.emit()
+	component._emit_slots_changed()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
 
 func _get_automatic_chain_required_input_total(item_id: String, chain_id: String) -> int:
@@ -562,8 +566,10 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 				break
 			if not component.slots[slot_index].is_empty():
 				continue
+			component._queue_sequence_counter += 1
 			component.slots[slot_index] = {
 				"item_id": item_id,
+				"queue_sequence": component._queue_sequence_counter,
 				"start_unix": 0,
 				"finish_unix": 0,
 				"ready": false,
@@ -572,7 +578,7 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 				"auto_chain_root": false,
 				"auto_chain_started": false
 			}
-			component.slots_changed.emit()
+			component._emit_slots_changed()
 			scheduled += 1
 	return scheduled > 0
 

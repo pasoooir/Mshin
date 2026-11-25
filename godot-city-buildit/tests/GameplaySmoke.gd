@@ -59,7 +59,84 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 func _ready() -> void:
 	_test_camera_gesture_math()
 	_test_hud_touch_session_ownership()
+	_test_store_building_identity_contract()
+	await _test_each_store_direct_production()
 	call_deferred("_run_gameplay_test")
+
+func _test_store_building_identity_contract() -> void:
+	# Verify exact city building/shop ownership and source-level visual identity
+	# branches without creating renderer resources in headless CI.
+	var store_ids := [
+		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
+		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
+		"fashion_store", "sports_shop", "toy_store", "restoration_office",
+		"farmers_store", "dessert_shop"
+	]
+	var visual_source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
+	var identity_start := visual_source.find("func _build_commercial_identity(")
+	var identity_end := visual_source.find("\nfunc ", identity_start + 1)
+	var identity_block := visual_source.substr(identity_start, identity_end - identity_start) if identity_start >= 0 and identity_end > identity_start else ""
+	for store_id in store_ids:
+		_check(BuildManager.building_types.has(store_id), "%s must have a placeable city building definition." % store_id)
+		if not BuildManager.building_types.has(store_id):
+			continue
+		var definition: Dictionary = BuildManager.building_types[store_id]
+		_check(str(definition.get("category", "")) == "commercial", "%s must be a commercial building." % store_id)
+		_check(str(definition.get("shop_id", store_id)) == store_id, "%s must resolve to its exact production shop ID." % store_id)
+		var product_ids: Array = ProductionManager.get_store_catalog_ids(store_id)
+		_check(not product_ids.is_empty(), "%s must expose its own product catalog." % store_id)
+		for product_variant in product_ids:
+			var product_id := str(product_variant)
+			var recipe := ProductionManager.get_recipe(product_id)
+			if not recipe.is_empty():
+				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
+		var has_visual_identity := visual_source.contains("func _build_building_supplies_showcase(") if store_id == "building_supplies" else identity_block.contains("\"" + store_id + "\"")
+		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
+
+func _test_each_store_direct_production() -> void:
+	# Exercise one real recipe through enqueue -> timer -> ready -> collect for
+	# every standard store. Seed only the exact declared inputs; no recipe data
+	# or quantities are synthesized by the test.
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_level := GameManager.level
+	GameManager.level = 90
+	var store_ids := [
+		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
+		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
+		"fashion_store", "sports_shop", "toy_store", "restoration_office",
+		"farmers_store", "dessert_shop"
+	]
+	for store_id in store_ids:
+		var recipe_ids: Array = ProductionManager.get_store_recipe_ids(store_id)
+		_check(not recipe_ids.is_empty(), "%s must have at least one production recipe for its live order test." % store_id)
+		if recipe_ids.is_empty():
+			continue
+		var item_id := str(recipe_ids[0])
+		var recipe := ProductionManager.get_recipe(item_id)
+		var inputs: Dictionary = recipe.get("inputs", {})
+		StorageManager.from_save_dict({"capacity": 500, "items": inputs})
+		var component := ProductionComponentScript.new()
+		component.name = "StoreDirectOrderProbe_%s" % store_id
+		component.shop_id = store_id
+		component.slot_count = 2
+		component.store_star_level = 3
+		add_child(component)
+		_check(ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty(), "%s test product %s must be unlocked at the high-level test fixture." % [store_id, item_id])
+		var accepted := component.start_craft(item_id, 0)
+		_check(accepted, "%s must accept its own product %s when exact declared inputs are in storage." % [store_id, item_id])
+		if accepted:
+			var order: Dictionary = component.get_slot(0)
+			_check(str(order.get("item_id", "")) == item_id and int(order.get("finish_unix", 0)) > 0, "%s must start a timed order in its own production lane." % store_id)
+			order["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			component.slots[0] = order
+			component.refresh_slots()
+			_check(bool(component.get_slot(0).get("ready", false)), "%s must transition its completed order to READY." % store_id)
+			_check(component.collect(0), "%s must allow the player to collect its finished product." % store_id)
+			_check(StorageManager.get_count(item_id) == 1, "%s must deliver exactly one collected %s to City Storage." % [store_id, item_id])
+		component.queue_free()
+		await get_tree().process_frame
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
@@ -771,7 +848,10 @@ func _test_automatic_production_chain() -> void:
 	store.slot_count = 2
 	add_child(store)
 
+	# Automatic roots and every dependency transition must schedule a save; otherwise a quick app close can orphan in-flight factory/store jobs.
+	SaveManager._save_pending = false
 	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
+	_check(SaveManager._save_pending, "Accepting an automatic production root must schedule persistence immediately.")
 	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
 	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
 	ProductionManager._process_automatic_chains()
@@ -810,6 +890,24 @@ func _test_automatic_production_chain() -> void:
 	_check(bool(automatic_nails_cost.get("known", false)) and int(automatic_nails_cost.get("total_cost", -1)) == 0, "AUTO CHAIN must carry a known zero direct Simoleon cost from factory-produced Metal into Nails without marking it unknown.")
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
+
+	# A later automatic request must not jump ahead of older manual orders in the same store.
+	var fifo_store := ProductionComponentScript.new()
+	fifo_store.name = "AutomaticChainFifoProbe"
+	fifo_store.shop_id = "building_supplies"
+	fifo_store.slot_count = 3
+	add_child(fifo_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 4}})
+	_check(fifo_store.start_craft("nails", 0), "FIFO probe must start its first manual order.")
+	_check(fifo_store.start_craft("nails", 1), "FIFO probe must queue its second manual order.")
+	_check(ProductionManager.request_automatic_chain(fifo_store, "nails", 2), "FIFO probe must accept a later automatic order.")
+	var first_fifo_slot: Dictionary = fifo_store.slots[0]
+	first_fifo_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	fifo_store.slots[0] = first_fifo_slot
+	fifo_store.refresh_slots()
+	_check(int(fifo_store.slots[1].get("finish_unix", 0)) > 0 and not bool(fifo_store.slots[2].get("auto_chain_started", false)), "The second manual order must start before a newer automatic root can use the same store lane.")
+	fifo_store.queue_free()
+	await get_tree().process_frame
 
 	# A catalog-only item with no verified recipe or factory source must fail
 	# preflight instead of leaving a permanently stuck automatic chain.
