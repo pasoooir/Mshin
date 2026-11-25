@@ -358,6 +358,21 @@ func is_building_operational(building: Node) -> bool:
 			return false
 	return true
 
+func is_production_building_operational(building: Node) -> bool:
+	if not is_instance_valid(building) or str(building.get("status")) != "completed":
+		return false
+	var definition: Dictionary = building.get("definition")
+	var anchor: Vector2i = building.get("grid_pos")
+	var size: Vector2i = definition.get("size", Vector2i(2, 2))
+	if not has_road_access(anchor, size):
+		return false
+	# Factories in the reference production loop need road access, not the
+	# city's residential power/water/workforce allocation. Applying the full
+	# municipal-service gate here deadlocks the starter factory at Level 1.
+	if str(definition.get("category", "")) == "industrial":
+		return true
+	return is_building_operational(building)
+
 func _get_building_material_complexity(type_id: String) -> int:
 	var definition: Dictionary = building_types.get(type_id, {})
 	if definition.is_empty():

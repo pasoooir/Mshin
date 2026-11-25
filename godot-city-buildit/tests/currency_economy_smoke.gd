@@ -369,15 +369,30 @@ func _ready() -> void:
 	factory.slot_count = 2
 	add_child(factory)
 	await get_tree().process_frame
+	var factory_balance_before_order := EconomyManager.simoleons
+	var expected_metal_order_cost := ProductionManager.get_factory_order_cost("metal")
+	if expected_metal_order_cost != 5:
+		failures.append("Mshin factory order fee for the 60-second starter metal order must be 5 Simoleons")
 	if not factory.start_factory("metal", 0):
 		failures.append("test factory could not start a raw-material order")
 	else:
+		if EconomyManager.simoleons != factory_balance_before_order - expected_metal_order_cost or int(factory.get_slot(0).get("order_cost", -1)) != expected_metal_order_cost:
+			failures.append("factory order did not atomically debit and retain its exact Simoleons price")
+		var factory_charge_audit := EconomyManager.get_recent_transactions(1)
+		if factory_charge_audit.is_empty() or str(factory_charge_audit[0].get("metadata", {}).get("source", "")) != "factory_order" or str(factory_charge_audit[0].get("metadata", {}).get("item_id", "")) != "metal":
+			failures.append("factory order Simoleons debit is missing its factory/item audit metadata")
 		var speedup_quote := factory.get_slot_speedup_quote(0)
 		var speedup_result := factory.speed_up_slot(0)
 		if speedup_quote.is_empty() or not bool(speedup_result.get("success", false)) or EconomyManager.sim_cash != 9 or not bool(factory.get_slot(0).get("ready", false)):
 			failures.append("SimCash did not complete the active factory timer for the quoted cost")
 		if not factory.collect(0) or StorageManager.get_count("metal") != 1:
 			failures.append("speeded-up production did not collect exactly one item")
+	var balance_before_rejected_order := EconomyManager.simoleons
+	EconomyManager.simoleons = 0
+	var rejected_for_funds := factory.start_factory("metal", 1)
+	if rejected_for_funds or not factory.get_slot(1).is_empty() or EconomyManager.simoleons != 0:
+		failures.append("factory accepted an unaffordable order or mutated its queue/balance")
+	EconomyManager.simoleons = balance_before_rejected_order
 	factory.queue_free()
 	await get_tree().process_frame
 

@@ -1058,6 +1058,7 @@ func _test_recipe_dependency_graph_validation() -> void:
 	ProductionManager._recipe_validation_report = ProductionManager.get_recipe_validation_report()
 
 func _test_storage_and_production_chain() -> void:
+	var saved_simoleons := EconomyManager.simoleons
 	# Regression coverage for newly enabled recipes. Values use the current
 	# 2024 commercial-store variant where the reference documents a variant.
 	var backpack_recipe := ProductionManager.get_recipe("backpack")
@@ -1299,8 +1300,10 @@ func _test_storage_and_production_chain() -> void:
 	restored_factory.queue_free()
 	shop.queue_free()
 	StorageManager.from_save_dict(saved_storage)
+	EconomyManager.simoleons = saved_simoleons
 
 func _test_production_queue_stress() -> void:
+	var saved_simoleons := EconomyManager.simoleons
 	var saved_storage: Dictionary = StorageManager.to_save_dict()
 	var saved_level := GameManager.level
 	GameManager.level = 90
@@ -1367,6 +1370,7 @@ func _test_production_queue_stress() -> void:
 	parallel_factory.queue_free()
 	StorageManager.from_save_dict(saved_storage)
 	GameManager.level = saved_level
+	EconomyManager.simoleons = saved_simoleons
 
 func _test_wind_turbine_rotor_animation() -> void:
 	# Use the real scene so every @onready node path exists in the test fixture.
@@ -1789,6 +1793,7 @@ func _test_camera_touch_gesture_integration() -> void:
 
 
 func _test_road_gateway_connectivity(road_system) -> void:
+	var saved_simoleons := EconomyManager.simoleons
 	_check(road_system.is_road_connected_to_gateway(RoadSystemScript.GATEWAY_ROAD_CELL), "The seeded highway gateway tile must belong to the connected road network.")
 	_check(not road_system.remove_road(RoadSystemScript.GATEWAY_ROAD_CELL), "The permanent highway gateway tile must not be removable.")
 	_check(road_system.is_road_connected_to_gateway(Vector2i(1, 0)), "The far end of the seeded starter connector must be connected to the gateway.")
@@ -1950,7 +1955,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	disconnected_construction.queue_free()
 	disconnected_factory.queue_free()
 	disconnected_building.queue_free()
-	EconomyManager.add_simoleons(RoadSystemScript.ROAD_COST * 8)
+	EconomyManager.simoleons = saved_simoleons
 
 func _test_road_traffic_capacity(road_system) -> void:
 	var saved_level := GameManager.level
@@ -5325,6 +5330,10 @@ func _run_gameplay_test() -> void:
 	_check(is_equal_approx(production_hud.production_panel.anchor_top, 1.0) and is_equal_approx(production_hud.production_panel.anchor_bottom, 1.0), "Production queue dock must be anchored to the bottom edge of the viewport.")
 	_check(str(factory_component.factory_type) == factory.building_type, "Factory component catalog must match the selected factory type.")
 	_check(production_hud.production_overlay.find_child("Slot0_metal", true, false) is Button, "Factory modal must expose the selected factory's own raw-material catalogue.")
+	var metal_order_price := production_hud.production_overlay.find_child("FactoryOrderPrice_metal", true, false) as Label
+	_check(metal_order_price != null and metal_order_price.text == "ORDER  §5", "Factory product tile must expose its explicit Simoleons order price.")
+	var initial_basket_summary := production_hud.production_panel.find_child("ProductionBasketSummary", true, false) as Label
+	_check(initial_basket_summary != null and initial_basket_summary.text.contains("PAID §0") and initial_basket_summary.text.contains("BALANCE"), "Factory order basket must expose paid total and current balance before the first order.")
 	production_hud.open_production_panel(home)
 	_check(production_hud._production_building == factory and is_instance_valid(production_hud.production_overlay), "A residential building must never replace or masquerade as a production building.")
 	production_hud.open_production_panel(factory)
@@ -5372,6 +5381,7 @@ func _run_gameplay_test() -> void:
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
+		var balance_before_first_factory_tap := EconomyManager.simoleons
 		# Exercise a native touchscreen event through the real Viewport GUI router.
 		# A synthetic mouse click only proves desktop input and can miss the exact
 		# mobile path that users reported as broken.
@@ -5400,6 +5410,7 @@ func _run_gameplay_test() -> void:
 			get_viewport().push_input(metal_touch_up, true)
 			await get_tree().process_frame
 		_check(not factory_component.get_slot(0).is_empty(), "Dragging a product to the friendly empty-state drop target must start production.")
+		_check(EconomyManager.simoleons == balance_before_first_factory_tap - ProductionManager.get_factory_order_cost("metal"), "A native factory product tap must debit its displayed order fee exactly once.")
 		_check(factory_component.get_slot(1).is_empty(), "One mobile product drag must enqueue exactly one order.")
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
@@ -5409,12 +5420,17 @@ func _run_gameplay_test() -> void:
 	_check(live_order_card != null and live_order_card.custom_minimum_size.x >= 100.0 and live_order_card.custom_minimum_size.y >= 90.0, "A real production order must render as an enlarged readable card.")
 	var live_order_state := production_hud.production_panel.find_child("OrderState0", true, false) as Label
 	_check(live_order_state != null and live_order_state.text == "IN PRODUCTION", "An active order card must expose its current production state.")
+	var live_order_payment := production_hud.production_panel.find_child("OrderPayment0", true, false) as Label
+	_check(live_order_payment != null and live_order_payment.text == "ORDER PAID  §5", "Each active factory order card must show the exact amount already paid.")
+	var active_basket_summary := production_hud.production_panel.find_child("ProductionBasketSummary", true, false) as Label
+	_check(active_basket_summary != null and active_basket_summary.text.contains("PAID §5") and active_basket_summary.text.contains("BALANCE"), "Factory basket summary must update its paid total and remaining balance after order acceptance.")
 	var live_order_timer := production_hud.production_panel.find_child("TimerSlot0", true, false) as Label
 	_check(live_order_timer != null and live_order_timer.text.contains(":") and live_order_timer.text.split(":").size() == 2, "Production countdown must use a readable MM:SS clock rather than raw seconds.")
 	var queued_metal_icon := production_hud.production_panel.find_child("QueueItemIcon0", true, false) as TextureRect
 	_check(queued_metal_icon != null and queued_metal_icon.texture != null and queued_metal_icon.custom_minimum_size.x >= 40.0, "The live order card must immediately show the actual Metal artwork at a readable size.")
 	var second_metal_button := production_hud.production_overlay.find_child("Slot1_metal", true, false) as Button
 	_check(second_metal_button != null, "Factory panel must offer the next available slot after the first tap order.")
+	var balance_before_second_factory_tap := EconomyManager.simoleons
 	if second_metal_button:
 		var second_touch_position: Vector2 = second_metal_button.get_global_transform_with_canvas() * (second_metal_button.size * 0.5)
 		var second_touch_down := InputEventScreenTouch.new()
@@ -5430,6 +5446,7 @@ func _run_gameplay_test() -> void:
 		get_viewport().push_input(second_touch_up, true)
 		await get_tree().process_frame
 	_check(not factory_component.get_slot(1).is_empty(), "A second native ScreenTouch tap must enqueue another parallel factory batch directly.")
+	_check(EconomyManager.simoleons == balance_before_second_factory_tap - ProductionManager.get_factory_order_cost("metal"), "A second factory tap must charge exactly one additional order fee.")
 	# End-to-end factory lifecycle: preserve the catalog duration, then shorten
 	# only the persisted finish timestamps in this smoke test so real process
 	# ticks can exercise the visible countdown and ready/collect transitions.

@@ -1043,6 +1043,20 @@ func get_missing_inputs_text(item_id: String) -> String:
 			missing.append("%d %s" % [needed - available, material_name])
 	return ", ".join(missing)
 
+# Mshin-only factory order pricing: 5 Simoleons per started production
+# minute (minimum 5). This is intentionally separate from "value", which is
+# the community reference maximum Trade Depot sale value, not an order fee.
+const FACTORY_ORDER_COST_PER_MINUTE := 5
+
+func get_factory_order_cost(item_id: String) -> int:
+	var definition: Dictionary = raw_materials.get(item_id, {})
+	if definition.is_empty():
+		return -1
+	var duration_seconds := int(definition.get("time_sec", 0))
+	if duration_seconds <= 0:
+		return -1
+	return maxi(1, int(ceil(float(duration_seconds) / 60.0))) * FACTORY_ORDER_COST_PER_MINUTE
+
 func get_item_value(item_id: String) -> int:
 	if LandExpansionManager.EXPANSION_ITEM_IDS.has(item_id):
 		return 800
