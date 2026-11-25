@@ -1048,17 +1048,28 @@ func _test_recipe_dependency_graph_validation() -> void:
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
 	# Catalog-only products must never shadow an enabled product or be
 	# assigned to a second store.
-	var saved_hardware_catalog: Array = ProductionManager.store_catalog.get("hardware_store", []).duplicate(true)
-	ProductionManager.store_catalog["hardware_store"] = saved_hardware_catalog.duplicate(true)
+	var saved_catalog_keys := {
+		"hardware_store": ProductionManager.store_catalog.has("hardware_store"),
+		"farmers_market": ProductionManager.store_catalog.has("farmers_market"),
+		"furniture_store": ProductionManager.store_catalog.has("furniture_store")
+	}
+	var saved_catalog_values := {
+		"hardware_store": ProductionManager.store_catalog.get("hardware_store", []).duplicate(true),
+		"farmers_market": ProductionManager.store_catalog.get("farmers_market", []).duplicate(true),
+		"furniture_store": ProductionManager.store_catalog.get("furniture_store", []).duplicate(true)
+	}
+	ProductionManager.store_catalog["hardware_store"] = saved_catalog_values["hardware_store"].duplicate(true)
 	ProductionManager.store_catalog["hardware_store"].append({"id":"nails", "name":"Duplicate Nails"})
 	ProductionManager.store_catalog["farmers_market"] = [{"id":"__test_duplicate_catalog", "name":"Duplicate A"}]
 	ProductionManager.store_catalog["furniture_store"] = [{"id":"__test_duplicate_catalog", "name":"Duplicate B"}]
 	var ownership_report := ProductionManager.get_recipe_validation_report()
 	_check(str(ownership_report.get("errors", [])).contains("nails: product is declared in both enabled recipes"), "Catalog-only products must not shadow an enabled recipe.")
 	_check(str(ownership_report.get("errors", [])).contains("__test_duplicate_catalog: catalog product is duplicated between"), "A product ID must not be assigned to multiple stores.")
-	ProductionManager.store_catalog["hardware_store"] = saved_hardware_catalog
-	ProductionManager.store_catalog.erase("farmers_market")
-	ProductionManager.store_catalog.erase("furniture_store")
+	for catalog_store_id in saved_catalog_keys.keys():
+		if bool(saved_catalog_keys[catalog_store_id]):
+			ProductionManager.store_catalog[catalog_store_id] = saved_catalog_values[catalog_store_id]
+		else:
+			ProductionManager.store_catalog.erase(catalog_store_id)
 	ProductionManager._recipe_validation_report = ProductionManager.get_recipe_validation_report()
 
 	_check(not baseline.get("invalid_recipe_ids", []).has("nails"), "Known Nails recipe must pass structural recipe validation.")
