@@ -363,7 +363,18 @@ func _create_visual() -> void:
 				var is_farm := subtype == "farm"
 				var residential_body_h := height
 				if is_apartment:
-					var residential_floors := 3 if upgrade_stage < 5 else 4
+					# The apartment silhouette grows from a low podium into a
+					# 12-storey LA-style glass tower across the six home levels.
+					var residential_floors := 3
+					match upgrade_stage:
+						3:
+							residential_floors = 5
+						4:
+							residential_floors = 7
+						5:
+							residential_floors = 9
+						6:
+							residential_floors = 12
 					residential_body_h = maxf(height, float(residential_floors) * 1.35)
 				elif is_farm:
 					residential_body_h = minf(height, 1.85)
