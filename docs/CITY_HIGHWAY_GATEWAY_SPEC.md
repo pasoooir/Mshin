@@ -10,7 +10,7 @@
 - [x] The coastal terrain, beach and offshore water remain continuous and visible after removing the mountain perimeter.
 - [x] One original lightweight 3D car is spawned at the permanent city Gateway, routed by BFS through Gateway-connected road tiles to the farthest reachable tile, then returned to and removed at the Gateway.
 - [x] The active route is cancelled if a road change disconnects any route tile from the Gateway graph.
-- [ ] The current Gateway remains the city-side root rather than a fully modeled highway source/sink in the authoritative road graph. Physical tunnel scenery does not by itself implement motorway entry/exit routing. One-way edges, lane direction, turn restrictions, congestion-weighted routing, segment-level traffic, and delivery/construction vehicle classes remain open.
+- [ ] The current Gateway remains the city-side root rather than a fully modeled highway source/sink in the authoritative road graph. Physical motorway geometry is now split into two carriageways with a protected median opening at the city connector, but one-way graph edges, turn restrictions, congestion-weighted routing, segment-level traffic, and delivery/construction vehicle classes remain open.
 
 ## World layout
 
@@ -23,7 +23,7 @@
 
 ## Road hierarchy and geometry
 
-1. **Regional highway:** divided, multi-lane, high-capacity road with separate carriageways, lane markings, shoulders, median/barrier, guardrails, signage, and realistic elevation/embankment transitions.
+1. **Regional highway:** divided, multi-lane, high-capacity road with two separately rendered carriageways, lane markings, shoulders, a continuous median except at the access crossing, guardrails, signage, and realistic elevation/embankment transitions.
 2. **Interchange ramps:** physically continuous ramps with smooth curvature and appropriate merge/diverge geometry; no abrupt road endpoints, floating pieces, or intersections through barriers.
 3. **City gateway road:** a visibly wider arterial/collector than local streets, connected to the internal road graph at a clear junction.
 4. **Local roads:** remain buildable by the player and connect to the existing road graph.
@@ -32,7 +32,7 @@ All geometry must use the project world scale (1 world unit = 1 metre), remain r
 
 ## Functional connectivity
 
-- The highway connector must be represented in the same authoritative road graph used by routing, traffic simulation, service reachability, and road-connected building validation.
+- The city-side gateway connector must remain the root of the authoritative city road graph used by routing, traffic simulation, service reachability, and road-connected building validation. The physical highway must meet it through the reserved access crossing.
 - Vehicles must be able to enter the city from the highway and leave the city back onto the highway. Traffic must not merely spawn on the city grid without a valid gateway route.
 - Initial traffic classes should include private cars, delivery/construction trucks, and emergency/service vehicles as their simulation systems become available.
 - Route planning must respect directionality, lane/edge connectivity, turn restrictions, and congestion costs.

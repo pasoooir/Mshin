@@ -164,10 +164,6 @@ func get_gateway_connected_roads() -> Dictionary:
 func is_road_connected_to_gateway(grid_pos: Vector2i) -> bool:
 	return get_gateway_connected_roads().has(grid_pos)
 
-	for chunk in _road_render_chunks.values():
-		if is_instance_valid(chunk):
-			chunk.queue_free()
-	_road_render_chunks.clear()
 func clear_roads() -> void:
 	is_road_mode = false
 	is_road_upgrade_mode = false
