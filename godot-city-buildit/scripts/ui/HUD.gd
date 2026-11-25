@@ -6778,7 +6778,7 @@ func _start_performance_benchmark() -> void:
 	_close_settings_dialogs()
 	_close_settings_panel()
 	if PerformanceMonitor.start_benchmark(30.0):
-		status_label.text = "Device benchmark running — keep playing normally for 30 seconds."
+		status_label.text = "30s DEVICE TEST: pan continuously across the city and zoom in/out several times. Keep the game in foreground."
 	else:
 		status_label.text = "A device benchmark is already running."
 
@@ -6789,15 +6789,23 @@ func _on_performance_benchmark_progress(elapsed_seconds: float, duration_seconds
 
 func _on_performance_benchmark_finished(report: Dictionary) -> void:
 	var summary: Dictionary = report.get("summary", {})
-	var target_result := "PASS" if bool(summary.get("target_60fps_pass", false)) else "NOT MET"
+	var low_end_result := "PASS" if bool(summary.get("target_30fps_pass", false)) else "FAIL"
 	var average_fps := float(summary.get("average_fps", 0.0))
 	var p95_frame_ms := float(summary.get("p95_frame_ms", 0.0))
 	var render_metrics: Dictionary = report.get("render_metrics", {})
 	var draw_calls: Dictionary = render_metrics.get("draw_calls", {})
-	var average_draw_calls := float(draw_calls.get("average", 0.0))
 	var p95_draw_calls := float(draw_calls.get("p95", 0.0))
+	var cpu_metrics: Dictionary = report.get("cpu_metrics", {})
+	var process_times: Dictionary = cpu_metrics.get("process_time_ms", {})
+	var p95_process_ms := float(process_times.get("p95", 0.0))
+	var memory_metrics: Dictionary = report.get("memory_metrics", {})
+	var texture_memory: Dictionary = memory_metrics.get("texture_memory_bytes", {})
+	var texture_memory_mb := float(texture_memory.get("p95", 0.0)) / (1024.0 * 1024.0)
+	var camera_metrics: Dictionary = report.get("camera_metrics", {})
+	var camera_movement_percent := float(camera_metrics.get("movement_frame_percent", 0.0))
 	var report_path := str(report.get("report_path", "save failed"))
-	status_label.text = "Device benchmark: %.1f avg FPS · frame p95 %.1f ms · draw calls %.0f avg / %.0f p95 · 60 FPS: %s · %s" % [average_fps, p95_frame_ms, average_draw_calls, p95_draw_calls, target_result, report_path]
+	var camera_check := "CAMERA MOVED" if camera_movement_percent >= 5.0 else "CAMERA NOT MOVED — repeat test"
+	status_label.text = "Device test %s · %.1f FPS · p95 %.1f ms · draw p95 %.0f · script p95 %.1f ms · texture %.0f MB · camera %.0f%% · %s · %s" % [low_end_result, average_fps, p95_frame_ms, p95_draw_calls, p95_process_ms, texture_memory_mb, camera_movement_percent, camera_check, report_path]
 
 func _on_trade_pressed() -> void:
 	BuildManager.cancel_placement()
