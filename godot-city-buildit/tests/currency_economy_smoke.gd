@@ -378,6 +378,9 @@ func _ready() -> void:
 	else:
 		if EconomyManager.simoleons != factory_balance_before_order - expected_metal_order_cost or int(factory.get_slot(0).get("order_cost", -1)) != expected_metal_order_cost:
 			failures.append("factory order did not atomically debit and retain its exact Simoleons price")
+		var factory_charge_audit := EconomyManager.get_recent_transactions(1)
+		if factory_charge_audit.is_empty() or str(factory_charge_audit[0].get("metadata", {}).get("source", "")) != "factory_order" or str(factory_charge_audit[0].get("metadata", {}).get("item_id", "")) != "metal":
+			failures.append("factory order Simoleons debit is missing its factory/item audit metadata")
 		var speedup_quote := factory.get_slot_speedup_quote(0)
 		var speedup_result := factory.speed_up_slot(0)
 		if speedup_quote.is_empty() or not bool(speedup_result.get("success", false)) or EconomyManager.sim_cash != 9 or not bool(factory.get_slot(0).get("ready", false)):
