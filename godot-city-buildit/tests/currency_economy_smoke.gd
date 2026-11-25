@@ -456,6 +456,14 @@ func _ready() -> void:
 				failures.append("completed Hardware Store Hammer did not enter City Storage")
 		hardware_store.queue_free()
 		await get_tree().process_frame
+		# Replenish the separate Metal reserved for the residential upgrade;
+		# Hammer consumed its own Metal + Wood inputs above.
+		if not factory.start_factory("metal", 0):
+			failures.append("factory could not replenish Metal for the residential upgrade after Hammer consumed its inputs")
+		else:
+			var home_metal_speedup := factory.speed_up_slot(0)
+			if not bool(home_metal_speedup.get("success", false)) or not factory.collect(0):
+				failures.append("residential-upgrade Metal did not complete and collect after the Hardware Store order")
 		GameManager.level = 1
 		# The starter home requires Nails + Metal. Verify the same atomic
 		# reservation path used by Building.try_upgrade.
