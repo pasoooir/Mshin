@@ -6,23 +6,23 @@
 
 ## پوشش ۱۴ خانوادهٔ فروشگاه
 
-| فروشگاه | دستورهای فعال | وضعیت |
+| فروشگاه | تعریف دستور | قابل تولید | وضعیت |
 |---|---:|---|
-| Building Supplies | 6 | فعال |
-| Hardware Store | 6 | فعال |
-| Farmer's Market | 7 | فعال |
-| Furniture Store | 5 | فعال |
-| Fast Food | 6 | فعال |
-| Donut Shop | 6 | فعال |
-| Home Appliances | 5 | فعال |
-| Gardening Supplies | 6 | فعال |
-| Fashion Store | 5 | فعال |
-| Sports Shop | 4 | یک محصول با سطح بازشدن نامشخص قفل است |
-| Toy Store | 2 | دو محصول با سطح بازشدن نامشخص قفل‌اند |
-| Bureau of Restoration | 4 | Tapestry به‌دلیل اختلاف مواد اولیه غیرفعال است |
-| Farmer's Store | 3 | فعال |
-| Dessert Shop | 5 | فعال |
-| **جمع** | **70 قابل تولید** | **از ۷۳ تعریف دستور** |
+| Building Supplies | 6 | 6 | فعال |
+| Hardware Store | 6 | 6 | فعال |
+| Farmer's Market | 7 | 7 | فعال |
+| Furniture Store | 5 | 5 | فعال |
+| Fast Food | 6 | 6 | فعال |
+| Donut Shop | 6 | 6 | فعال |
+| Home Appliances | 5 | 5 | فعال |
+| Gardening Supplies | 6 | 6 | فعال |
+| Fashion Store | 5 | 5 | فعال |
+| Sports Shop | 5 | 4 | یک محصول با سطح بازشدن نامشخص قفل است |
+| Toy Store | 4 | 2 | دو محصول با سطح بازشدن نامشخص قفل‌اند |
+| Bureau of Restoration | 4 | 4 | Tapestry به‌دلیل اختلاف مواد اولیه در کاتالوگ جداگانه قفل است |
+| Farmer's Store | 3 | 3 | فعال |
+| Dessert Shop | 5 | 5 | فعال |
+| **جمع** | **73** | **70 قابل تولید** |
 
 سه تعریف موجود ولی قفل‌شده: Football Shoes، Kite و Teddy Bear؛ سطح دقیق بازشدن آن‌ها در منبع فعلی مشخص نیست. Tapestry در کاتالوگ حل‌نشده باقی می‌ماند؛ دو نسخهٔ ورودی Textiles ×3 و Textiles ×4 ثبت شده‌اند و تا رفع اختلاف نباید تولید شود.
 
