@@ -697,6 +697,23 @@ func _test_live_production_queue_eta() -> void:
 	var delay := ProductionManager.get_live_store_queue_delay_seconds("building_supplies")
 	_check(delay >= 30.0, "Live ETA must include the remaining time of an active store order.")
 	_check(delay >= queue_probe.get_queue_delay_seconds(), "ProductionManager must read the real ProductionComponent queue, not a detached estimate.")
+	# ETA includes all waiting orders in FIFO order, freezes while road access is
+	# paused, and ignores ready products that no longer occupy the production lane.
+	queue_probe.slots = [
+		{"item_id":"nails", "finish_unix":now + 30, "ready":false},
+		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":2},
+		{"item_id":"bricks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":1}
+	]
+	var fifo_delay := queue_probe.get_queue_delay_seconds()
+	_check(fifo_delay >= 30.0 + 300.0 + 1200.0, "Store ETA must add active remaining time and every waiting product duration.")
+	queue_probe.slots[0]["paused_at_unix"] = now - 10
+	var paused_delay := queue_probe.get_queue_delay_seconds()
+	_check(paused_delay >= 40.0 + 300.0 + 1200.0, "Paused store ETA must use frozen remaining time.")
+	queue_probe.slots[0]["ready"] = true
+	queue_probe.slots[0].erase("paused_at_unix")
+	var ready_delay := queue_probe.get_queue_delay_seconds()
+	_check(ready_delay >= 1500.0 and ready_delay < 1530.0, "Ready products must not block subsequent store orders.")
+
 	var factory_probe = ProductionComponentScript.new()
 	factory_probe.is_factory = true
 	factory_probe.factory_type = "snowberry_farm"
@@ -1021,6 +1038,21 @@ func _test_live_macro_economy_snapshot() -> void:
 func _test_recipe_dependency_graph_validation() -> void:
 	var baseline := ProductionManager.get_recipe_validation_report()
 	_check(int(baseline.get("recipe_count", 0)) == ProductionManager.crafted_items.size(), "Recipe graph validator must inspect every crafted definition.")
+	# Catalog-only products must never shadow an enabled product or be
+	# assigned to a second store.
+	var saved_hardware_catalog: Array = ProductionManager.store_catalog.get("hardware_store", []).duplicate(true)
+	ProductionManager.store_catalog["hardware_store"] = saved_hardware_catalog.duplicate(true)
+	ProductionManager.store_catalog["hardware_store"].append({"id":"nails", "name":"Duplicate Nails"})
+	ProductionManager.store_catalog["farmers_market"] = [{"id":"__test_duplicate_catalog", "name":"Duplicate A"}]
+	ProductionManager.store_catalog["furniture_store"] = [{"id":"__test_duplicate_catalog", "name":"Duplicate B"}]
+	var ownership_report := ProductionManager.get_recipe_validation_report()
+	_check(str(ownership_report.get("errors", [])).contains("nails: product is declared in both enabled recipes"), "Catalog-only products must not shadow an enabled recipe.")
+	_check(str(ownership_report.get("errors", [])).contains("__test_duplicate_catalog: catalog product is duplicated between"), "A product ID must not be assigned to multiple stores.")
+	ProductionManager.store_catalog["hardware_store"] = saved_hardware_catalog
+	ProductionManager.store_catalog.erase("farmers_market")
+	ProductionManager.store_catalog.erase("furniture_store")
+	ProductionManager._recipe_validation_report = ProductionManager.get_recipe_validation_report()
+
 	_check(not baseline.get("invalid_recipe_ids", []).has("nails"), "Known Nails recipe must pass structural recipe validation.")
 	var saved_a: Variant = ProductionManager.crafted_items.get("__test_cycle_a")
 	var saved_b: Variant = ProductionManager.crafted_items.get("__test_cycle_b")
