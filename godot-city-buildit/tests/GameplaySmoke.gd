@@ -5726,13 +5726,26 @@ func _run_gameplay_test() -> void:
 	_check(restored_queue.get_slot_count() == 3, "Purchased commercial queue capacity must survive save/load.")
 	restored_queue.queue_free()
 	EconomyManager.sim_cash = sim_cash_before_queue_expansion
-	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
-	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
+	production_hud.open_production_panel(hardware)
+	var hammer_button := production_hud.production_overlay.find_child("Slot0_hammer", true, false) as Button
+	var hammer_ingredients := production_hud.production_overlay.find_child("Ingredients_hammer", true, false) as Label
+	_check(production_hud.production_overlay.find_child("StoreProductsGrid", true, false) is GridContainer, "Hardware Store must use the same dedicated production workspace as Building Supplies.")
+	_check(hammer_ingredients != null and hammer_ingredients.text.contains("Metal 1/1") and hammer_ingredients.text.contains("Wood 1/1"), "Hardware Store must show both exact live ingredient counts on the Hammer product card.")
+	_check(hammer_button != null and not hammer_button.disabled, "Hammer must be selectable when both Metal and Wood are present in City Storage.")
+	if hammer_button:
+		await _tap_native_control(hammer_button)
+	_check(not hardware_component.get_slot(0).is_empty(), "One tap on the stocked Hammer card must start the Hardware Store order.")
+	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must atomically consume Metal and Wood at order acceptance.")
 	var hammer_slot: Dictionary = hardware_component.slots[0]
 	hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
 	hardware_component.slots[0] = hammer_slot
 	hardware_component.refresh_slots()
-	_check(hardware_component.collect(0) and StorageManager.get_count("hammer") == 1, "Completed Hammer must collect into City Storage.")
+	production_hud.open_production_panel(hardware)
+	var hammer_collect := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(hammer_collect != null and not hammer_collect.disabled, "Completed Hammer must expose a clear Collect action.")
+	if hammer_collect:
+		hammer_collect.emit_signal("pressed")
+	_check(hardware_component.get_slot(0).is_empty() and StorageManager.get_count("hammer") == 1, "Collecting the finished Hammer must transfer it to City Storage and clear the store queue slot.")
 	BuildManager.unregister_building(hardware.building_id)
 	hardware.queue_free()
 	GameManager.level = previous_level
