@@ -5767,11 +5767,14 @@ func _run_gameplay_test() -> void:
 	# Isolate the material/Save test from later service-unlock milestones; the
 	# explicit Fire gate above is tested separately and remains active in-game.
 	var second_upgrade_level := GameManager.level
-	GameManager.level = 2
-	# Save a second upgrade while its scaffold timer is active to verify timestamp persistence.
+	GameManager.level = 1
+	# Save a second material-only upgrade while its scaffold timer is active;
+	# service gates are asserted above, independently from this save-path test.
 	StorageManager.add_item("planks",1)
 	StorageManager.add_item("wood",1)
-	_check(home != null and home.try_upgrade(), "Second residential upgrade could not start with Planks and Wood.")
+	var second_upgrade_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	var second_upgrade_started := home != null and home.try_upgrade()
+	_check(second_upgrade_started, "Second residential upgrade could not start with Planks and Wood. Block reason: %s" % second_upgrade_block_reason)
 	GameManager.level = second_upgrade_level
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 2, "Second residential upgrade must remain in progress before save.")
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) + 3600
