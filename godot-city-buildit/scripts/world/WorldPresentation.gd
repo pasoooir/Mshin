@@ -902,9 +902,9 @@ func _add_highway_lane_dashes() -> void:
 	var lane_positions: Array[Vector3] = []
 	for lane_offset in HIGHWAY_LANE_DIVIDER_OFFSETS:
 		for side in [-1.0, 1.0]:
-			var lane_x := HIGHWAY_CENTER_X + float(side) * lane_offset
-		for segment in range(-55, 56):
-			lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
+			var lane_x: float = HIGHWAY_CENTER_X + float(side) * lane_offset
+			for segment in range(-55, 56):
+				lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.mesh = dash_mesh
