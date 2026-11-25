@@ -1231,6 +1231,18 @@ The existing Figma production studio frame was updated to match the no-START, dr
 **Structural result:** the world keeps one directional shadow source; the secondary warm fill light no longer requests a second shadow map. Actual FPS improvement remains unmeasured until device profiling.
 
 
+## Physical-device camera benchmark — low-end acceptance — 2026-11-25
+
+- [x] Turn the existing 30-second passive benchmark into a camera-pan/zoom workload: the HUD now instructs the player to continuously pan across the city and zoom in/out while keeping the game in the foreground.
+- [x] Capture camera movement frames, active-pan frames, total camera travel and zoom range so a benchmark with no actual camera interaction is detectable.
+- [x] Capture per-frame engine process/physics-process time, texture memory, render-buffer memory and static memory, alongside the existing frame-time, draw-call, object, primitive and video-memory samples.
+- [x] Report average/P95/max values, add a 30 FPS low-end acceptance result (average FPS at least 30 and P95 frame time at most 33.33 ms), and retain the stricter 60 FPS result.
+- [x] Explicitly mark GPU execution time/utilization as unavailable through the portable Godot 4.3 GL Compatibility API; process-time metrics are not presented as total Android CPU utilization.
+- [x] Extend GameplaySmoke and project validation contracts for the 30 FPS budget and new benchmark report fields.
+- [ ] Run Settings → Run 30-second device test on a physical Android phone; pan continuously and zoom several times. Review user://performance_benchmark_latest.json and share the measured result before claiming the device target passes.
+
+**Acceptance rule:** CI confirms the benchmark implementation and report math only. It does not establish physical-phone FPS, thermal stability, Android CPU utilization or GPU utilization.
+
 ## On-device performance diagnostics — per-frame render metrics — 2026-11-15
 
 - [x] Sample draw calls, rendered objects, rendered primitives, video memory and node count throughout the full device benchmark instead of reading only the final frame.
