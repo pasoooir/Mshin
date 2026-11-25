@@ -94,7 +94,7 @@ func _capture_camera_metrics() -> void:
 		_camera_min_zoom = minf(_camera_min_zoom, zoom_value)
 		_camera_max_zoom = maxf(_camera_max_zoom, zoom_value)
 	var touch_points: Variant = camera_rig.get("touch_points")
-	var is_panning := bool(camera_rig.get("is_mouse_panning")) or (touch_points is Dictionary and not touch_points.is_empty())
+	var is_panning: bool = bool(camera_rig.get("is_mouse_panning")) or (touch_points is Dictionary and not touch_points.is_empty())
 	var pan_velocity: Variant = camera_rig.get("pan_velocity")
 	if pan_velocity is Vector2 and pan_velocity.length() > 6.0:
 		is_panning = true
