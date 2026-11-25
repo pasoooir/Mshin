@@ -207,6 +207,33 @@ func get_recipe_validation_report() -> Dictionary:
 			invalid_recipe_ids.append(item_id)
 			for detail in item_errors:
 				errors.append("%s: %s" % [item_id, detail])
+	# Every product ID has exactly one commercial supplier. Catalog-only
+	# entries are unresolved products and must not shadow an enabled recipe or
+	# appear under more than one store.
+	var catalog_owners: Dictionary = {}
+	for store_variant in store_catalog.keys():
+		var catalog_store_id := str(store_variant)
+		for product in store_catalog[store_variant]:
+			var catalog_item_id := str(product.get("id", ""))
+			if catalog_item_id.is_empty():
+				errors.append("%s catalog: product ID is empty" % catalog_store_id)
+				continue
+			if catalog_owners.has(catalog_item_id):
+				errors.append("%s: catalog product is duplicated between %s and %s" % [
+					catalog_item_id, str(catalog_owners[catalog_item_id]), catalog_store_id
+				])
+			else:
+				catalog_owners[catalog_item_id] = catalog_store_id
+			if crafted_items.has(catalog_item_id):
+				errors.append("%s: product is declared in both enabled recipes and the catalog-only registry" % catalog_item_id)
+				if not invalid_recipe_ids.has(catalog_item_id):
+					invalid_recipe_ids.append(catalog_item_id)
+	for item_variant in crafted_items.keys():
+		var enabled_item_id := str(item_variant)
+		if catalog_owners.has(enabled_item_id):
+			if not invalid_recipe_ids.has(enabled_item_id):
+				invalid_recipe_ids.append(enabled_item_id)
+
 	var cycle_state: Dictionary = {}
 	var cycle_stack: Array[String] = []
 	var cycle_nodes: Dictionary = {}
