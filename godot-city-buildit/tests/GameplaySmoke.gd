@@ -60,6 +60,7 @@ func _ready() -> void:
 	_test_camera_gesture_math()
 	_test_hud_touch_session_ownership()
 	_test_store_building_identity_contract()
+	await _test_each_store_direct_production()
 	call_deferred("_run_gameplay_test")
 
 func _test_store_building_identity_contract() -> void:
@@ -91,6 +92,51 @@ func _test_store_building_identity_contract() -> void:
 				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
 		var has_visual_identity := visual_source.contains("func _build_building_supplies_showcase(") if store_id == "building_supplies" else identity_block.contains("\"" + store_id + "\"")
 		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
+
+func _test_each_store_direct_production() -> void:
+	# Exercise one real recipe through enqueue -> timer -> ready -> collect for
+	# every standard store. Seed only the exact declared inputs; no recipe data
+	# or quantities are synthesized by the test.
+	var previous_storage: Dictionary = StorageManager.to_save_dict()
+	var previous_level := GameManager.level
+	GameManager.level = 90
+	var store_ids := [
+		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
+		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
+		"fashion_store", "sports_shop", "toy_store", "restoration_office",
+		"farmers_store", "dessert_shop"
+	]
+	for store_id in store_ids:
+		var recipe_ids: Array = ProductionManager.get_store_recipe_ids(store_id)
+		_check(not recipe_ids.is_empty(), "%s must have at least one production recipe for its live order test." % store_id)
+		if recipe_ids.is_empty():
+			continue
+		var item_id := str(recipe_ids[0])
+		var recipe := ProductionManager.get_recipe(item_id)
+		var inputs: Dictionary = recipe.get("inputs", {})
+		StorageManager.from_save_dict({"capacity": 500, "items": inputs})
+		var component := ProductionComponentScript.new()
+		component.name = "StoreDirectOrderProbe_%s" % store_id
+		component.shop_id = store_id
+		component.slot_count = 2
+		component.store_star_level = 3
+		add_child(component)
+		_check(ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty(), "%s test product %s must be unlocked at the high-level test fixture." % [store_id, item_id])
+		var accepted := component.start_craft(item_id, 0)
+		_check(accepted, "%s must accept its own product %s when exact declared inputs are in storage." % [store_id, item_id])
+		if accepted:
+			var order: Dictionary = component.get_slot(0)
+			_check(str(order.get("item_id", "")) == item_id and int(order.get("finish_unix", 0)) > 0, "%s must start a timed order in its own production lane." % store_id)
+			order["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			component.slots[0] = order
+			component.refresh_slots()
+			_check(bool(component.get_slot(0).get("ready", false)), "%s must transition its completed order to READY." % store_id)
+			_check(component.collect(0), "%s must allow the player to collect its finished product." % store_id)
+			_check(StorageManager.get_count(item_id) == 1, "%s must deliver exactly one collected %s to City Storage." % [store_id, item_id])
+		component.queue_free()
+		await get_tree().process_frame
+	StorageManager.from_save_dict(previous_storage)
+	GameManager.level = previous_level
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
