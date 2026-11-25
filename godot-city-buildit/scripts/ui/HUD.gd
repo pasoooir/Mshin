@@ -2300,7 +2300,7 @@ func open_production_panel(building: Building) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var compact_layout := viewport_size.x <= 900.0 or viewport_size.y <= 520.0
 	var panel_width := minf(viewport_size.x * 0.92, 1240.0 * _ui_scale)
-	var panel_height := minf((238.0 if compact_layout else 258.0) * _ui_scale, viewport_size.y * 0.48)
+	var panel_height := minf((272.0 if compact_layout else 310.0) * _ui_scale, viewport_size.y * 0.54)
 	production_panel.anchor_left = 0.5
 	production_panel.anchor_right = 0.5
 	production_panel.anchor_top = 1.0
@@ -2317,10 +2317,10 @@ func open_production_panel(building: Building) -> void:
 	studio_style.shadow_color = Color(0.0, 0.035, 0.10, 0.52)
 	studio_style.shadow_size = 16
 	studio_style.shadow_offset = Vector2(0, 5)
-	studio_style.content_margin_left = 16
-	studio_style.content_margin_right = 16
-	studio_style.content_margin_top = 9
-	studio_style.content_margin_bottom = 9
+	studio_style.content_margin_left = 20
+	studio_style.content_margin_right = 20
+	studio_style.content_margin_top = 13
+	studio_style.content_margin_bottom = 13
 	production_panel.add_theme_stylebox_override("panel", studio_style)
 	production_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	production_overlay.add_child(production_panel)
@@ -2328,11 +2328,11 @@ func open_production_panel(building: Building) -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "ProductionLayout"
 	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layout.add_theme_constant_override("separation", 2)
-	layout.add_theme_constant_override("margin_left", 4)
-	layout.add_theme_constant_override("margin_right", 4)
-	layout.add_theme_constant_override("margin_top", 2)
-	layout.add_theme_constant_override("margin_bottom", 2)
+	layout.add_theme_constant_override("separation", 7)
+	layout.add_theme_constant_override("margin_left", 8)
+	layout.add_theme_constant_override("margin_right", 8)
+	layout.add_theme_constant_override("margin_top", 5)
+	layout.add_theme_constant_override("margin_bottom", 5)
 	production_panel.add_child(layout)
 
 	var component = building.production_component
@@ -2557,6 +2557,14 @@ func open_production_panel(building: Building) -> void:
 			for input_id in inputs:
 				missing_count += maxi(0, int(inputs[input_id]) - StorageManager.get_count(str(input_id)))
 			stock_summary = "MATERIALS READY" if missing_count == 0 else "%d MISSING" % missing_count
+		if component.is_factory:
+			var order_price := Label.new()
+			order_price.name = "FactoryOrderPrice_" + item_id
+			order_price.text = "ORDER  §%s" % _format_count(ProductionManager.get_factory_order_cost(item_id))
+			order_price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			order_price.add_theme_font_size_override("font_size", _popup_font_size(12))
+			order_price.add_theme_color_override("font_color", Color("#A87516"))
+			tile_content.add_child(order_price)
 		var status_label := Label.new()
 		status_label.text = lock_reason if not lock_reason.is_empty() else stock_summary
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2601,10 +2609,21 @@ func open_production_panel(building: Building) -> void:
 	queue_title.add_theme_color_override("font_color", Color("#F4FBFF"))
 	queue_heading.add_child(queue_title)
 	var queue_count := Label.new()
+	queue_count.name = "ProductionQueueCount"
 	queue_count.text = "%d / %d" % [component.get_slot_count() - _count_empty_production_slots(component), component.get_slot_count()]
 	queue_count.add_theme_font_size_override("font_size", _popup_font_size(16))
 	queue_count.add_theme_color_override("font_color", Color("#C0D1D8"))
 	queue_heading.add_child(queue_count)
+	if component.is_factory:
+		var paid_total := 0
+		for order_index in range(component.get_slot_count()):
+			paid_total += int(component.get_slot(order_index).get("order_cost", 0))
+		var basket_summary := Label.new()
+		basket_summary.name = "ProductionBasketSummary"
+		basket_summary.text = "PAID §%s  ·  BALANCE §%s" % [_format_count(paid_total), _format_count(EconomyManager.simoleons)]
+		basket_summary.add_theme_font_size_override("font_size", _popup_font_size(12))
+		basket_summary.add_theme_color_override("font_color", Color("#F2C96D"))
+		queue_heading.add_child(basket_summary)
 	if not component.is_factory:
 		var next_slot_cost: int = component.get_next_store_queue_slot_cost()
 		var add_slot := Button.new()
@@ -2649,10 +2668,10 @@ func open_production_panel(building: Building) -> void:
 		order_style.border_color = Color("#D6AE4B") if is_ready else Color("#8CC9DE")
 		order_style.set_border_width_all(2)
 		order_style.set_corner_radius_all(15)
-		order_style.content_margin_left = 9
-		order_style.content_margin_right = 9
-		order_style.content_margin_top = 6
-		order_style.content_margin_bottom = 6
+		order_style.content_margin_left = 12
+		order_style.content_margin_right = 12
+		order_style.content_margin_top = 8
+		order_style.content_margin_bottom = 8
 		order_card.add_theme_stylebox_override("panel", order_style)
 		orders_list.add_child(order_card)
 		var order_row := HBoxContainer.new()
@@ -2678,7 +2697,8 @@ func open_production_panel(building: Building) -> void:
 		state_label.name = "OrderState%d" % slot_index
 		state_label.add_theme_font_size_override("font_size", _popup_font_size(11))
 		state_label.add_theme_color_override("font_color", Color("#28734A") if is_ready else Color("#587487"))
-		state_label.text = "READY TO COLLECT" if is_ready else ("WAITING IN QUEUE" if is_waiting else "IN PRODUCTION")
+		var paid_order_cost := int(slot.get("order_cost", 0))
+		state_label.text = ("READY TO COLLECT" if is_ready else ("WAITING IN QUEUE" if is_waiting else "IN PRODUCTION")) + ("  ·  PAID §%s" % _format_count(paid_order_cost) if component.is_factory else "")
 		order_details.add_child(state_label)
 		if not is_ready and not is_waiting:
 			var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
@@ -2804,7 +2824,8 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	# Crafted orders can start an automatic dependency chain even when
 	# ingredients are not yet in City Storage. The scheduler reserves each
 	# dependency when its real store/factory job is accepted.
-	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (is_factory or (not recipe.is_empty() and StorageManager.has_items(inputs)))
+	var factory_order_cost := ProductionManager.get_factory_order_cost(item_id) if is_factory else 0
+	var can_start: bool = slot_index >= 0 and lock_reason.is_empty() and (not is_factory or EconomyManager.simoleons >= factory_order_cost) and (is_factory or (not recipe.is_empty() and StorageManager.has_items(inputs)))
 
 	var detail := PanelContainer.new()
 	detail.name = "ProductionItemDetails"
@@ -2839,6 +2860,13 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 	production_time.add_theme_font_size_override("font_size", _popup_font_size(14))
 	production_time.add_theme_color_override("font_color", Color("#B9D4DF"))
 	text_stack.add_child(production_time)
+	if is_factory:
+		var order_price_label := Label.new()
+		order_price_label.name = "FactoryOrderCost"
+		order_price_label.text = "ORDER COST  §%s  ·  BALANCE  §%s" % [_format_count(factory_order_cost), _format_count(EconomyManager.simoleons)]
+		order_price_label.add_theme_font_size_override("font_size", _popup_font_size(14))
+		order_price_label.add_theme_color_override("font_color", Color("#F2C96D") if can_start else Color("#FF9D91"))
+		text_stack.add_child(order_price_label)
 	var provenance := str(data.get("source", ""))
 	if provenance.to_lower().contains("conflict") or provenance.to_lower().contains("verify") or not bool(data.get("unlock_level_verified", true)):
 		var provenance_warning := Label.new()
@@ -2901,10 +2929,10 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 			chain_label.add_theme_font_size_override("font_size", _popup_font_size(8))
 			chain_label.add_theme_color_override("font_color", Color("#587487"))
 			text_stack.add_child(chain_label)
-	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0:
+	if not lock_reason.is_empty() or not missing.is_empty() or slot_index < 0 or (is_factory and EconomyManager.simoleons < factory_order_cost):
 		var reason := Label.new()
 		reason.name = "ProductionBlockReason"
-		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else "MISSING CITY STORAGE: " + missing)
+		reason.text = lock_reason if not lock_reason.is_empty() else ("NO FREE PRODUCTION SLOT" if slot_index < 0 else ("NOT ENOUGH SIMOLEONS · NEED §%d" % factory_order_cost if is_factory and EconomyManager.simoleons < factory_order_cost else "MISSING CITY STORAGE: " + missing))
 		reason.add_theme_font_size_override("font_size", _popup_font_size(13))
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
@@ -2938,9 +2966,9 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 	var slot_index := _find_first_available_production_slot(component)
 	var payload := {"kind": "production_item", "item_id": item_id, "building_id": building.get_instance_id()}
 
-	if not BuildManager.is_building_operational(building):
+	if not BuildManager.is_production_building_operational(building):
 		_show_production_item_details(building, item_id, slot_index)
-		status_label.text = "Production blocked: restore this building's road access, utilities and workforce."
+		status_label.text = "Production blocked: connect this building to a Gateway road."
 		return
 	if slot_index >= 0 and _can_accept_production_drop(Vector2.ZERO, payload, building, slot_index):
 		_accept_production_drop(Vector2.ZERO, payload, building, slot_index)
@@ -2958,8 +2986,10 @@ func _on_production_item_pressed(building: Building, item_id: String, _slot_hint
 			status_label.text = "This material is not part of this factory's catalogue."
 		elif int(raw_definition.get("level", 1)) > GameManager.level:
 			status_label.text = "This material unlocks at Mayor Level %d." % int(raw_definition.get("level", 1))
+		elif EconomyManager.simoleons < ProductionManager.get_factory_order_cost(item_id):
+			status_label.text = "Not enough Simoleons. This order costs §%d." % ProductionManager.get_factory_order_cost(item_id)
 		else:
-			status_label.text = "Factory rejected the order. Check building operation and production capacity."
+			status_label.text = "Factory rejected the order. Check road access and production capacity."
 	else:
 		var recipe := ProductionManager.get_recipe(item_id)
 		var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level)
@@ -3393,7 +3423,7 @@ func _can_accept_production_drop(_at_position: Vector2, data: Variant, building:
 	# Keep the UI acceptance gate identical to the production component's
 	# operational requirement; otherwise a product looks valid but is rejected
 	# only after the click reaches start_factory/start_craft.
-	if not BuildManager.is_building_operational(building):
+	if not BuildManager.is_production_building_operational(building):
 		return false
 	var component: ProductionComponent = building.production_component
 	if slot_index < 0 or slot_index >= component.get_slot_count() or not component.get_slot(slot_index).is_empty():
@@ -3402,7 +3432,7 @@ func _can_accept_production_drop(_at_position: Vector2, data: Variant, building:
 	if component.is_factory:
 		if not ProductionManager.get_factory_material_ids(str(component.factory_type)).has(item_id) or not ProductionManager.raw_materials.has(item_id):
 			return false
-		return int(ProductionManager.raw_materials[item_id].get("level", 1)) <= GameManager.level
+		return int(ProductionManager.raw_materials[item_id].get("level", 1)) <= GameManager.level and EconomyManager.simoleons >= ProductionManager.get_factory_order_cost(item_id)
 	var recipe: Dictionary = ProductionManager.get_recipe(item_id)
 	if recipe.is_empty() or str(recipe.get("store", "")) != str(component.shop_id):
 		return false
