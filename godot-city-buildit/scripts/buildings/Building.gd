@@ -1880,7 +1880,7 @@ func _start_production(item_id: String) -> void:
 		production_icon.text = "⚙️"
 
 func start_factory_production(item_id: String = "") -> bool:
-	if not BuildManager.is_building_operational(self):
+	if not BuildManager.is_production_building_operational(self):
 		return false
 	if status != "completed":
 		return false
