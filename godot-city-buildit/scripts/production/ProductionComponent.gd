@@ -123,6 +123,8 @@ func _owner_has_road_access() -> bool:
 		return true
 	if not is_instance_valid(owner_building):
 		return false
+	if is_factory:
+		return BuildManager.is_production_building_operational(owner_building)
 	return BuildManager.is_building_operational(owner_building)
 
 func refresh_slots() -> void:
@@ -200,7 +202,14 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 	var definition: Dictionary = ProductionManager.raw_materials[item_id]
 	if int(definition.get("level", 1)) > GameManager.level:
 		return false
-	# Raw factory materials have no inputs: each slot starts independently.
+	# Mshin factory order fee is a separate balancing rule, not the catalog's
+	# maximum Trade Depot sale value. Validate and debit only after every other
+	# rejection condition has passed, then occupy the slot in the same call.
+	var order_cost := ProductionManager.get_factory_order_cost(item_id)
+	if order_cost < 0 or EconomyManager.simoleons < order_cost:
+		return false
+	if not EconomyManager.spend_simoleons(order_cost):
+		return false
 	var now := int(Time.get_unix_time_from_system())
 	slots[slot_index] = {
 		"item_id": item_id,
@@ -208,6 +217,7 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"finish_unix": now + int(definition.get("time_sec", 60)),
 		"ready": false,
 		"auto_chain_id": auto_chain_id,
+		"order_cost": order_cost,
 		"cost_known": true,
 		"cost_total": 0
 	}
