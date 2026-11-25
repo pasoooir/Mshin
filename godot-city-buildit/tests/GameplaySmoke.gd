@@ -4804,6 +4804,23 @@ func _run_gameplay_test() -> void:
 	_check(world != null and world.get_node_or_null("WorldPresentation/PacificPalmTrunks") != null and world.get_node_or_null("WorldPresentation/PacificPalmCrowns") != null, "Batched coastal palm trees were not generated.")
 	_check(WorldPresentationScript.HIGHWAY_LANE_COUNT == 6, "Permanent entrance highway must provide three lanes in each direction.")
 	_check(is_equal_approx(WorldPresentationScript.HIGHWAY_ASPHALT_WIDTH, 24.0), "Permanent highway asphalt must be a genuinely wide divided-motorway surface.")
+	_check(is_equal_approx(WorldPresentationScript.HIGHWAY_CENTER_X, TrafficManager.HIGHWAY_WORLD_X), "The rendered motorway centreline must match the traffic simulation world coordinate.")
+	_check(is_equal_approx(float(TrafficManager.HIGHWAY_GRID_X) * 2.0 + 1.0, TrafficManager.HIGHWAY_WORLD_X), "The highway grid column must map exactly onto the rendered motorway centreline.")
+	_check(WorldPresentationScript.HIGHWAY_LANE_CENTER_OFFSETS.size() == TrafficManager.HIGHWAY_LANE_OFFSETS.size(), "Rendered and simulated motorway lane counts must match.")
+	for lane_index in range(TrafficManager.HIGHWAY_LANE_OFFSETS.size()):
+		var lane_offset := TrafficManager.HIGHWAY_LANE_OFFSETS[lane_index]
+		_check(is_equal_approx(WorldPresentationScript.HIGHWAY_LANE_CENTER_OFFSETS[lane_index], lane_offset), "Rendered lane centre and vehicle lane offset must match for lane %d." % lane_index)
+		_check(lane_offset > WorldPresentationScript.HIGHWAY_MEDIAN_WIDTH * 0.5 + 0.28 and lane_offset < WorldPresentationScript.HIGHWAY_SHOULDER_LINE_OFFSET - 0.28, "Every vehicle lane must stay between the median and shoulder boundaries.")
+	_check(WorldPresentationScript.HIGHWAY_LANE_DIVIDER_OFFSETS.size() == 2 and is_equal_approx(WorldPresentationScript.HIGHWAY_LANE_DIVIDER_OFFSETS[0], 3.5) and is_equal_approx(WorldPresentationScript.HIGHWAY_LANE_DIVIDER_OFFSETS[1], 6.5), "Three motorway lane centres must have divider markings at their exact midpoints.")
+	var geometry_lane_probe := TrafficVehicle.new()
+	geometry_lane_probe.vehicle_kind = "highway"
+	for lane_index in range(TrafficManager.HIGHWAY_LANE_OFFSETS.size()):
+		geometry_lane_probe.lane_index = lane_index
+		var northbound_lane := geometry_lane_probe._lane_position(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(0, -1))
+		var southbound_lane := geometry_lane_probe._lane_position(Vector2i(TrafficManager.HIGHWAY_GRID_X, 0), Vector2i(0, 1))
+		_check(is_equal_approx(northbound_lane.x, TrafficManager.HIGHWAY_WORLD_X + TrafficManager.HIGHWAY_LANE_OFFSETS[lane_index]), "Northbound vehicles must occupy the rendered northbound lane centre.")
+		_check(is_equal_approx(southbound_lane.x, TrafficManager.HIGHWAY_WORLD_X - TrafficManager.HIGHWAY_LANE_OFFSETS[lane_index]), "Southbound vehicles must occupy the rendered southbound lane centre.")
+	geometry_lane_probe.free()
 	_check(WorldPresentationScript.TERRAIN_DIVISIONS >= 48, "Natural terrain must retain enough mesh detail for the meadow palette.")
 	_check(world != null and world.get_node_or_null("WorldPresentation/CargoShipVisual") != null, "Cargo ship visual was not generated in the coastal water.")
 	_check(EconomyManager.simoleons >= 25000, "Starter Simoleons grant is too small.")

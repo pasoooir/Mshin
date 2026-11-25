@@ -19,7 +19,7 @@ const HIGHWAY_GRID_X: int = -28
 const HIGHWAY_MIN_GRID_Z: int = -44
 const HIGHWAY_MAX_GRID_Z: int = 44
 # Three physical lanes per carriageway, measured from the highway centre line.
-const HIGHWAY_LANE_OFFSETS: Array[float] = [9.1, 5.8, 2.5]
+const HIGHWAY_LANE_OFFSETS: Array[float] = [8.0, 5.0, 2.0]
 const EMERGENCY_SPAWN_INTERVAL: float = 12.0
 # City traffic decisions are less latency-sensitive than rendering and vehicle motion.
 # Keep vehicle motion per-frame, but schedule manager-wide scans at bounded rates.

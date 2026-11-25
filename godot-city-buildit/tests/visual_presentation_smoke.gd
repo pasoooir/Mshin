@@ -153,7 +153,11 @@ func _ready() -> void:
 	for highway_contract in [
 		"HighwayCarriageway_Westbound",
 		"HighwayCarriageway_Eastbound",
-		"const CARRIAGEWAY_WIDTH := 11.2",
+		"const HIGHWAY_CARRIAGEWAY_WIDTH := 11.2",
+		"const HIGHWAY_LANE_CENTER_OFFSETS: Array[float] = [8.0, 5.0, 2.0]",
+		"const HIGHWAY_LANE_DIVIDER_OFFSETS: Array[float] = [3.5, 6.5]",
+		"const HIGHWAY_SHOULDER_LINE_OFFSET := 9.5",
+		"for lane_offset in HIGHWAY_LANE_DIVIDER_OFFSETS",
 		"const MEDIAN_OPENING_LENGTH := 8.0",
 		"MEDIAN_SEGMENT_LENGTH * 0.5"
 	]:

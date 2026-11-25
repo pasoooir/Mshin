@@ -23,6 +23,11 @@ const HIGHWAY_SHOULDER_WIDTH := 26.8
 const HIGHWAY_LENGTH := 700.0
 const HIGHWAY_LANE_COUNT := 6
 const HIGHWAY_MEDIAN_WIDTH := 0.8
+const HIGHWAY_CARRIAGEWAY_WIDTH := 11.2
+const HIGHWAY_CARRIAGEWAY_OFFSET := 6.0
+const HIGHWAY_LANE_CENTER_OFFSETS: Array[float] = [8.0, 5.0, 2.0]
+const HIGHWAY_LANE_DIVIDER_OFFSETS: Array[float] = [3.5, 6.5]
+const HIGHWAY_SHOULDER_LINE_OFFSET := 9.5
 const HIGHWAY_LAMP_COUNT := 12
 const MEADOW_SHEEP_COUNT := 12
 const MEADOW_CATTLE_COUNT := 3
@@ -706,8 +711,8 @@ func _build_coastal_highway() -> void:
 	var highway_asphalt := _create_asphalt_material()
 	highway_asphalt.albedo_color = Color("#555C59")
 	highway_asphalt.uv1_scale = Vector3(9.0, 72.0, 1.0)
-	const CARRIAGEWAY_WIDTH := 11.2
-	const CARRIAGEWAY_OFFSET := 6.0
+	const CARRIAGEWAY_WIDTH := HIGHWAY_CARRIAGEWAY_WIDTH
+	const CARRIAGEWAY_OFFSET := HIGHWAY_CARRIAGEWAY_OFFSET
 	for direction_index in range(2):
 		var side := -1.0 if direction_index == 0 else 1.0
 		var carriageway := MeshInstance3D.new()
@@ -747,7 +752,7 @@ func _build_coastal_highway() -> void:
 	_add_highway_lane_dashes()
 	for edge_x in [HIGHWAY_CENTER_X - 11.35, HIGHWAY_CENTER_X + 11.35]:
 		_add_road_marking(Vector3(edge_x, 0.164, 0.0), Vector3(0.12, 0.012, HIGHWAY_LENGTH - 2.0), Color("#E8ECE8"))
-	for shoulder_line_x in [HIGHWAY_CENTER_X - 9.7, HIGHWAY_CENTER_X + 9.7]:
+	for shoulder_line_x in [HIGHWAY_CENTER_X - HIGHWAY_SHOULDER_LINE_OFFSET, HIGHWAY_CENTER_X + HIGHWAY_SHOULDER_LINE_OFFSET]:
 		_add_road_marking(Vector3(shoulder_line_x, 0.164, 0.0), Vector3(0.10, 0.012, HIGHWAY_LENGTH - 2.0), Color("#DDE2DE"))
 	for median_line_x in [HIGHWAY_CENTER_X - 0.52, HIGHWAY_CENTER_X + 0.52]:
 		_add_road_marking(Vector3(median_line_x, 0.164, 0.0), Vector3(0.085, 0.012, HIGHWAY_LENGTH - 2.0), Color("#F2C84B"))
@@ -895,10 +900,9 @@ func _add_highway_lane_dashes() -> void:
 	var dash_mesh := BoxMesh.new()
 	dash_mesh.size = Vector3(0.09, 0.012, 3.0)
 	var lane_positions: Array[Vector3] = []
-	for lane_x in [
-		HIGHWAY_CENTER_X - 6.6, HIGHWAY_CENTER_X - 3.3,
-		HIGHWAY_CENTER_X + 3.3, HIGHWAY_CENTER_X + 6.6
-	]:
+	for lane_offset in HIGHWAY_LANE_DIVIDER_OFFSETS:
+		for side in [-1.0, 1.0]:
+			var lane_x := HIGHWAY_CENTER_X + float(side) * lane_offset
 		for segment in range(-55, 56):
 			lane_positions.append(Vector3(lane_x, 0.164, float(segment) * 6.0))
 	var multimesh := MultiMesh.new()
