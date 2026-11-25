@@ -223,6 +223,8 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"ready": false,
 		"auto_chain_id": auto_chain_id,
 		"order_cost": order_cost,
+		# Factory order fees are operating overhead, not a direct item input cost.
+		# Keep the raw material cost batch known at zero; the fee is audited separately.
 		"cost_known": true,
 		"cost_total": 0
 	}

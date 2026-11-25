@@ -360,6 +360,8 @@ func _ready() -> void:
 	GameManager.level = 1
 	EconomyManager.sim_cash = 10
 
+	# Run a clean factory -> store -> residential-material transaction chain.
+	StorageManager.from_save_dict({"capacity": 100, "items": {}})
 	# SimCash production acceleration uses remaining time, spends once and
 	# leaves the completed item on its production slot until collection.
 	EconomyManager.sim_cash = 10
@@ -387,6 +389,96 @@ func _ready() -> void:
 			failures.append("SimCash did not complete the active factory timer for the quoted cost")
 		if not factory.collect(0) or StorageManager.get_count("metal") != 1:
 			failures.append("speeded-up production did not collect exactly one item")
+		else:
+			var collected_metal_cost := StorageManager.get_cost_basis({"metal": 1})
+			if not bool(collected_metal_cost.get("known", false)) or int(collected_metal_cost.get("total_cost", -1)) != 0:
+				failures.append("factory-produced raw material must retain a known zero direct item cost; its Simoleon operating fee is audited separately")
+		# Produce a second Metal, then consume both units in the Nails recipe.
+		if not factory.start_factory("metal", 1):
+			failures.append("factory could not start the second Metal needed by the store recipe")
+		else:
+			factory.speed_up_slot(1)
+			if not factory.collect(1):
+				failures.append("second factory Metal could not be collected")
+		var chain_store := ProductionComponent.new()
+		chain_store.is_factory = false
+		chain_store.shop_id = "building_supplies"
+		chain_store.slot_count = 2
+		add_child(chain_store)
+		await get_tree().process_frame
+		var metal_before_store := StorageManager.get_count("metal")
+		if metal_before_store != 2 or not chain_store.start_craft("nails", 0):
+			failures.append("Building Supplies did not accept Nails after exactly two Metal reached City Storage")
+		else:
+			if StorageManager.get_count("metal") != 0 or not chain_store.get_slot(0).has("item_id"):
+				failures.append("store order did not reserve its complete two-Metal recipe exactly once")
+			var active_store_slot := chain_store.get_slot(0)
+			active_store_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			chain_store.slots[0] = active_store_slot
+			chain_store.refresh_slots()
+			if not chain_store.collect(0) or StorageManager.get_count("nails") != 1:
+				failures.append("completed Nails order did not transfer exactly one crafted item to City Storage")
+			else:
+				var nails_cost := StorageManager.get_cost_basis({"nails": 1})
+				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != 0:
+					failures.append("store output did not preserve the known zero direct item cost of factory-produced raw inputs")
+		# Also exercise a genuine multi-input Hardware Store recipe (Hammer:
+		# 1 Metal + 1 Wood), then preserve one Metal + Nails for the starter home.
+		GameManager.level = 4
+		if not factory.start_factory("wood", 1):
+			failures.append("factory could not start the Wood order required by the Hardware Store recipe")
+		else:
+			var wood_speedup := factory.speed_up_slot(1)
+			if not bool(wood_speedup.get("success", false)) or not factory.collect(1):
+				failures.append("factory Wood output did not complete and collect")
+		if not factory.start_factory("metal", 0):
+			failures.append("factory could not supply Metal for the Hardware Store recipe")
+		else:
+			var hardware_metal_speedup := factory.speed_up_slot(0)
+			if not bool(hardware_metal_speedup.get("success", false)) or not factory.collect(0):
+				failures.append("factory Metal output for the Hardware Store recipe did not complete and collect")
+		var hardware_store := ProductionComponent.new()
+		hardware_store.is_factory = false
+		hardware_store.shop_id = "hardware_store"
+		hardware_store.slot_count = 2
+		add_child(hardware_store)
+		await get_tree().process_frame
+		if StorageManager.get_count("metal") != 1 or StorageManager.get_count("wood") != 1 or not hardware_store.start_craft("hammer", 0):
+			failures.append("Hardware Store did not reserve the exact Metal + Wood recipe from City Storage")
+		else:
+			if StorageManager.get_count("metal") != 0 or StorageManager.get_count("wood") != 0:
+				failures.append("Hardware Store did not consume both distinct recipe inputs exactly once")
+			var hammer_slot := hardware_store.get_slot(0)
+			hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			hardware_store.slots[0] = hammer_slot
+			hardware_store.refresh_slots()
+			if not hardware_store.collect(0) or StorageManager.get_count("hammer") != 1:
+				failures.append("completed Hardware Store Hammer did not enter City Storage")
+		hardware_store.queue_free()
+		await get_tree().process_frame
+		# Replenish the separate Metal reserved for the residential upgrade;
+		# Hammer consumed its own Metal + Wood inputs above.
+		if not factory.start_factory("metal", 0):
+			failures.append("factory could not replenish Metal for the residential upgrade after Hammer consumed its inputs")
+		else:
+			var home_metal_speedup := factory.speed_up_slot(0)
+			if not bool(home_metal_speedup.get("success", false)) or not factory.collect(0):
+				failures.append("residential-upgrade Metal did not complete and collect after the Hardware Store order")
+		GameManager.level = 1
+		# The starter home requires Nails + Metal. Verify the same atomic
+		# reservation path used by Building.try_upgrade.
+		var starter_home_bom: Dictionary = {}
+		for requirement in ProductionManager.get_upgrade_requirements(1):
+			var required_id := str(requirement.get("item", ""))
+			starter_home_bom[required_id] = int(starter_home_bom.get(required_id, 0)) + int(requirement.get("amount", 0))
+		if not ProductionManager.can_afford_upgrade(1) or not StorageManager.has_items(starter_home_bom):
+			failures.append("factory and store outputs did not satisfy the complete starter-home upgrade bill")
+		else:
+			var home_reservation := StorageManager.remove_items_with_cost_batches(starter_home_bom)
+			if not bool(home_reservation.get("success", false)) or StorageManager.get_count("nails") != 0 or StorageManager.get_count("metal") != 0:
+				failures.append("starter-home upgrade did not atomically consume its complete Nails + Metal bill")
+		chain_store.queue_free()
+		await get_tree().process_frame
 	var balance_before_rejected_order := EconomyManager.simoleons
 	EconomyManager.simoleons = 0
 	var rejected_for_funds := factory.start_factory("metal", 1)
