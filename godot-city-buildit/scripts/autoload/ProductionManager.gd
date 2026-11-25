@@ -7,6 +7,12 @@ var _recipe_validation_report: Dictionary = {}
 var _automatic_chain_tick_elapsed: float = 0.0
 var _automatic_chain_sequence: int = 0
 const AUTOMATIC_CHAIN_TICK_SECONDS: float = 0.5
+# These catalog groups were explicitly held out of live production pending
+# source approval. Keep their product cards visible, but never accept orders.
+const USER_REVIEW_LOCKED_STORE_IDS: Array[String] = [
+	"sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"
+]
+const USER_REVIEW_LOCKED_PRODUCT_IDS: Array[String] = ["lawn_mower", "backpack"]
 
 # SCBI Industrial Buildings timings are the canonical source for raw production.
 # Keep legacy keys (time/value/level) because existing gameplay and HUD code reads them.
@@ -657,6 +663,10 @@ func get_recipe_lock_reason(item_id: String, store_star_level: int = 0) -> Strin
 		if bool(catalog_definition.get("recipe_conflict", false)):
 			return "Recipe data conflict — production disabled until verified"
 		return "Recipe not verified — production disabled"
+	if USER_REVIEW_LOCKED_STORE_IDS.has(str(recipe.get("store", ""))):
+		return "Production disabled pending user source review"
+	if USER_REVIEW_LOCKED_PRODUCT_IDS.has(item_id):
+		return "Production disabled pending user source review"
 	var source_text := str(recipe.get("source", "")).to_lower()
 	if source_text.contains("conflict") or source_text.contains("variant") or source_text.contains("verify"):
 		return "Recipe data unresolved — production disabled until verified"
