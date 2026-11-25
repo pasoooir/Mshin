@@ -422,14 +422,43 @@ func _ready() -> void:
 				var nails_cost := StorageManager.get_cost_basis({"nails": 1})
 				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != 0:
 					failures.append("store output did not preserve the known zero direct item cost of factory-produced raw inputs")
-		# The starter home requires Nails + Metal. Produce the extra raw Metal
-		# and verify the same atomic reservation path used by Building.try_upgrade.
-		if not factory.start_factory("metal", 0):
-			failures.append("factory could not supply the final Metal required by the starter-home upgrade")
+		# Also exercise a genuine multi-input Hardware Store recipe (Hammer:
+		# 1 Metal + 1 Wood), then preserve one Metal + Nails for the starter home.
+		GameManager.level = 4
+		if not factory.start_factory("wood", 1):
+			failures.append("factory could not start the Wood order required by the Hardware Store recipe")
 		else:
-			factory.speed_up_slot(0)
-			if not factory.collect(0):
-				failures.append("final residential-upgrade Metal could not be collected")
+			var wood_speedup := factory.speed_up_slot(1)
+			if not bool(wood_speedup.get("success", false)) or not factory.collect(1):
+				failures.append("factory Wood output did not complete and collect")
+		if not factory.start_factory("metal", 0):
+			failures.append("factory could not supply Metal for the Hardware Store recipe")
+		else:
+			var hardware_metal_speedup := factory.speed_up_slot(0)
+			if not bool(hardware_metal_speedup.get("success", false)) or not factory.collect(0):
+				failures.append("factory Metal output for the Hardware Store recipe did not complete and collect")
+		var hardware_store := ProductionComponent.new()
+		hardware_store.is_factory = false
+		hardware_store.shop_id = "hardware_store"
+		hardware_store.slot_count = 2
+		add_child(hardware_store)
+		await get_tree().process_frame
+		if StorageManager.get_count("metal") != 1 or StorageManager.get_count("wood") != 1 or not hardware_store.start_craft("hammer", 0):
+			failures.append("Hardware Store did not reserve the exact Metal + Wood recipe from City Storage")
+		else:
+			if StorageManager.get_count("metal") != 0 or StorageManager.get_count("wood") != 0:
+				failures.append("Hardware Store did not consume both distinct recipe inputs exactly once")
+			var hammer_slot := hardware_store.get_slot(0)
+			hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+			hardware_store.slots[0] = hammer_slot
+			hardware_store.refresh_slots()
+			if not hardware_store.collect(0) or StorageManager.get_count("hammer") != 1:
+				failures.append("completed Hardware Store Hammer did not enter City Storage")
+		hardware_store.queue_free()
+		await get_tree().process_frame
+		GameManager.level = 1
+		# The starter home requires Nails + Metal. Verify the same atomic
+		# reservation path used by Building.try_upgrade.
 		var starter_home_bom: Dictionary = {}
 		for requirement in ProductionManager.get_upgrade_requirements(1):
 			var required_id := str(requirement.get("item", ""))
