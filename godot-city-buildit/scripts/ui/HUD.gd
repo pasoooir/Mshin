@@ -3776,9 +3776,11 @@ func _input(event: InputEvent) -> void:
 	# Resolve its native touch directly on touch-down so a tap starts the batch
 	# immediately; do not wait for a drag/release gesture or the legacy orbit list.
 	if event is InputEventScreenTouch and event.pressed and is_instance_valid(production_overlay) and production_overlay.is_visible_in_tree() and is_instance_valid(_production_building):
-		var factory_grid := production_overlay.find_child("FactoryProductsGrid", true, false) as GridContainer
-		if is_instance_valid(factory_grid):
-			for child in factory_grid.get_children():
+		var product_grid := production_overlay.find_child("FactoryProductsGrid", true, false) as GridContainer
+		if not is_instance_valid(product_grid):
+			product_grid = production_overlay.find_child("StoreProductsGrid", true, false) as GridContainer
+		if is_instance_valid(product_grid):
+			for child in product_grid.get_children():
 				var button := child as Button
 				if not is_instance_valid(button) or not button.is_visible_in_tree() or button.disabled or not button.get_global_rect().has_point(event.position):
 					continue
