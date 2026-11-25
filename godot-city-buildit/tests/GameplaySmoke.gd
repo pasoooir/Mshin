@@ -89,7 +89,8 @@ func _test_store_building_identity_contract() -> void:
 			var recipe := ProductionManager.get_recipe(product_id)
 			if not recipe.is_empty():
 				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
-		_check(identity_block.contains("\"" + store_id + "\""), "%s must have an explicit trade-specific visual identity branch." % store_id)
+		var has_visual_identity := visual_source.contains("func _build_building_supplies_showcase(") if store_id == "building_supplies" else identity_block.contains("\"" + store_id + "\"")
+		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
