@@ -4221,6 +4221,9 @@ func open_residential_panel(building: Building) -> void:
 	var all_available := not requirements.is_empty() and not is_upgrading
 	var shortage_lines: Array[String] = []
 	var service_shortage_lines: Array[String] = []
+	var upgrade_block_reason: String = building.get_residential_upgrade_block_reason() if not is_upgrading else ""
+	if not is_upgrading and not upgrade_block_reason.is_empty():
+		all_available = false
 	for service in building.get_residential_upgrade_service_status():
 		var service_name := str(service.get("label", service.get("group", "Service")))
 		var is_served := bool(service.get("served", false))
@@ -4304,7 +4307,9 @@ func open_residential_panel(building: Building) -> void:
 			missing_parts.append("Materials: " + ", ".join(shortage_lines))
 		if not service_shortage_lines.is_empty():
 			missing_parts.append("City services: " + ", ".join(service_shortage_lines))
-		plan_status.text = "UPGRADE BLOCKED · " + (" · ".join(missing_parts) if not missing_parts.is_empty() else building.get_residential_upgrade_block_reason())
+		if missing_parts.is_empty() and not upgrade_block_reason.is_empty():
+			missing_parts.append(upgrade_block_reason)
+		plan_status.text = "UPGRADE BLOCKED · " + (" · ".join(missing_parts) if not missing_parts.is_empty() else "CHECK REQUIRED ITEMS")
 		plan_status.add_theme_color_override("font_color", Color("#A13F35"))
 	plan_status.add_theme_font_size_override("font_size", _popup_font_size(14))
 	layout.add_child(plan_status)
@@ -4339,9 +4344,9 @@ func open_residential_panel(building: Building) -> void:
 		layout.add_child(cancel_upgrade)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
-	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("CITY SERVICES MISSING" if not service_shortage_lines.is_empty() else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL")))
+	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("ROAD ACCESS MISSING" if upgrade_block_reason.to_lower().contains("road") else ("CITY SERVICES MISSING" if not service_shortage_lines.is_empty() else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))))
 	upgrade.disabled = is_upgrading or stage >= 6 or not all_available
-	upgrade.tooltip_text = "" if all_available or is_upgrading else building.get_residential_upgrade_block_reason()
+	upgrade.tooltip_text = "" if all_available or is_upgrading else upgrade_block_reason
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
