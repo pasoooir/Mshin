@@ -3036,13 +3036,13 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 		var remaining := maxi(0, int(slot.get("finish_unix", 0)) - int(Time.get_unix_time_from_system()))
 		var order_card := PanelContainer.new()
 		order_card.name = "OrderCard%d" % slot_index
-		order_card.custom_minimum_size = Vector2(0, 78 if not compact else 68) * _ui_scale
+		order_card.custom_minimum_size = Vector2(120, 104) * _ui_scale
 		order_card.add_theme_stylebox_override("panel", _toolbar_style(Color("#FFFFFF"), Color("#D3E0E7")))
 		orders_list.add_child(order_card)
 		var order_row := HBoxContainer.new()
 		order_row.add_theme_constant_override("separation", 10)
 		order_card.add_child(order_row)
-		var order_icon := Icons.make_item_icon("raw", item_id, Vector2(44, 44) * _ui_scale)
+		var order_icon := Icons.make_item_icon("raw", item_id, Vector2(48, 48) * _ui_scale)
 		order_icon.name = "QueueItemIcon%d" % slot_index
 		order_row.add_child(order_icon)
 		var order_details := VBoxContainer.new()
@@ -3064,7 +3064,7 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 		if paid > 0:
 			var paid_label := Label.new()
 			paid_label.name = "OrderPayment%d" % slot_index
-			paid_label.text = "PAID  §%s" % _format_count(paid)
+			paid_label.text = "ORDER PAID  §%s" % _format_count(paid)
 			paid_label.add_theme_font_size_override("font_size", _popup_font_size(10))
 			paid_label.add_theme_color_override("font_color", Color("#93640F"))
 			order_details.add_child(paid_label)
