@@ -48,6 +48,7 @@ const QUALITY_PRESETS := {
 }
 
 var quality := "balanced"
+var _user_selected_quality := false
 var _adaptive_sample_elapsed := 0.0
 var _slow_fps_windows := 0
 var _fast_fps_windows := 0
@@ -75,6 +76,14 @@ static func is_mobile_target() -> bool:
 static func _default_quality() -> String:
 	# Every fresh install starts with the mobile-safe preset. Higher tiers are
 	# an explicit player choice, never an automatic desktop/browser default.
+	return "low"
+
+
+static func resolve_initial_quality(saved_quality: String, was_user_selected: bool) -> String:
+	# Legacy saves stored the runtime default as if it were a player preference.
+	# Without this marker, migrate them to Low instead of reviving old Balanced defaults.
+	if was_user_selected and QUALITY_PRESETS.has(saved_quality):
+		return saved_quality
 	return "low"
 
 
@@ -121,9 +130,12 @@ func set_quality(value: String) -> bool:
 	if not QUALITY_PRESETS.has(value):
 		return false
 	if quality == value:
+		_user_selected_quality = true
+		_save_settings()
 		_apply_quality()
 		return true
 	quality = value
+	_user_selected_quality = true
 	_apply_quality()
 	_save_settings()
 	quality_changed.emit(quality, get_quality_preset(quality))
@@ -157,27 +169,30 @@ func set_player_scope(path: String) -> void:
 	_apply_quality()
 
 func to_save_dict() -> Dictionary:
-	return {"quality": quality}
+	return {"quality": quality, "user_selected": _user_selected_quality}
 
 func from_save_dict(data: Dictionary) -> void:
 	if data.is_empty():
 		return
-	var saved_quality := str(data.get("quality", "balanced"))
-	if QUALITY_PRESETS.has(saved_quality):
-		quality = saved_quality
-		_apply_quality()
+	var saved_quality := str(data.get("quality", "low"))
+	_user_selected_quality = bool(data.get("user_selected", false))
+	quality = resolve_initial_quality(saved_quality, _user_selected_quality)
+	_user_selected_quality = _user_selected_quality and QUALITY_PRESETS.has(saved_quality)
+	_apply_quality()
 
 func _load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(settings_path) != OK:
 		return
-	var saved_quality := str(config.get_value("graphics", "quality", quality))
-	if QUALITY_PRESETS.has(saved_quality):
-		quality = saved_quality
+	var saved_quality := str(config.get_value("graphics", "quality", "low"))
+	_user_selected_quality = bool(config.get_value("graphics", "user_selected", false))
+	quality = resolve_initial_quality(saved_quality, _user_selected_quality)
+	_user_selected_quality = _user_selected_quality and QUALITY_PRESETS.has(saved_quality)
 
 func _save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("graphics", "quality", quality)
+	config.set_value("graphics", "user_selected", true)
 	var directory := ProjectSettings.globalize_path(settings_path.get_base_dir())
 	DirAccess.make_dir_recursive_absolute(directory)
 	var error := config.save(settings_path)
