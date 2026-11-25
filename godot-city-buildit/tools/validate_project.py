@@ -1132,9 +1132,9 @@ city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="
 hud_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 move_building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
 required_movable_types = {
-    "residential_1", "residential_villa", "residential_apartment", "residential_farm",
+    "residential_1", "residential_villa", "residential_apartment", "residential_farm", "la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa",
     "building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
-    "art_supplies", "hardware_store", "farmers_market", "furniture_store",
+    "art_supplies", "hardware_store", "farmers_market", "furniture_store", "la_office_tower", "la_commercial_arcade",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
     "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
@@ -1156,7 +1156,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 61"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 67"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 
