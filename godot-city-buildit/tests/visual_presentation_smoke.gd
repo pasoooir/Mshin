@@ -251,6 +251,18 @@ func _ready() -> void:
 			get_tree().quit(1)
 			return
 	var graphics_quality_source := FileAccess.get_file_as_string("res://scripts/autoload/GraphicsSettingsManager.gd")
+	var low_mobile_preset := GraphicsSettingsManager.get_quality_preset("low")
+	if int(low_mobile_preset.get("terrain_divisions", 999)) > 96 or int(low_mobile_preset.get("grass_instances", 999)) != 0 or int(low_mobile_preset.get("shrub_clusters", 999)) != 0 or float(low_mobile_preset.get("tree_density", 1.0)) != 0.0:
+		push_error("[VisualPresentationSmoke] Entry-level mobile preset must remove ground-cover and minimize terrain tessellation")
+		get_tree().quit(1)
+		return
+	var ready_block_start := world_visual_source.find("func _ready() -> void:")
+	var ready_block_end := world_visual_source.find("\nfunc ", ready_block_start + 1)
+	var runtime_world_setup := world_visual_source.substr(ready_block_start, ready_block_end - ready_block_start)
+	if runtime_world_setup.contains("_build_tree_belts()") or runtime_world_setup.contains("_build_grass_detail()") or runtime_world_setup.contains("_build_shrubland_detail()"):
+		push_error("[VisualPresentationSmoke] Decorative tree and ground-cover batches must not be instantiated in the playable world")
+		get_tree().quit(1)
+		return
 	if not world_visual_source.contains("range(grass_instance_count)") or not world_visual_source.contains("range(cluster_count)") or not world_visual_source.contains("range(360)") or not world_visual_source.contains("range(300)") or not graphics_quality_source.contains('"grass_instances": 3600') or not graphics_quality_source.contains('"shrub_clusters": 240'):
 		push_error("[VisualPresentationSmoke] Quality-scaled ground cover must retain full high-preset density while allowing the low mobile preset to reduce draw cost")
 		get_tree().quit(1)
