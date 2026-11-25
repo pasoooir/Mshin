@@ -699,11 +699,12 @@ func _test_live_production_queue_eta() -> void:
 	_check(delay >= queue_probe.get_queue_delay_seconds(), "ProductionManager must read the real ProductionComponent queue, not a detached estimate.")
 	# ETA includes all waiting orders in FIFO order, freezes while road access is
 	# paused, and ignores ready products that no longer occupy the production lane.
-	queue_probe.slots = [
+	var fifo_slots: Array[Dictionary] = [
 		{"item_id":"nails", "finish_unix":now + 30, "ready":false},
 		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":2},
 		{"item_id":"bricks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":1}
 	]
+	queue_probe.slots = fifo_slots
 	var fifo_delay := queue_probe.get_queue_delay_seconds()
 	_check(fifo_delay >= 30.0 + 1800.0 + 1200.0, "Store ETA must add active remaining time and every waiting product duration.")
 	queue_probe.slots[0]["paused_at_unix"] = now - 10
@@ -713,11 +714,12 @@ func _test_live_production_queue_eta() -> void:
 	queue_probe.slots[0].erase("paused_at_unix")
 	var ready_delay := queue_probe.get_queue_delay_seconds()
 	_check(ready_delay >= 3000.0 and ready_delay < 3030.0, "Ready products must not block subsequent store orders.")
-	queue_probe.slots = [
+	var queued_fifo_slots: Array[Dictionary] = [
 		{},
 		{"item_id":"planks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":1},
 		{"item_id":"nails", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":2}
 	]
+	queue_probe.slots = queued_fifo_slots
 	_check(queue_probe._start_next_store_order(), "A store with waiting orders must start the next eligible order.")
 	_check(int(queue_probe.slots[1].get("finish_unix", 0)) > now and int(queue_probe.slots[2].get("finish_unix", 0)) == 0, "A newer order in a lower free slot must not jump an older queued order.")
 
