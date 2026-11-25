@@ -422,6 +422,24 @@ func _ready() -> void:
 				var nails_cost := StorageManager.get_cost_basis({"nails": 1})
 				if not bool(nails_cost.get("known", false)) or int(nails_cost.get("total_cost", -1)) != expected_metal_order_cost * 2:
 					failures.append("store output did not inherit both factory material costs")
+		# The starter home requires Nails + Metal. Produce the extra raw Metal
+		# and verify the same atomic reservation path used by Building.try_upgrade.
+		if not factory.start_factory("metal", 0):
+			failures.append("factory could not supply the final Metal required by the starter-home upgrade")
+		else:
+			factory.speed_up_slot(0)
+			if not factory.collect(0):
+				failures.append("final residential-upgrade Metal could not be collected")
+		var starter_home_bom: Dictionary = {}
+		for requirement in ProductionManager.get_upgrade_requirements(1):
+			var required_id := str(requirement.get("item", ""))
+			starter_home_bom[required_id] = int(starter_home_bom.get(required_id, 0)) + int(requirement.get("amount", 0))
+		if not ProductionManager.can_afford_upgrade(1) or not StorageManager.has_items(starter_home_bom):
+			failures.append("factory and store outputs did not satisfy the complete starter-home upgrade bill")
+		else:
+			var home_reservation := StorageManager.remove_items_with_cost_batches(starter_home_bom)
+			if not bool(home_reservation.get("success", false)) or StorageManager.get_count("nails") != 0 or StorageManager.get_count("metal") != 0:
+				failures.append("starter-home upgrade did not atomically consume its complete Nails + Metal bill")
 		chain_store.queue_free()
 		await get_tree().process_frame
 	var balance_before_rejected_order := EconomyManager.simoleons
