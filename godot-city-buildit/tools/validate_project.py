@@ -205,6 +205,12 @@ else:
         "func _build_hardware_store() -> void:",
         "func _build_farmers_market() -> void:",
         "func _build_furniture_store() -> void:",
+        "func _build_la_glass_tower() -> void:",
+        "func _build_la_dome_tower() -> void:",
+        "func _build_la_modern_apartment() -> void:",
+        "func _build_la_roof_garden_villa() -> void:",
+        "func _build_la_office_tower() -> void:",
+        "func _build_la_commercial_arcade() -> void:",
         'material.normal_texture = maps["normal"]',
         'material.roughness_texture = maps["roughness"]',
         'material.metallic_texture = maps["metallic"]',
@@ -216,7 +222,7 @@ model_loader_source = (ROOT / "scripts/buildings/BuildingModelLoader.gd").read_t
 if 'or extension == "tscn"' not in model_loader_source:
     errors.append("Local authored building scenes must be accepted by BuildingModelLoader")
 
-commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"]
+commercial_asset_ids = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store", "la_office_tower", "la_commercial_arcade"]
 build_manager_for_assets = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 for asset_id in commercial_asset_ids:
     scene_path = ROOT / "assets/models/commercial" / f"{asset_id}.tscn"
@@ -228,6 +234,18 @@ for asset_id in commercial_asset_ids:
         errors.append(f"Dedicated commercial scene has the wrong asset type: {asset_id}")
     if f'"{asset_id}": "res://assets/models/commercial/{asset_id}.tscn"' not in build_manager_for_assets:
         errors.append(f"Exact building model registry entry is missing: {asset_id}")
+
+residential_showcase_ids = ["la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa"]
+for asset_id in residential_showcase_ids:
+    scene_path = ROOT / "assets/models/residential" / f"{asset_id}.tscn"
+    if not scene_path.is_file():
+        errors.append(f"Dedicated residential showcase scene is missing: {scene_path.relative_to(ROOT)}")
+        continue
+    scene_source = scene_path.read_text(encoding="utf-8")
+    if f'asset_type = "{asset_id}"' not in scene_source:
+        errors.append(f"Dedicated residential scene has the wrong asset type: {asset_id}")
+    if f'"{asset_id}": "res://assets/models/residential/{asset_id}.tscn"' not in build_manager_for_assets:
+        errors.append(f"Exact residential model registry entry is missing: {asset_id}")
 
 for path in ROOT.rglob("*.gd"):
     source = path.read_text(encoding="utf-8")
@@ -800,7 +818,7 @@ for visual_contract in [
 # category GLTF must not replace these level-specific procedural forms.
 for level_contract in [
     'func _build_residential_level_architecture(',
-    'var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1',
+    'var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1',
     'if category == "residential" and upgrade_stage > 1:',
     'elif category == "commercial" and not model_path.ends_with(".tscn"):',
     'elif category == "industrial":',
@@ -1114,9 +1132,9 @@ city_input_source = (ROOT / "scripts/systems/CityInput.gd").read_text(encoding="
 hud_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
 move_building_source = (ROOT / "scripts/buildings/Building.gd").read_text(encoding="utf-8")
 required_movable_types = {
-    "residential_1", "residential_villa", "residential_apartment", "residential_farm",
+    "residential_1", "residential_villa", "residential_apartment", "residential_farm", "la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa",
     "building_supplies", "shop_chain", "restaurant_traditional", "fast_food",
-    "art_supplies", "hardware_store", "farmers_market", "furniture_store",
+    "art_supplies", "hardware_store", "farmers_market", "furniture_store", "la_office_tower", "la_commercial_arcade",
     "industrial_1", "industrial_2", "industrial_3",
     "power_wind", "power_coal", "power_wind_deluxe", "power_solar", "power_oil", "power_nuclear",
     "water_tower", "water_pump", "fire_station_small", "fire_station", "fire_station_deluxe", "police_station", "police_small", "police_basic", "police_precinct", "clinic_small", "clinic", "hospital", "sewage_small", "sewage_basic", "sewage_deluxe", "waste_dump_small", "waste_dump", "waste_incinerator", "waste_recycling", "town_hall",
@@ -1138,7 +1156,7 @@ for contract in ["func set_move_preview(", "func _apply_move_transparency(", "TR
 if "var was_moving: bool = BuildManager.is_moving" not in hud_source or "BuildManager.cancel_move()" not in hud_source:
     errors.append("HUD Cancel button does not restore a building during Move mode")
 gameplay_smoke = (ROOT / "tests/GameplaySmoke.gd").read_text(encoding="utf-8")
-for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 61"]:
+for contract in ["Long press on a completed residential building", "Touch release did not commit the valid building move", "Invalid move should not commit", "Cancel did not restore", "Mouse release did not commit the valid building move", "Move whitelist must include all 67"]:
     if contract not in gameplay_smoke:
         errors.append(f"Building move gameplay regression test is missing: {contract}")
 

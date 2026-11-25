@@ -3561,7 +3561,13 @@ func _test_building_model_loader_contract() -> void:
 		"res://assets/models/commercial/farmers_market.tscn",
 		"res://assets/models/commercial/furniture_store.tscn",
 		"res://assets/models/industrial/small_factory.gltf",
-		"res://assets/models/residential/residential_tower_75m.gltf"
+		"res://assets/models/residential/residential_tower_75m.gltf",
+		"res://assets/models/residential/la_glass_tower.tscn",
+		"res://assets/models/residential/la_dome_tower.tscn",
+		"res://assets/models/residential/la_modern_apartment.tscn",
+		"res://assets/models/residential/la_roof_garden_villa.tscn",
+		"res://assets/models/commercial/la_office_tower.tscn",
+		"res://assets/models/commercial/la_commercial_arcade.tscn"
 	]
 	for model_path in model_paths:
 		var packed_scene := BuildingModelLoader.load_model_scene(model_path)
@@ -3577,6 +3583,8 @@ func _test_building_model_loader_contract() -> void:
 			_check(mesh_nodes.size() > 0, "Imported building model must contain renderable mesh instances: " + model_path)
 			if model_path.ends_with(".tscn"):
 				_check(mesh_nodes.size() >= 10, "Dedicated commercial scene must contain enough architectural and trade-specific mesh details: " + model_path)
+			if model_path.contains("/la_"):
+				_check(mesh_nodes.size() <= 20, "LA showcase architecture must stay within the 20-mesh per-building mobile budget: " + model_path)
 			var surfaces_found := 0
 			for mesh_node in mesh_nodes:
 				if mesh_node is MeshInstance3D and mesh_node.mesh != null:
@@ -3596,6 +3604,11 @@ func _test_building_model_loader_contract() -> void:
 		var dedicated_id: String = ["restaurant_traditional", "fast_food", "hardware_store", "farmers_market", "furniture_store"][dedicated_index]
 		_check(str(BuildManager.building_types[dedicated_id].get("model_path", "")) == model_paths[3 + dedicated_index], "Commercial type must select its own dedicated local model scene: " + dedicated_id)
 	_check(str(BuildManager.building_types["factory_small"].get("model_path", "")) == model_paths[8], "The small-factory archetype must select the local factory model.")
+	var la_showcase_ids := ["la_glass_tower", "la_dome_tower", "la_modern_apartment", "la_roof_garden_villa", "la_office_tower", "la_commercial_arcade"]
+	for showcase_index in range(la_showcase_ids.size()):
+		var showcase_id: String = str(la_showcase_ids[showcase_index])
+		_check(str(BuildManager.building_types[showcase_id].get("model_path", "")) == model_paths[10 + showcase_index], "LA showcase type must select its own dedicated local model: " + showcase_id)
+	_check(BuildingModelLoader.load_model_scene(model_paths[10]) != null and BuildingModelLoader.load_model_scene(model_paths[15]) != null, "The LA showcase scene pack must be locally loadable.")
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
 	for commercial_id in ["art_supplies", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
 		_check(not BuildManager.building_types[commercial_id].has("model_path"), "Commercial type %s must not inherit a category-wide generic GLTF." % commercial_id)
@@ -3613,6 +3626,12 @@ func _test_building_model_loader_contract() -> void:
 	villa_visual_probe.upgrade_stage = 2
 	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
 	villa_visual_probe.free()
+	var roof_villa_probe := Building.new()
+	roof_villa_probe.building_type = "la_roof_garden_villa"
+	roof_villa_probe.definition = {"category": "residential", "subtype": "villa"}
+	roof_villa_probe.upgrade_stage = 1
+	_check(roof_villa_probe._should_use_external_model("res://assets/models/residential/la_roof_garden_villa.tscn"), "The dedicated LA roof-garden villa must use its own model at placement rather than the starter-home fallback.")
+	roof_villa_probe.free()
 
 func _test_regional_building_and_material_gates() -> void:
 	var previous_region := RegionManager.active_region_id
@@ -5283,7 +5302,7 @@ func _run_gameplay_test() -> void:
 	mouse_up.position = home_center_screen
 	input_node._unhandled_input(mouse_up)
 	_check(home.grid_pos == Vector2i(0, 1), "Mouse release did not commit the valid building move.")
-	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 61, "Move whitelist must include all 61 supported building types.")
+	_check(BuildManager.MOVABLE_BUILDING_TYPES.size() == 67, "Move whitelist must include all 67 supported building types.")
 	for movable_type in BuildManager.MOVABLE_BUILDING_TYPES:
 		_check(BuildManager.building_types.has(movable_type), "Move whitelist references missing building type: %s" % movable_type)
 

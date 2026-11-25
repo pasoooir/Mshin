@@ -8,11 +8,19 @@ ROOT = Path(__file__).resolve().parents[1]
 ICON_ROOT = ROOT / "assets" / "icons"
 errors = []
 required = set()
+ICON_ALIASES = {
+    ("residential", "la_glass_tower"): "residential_apartment",
+    ("residential", "la_dome_tower"): "residential_2",
+    ("residential", "la_modern_apartment"): "residential_apartment",
+    ("residential", "la_roof_garden_villa"): "residential_villa",
+    ("commercial", "la_office_tower"): "restoration_office",
+    ("commercial", "la_commercial_arcade"): "shop_chain",
+}
 if list(ICON_ROOT.rglob("*.svg")):
     errors.append("SVG files are not allowed under assets/icons; convert every icon to PNG.")
 
 def require(category: str, icon_id: str) -> None:
-    required.add((category, icon_id))
+    required.add((category, ICON_ALIASES.get((category, icon_id), icon_id)))
 
 build_manager = (ROOT / "scripts/autoload/BuildManager.gd").read_text(encoding="utf-8")
 production = (ROOT / "scripts/autoload/ProductionManager.gd").read_text(encoding="utf-8")
