@@ -2761,7 +2761,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 	products_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	products_heading.add_child(products_title)
 	var products_hint := Label.new()
-	products_hint.text = "Tap once to make"
+	products_hint.text = "Tap to make · missing inputs offer a full chain"
 	products_hint.add_theme_font_size_override("font_size", _popup_font_size(12))
 	products_hint.add_theme_color_override("font_color", Color("#66808E"))
 	products_heading.add_child(products_hint)
@@ -2851,7 +2851,7 @@ func _open_store_production_panel(building: Building, component: ProductionCompo
 		card_content.add_child(ingredients)
 		var state := Label.new()
 		state.name = "StoreProductState_%s" % item_id
-		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("INGREDIENT LOCKED" if not inputs_unlocked else ("NO FREE SLOT" if free_slot < 0 else ("%d INGREDIENT(S) MISSING" % missing_count))))
+		state.text = "READY TO MAKE" if can_make else (lock_reason if not lock_reason.is_empty() else ("INGREDIENT LOCKED" if not inputs_unlocked else ("NO FREE SLOT" if free_slot < 0 else ("TAP FOR FULL CHAIN" if missing_count > 0 else "NOT AVAILABLE"))))
 		state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		state.add_theme_font_size_override("font_size", _popup_font_size(9))
 		state.add_theme_color_override("font_color", Color("#34734D") if can_make else Color("#A33A36"))
@@ -3174,8 +3174,41 @@ func _show_production_item_details(building: Building, item_id: String, slot_ind
 		reason.add_theme_color_override("font_color", Color("#A33A36"))
 		text_stack.add_child(reason)
 
-	# Orders are started directly by tapping a valid product tile. This
-	# informational panel must never ask the player for a second START action.
+	# A store order with missing intermediate inputs can be explicitly started
+	# as a dependency chain. The player remains in control; no ingredients are
+	# silently fabricated and the scheduler only uses real connected suppliers.
+	if not is_factory and slot_index >= 0 and not recipe.is_empty() and lock_reason.is_empty() and are_recipe_inputs_unlocked(recipe) and not missing.is_empty():
+		var chain_button := Button.new()
+		chain_button.name = "StartAutomaticProductionChain"
+		chain_button.text = "PRODUCE FULL CHAIN"
+		chain_button.custom_minimum_size = Vector2(190, 46) * _ui_scale
+		chain_button.add_theme_font_size_override("font_size", _popup_font_size(13))
+		chain_button.add_theme_stylebox_override("normal", _toolbar_style(Color("#DDF2E4"), Color("#65A77A")))
+		chain_button.add_theme_stylebox_override("hover", _toolbar_style(Color("#C8E8D3"), Color("#3F8D5C")))
+		chain_button.add_theme_color_override("font_color", Color("#205C38"))
+		chain_button.tooltip_text = "Schedule the missing ingredients through their real factories and stores, then produce this item."
+		chain_button.pressed.connect(_start_store_automatic_chain.bind(building, item_id, slot_index))
+		detail_row.add_child(chain_button)
+
+	# Directly available orders still start on the first product tap. This
+	# explicit action appears only when the player requests a missing-input chain.
+
+
+func _start_store_automatic_chain(building: Building, item_id: String, slot_index: int) -> void:
+	if not is_instance_valid(building) or not is_instance_valid(building.production_component):
+		return
+	if not is_instance_valid(_production_building) or _production_building != building or not is_instance_valid(production_overlay):
+		return
+	var component: ProductionComponent = building.production_component
+	if slot_index < 0 or slot_index >= component.get_slot_count() or not component.get_slot(slot_index).is_empty():
+		status_label.text = "No free production slot remains. Collect a product or wait for the queue."
+		open_production_panel(building)
+		return
+	if ProductionManager.request_automatic_chain(component, item_id, slot_index):
+		status_label.text = "Full production chain queued for %s." % str(ProductionManager.get_item_definition(item_id).get("name", item_id))
+	else:
+		status_label.text = "Chain unavailable: a required recipe, supplier, ingredient or road connection is missing."
+	open_production_panel(building)
 
 
 func _find_first_available_production_slot(component: ProductionComponent) -> int:
