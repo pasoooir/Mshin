@@ -619,11 +619,12 @@ func _test_building_notification_grouping() -> void:
 	var component := ProductionComponentScript.new()
 	component.shop_id = "building_supplies"
 	component.slot_count = 3
-	component.slots = [
+	var ready_slots: Array[Dictionary] = [
 		{"item_id":"nails", "finish_unix":0, "ready":true},
 		{"item_id":"nails", "finish_unix":0, "ready":true},
 		{"item_id":"planks", "finish_unix":0, "ready":true}
 	]
+	component.slots = ready_slots
 	add_child(component)
 	var groups := BuildingNotificationLayerScript.get_ready_product_groups(component)
 	_check(groups.has("nails") and groups.has("planks"), "Persistent building notifications must expose every distinct ready product, not only the first queue item.")
