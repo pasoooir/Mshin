@@ -192,17 +192,14 @@ func _start_next_store_order() -> bool:
 	for slot in slots:
 		if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0 and not bool(slot.get("queued", false)):
 			return false
-	# Select the oldest waiting manual order, not the lowest free slot index.
-	# Collecting an earlier slot must never let a newer order jump the FIFO queue.
+	# Manual and automatic orders share one FIFO lane. If the oldest waiting
+	# order is an automatic dependency, ProductionManager must validate its
+	# complete BOM before this lane can advance to a newer manual order.
 	var next_index := -1
 	var next_sequence := 2147483647
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
-			continue
-		# Automatic chain jobs are advanced by ProductionManager only after all
-		# recursively required ingredients have been produced and reserved.
-		if not str(slot.get("auto_chain_id", "")).is_empty():
 			continue
 		var sequence := int(slot.get("queue_sequence", index + 1))
 		if sequence < next_sequence:
@@ -211,12 +208,32 @@ func _start_next_store_order() -> bool:
 	if next_index < 0:
 		return false
 	var selected: Dictionary = slots[next_index]
+	if not str(selected.get("auto_chain_id", "")).is_empty():
+		return false
 	var item_id := str(selected.get("item_id", ""))
 	var duration := int(ceil(get_item_production_time(item_id)))
 	selected["start_unix"] = int(Time.get_unix_time_from_system())
 	selected["finish_unix"] = int(selected["start_unix"]) + maxi(1, duration)
 	selected["queued"] = false
 	slots[next_index] = selected
+	return true
+
+func is_oldest_waiting_store_order(slot_index: int) -> bool:
+	_ensure_slots()
+	if is_factory or slot_index < 0 or slot_index >= slots.size():
+		return false
+	var selected: Dictionary = slots[slot_index]
+	if selected.is_empty() or bool(selected.get("ready", false)) or int(selected.get("finish_unix", 0)) > 0:
+		return false
+	var selected_sequence := int(selected.get("queue_sequence", slot_index + 1))
+	for index in range(slots.size()):
+		if index == slot_index:
+			continue
+		var other: Dictionary = slots[index]
+		if other.is_empty() or bool(other.get("ready", false)) or int(other.get("finish_unix", 0)) > 0:
+			continue
+		if int(other.get("queue_sequence", index + 1)) < selected_sequence:
+			return false
 	return true
 
 func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "") -> bool:
