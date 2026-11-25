@@ -1053,7 +1053,13 @@ for contract in [
     "func summarize_numeric_samples(samples: Array[float]) -> Dictionary:",
     '"draw_calls": summarize_numeric_samples(_draw_call_samples)',
     '"rendered_primitives": summarize_numeric_samples(_rendered_primitive_samples)',
-    '"graphics_quality": GraphicsSettingsManager.quality'
+    '"graphics_quality": GraphicsSettingsManager.quality',
+    '"cpu_metrics": _build_cpu_metrics_report()',
+    '"memory_metrics": _build_memory_metrics_report()',
+    '"camera_metrics": _build_camera_metrics_report()',
+    '"target_30fps_pass": average_fps >= 30.0',
+    '"scenario": "manual_camera_pan_and_zoom"',
+    '"gpu_timing": {"available": false'
 ]:
     if contract not in performance_monitor_source:
         errors.append(f"On-device render benchmark contract is missing: {contract}")
@@ -1061,7 +1067,9 @@ for contract in [
     "func _test_performance_monitor_aggregation()",
     "Render metrics must report the arithmetic mean across all frames.",
     "Render metrics must report the nearest-rank p95 across all frames.",
-    "An empty render sample set must produce safe zero metrics."
+    "An empty render sample set must produce safe zero metrics.",
+    "A 30 FPS average with P95 at 33.33 ms must pass the entry-level mobile target.",
+    "The benchmark must report the percentage of frames within the 33.33 ms low-end budget."
 ]:
     if contract not in gameplay_smoke:
         errors.append(f"Performance benchmark regression test is missing: {contract}")
