@@ -113,6 +113,7 @@ func _test_camera_gesture_math() -> void:
 	_check(not CameraControllerScript.is_cancelled_touch_release(normal_release), "Camera must preserve normal touch release handling.")
 	var scaled_pan := CameraControllerScript.scale_pan_delta(Vector3(10.0, 5.0, -20.0), 0.8)
 	_check(scaled_pan.distance_to(Vector3(8.0, 0.0, -16.0)) <= 0.0001, "Camera pan sensitivity must scale horizontal movement without introducing vertical drift.")
+	_check(GraphicsSettingsManager._default_quality() == "low", "Every fresh install must start in Low graphics on desktop, mobile and WebGL browsers.")
 	var low_graphics := GraphicsSettingsManager.get_quality_preset("low")
 	var balanced_graphics := GraphicsSettingsManager.get_quality_preset("balanced")
 	var high_graphics := GraphicsSettingsManager.get_quality_preset("high")
@@ -5932,6 +5933,10 @@ func _finish(exit_code: int = 0) -> void:
 func _test_world_presentation_mobile_shadow_budget() -> void:
 	# Exercise the actual procedural batches in headless CI; the main scene
 	# intentionally uses lightweight marker nodes in that environment.
+	var previous_quality := GraphicsSettingsManager.quality
+	# This probe verifies the authored foliage/shadow budget, so run it against
+	# the Balanced preset explicitly; the game itself now correctly boots Low.
+	GraphicsSettingsManager.quality = "balanced"
 	var presentation := WorldPresentationScript.new()
 	presentation.name = "MobileShadowBudgetProbe"
 	add_child(presentation)
@@ -5968,6 +5973,7 @@ func _test_world_presentation_mobile_shadow_budget() -> void:
 	if grass != null:
 		_check(grass.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Tiny grass blades must not add a real-time shadow-caster pass.")
 	presentation.queue_free()
+	GraphicsSettingsManager.quality = previous_quality
 	await get_tree().process_frame
 
 func _test_performance_monitor_aggregation() -> void:

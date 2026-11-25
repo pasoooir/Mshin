@@ -73,7 +73,9 @@ static func is_mobile_target() -> bool:
 
 
 static func _default_quality() -> String:
-	return "low" if is_mobile_target() else "balanced"
+	# Every fresh install starts with the mobile-safe preset. Higher tiers are
+	# an explicit player choice, never an automatic desktop/browser default.
+	return "low"
 
 
 func _on_node_added(node: Node) -> void:
