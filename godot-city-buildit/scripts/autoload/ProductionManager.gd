@@ -395,7 +395,7 @@ func request_automatic_chain(component: ProductionComponent, recipe_id: String, 
 		"auto_chain_root": true,
 		"auto_chain_started": false
 	}
-	component.slots_changed.emit()
+	component._emit_slots_changed()
 	automatic_chain_changed.emit(chain_id, "accepted")
 	return true
 
@@ -477,7 +477,7 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	slot["cost_known"] = bool(input_cost.get("known", false))
 	slot["cost_total"] = int(input_cost.get("total_cost", 0))
 	component.slots[slot_index] = slot
-	component.slots_changed.emit()
+	component._emit_slots_changed()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
 
 func _get_automatic_chain_required_input_total(item_id: String, chain_id: String) -> int:
@@ -572,7 +572,7 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 				"auto_chain_root": false,
 				"auto_chain_started": false
 			}
-			component.slots_changed.emit()
+			component._emit_slots_changed()
 			scheduled += 1
 	return scheduled > 0
 
