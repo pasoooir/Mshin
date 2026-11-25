@@ -30,13 +30,14 @@ func add_simoleons(amount: int) -> bool:
 	transaction_completed.emit("simoleons_gain", amount)
 	record_transaction("simoleons_gain", "simoleons", amount, before, simoleons, {}, {}, {"source": "economy"})
 	return true
-func spend_simoleons(amount: int) -> bool:
+func spend_simoleons(amount: int, metadata: Dictionary = {}) -> bool:
 	if amount <= 0 or simoleons < amount: return false
 	var before := simoleons
 	simoleons -= amount
 	simoleons_changed.emit(simoleons)
 	transaction_completed.emit("simoleons_spend", amount)
-	record_transaction("simoleons_spend", "simoleons", amount, before, simoleons, {}, {}, {"source": "economy"})
+	var transaction_metadata := metadata.duplicate(true) if not metadata.is_empty() else {"source": "economy"}
+	record_transaction("simoleons_spend", "simoleons", amount, before, simoleons, {}, {}, transaction_metadata)
 	return true
 func add_sim_cash(amount: int) -> bool:
 	if amount <= 0: return false
