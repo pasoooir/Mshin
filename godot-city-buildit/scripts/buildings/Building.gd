@@ -81,16 +81,22 @@ func _connect_upgrade_dependency_signals() -> void:
 	# service-coverage map on every rendered frame.
 	if not StorageManager.storage_changed.is_connected(_on_upgrade_dependencies_changed):
 		StorageManager.storage_changed.connect(_on_upgrade_dependencies_changed)
-	for signal_name in ["power_changed", "water_changed", "sewage_changed", "waste_changed", "workforce_changed"]:
-		if ServiceManager.has_signal(signal_name):
-			var dependency_signal: Signal = ServiceManager.get(signal_name)
-			if not dependency_signal.is_connected(_on_upgrade_dependencies_changed):
-				dependency_signal.connect(_on_upgrade_dependencies_changed)
-	for signal_name in ["building_placed", "building_removed", "construction_finished"]:
-		if BuildManager.has_signal(signal_name):
-			var city_signal: Signal = BuildManager.get(signal_name)
-			if not city_signal.is_connected(_on_upgrade_dependencies_changed):
-				city_signal.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.power_changed.is_connected(_on_upgrade_dependencies_changed):
+		ServiceManager.power_changed.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.water_changed.is_connected(_on_upgrade_dependencies_changed):
+		ServiceManager.water_changed.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.sewage_changed.is_connected(_on_upgrade_dependencies_changed):
+		ServiceManager.sewage_changed.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.waste_changed.is_connected(_on_upgrade_dependencies_changed):
+		ServiceManager.waste_changed.connect(_on_upgrade_dependencies_changed)
+	if not ServiceManager.workforce_changed.is_connected(_on_upgrade_dependencies_changed):
+		ServiceManager.workforce_changed.connect(_on_upgrade_dependencies_changed)
+	if not BuildManager.building_placed.is_connected(_on_upgrade_dependencies_changed):
+		BuildManager.building_placed.connect(_on_upgrade_dependencies_changed)
+	if not BuildManager.building_removed.is_connected(_on_upgrade_dependencies_changed):
+		BuildManager.building_removed.connect(_on_upgrade_dependencies_changed)
+	if not BuildManager.construction_finished.is_connected(_on_upgrade_dependencies_changed):
+		BuildManager.construction_finished.connect(_on_upgrade_dependencies_changed)
 
 func _on_upgrade_dependencies_changed(_first: Variant = null, _second: Variant = null) -> void:
 	if str(definition.get("category", "")) == "residential" and status == "completed":
