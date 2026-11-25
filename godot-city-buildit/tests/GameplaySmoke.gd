@@ -5496,8 +5496,9 @@ func _run_gameplay_test() -> void:
 	_check(unavailable_nails_button != null and not unavailable_nails_button.disabled, "A recipe with missing ingredients must remain selectable so the player can inspect its shortage.")
 	if unavailable_nails_button:
 		await _tap_native_control(unavailable_nails_button)
-		var missing_reason := production_hud.production_panel.find_child("ProductionBlockReason", true, false) as Label
-		_check(missing_reason != null and missing_reason.text.contains("Metal") and missing_reason.text.contains("2"), "The selected unavailable product must disclose the exact missing City Storage ingredient and quantity.")
+		var nails_ingredients_missing := production_hud.production_overlay.find_child("Ingredients_nails", true, false) as Label
+		_check(nails_ingredients_missing != null and nails_ingredients_missing.text.contains("Metal 0/2"), "The Nails card must disclose the exact missing City Storage ingredient and quantity.")
+		_check(production_hud.status_label.text.contains("Metal") and production_hud.status_label.text.contains("2"), "Tapping an under-stocked product must explain the exact missing ingredient.")
 		_check(not production_hud._can_accept_production_drop(Vector2.ZERO, {"kind":"production_item", "item_id":"nails", "building_id":supplies.get_instance_id()}, supplies, 0), "A store order with missing City Storage ingredients must be rejected before acceptance.")
 	_check(shop_component.get_slot(0).is_empty() and StorageManager.get_count("metal") == 0, "Inspecting a blocked product must not queue an order or mutate inventory.")
 	_check(StorageManager.add_item("metal",4), "Test setup could not seed four Metal for two Nails orders.")
@@ -5509,10 +5510,12 @@ func _run_gameplay_test() -> void:
 	var nails_button_0 := production_hud.production_overlay.find_child("Slot0_nails", true, false) as Button
 	_check(nails_button_0 != null, "Production catalog must offer the verified Nails recipe.")
 	if nails_button_0:
-		production_hud._update_production_orbit_projection()
 		_check(nails_button_0.size.x >= 90.0 and nails_button_0.size.y >= 100.0 and nails_button_0.mouse_filter == Control.MOUSE_FILTER_STOP, "Store product cards must expose a large real touch hitbox.")
-		_check(nails_button_0.z_index >= 30 and nails_button_0.get_theme_stylebox("normal") is StyleBoxFlat, "Store product cards must render as opaque white tiles above the selected store.")
-	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "Every store product must have its own projected 3D hex platform around the store.")
+		_check(nails_button_0.custom_minimum_size.x >= 140.0 and nails_button_0.custom_minimum_size.y >= 125.0, "Store product cards must have comfortable touch dimensions and room for recipe ingredients.")
+		_check(nails_button_0.get_theme_stylebox("normal") is StyleBoxFlat, "Store product cards must render as opaque white tiles with visible borders.")
+		var nails_ingredients_ready := production_hud.production_overlay.find_child("Ingredients_nails", true, false) as Label
+		_check(nails_ingredients_ready != null and nails_ingredients_ready.text.contains("Metal 4/2"), "Nails card must show the live City Storage quantity against the exact two-Metal recipe.")
+	_check(production_hud.production_overlay.find_child("StoreProductsGrid", true, false) is GridContainer, "Store products must use the same responsive screen-space grid interaction as the factory.")
 	if nails_button_0:
 		await _tap_native_control(nails_button_0)
 	else:
@@ -5562,11 +5565,11 @@ func _run_gameplay_test() -> void:
 	if collect_nails_1:
 		collect_nails_1.emit_signal("pressed")
 	_check(shop_component.get_slot(1).is_empty() and StorageManager.get_count("nails") == nails_storage_before + 2, "Collecting the second Nails order must transfer it to City Storage and clear its queue square.")
-	var product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
-	var product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
-	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The two-sided honeycomb store catalog must expose every registered product.")
-	_check(product_orbit != null and production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == product_grid.get_child_count(), "Store product selectors must be backed by matching 3D world-space hex platforms.")
-	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.42, "Production queue dock must stay compact and never cover half the city view.")
+	var product_grid := production_hud.production_overlay.find_child("StoreProductsGrid", true, false) as GridContainer
+	_check(product_grid != null and product_grid.get_child_count() == ProductionManager.get_store_catalog_ids("building_supplies").size(), "The store workspace must expose every registered recipe in a responsive product grid.")
+	_check(production_hud.production_panel.size.y <= get_viewport().get_visible_rect().size.y * 0.96, "Store production workspace must remain inside the mobile viewport.")
+	var store_margins := production_hud.production_panel.find_child("StoreProductionMargins", true, false) as MarginContainer
+	_check(store_margins != null, "Store production workspace must use explicit inner padding rather than edge-to-edge controls.")
 
 	# Sourced star progression and queue-slot pricing are exposed in the live panel.
 	var previous_level_for_store_star := GameManager.level
@@ -5723,13 +5726,26 @@ func _run_gameplay_test() -> void:
 	_check(restored_queue.get_slot_count() == 3, "Purchased commercial queue capacity must survive save/load.")
 	restored_queue.queue_free()
 	EconomyManager.sim_cash = sim_cash_before_queue_expansion
-	_check(hardware_component.start_craft("hammer",0), "Hardware Store must craft Hammer from Metal and Wood.")
-	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must consume Metal and Wood at start.")
+	production_hud.open_production_panel(hardware)
+	var hammer_button := production_hud.production_overlay.find_child("Slot0_hammer", true, false) as Button
+	var hammer_ingredients := production_hud.production_overlay.find_child("Ingredients_hammer", true, false) as Label
+	_check(production_hud.production_overlay.find_child("StoreProductsGrid", true, false) is GridContainer, "Hardware Store must use the same dedicated production workspace as Building Supplies.")
+	_check(hammer_ingredients != null and hammer_ingredients.text.contains("Metal 1/1") and hammer_ingredients.text.contains("Wood 1/1"), "Hardware Store must show both exact live ingredient counts on the Hammer product card.")
+	_check(hammer_button != null and not hammer_button.disabled, "Hammer must be selectable when both Metal and Wood are present in City Storage.")
+	if hammer_button:
+		await _tap_native_control(hammer_button)
+	_check(not hardware_component.get_slot(0).is_empty(), "One tap on the stocked Hammer card must start the Hardware Store order.")
+	_check(StorageManager.get_count("metal") == 0 and StorageManager.get_count("wood") == 0, "Hammer recipe must atomically consume Metal and Wood at order acceptance.")
 	var hammer_slot: Dictionary = hardware_component.slots[0]
 	hammer_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
 	hardware_component.slots[0] = hammer_slot
 	hardware_component.refresh_slots()
-	_check(hardware_component.collect(0) and StorageManager.get_count("hammer") == 1, "Completed Hammer must collect into City Storage.")
+	production_hud.open_production_panel(hardware)
+	var hammer_collect := production_hud.production_panel.find_child("CollectSlot0", true, false) as Button
+	_check(hammer_collect != null and not hammer_collect.disabled, "Completed Hammer must expose a clear Collect action.")
+	if hammer_collect:
+		hammer_collect.emit_signal("pressed")
+	_check(hardware_component.get_slot(0).is_empty() and StorageManager.get_count("hammer") == 1, "Collecting the finished Hammer must transfer it to City Storage and clear the store queue slot.")
 	BuildManager.unregister_building(hardware.building_id)
 	hardware.queue_free()
 	GameManager.level = previous_level
