@@ -64,8 +64,11 @@ func _ready() -> void:
 	call_deferred("_run_gameplay_test")
 
 func _test_store_building_identity_contract() -> void:
-	# Verify exact city building/shop ownership and source-level visual identity
-	# branches without creating renderer resources in headless CI.
+	# Verify all 14 placeable store identities, exact product ownership, and
+	# user-designated product/store locks at a level where progression is not
+	# the reason for a lock.
+	var previous_level := GameManager.level
+	GameManager.level = 90
 	var store_ids := [
 		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
 		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
@@ -90,13 +93,18 @@ func _test_store_building_identity_contract() -> void:
 			var recipe := ProductionManager.get_recipe(product_id)
 			if not recipe.is_empty():
 				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
+			if ProductionManager.USER_REVIEW_LOCKED_STORE_IDS.has(store_id) or ProductionManager.USER_REVIEW_LOCKED_PRODUCT_IDS.has(product_id):
+				_check(ProductionManager.get_recipe_lock_reason(product_id, 3).contains("pending user source review"), "%s must remain locked by the current catalog policy." % product_id)
+				_check(not ProductionManager.can_craft(product_id), "%s must not be craftable while its catalog policy lock is active." % product_id)
 		var has_visual_identity := visual_source.contains("func _build_building_supplies_showcase(") if store_id == "building_supplies" else identity_block.contains("\"" + store_id + "\"")
 		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
+	for locked_item_id in ProductionManager.USER_REVIEW_LOCKED_PRODUCT_IDS:
+		_check(not ProductionManager.get_recipe_lock_reason(locked_item_id, 3).is_empty(), "%s must remain locked pending user source review." % locked_item_id)
+	GameManager.level = previous_level
 
 func _test_each_store_direct_production() -> void:
-	# Exercise one real recipe through enqueue -> timer -> ready -> collect for
-	# every standard store. Seed only the exact declared inputs; no recipe data
-	# or quantities are synthesized by the test.
+	# Exercise enqueue -> timer -> READY -> collect in every store that is
+	# currently approved for production. Disabled groups stay visible but locked.
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_level := GameManager.level
 	GameManager.level = 90
@@ -108,10 +116,16 @@ func _test_each_store_direct_production() -> void:
 	]
 	for store_id in store_ids:
 		var recipe_ids: Array = ProductionManager.get_store_recipe_ids(store_id)
-		_check(not recipe_ids.is_empty(), "%s must have at least one production recipe for its live order test." % store_id)
-		if recipe_ids.is_empty():
+		_check(not recipe_ids.is_empty(), "%s must retain its own product recipe catalog." % store_id)
+		var item_id := ""
+		for candidate_variant in recipe_ids:
+			var candidate_id := str(candidate_variant)
+			if ProductionManager.get_recipe_lock_reason(candidate_id, 3).is_empty():
+				item_id = candidate_id
+				break
+		if item_id.is_empty():
+			_check(ProductionManager.USER_REVIEW_LOCKED_STORE_IDS.has(store_id), "%s has no approved product but is not marked as intentionally locked." % store_id)
 			continue
-		var item_id := str(recipe_ids[0])
 		var recipe := ProductionManager.get_recipe(item_id)
 		var inputs: Dictionary = recipe.get("inputs", {})
 		StorageManager.from_save_dict({"capacity": 500, "items": inputs})
@@ -123,7 +137,7 @@ func _test_each_store_direct_production() -> void:
 		add_child(component)
 		_check(ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty(), "%s test product %s must be unlocked at the high-level test fixture." % [store_id, item_id])
 		var accepted := component.start_craft(item_id, 0)
-		_check(accepted, "%s must accept its own product %s when exact declared inputs are in storage." % [store_id, item_id])
+		_check(accepted, "%s must accept its approved product %s when exact declared inputs are in storage." % [store_id, item_id])
 		if accepted:
 			var order: Dictionary = component.get_slot(0)
 			_check(str(order.get("item_id", "")) == item_id and int(order.get("finish_unix", 0)) > 0, "%s must start a timed order in its own production lane." % store_id)
