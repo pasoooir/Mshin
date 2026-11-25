@@ -208,7 +208,12 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 	var order_cost := ProductionManager.get_factory_order_cost(item_id)
 	if order_cost < 0 or EconomyManager.simoleons < order_cost:
 		return false
-	if not EconomyManager.spend_simoleons(order_cost):
+	if not EconomyManager.spend_simoleons(order_cost, {
+			"source": "factory_order",
+			"factory_type": factory_type,
+			"item_id": item_id,
+			"duration_seconds": int(definition.get("time_sec", 60))
+		}):
 		return false
 	var now := int(Time.get_unix_time_from_system())
 	slots[slot_index] = {
