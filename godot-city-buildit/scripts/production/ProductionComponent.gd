@@ -223,10 +223,10 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"ready": false,
 		"auto_chain_id": auto_chain_id,
 		"order_cost": order_cost,
-		# Carry the actual paid factory fee into the warehouse FIFO cost ledger.
-		# Downstream store recipes then inherit the real acquisition cost.
+		# Factory order fees are operating overhead, not a direct item input cost.
+		# Keep the raw material cost batch known at zero; the fee is audited separately.
 		"cost_known": true,
-		"cost_total": order_cost
+		"cost_total": 0
 	}
 	_emit_slots_changed()
 	return true
