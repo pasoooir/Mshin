@@ -223,8 +223,10 @@ func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "")
 		"ready": false,
 		"auto_chain_id": auto_chain_id,
 		"order_cost": order_cost,
+		# Carry the actual paid factory fee into the warehouse FIFO cost ledger.
+		# Downstream store recipes then inherit the real acquisition cost.
 		"cost_known": true,
-		"cost_total": 0
+		"cost_total": order_cost
 	}
 	_emit_slots_changed()
 	return true
