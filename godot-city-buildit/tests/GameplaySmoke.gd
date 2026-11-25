@@ -814,6 +814,24 @@ func _test_automatic_production_chain() -> void:
 	_check(store.slots[0].is_empty(), "The root queue slot must be released when the automatic chain finishes.")
 	_check(not bool(ProductionManager.get_automatic_chain_status().get("active", false)), "A fully completed chain must no longer block the next automatic order.")
 
+	# A later automatic request must not jump ahead of older manual orders in the same store.
+	var fifo_store := ProductionComponentScript.new()
+	fifo_store.name = "AutomaticChainFifoProbe"
+	fifo_store.shop_id = "building_supplies"
+	fifo_store.slot_count = 3
+	add_child(fifo_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 4}})
+	_check(fifo_store.start_craft("nails", 0), "FIFO probe must start its first manual order.")
+	_check(fifo_store.start_craft("nails", 1), "FIFO probe must queue its second manual order.")
+	_check(ProductionManager.request_automatic_chain(fifo_store, "nails", 2), "FIFO probe must accept a later automatic order.")
+	var first_fifo_slot: Dictionary = fifo_store.slots[0]
+	first_fifo_slot["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+	fifo_store.slots[0] = first_fifo_slot
+	fifo_store.refresh_slots()
+	_check(int(fifo_store.slots[1].get("finish_unix", 0)) > 0 and not bool(fifo_store.slots[2].get("auto_chain_started", false)), "The second manual order must start before a newer automatic root can use the same store lane.")
+	fifo_store.queue_free()
+	await get_tree().process_frame
+
 	# A catalog-only item with no verified recipe or factory source must fail
 	# preflight instead of leaving a permanently stuck automatic chain.
 	var saved_level := GameManager.level
