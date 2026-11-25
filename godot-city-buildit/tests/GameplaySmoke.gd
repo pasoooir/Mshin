@@ -705,14 +705,14 @@ func _test_live_production_queue_eta() -> void:
 		{"item_id":"bricks", "finish_unix":0, "ready":false, "queued":true, "queue_sequence":1}
 	]
 	var fifo_delay := queue_probe.get_queue_delay_seconds()
-	_check(fifo_delay >= 30.0 + 300.0 + 1200.0, "Store ETA must add active remaining time and every waiting product duration.")
+	_check(fifo_delay >= 30.0 + 1800.0 + 1200.0, "Store ETA must add active remaining time and every waiting product duration.")
 	queue_probe.slots[0]["paused_at_unix"] = now - 10
 	var paused_delay := queue_probe.get_queue_delay_seconds()
-	_check(paused_delay >= 40.0 + 300.0 + 1200.0, "Paused store ETA must use frozen remaining time.")
+	_check(paused_delay >= 40.0 + 1800.0 + 1200.0, "Paused store ETA must use frozen remaining time.")
 	queue_probe.slots[0]["ready"] = true
 	queue_probe.slots[0].erase("paused_at_unix")
 	var ready_delay := queue_probe.get_queue_delay_seconds()
-	_check(ready_delay >= 1500.0 and ready_delay < 1530.0, "Ready products must not block subsequent store orders.")
+	_check(ready_delay >= 3000.0 and ready_delay < 3030.0, "Ready products must not block subsequent store orders.")
 
 	var factory_probe = ProductionComponentScript.new()
 	factory_probe.is_factory = true
