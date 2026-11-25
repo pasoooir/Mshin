@@ -5723,7 +5723,7 @@ func _run_gameplay_test() -> void:
 	GameManager.level = maxi(GameManager.level, 2)
 	ServiceManager.power_served_ids.clear()
 	ServiceManager.water_served_ids.clear()
-	var service_block_reason := home.get_residential_upgrade_block_reason() if home != null else "missing home"
+	var service_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
 	_check(service_block_reason.contains("Power") or service_block_reason.contains("Water"), "A Level 2 residential upgrade must be blocked with a clear missing Power/Water coverage reason.")
 	ServiceManager.power_served_ids = previous_power_coverage
 	ServiceManager.water_served_ids = previous_water_coverage
