@@ -59,7 +59,38 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 func _ready() -> void:
 	_test_camera_gesture_math()
 	_test_hud_touch_session_ownership()
+	_test_store_building_identity_contract()
 	call_deferred("_run_gameplay_test")
+
+func _test_store_building_identity_contract() -> void:
+	# All 14 standard SCBI stores must be placeable, map to one exact shop ID,
+	# expose their own catalog, and generate trade-specific local geometry.
+	var store_ids := [
+		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
+		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
+		"fashion_store", "sports_shop", "toy_store", "restoration_office",
+		"farmers_store", "dessert_shop"
+	]
+	for store_id in store_ids:
+		_check(BuildManager.building_types.has(store_id), "%s must have a placeable city building definition." % store_id)
+		if not BuildManager.building_types.has(store_id):
+			continue
+		var definition: Dictionary = BuildManager.building_types[store_id]
+		_check(str(definition.get("category", "")) == "commercial", "%s must be a commercial building." % store_id)
+		_check(str(definition.get("shop_id", store_id)) == store_id, "%s must resolve to its exact production shop ID." % store_id)
+		var product_ids: Array = ProductionManager.get_store_catalog_ids(store_id)
+		_check(not product_ids.is_empty(), "%s must expose its own product catalog." % store_id)
+		for product_variant in product_ids:
+			var product_id := str(product_variant)
+			var recipe := ProductionManager.get_recipe(product_id)
+			if not recipe.is_empty():
+				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
+		var building := BuildingScene.instantiate()
+		add_child(building)
+		building.building_type = store_id
+		building._build_commercial_identity(3.4, 3.4, 2.25, 1.7, 1)
+		_check(building.mesh_root.get_child_count() > 0, "%s must generate visible trade-specific geometry." % store_id)
+		building.queue_free()
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
