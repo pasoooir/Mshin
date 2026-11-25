@@ -2934,6 +2934,7 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 		product_card.add_theme_stylebox_override("disabled", _toolbar_style(Color("#E8ECEF"), Color("#CDD6DB")))
 		product_card.add_theme_color_override("font_color", Color("#24495B"))
 		var card_content := VBoxContainer.new()
+		card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		card_content.alignment = BoxContainer.ALIGNMENT_CENTER
 		card_content.add_theme_constant_override("separation", 2)
 		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2970,7 +2971,6 @@ func _open_factory_production_panel(building: Building, component: ProductionCom
 		product_card.set_meta("production_building_id", building.get_instance_id())
 		product_card.gui_input.connect(_on_production_item_gui_input.bind(building, item_id, free_slot, product_card))
 		products_grid.add_child(product_card)
-		_production_orbit_buttons.append(product_card)
 
 	var detail_scroll := ScrollContainer.new()
 	detail_scroll.name = "ProductionDetailsScroll"
