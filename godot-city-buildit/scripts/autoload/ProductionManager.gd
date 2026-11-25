@@ -207,6 +207,33 @@ func get_recipe_validation_report() -> Dictionary:
 			invalid_recipe_ids.append(item_id)
 			for detail in item_errors:
 				errors.append("%s: %s" % [item_id, detail])
+	# Every product ID has exactly one commercial supplier. Catalog-only
+	# entries are unresolved products and must not shadow an enabled recipe or
+	# appear under more than one store.
+	var catalog_owners: Dictionary = {}
+	for store_variant in store_catalog.keys():
+		var catalog_store_id := str(store_variant)
+		for product in store_catalog[store_variant]:
+			var catalog_item_id := str(product.get("id", ""))
+			if catalog_item_id.is_empty():
+				errors.append("%s catalog: product ID is empty" % catalog_store_id)
+				continue
+			if catalog_owners.has(catalog_item_id):
+				errors.append("%s: catalog product is duplicated between %s and %s" % [
+					catalog_item_id, str(catalog_owners[catalog_item_id]), catalog_store_id
+				])
+			else:
+				catalog_owners[catalog_item_id] = catalog_store_id
+			if crafted_items.has(catalog_item_id):
+				errors.append("%s: product is declared in both enabled recipes and the catalog-only registry" % catalog_item_id)
+				if not invalid_recipe_ids.has(catalog_item_id):
+					invalid_recipe_ids.append(catalog_item_id)
+	for item_variant in crafted_items.keys():
+		var enabled_item_id := str(item_variant)
+		if catalog_owners.has(enabled_item_id):
+			if not invalid_recipe_ids.has(enabled_item_id):
+				invalid_recipe_ids.append(enabled_item_id)
+
 	var cycle_state: Dictionary = {}
 	var cycle_stack: Array[String] = []
 	var cycle_nodes: Dictionary = {}
@@ -453,6 +480,28 @@ func _advance_automatic_chain_store_job(component: ProductionComponent, slot_ind
 	component.slots_changed.emit()
 	automatic_chain_changed.emit(chain_id, "producing:" + recipe_id)
 
+func _get_automatic_chain_required_input_total(item_id: String, chain_id: String) -> int:
+	# Aggregate the still-unconsumed demand across every pending automatic job.
+	# Counting only already-reserved outputs is insufficient: two different
+	# branches may each consume the same raw input (e.g. Nails and Hammer both
+	# consume Metal). Their requirements must be added before reserving supply.
+	var total := 0
+	if not is_inside_tree():
+		return total
+	for component in get_tree().get_nodes_in_group("production_components"):
+		if not is_instance_valid(component) or not component is ProductionComponent:
+			continue
+		for slot in component.slots:
+			if str(slot.get("auto_chain_id", "")) != chain_id:
+				continue
+			if bool(slot.get("ready", false)) or bool(slot.get("auto_chain_started", false)):
+				continue
+			var recipe := get_recipe(str(slot.get("item_id", "")))
+			for input_variant in recipe.get("inputs", {}).keys():
+				if str(input_variant) == item_id:
+					total += int(recipe.inputs[input_variant])
+	return total
+
 func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: String, ancestry: Dictionary) -> bool:
 	if amount <= 0:
 		return true
@@ -464,14 +513,15 @@ func _schedule_automatic_chain_item(item_id: String, amount: int, chain_id: Stri
 		if not is_instance_valid(component) or not component is ProductionComponent:
 			continue
 		for slot in component.slots:
-			# Dependencies are shared across independent roots. A raw/intermediate
-			# output already reserved by any active chain satisfies part of the
-			# global outstanding demand, preventing duplicate parallel production.
-			# If another root consumes that output first, its next scheduler pass
-			# will request the remaining unit(s) normally.
 			if not str(slot.get("auto_chain_id", "")).is_empty() and str(slot.get("item_id", "")) == item_id:
 				outstanding += 1
-	var needed := maxi(0, amount - outstanding)
+	# Reconcile inventory, all pending consumers, and already-reserved outputs.
+	# This prevents one branch's Metal reservation from being incorrectly
+	# treated as available to a sibling branch that also consumes that Metal.
+	var total_demand := _get_automatic_chain_required_input_total(item_id, chain_id)
+	if total_demand <= 0:
+		total_demand = amount
+	var needed := maxi(0, total_demand - StorageManager.get_count(item_id) - outstanding)
 	if needed <= 0:
 		return true
 	if raw_materials.has(item_id):

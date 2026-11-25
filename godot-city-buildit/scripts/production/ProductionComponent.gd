@@ -14,6 +14,7 @@ const MAX_STORE_QUEUE_SLOTS: int = 11
 var owner_building: Node = null
 @export_range(0, 3, 1) var store_star_level: int = 0
 var slots: Array[Dictionary] = []
+var _queue_sequence_counter: int = 0
 
 func _emit_slots_changed() -> void:
 	slots_changed.emit()
@@ -28,20 +29,36 @@ func _ready() -> void:
 	add_to_group("production_components")
 
 func get_queue_delay_seconds() -> float:
-	# A store runs one active order at a time; queued orders ahead of a new
-	# request therefore add their full base durations. Ready orders do not block.
+	# Stores have one production lane. The active order contributes only its
+	# remaining wall-clock time (or frozen remainder while road-disconnected),
+	# then every waiting order contributes its full star-adjusted duration in
+	# FIFO order. Ready products occupy slots but never block the production lane.
 	if is_factory:
 		return 0.0
 	var now := int(Time.get_unix_time_from_system())
-	var delay := 0.0
-	for slot in slots:
+	var active_remaining := 0.0
+	var waiting: Array[Dictionary] = []
+	for index in range(slots.size()):
+		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)):
 			continue
 		var finish_unix := int(slot.get("finish_unix", 0))
-		if finish_unix > now:
-			delay = maxf(delay, float(finish_unix - now))
-		elif bool(slot.get("queued", false)) or finish_unix <= 0:
-			delay += get_item_production_time(str(slot.get("item_id", "")))
+		if finish_unix > 0 and not bool(slot.get("queued", false)):
+			var reference_time := int(slot.get("paused_at_unix", 0))
+			if reference_time <= 0:
+				reference_time = now
+			active_remaining = maxf(active_remaining, float(maxi(0, finish_unix - reference_time)))
+		else:
+			waiting.append({
+				"sequence": int(slot.get("queue_sequence", index + 1)),
+				"duration": get_item_production_time(str(slot.get("item_id", "")))
+			})
+	waiting.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("sequence", 0)) < int(b.get("sequence", 0))
+	)
+	var delay := active_remaining
+	for queued_order in waiting:
+		delay += maxf(0.0, float(queued_order.get("duration", 0.0)))
 	return delay
 
 func _process(_delta: float) -> void:
@@ -171,11 +188,14 @@ func refresh_slots() -> void:
 func _start_next_store_order() -> bool:
 	if is_factory or not _owner_has_road_access():
 		return false
-	# One store runs one active order at a time. A completed order occupies its
-	# queue slot until collected, while the next queued order may begin.
+	# A ready product does not block the lane. An unfinished active order does.
 	for slot in slots:
-		if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0:
+		if not slot.is_empty() and not bool(slot.get("ready", false)) and int(slot.get("finish_unix", 0)) > 0 and not bool(slot.get("queued", false)):
 			return false
+	# Select the oldest waiting manual order, not the lowest free slot index.
+	# Collecting an earlier slot must never let a newer order jump the FIFO queue.
+	var next_index := -1
+	var next_sequence := 2147483647
 	for index in range(slots.size()):
 		var slot: Dictionary = slots[index]
 		if slot.is_empty() or bool(slot.get("ready", false)) or int(slot.get("finish_unix", 0)) > 0:
@@ -184,14 +204,20 @@ func _start_next_store_order() -> bool:
 		# recursively required ingredients have been produced and reserved.
 		if not str(slot.get("auto_chain_id", "")).is_empty():
 			continue
-		var item_id := str(slot.get("item_id", ""))
-		var duration := int(ceil(get_item_production_time(item_id)))
-		slot["start_unix"] = int(Time.get_unix_time_from_system())
-		slot["finish_unix"] = int(slot["start_unix"]) + maxi(1, duration)
-		slot["queued"] = false
-		slots[index] = slot
-		return true
-	return false
+		var sequence := int(slot.get("queue_sequence", index + 1))
+		if sequence < next_sequence:
+			next_sequence = sequence
+			next_index = index
+	if next_index < 0:
+		return false
+	var selected: Dictionary = slots[next_index]
+	var item_id := str(selected.get("item_id", ""))
+	var duration := int(ceil(get_item_production_time(item_id)))
+	selected["start_unix"] = int(Time.get_unix_time_from_system())
+	selected["finish_unix"] = int(selected["start_unix"]) + maxi(1, duration)
+	selected["queued"] = false
+	slots[next_index] = selected
+	return true
 
 func start_factory(item_id: String, slot_index: int, auto_chain_id: String = "") -> bool:
 	_ensure_slots()
@@ -250,8 +276,10 @@ func start_craft(recipe_id: String, slot_index: int) -> bool:
 	var input_cost: Dictionary = StorageManager.get_cost_basis(inputs)
 	if not StorageManager.remove_items(inputs):
 		return false
+	_queue_sequence_counter += 1
 	slots[slot_index] = {
 		"item_id": recipe_id,
+		"queue_sequence": _queue_sequence_counter,
 		"start_unix": 0,
 		"finish_unix": 0,
 		"ready": false,
@@ -319,8 +347,14 @@ func from_save_array(saved_slots: Array) -> void:
 	if not is_factory:
 		slot_count = clampi(maxi(saved_slots.size(), MIN_STORE_QUEUE_SLOTS), MIN_STORE_QUEUE_SLOTS, MAX_STORE_QUEUE_SLOTS)
 	_ensure_slots()
+	_queue_sequence_counter = 0
 	for index in range(slots.size()):
 		slots[index] = saved_slots[index].duplicate(true) if index < saved_slots.size() and saved_slots[index] is Dictionary else {}
+		if not slots[index].is_empty():
+			if bool(slots[index].get("queued", false)) or int(slots[index].get("finish_unix", 0)) <= 0:
+				if not slots[index].has("queue_sequence"):
+					slots[index]["queue_sequence"] = index + 1
+				_queue_sequence_counter = maxi(_queue_sequence_counter, int(slots[index].get("queue_sequence", 0)))
 		if not slots[index].is_empty() and not slots[index].has("cost_known"):
 			# Older saves have no traceable acquisition cost for in-flight jobs.
 			slots[index]["cost_known"] = false
