@@ -2,6 +2,7 @@ extends Node3D
 class_name BuildingAssetModel
 
 const SurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
+static var _material_cache: Dictionary = {}
 @export var asset_type: String = ""
 
 func _ready() -> void:
@@ -49,6 +50,9 @@ func _sphere(radius: float, pos: Vector3, color: Color, surface: String = "glass
 	add_child(node)
 
 func _material(color: Color, surface: String) -> StandardMaterial3D:
+	var cache_key := surface + ":" + color.to_html(false)
+	if _material_cache.has(cache_key):
+		return _material_cache[cache_key] as StandardMaterial3D
 	var maps := SurfaceLibrary.get_maps(surface)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
@@ -67,6 +71,7 @@ func _material(color: Color, surface: String) -> StandardMaterial3D:
 	elif surface == "metal" or surface == "painted_metal":
 		material.roughness = 0.38
 		material.metallic = 0.55 if surface == "metal" else 0.28
+	_material_cache[cache_key] = material
 	return material
 
 func _box(size: Vector3, pos: Vector3, color: Color, surface: String = "plaster", rot: Vector3 = Vector3.ZERO) -> MeshInstance3D:
@@ -199,12 +204,13 @@ func _build_la_dome_tower() -> void:
 func _build_la_modern_apartment() -> void:
 	_box(Vector3(3.2, 0.42, 3.2), Vector3(0, 0.34, 0), Color("#D6D8D2"), "concrete")
 	_box(Vector3(3.0, 5.0, 2.7), Vector3(0, 3.05, -0.12), Color("#D8D4C9"), "plaster")
-	for floor in range(4):
-		var y := 1.55 + float(floor) * 1.12
-		_box(Vector3(3.12, 0.13, 2.88), Vector3(0, y, 0.05), Color("#B9A88E"), "concrete")
-		for x in [-1.02, 0.0, 1.02]:
-			_box(Vector3(0.68, 0.68, 0.07), Vector3(x, y + 0.42, 1.27), Color("#79A9B7"), "glass")
-			_box(Vector3(0.74, 0.08, 0.48), Vector3(x, y + 0.02, 1.48), Color("#E5E2D8"), "concrete")
+	_box(Vector3(2.86, 4.48, 0.07), Vector3(0, 3.02, 1.27), Color("#79A9B7"), "glass")
+	for y in [1.95, 3.05, 4.15]:
+		_box(Vector3(3.10, 0.12, 2.88), Vector3(0, y, 0.04), Color("#B9A88E"), "concrete")
+	for x in [-1.0, 0.0, 1.0]:
+		_box(Vector3(0.055, 4.7, 0.08), Vector3(x, 3.05, 1.34), Color("#E5E2D8"), "metal")
+	for y in [1.55, 2.65, 3.75, 4.85]:
+		_box(Vector3(3.08, 0.09, 0.46), Vector3(0, y, 1.46), Color("#E5E2D8"), "concrete")
 	_box(Vector3(2.0, 0.18, 2.2), Vector3(0.38, 5.68, -0.15), Color("#C9C1B2"), "concrete")
 	_box(Vector3(0.9, 0.12, 0.9), Vector3(-0.85, 5.82, -0.5), Color("#557F5B"), "plaster")
 
