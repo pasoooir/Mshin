@@ -818,7 +818,7 @@ for visual_contract in [
 # category GLTF must not replace these level-specific procedural forms.
 for level_contract in [
     'func _build_residential_level_architecture(',
-    'var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1',
+    'var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1',
     'if category == "residential" and upgrade_stage > 1:',
     'elif category == "commercial" and not model_path.ends_with(".tscn"):',
     'elif category == "industrial":',
