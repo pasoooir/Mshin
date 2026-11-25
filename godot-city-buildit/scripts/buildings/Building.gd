@@ -429,7 +429,7 @@ func _should_use_external_model(model_path: String) -> bool:
 		return false
 	# Preserve the hand-authored level-one villa hero. Higher residential
 	# stages may use their local GLTF base, with unique stage geometry layered on top.
-	var is_starter_villa := str(definition.get("category", "")) == "residential" and building_type != "residential_2" and str(definition.get("subtype", "villa")) == "villa" and upgrade_stage == 1
+	var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1
 	return not is_starter_villa
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
