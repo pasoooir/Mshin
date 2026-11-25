@@ -834,9 +834,8 @@ for upgrade_contract in [
     'ServiceManager.is_home_served_by_group(self, str(rule.group))',
     'StorageManager.storage_changed.connect(_on_upgrade_dependencies_changed)',
     'ServiceManager.power_changed.connect(_on_upgrade_dependencies_changed)',
-    'ResidentialWorldOrbit',
 ]:
-    if upgrade_contract not in building_source and upgrade_contract != 'ResidentialWorldOrbit':
+    if upgrade_contract not in building_source:
         errors.append(f"Residential upgrade/service contract is missing: {upgrade_contract}")
 if '_check_upgrade_ready()' in re.search(r'func _process\(delta: float\) -> void:(.*?)(?=\nfunc )', building_source, re.S).group(1):
     errors.append("Residential upgrade readiness must not be polled every rendered frame.")
