@@ -239,11 +239,14 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 			"p95_frame_ms": 0.0,
 			"max_frame_ms": 0.0,
 			"frames_within_60fps_budget_percent": 0.0,
-			"target_60fps_pass": false
+			"frames_within_30fps_budget_percent": 0.0,
+			"target_60fps_pass": false,
+			"target_30fps_pass": false
 		}
 	var total_seconds := 0.0
 	var max_frame_seconds := 0.0
 	var frames_within_budget := 0
+	var frames_within_30fps_budget := 0
 	var sorted_times: Array[float] = frame_times.duplicate()
 	for frame_seconds in frame_times:
 		var safe_frame_seconds := maxf(frame_seconds, 0.0)
@@ -251,6 +254,8 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 		max_frame_seconds = maxf(max_frame_seconds, safe_frame_seconds)
 		if safe_frame_seconds <= 1.0 / 60.0:
 			frames_within_budget += 1
+		if safe_frame_seconds <= 1.0 / 30.0:
+			frames_within_30fps_budget += 1
 	sorted_times.sort()
 	var average_fps := float(frame_times.size()) / total_seconds if total_seconds > 0.0 else 0.0
 	var average_frame_ms := total_seconds * 1000.0 / float(frame_times.size())
@@ -259,6 +264,7 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 	var p95_frame_ms := p95_frame_seconds * 1000.0
 	var max_frame_ms := max_frame_seconds * 1000.0
 	var under_budget_percent := float(frames_within_budget) * 100.0 / float(frame_times.size())
+	var under_30fps_budget_percent := float(frames_within_30fps_budget) * 100.0 / float(frame_times.size())
 	return {
 		"frame_count": frame_times.size(),
 		"average_fps": snappedf(average_fps, 0.01),
@@ -266,5 +272,7 @@ static func summarize_frame_times(frame_times: Array[float]) -> Dictionary:
 		"p95_frame_ms": snappedf(p95_frame_ms, 0.01),
 		"max_frame_ms": snappedf(max_frame_ms, 0.01),
 		"frames_within_60fps_budget_percent": snappedf(under_budget_percent, 0.1),
-		"target_60fps_pass": average_fps >= 60.0 and p95_frame_seconds <= 1.0 / 60.0
+		"frames_within_30fps_budget_percent": snappedf(under_30fps_budget_percent, 0.1),
+		"target_60fps_pass": average_fps >= 60.0 and p95_frame_seconds <= 1.0 / 60.0,
+		"target_30fps_pass": average_fps >= 30.0 and p95_frame_seconds <= 1.0 / 30.0
 	}
