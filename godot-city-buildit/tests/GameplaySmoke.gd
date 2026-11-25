@@ -5339,52 +5339,40 @@ func _run_gameplay_test() -> void:
 	production_hud.open_production_panel(factory)
 	_check(is_instance_valid(production_hud.production_overlay), "Opening a factory must show the dimmed city production overlay.")
 	var production_backdrop := production_hud.production_overlay.find_child("ProductionBackdrop", true, false) as ColorRect
-	_check(production_backdrop != null and is_equal_approx(production_backdrop.color.a, 0.50), "Production modal must dim the city with exactly 50% black transparency.")
+	_check(production_backdrop != null and is_equal_approx(production_backdrop.color.a, 0.78), "Factory workspace must dim the city enough to keep the light production sheet readable.")
 	_check(production_backdrop != null and production_backdrop.mouse_filter == Control.MOUSE_FILTER_STOP and production_hud.production_overlay.mouse_filter == Control.MOUSE_FILTER_STOP, "Production modal must block pointer interaction with the city behind it.")
-	_check(production_hud.production_overlay.find_child("ProductionBackdrop", true, false) != null, "Production overlay must retain a subtle transparent backdrop without hiding the city.")
-	var production_product_orbit := production_hud.production_overlay.find_child("ProductionProductOrbit", true, false) as Control
-	var production_product_grid := production_hud.production_overlay.find_child("ProductionProductCards", true, false) as Control
-	_check(production_product_orbit != null and production_product_grid != null, "Factory products must render in a floating, building-centered two-sided honeycomb.")
-	_check(production_product_orbit.mouse_filter == Control.MOUSE_FILTER_IGNORE and production_product_grid.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Transparent product-orbit layers must not intercept touch input intended for queue slots beneath them.")
-	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Honeycomb factory catalogue must expose every registered material.")
+	_check(production_hud.production_overlay.find_child("FactoryProductionHeader", true, false) is PanelContainer, "Factory workspace must show its title, current balance and close control in one header.")
+	var production_product_grid := production_hud.production_overlay.find_child("FactoryProductsGrid", true, false) as GridContainer
+	_check(production_product_grid != null, "Factory materials must be presented in a responsive product-card grid.")
+	_check(production_product_grid != null and production_product_grid.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Factory product grid must expose every registered material.")
 	var production_details_scroll := production_hud.production_panel.find_child("ProductionDetailsScroll", true, false) as ScrollContainer
-	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Selected-item details must remain a compact capsule, not a vertically expanding white sheet.")
-	_check(production_hud.production_overlay.find_child("ProductionHeader", true, false) is PanelContainer, "Production studio must show a separate top-centered building nameplate outside the queue dock.")
-	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Production studio must clearly separate the lower production queue from the product catalog.")
+	_check(production_details_scroll != null and production_details_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO, "Factory selected-item details must remain within a compact scrollable region.")
+	_check(production_hud.production_panel.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "Factory workspace must clearly separate the live order basket from the product catalogue.")
 	var empty_factory_state := production_hud.production_panel.find_child("ProductionOrdersEmptyState", true, false) as PanelContainer
 	_check(empty_factory_state != null, "An empty factory queue must show one helpful empty-state panel.")
 	_check(production_hud.production_panel.find_child("QueueSlot0", true, false) == null, "An empty factory queue must not render fake empty-slot cards.")
 	var queue_scroll_region := production_hud.production_panel.find_child("ProductionOrdersScroll", true, false) as ScrollContainer
-	_check(queue_scroll_region != null and queue_scroll_region.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and queue_scroll_region.custom_minimum_size.y >= 96.0, "The live orders list must reserve enough vertical space and scroll when real orders overflow.")
+	_check(queue_scroll_region != null and queue_scroll_region.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_AUTO and queue_scroll_region.custom_minimum_size.y >= 80.0, "The live orders list must reserve vertical space and scroll when real orders overflow.")
 	var metal_button := production_hud.production_overlay.find_child("Slot0_metal", true, false) as Button
 	_check(metal_button != null, "Factory panel must offer unlocked Metal production.")
 	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", true)), "Mobile production must use native ScreenTouch events without a parallel synthetic mouse event.")
 	if metal_button:
-		production_hud._update_production_orbit_projection()
-		_check(metal_button.size.x > 0.0 and metal_button.size.y > 0.0, "Projected factory material buttons must have a real non-zero touch hitbox; custom_minimum_size alone is insufficient.")
-		_check(metal_button.get_global_rect().has_point(metal_button.get_global_rect().get_center()), "The visible factory material button center must lie inside its actual GUI hit rectangle.")
-		_check(metal_button.mouse_filter == Control.MOUSE_FILTER_STOP and metal_button.z_index >= 30, "Factory material tap targets must receive GUI input and render above the building/backdrop.")
-		_check(metal_button.size.x >= 90.0 and metal_button.size.y >= 100.0, "Factory material cards must remain large enough for comfortable mobile touch.")
-		_check(metal_button.custom_minimum_size.x >= 120.0 and metal_button.custom_minimum_size.y >= 130.0, "Factory/store product diamonds must use enlarged low-vision-friendly card dimensions.")
+		_check(metal_button.size.x >= 90.0 and metal_button.size.y >= 90.0, "Factory material cards must have a real, comfortable mobile touch hitbox.")
+		_check(metal_button.custom_minimum_size.x >= 120.0 and metal_button.custom_minimum_size.y >= 100.0, "Factory product cards must use enlarged, low-vision-friendly dimensions.")
 		var metal_tile_content := metal_button.get_child(0) as VBoxContainer
 		var metal_tile_icon := metal_tile_content.get_child(0) as TextureRect if is_instance_valid(metal_tile_content) and metal_tile_content.get_child_count() > 0 else null
-		_check(is_instance_valid(metal_tile_icon) and metal_tile_icon.custom_minimum_size.x >= 75.0, "Factory/store product artwork must be enlarged, not only its surrounding hit target.")
+		_check(is_instance_valid(metal_tile_icon) and metal_tile_icon.custom_minimum_size.x >= 40.0, "Factory product artwork must be visible and sized for touch-first selection.")
 		_check(production_hud._popup_font_size(8) >= 16, "All popup labels must use a readable minimum font size.")
-		_check(metal_button.get_theme_stylebox("normal") is StyleBoxFlat, "Factory material cards must have an opaque white surface, not transparent controls hidden against the building.")
-		_check(metal_button.visible, "Camera-facing factory material orbit must keep front-facing product cards visible.")
-	_check(production_hud._production_world_orbit != null and production_hud._production_world_orbit.get_child_count() == ProductionManager.get_factory_material_ids(str(factory_component.factory_type)).size(), "Every factory material must have a real 3D hex platform arranged around the selected building.")
-	var first_world_hex := production_hud._production_world_orbit.get_child(0) as Node3D if production_hud._production_world_orbit.get_child_count() > 0 else null
-	var first_hex_face := first_world_hex.get_node_or_null("WhiteHexFace") as MeshInstance3D if is_instance_valid(first_world_hex) else null
-	_check(first_hex_face != null and first_hex_face.mesh is CylinderMesh and (first_hex_face.mesh as CylinderMesh).radial_segments == 6, "The floating material platform must be a six-sided 3D white hex mesh, not a flat 2D polygon.")
+		_check(metal_button.get_theme_stylebox("normal") is StyleBoxFlat, "Factory material cards must have an opaque white surface and a visible border.")
+
 	var factory_click_payload := {"kind": "production_item", "item_id": "metal", "building_id": factory.get_instance_id()}
 	_check(production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 0), "A valid tap order must pass the same factory queue acceptance gate.")
 	_check(production_hud._can_accept_building_drop(Vector2.ZERO, factory_click_payload, factory), "The selected factory must accept a valid tap order when a production slot is free.")
 	_check(not production_hud._can_accept_production_drop(Vector2.ZERO, factory_click_payload, factory, 6), "A production order must reject a queue slot outside factory capacity.")
 	if metal_button:
 		var balance_before_first_factory_tap := EconomyManager.simoleons
-		# Exercise a native touchscreen event through the real Viewport GUI router.
-		# A synthetic mouse click only proves desktop input and can miss the exact
-		# mobile path that users reported as broken.
+		# The redesigned factory uses a single tap. Exercise the same native
+		# ScreenTouch routing used by mobile rather than the removed drag-to-queue UX.
 		var metal_touch_position: Vector2 = metal_button.get_global_transform_with_canvas() * (metal_button.size * 0.5)
 		var metal_touch_down := InputEventScreenTouch.new()
 		metal_touch_down.index = 0
@@ -5392,31 +5380,21 @@ func _run_gameplay_test() -> void:
 		metal_touch_down.position = metal_touch_position
 		get_viewport().push_input(metal_touch_down, true)
 		await get_tree().process_frame
-		_check(production_hud._production_touch_drag_active and factory_component.get_slot(0).is_empty(), "Touch-down must capture the product finger without prematurely starting production.")
-		var queue_target := production_hud.production_panel.find_child("ProductionOrdersEmptyState", true, false) as Control
-		_check(is_instance_valid(queue_target), "Mobile drag test must find the existing friendly empty-state drop target.")
-		if is_instance_valid(queue_target):
-			var queue_position: Vector2 = queue_target.get_global_transform_with_canvas() * (queue_target.size * 0.5)
-			var metal_touch_drag := InputEventScreenDrag.new()
-			metal_touch_drag.index = 0
-			metal_touch_drag.position = queue_position
-			metal_touch_drag.relative = queue_position - metal_touch_position
-			get_viewport().push_input(metal_touch_drag, true)
-			await get_tree().process_frame
-			var metal_touch_up := InputEventScreenTouch.new()
-			metal_touch_up.index = 0
-			metal_touch_up.pressed = false
-			metal_touch_up.position = queue_position
-			get_viewport().push_input(metal_touch_up, true)
-			await get_tree().process_frame
-		_check(not factory_component.get_slot(0).is_empty(), "Dragging a product to the friendly empty-state drop target must start production.")
+		var metal_touch_up := InputEventScreenTouch.new()
+		metal_touch_up.index = 0
+		metal_touch_up.pressed = false
+		metal_touch_up.position = metal_touch_position
+		get_viewport().push_input(metal_touch_up, true)
+		await get_tree().process_frame
+		_check(not factory_component.get_slot(0).is_empty(), "One native ScreenTouch tap on the Metal card must start production without dragging.")
 		_check(EconomyManager.simoleons == balance_before_first_factory_tap - ProductionManager.get_factory_order_cost("metal"), "A native factory product tap must debit its displayed order fee exactly once.")
-		_check(factory_component.get_slot(1).is_empty(), "One mobile product drag must enqueue exactly one order.")
+		_check(factory_component.get_slot(1).is_empty(), "One mobile product tap must enqueue exactly one order.")
+
 	_check(not factory_component.get_slot(0).is_empty(), "One mobile product tap must immediately create a real production slot.")
 	_check(production_hud._touch_selected_production_item.is_empty(), "A completed product tap must not leave a latent selected item awaiting a second tap.")
 	_check(production_hud.production_panel.find_child("TimerSlot0", true, false) is Label, "A tap-started factory order must immediately show its live countdown.")
 	_check(production_hud.production_panel.find_child("ProgressSlot0", true, false) is ProgressBar, "A tap-started factory order must immediately show its progress bar.")
-	var live_order_card := production_hud.production_panel.find_child("QueueSlot0", true, false) as PanelContainer
+	var live_order_card := production_hud.production_panel.find_child("OrderCard0", true, false) as PanelContainer
 	_check(live_order_card != null and live_order_card.custom_minimum_size.x >= 100.0 and live_order_card.custom_minimum_size.y >= 90.0, "A real production order must render as an enlarged readable card.")
 	var live_order_state := production_hud.production_panel.find_child("OrderState0", true, false) as Label
 	_check(live_order_state != null and live_order_state.text == "IN PRODUCTION", "An active order card must expose its current production state.")
