@@ -8,16 +8,16 @@ var settings_path := "user://graphics_settings.cfg"
 const QUALITY_PRESETS := {
 	"low": {
 		"label": "Low",
-		"scale": 0.62,
+		"scale": 0.54,
 		"msaa": Viewport.MSAA_DISABLED,
 		"shadows": false,
-		"camera_pan_sensitivity": 0.82,
-		"terrain_divisions": 128,
-		"water_rows": 120,
-		"water_columns": 28,
-		"grass_instances": 1200,
-		"shrub_clusters": 100,
-		"tree_density": 0.75
+		"camera_pan_sensitivity": 0.70,
+		"terrain_divisions": 96,
+		"water_rows": 72,
+		"water_columns": 18,
+		"grass_instances": 0,
+		"shrub_clusters": 0,
+		"tree_density": 0.0
 	},
 	"balanced": {
 		"label": "Balanced",
@@ -93,7 +93,7 @@ func _process(delta: float) -> void:
 	if measured_fps > 0.0 and measured_fps < 28.0:
 		_slow_fps_windows += 1
 		_fast_fps_windows = 0
-	elif measured_fps >= 54.0:
+	elif measured_fps >= 40.0:
 		_fast_fps_windows += 1
 		_slow_fps_windows = 0
 	else:
@@ -137,7 +137,7 @@ func _apply_quality() -> void:
 	viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	viewport.scaling_3d_scale = float(preset.get("scale", 0.62))
 	viewport.msaa_3d = int(preset.get("msaa", Viewport.MSAA_DISABLED))
-	Engine.max_fps = 60
+	Engine.max_fps = 45 if quality == "low" else 60
 	_adaptive_sample_elapsed = 0.0
 	_slow_fps_windows = 0
 	_fast_fps_windows = 0
