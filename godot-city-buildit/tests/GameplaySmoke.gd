@@ -5933,6 +5933,10 @@ func _finish(exit_code: int = 0) -> void:
 func _test_world_presentation_mobile_shadow_budget() -> void:
 	# Exercise the actual procedural batches in headless CI; the main scene
 	# intentionally uses lightweight marker nodes in that environment.
+	var previous_quality := GraphicsSettingsManager.quality
+	# This probe verifies the authored foliage/shadow budget, so run it against
+	# the Balanced preset explicitly; the game itself now correctly boots Low.
+	GraphicsSettingsManager.quality = "balanced"
 	var presentation := WorldPresentationScript.new()
 	presentation.name = "MobileShadowBudgetProbe"
 	add_child(presentation)
@@ -5969,6 +5973,7 @@ func _test_world_presentation_mobile_shadow_budget() -> void:
 	if grass != null:
 		_check(grass.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Tiny grass blades must not add a real-time shadow-caster pass.")
 	presentation.queue_free()
+	GraphicsSettingsManager.quality = previous_quality
 	await get_tree().process_frame
 
 func _test_performance_monitor_aggregation() -> void:
