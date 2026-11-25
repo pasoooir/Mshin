@@ -771,7 +771,10 @@ func _test_automatic_production_chain() -> void:
 	store.slot_count = 2
 	add_child(store)
 
+	# Automatic roots and every dependency transition must schedule a save; otherwise a quick app close can orphan in-flight factory/store jobs.
+	SaveManager._save_pending = false
 	_check(ProductionManager.request_automatic_chain(store, "nails", 0), "A valid Nails request must be accepted as an automatic dependency chain without pre-existing Metal.")
+	_check(SaveManager._save_pending, "Accepting an automatic production root must schedule persistence immediately.")
 	var chain_id := str(store.slots[0].get("auto_chain_id", ""))
 	_check(not chain_id.is_empty() and bool(store.slots[0].get("auto_chain_root", false)), "The target store slot must persist the root chain request.")
 	ProductionManager._process_automatic_chains()
