@@ -359,12 +359,13 @@ func _create_visual() -> void:
 		var model_scale: Vector3 = definition.get("model_scale", Vector3.ONE)
 		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
 			if category == "residential" and upgrade_stage > 1:
-				var is_apartment := subtype == "apartment"
 				var is_farm := subtype == "farm"
+				# Ordinary villas also evolve into mid/high-rise towers from stage 4.
+				# Farms retain their rural identity; apartment plots start the tower
+				# progression earlier, while every other home joins it at stage 4.
+				var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)
 				var residential_body_h := height
 				if is_apartment:
-					# The apartment silhouette grows from a low podium into a
-					# 12-storey LA-style glass tower across the six home levels.
 					var residential_floors := 3
 					match upgrade_stage:
 						3:
@@ -430,7 +431,9 @@ func _should_use_external_model(model_path: String) -> bool:
 	# Preserve the hand-authored level-one villa hero. Higher residential
 	# stages may use their local GLTF base, with unique stage geometry layered on top.
 	var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1
-	return not is_starter_villa
+	var is_villa_tower := str(definition.get("subtype", "")) == "villa" and upgrade_stage >= 4
+	# Do not leave the original low-rise GLTF embedded inside the generated tower.
+	return not is_starter_villa and not is_villa_tower
 
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
@@ -449,13 +452,22 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	var frame := Color(0.88, 0.82, 0.69)
 	var glass := Color(0.24, 0.43, 0.54)
 	var subtype := str(definition.get("subtype", "villa"))
-	var is_apartment := subtype == "apartment"
 	var is_farm := subtype == "farm"
+	# Keep the same villa-to-tower transition in the procedural fallback path.
+	var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)
 	var floors := 1
 	if is_apartment:
-		floors = 3 if upgrade_stage < 5 else 4
-	elif upgrade_stage >= 5:
-		floors = 3
+		match upgrade_stage:
+			2:
+				floors = 3
+			3:
+				floors = 5
+			4:
+				floors = 7
+			5:
+				floors = 9
+			6:
+				floors = 12
 	elif upgrade_stage >= 3:
 		floors = 2
 
@@ -662,15 +674,9 @@ func _build_residential_level_architecture(
 		if stage >= 6:
 			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue, "glass")
 			_add_box(Vector3(w * 0.40, 0.20, d * 0.56), Vector3(-w * 0.22, body_h + 3.18, 0), accent)
-			if building_type == "residential_apartment" or building_type == "residential_2":
-				# Manhattan-inspired Art Deco crown: stepped limestone setbacks,
-				# bronze verticals and a restrained central finial. Six static
-				# meshes keep the silhouette readable without adding runtime work.
-				_build_manhattan_art_deco_crown(w, d, body_h, front, frame, stone, accent)
-			else:
-				_add_residential_glass_dome(
-					Vector3(-w * 0.22, body_h + 3.30, -d * 0.05), maxf(0.52, w * 0.16)
-				)
+			# Every non-farm home reaches the same New York glass-tower
+			# endgame; do not leave upgraded starter villas as low-rise houses.
+			_build_manhattan_art_deco_crown(w, d, body_h, front, frame, stone, accent)
 		return
 
 	match stage:

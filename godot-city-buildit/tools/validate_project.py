@@ -820,6 +820,8 @@ for level_contract in [
     'func _build_residential_level_architecture(',
     'var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1',
     'if category == "residential" and upgrade_stage > 1:',
+    'var is_villa_tower := str(definition.get("subtype", "")) == "villa" and upgrade_stage >= 4',
+    'return not is_starter_villa and not is_villa_tower',
     'elif category == "commercial" and not model_path.ends_with(".tscn"):',
     'elif category == "industrial":',
     '_build_commercial_identity(w, d, commercial_body_h, d * 0.5, upgrade_stage)',
@@ -840,6 +842,12 @@ for level_contract in [
     'func _add_residential_glass_dome(',
     'dome_mesh.radial_segments = 12',
     'Los Angeles-inspired residential tower progression',
+    'var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)',
+    'residential_floors = 7',
+    'residential_floors = 9',
+    'residential_floors = 12',
+    'Every non-farm home reaches the same New York glass-tower',
+    '_build_manhattan_art_deco_crown(w, d, body_h, front, frame, stone, accent)',
 ]:
     if level_contract not in building_source:
         errors.append(f"Residential level architecture contract is missing: {level_contract}")
