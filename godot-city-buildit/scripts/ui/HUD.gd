@@ -6252,7 +6252,7 @@ func _show_settings_panel() -> void:
 	more_content.add_child(more_actions)
 	_add_settings_action(more_actions, "SettingsNotificationsButton", "Notifications", _show_notification_settings)
 	if PlayerAccountManager.player_id == 100001 or OS.has_feature("editor"):
-		_add_settings_action(more_actions, "SettingsGrantTestInventoryButton", "TEST: 1,000 of Every Item", _confirm_test_inventory_grant)
+		_add_settings_action(more_actions, "SettingsGrantTestInventoryButton", "TEST: +500 Every Item / +10,000 Storage", _confirm_test_inventory_grant)
 	_add_settings_action(more_actions, "SettingsWalletButton", "City Wallet", _show_wallet_panel)
 	_add_settings_action(more_actions, "SettingsAboutButton", "About & Advanced", _show_settings_about)
 
@@ -6769,8 +6769,8 @@ func _confirm_test_inventory_grant() -> void:
 	var dialog := ConfirmationDialog.new()
 	dialog.name = "GrantTestInventoryConfirmation"
 	dialog.title = "Developer Test Inventory"
-	dialog.dialog_text = "Replace the quantities of every registered raw material and crafted product with 1,000 each?\n\nWarehouse capacity will expand beyond normal gameplay limits for this test. This changes the current city's saved inventory."
-	dialog.ok_button_text = "Grant 1,000 Each"
+	dialog.dialog_text = "Add 500 of every registered raw material and product to the current inventory, and increase warehouse capacity by 10,000?\n\nThis is a test-only grant and changes the current city's saved inventory."
+	dialog.ok_button_text = "Add 500 Each + 10,000 Capacity"
 	dialog.cancel_button_text = "Cancel"
 	add_child(dialog)
 	dialog.confirmed.connect(func() -> void:
@@ -6778,15 +6778,17 @@ func _confirm_test_inventory_grant() -> void:
 			ProductionManager.raw_materials,
 			ProductionManager.crafted_items,
 			ProductionManager.store_catalog,
-			1000
+			500
 		)
 		var report := AcceptDialog.new()
 		report.name = "TestInventoryGrantResult"
 		report.title = "Test Inventory"
 		if bool(result.get("success", false)):
-			report.dialog_text = "Inventory updated.\n%d item types · %s total items · Warehouse capacity %s." % [
+			report.dialog_text = "Inventory updated.\n%d item types · %s items added · %s total items · +%s capacity (now %s)." % [
 				int(result.get("item_types", 0)),
+				str(result.get("total_added", 0)),
 				str(result.get("total_items", 0)),
+				str(result.get("capacity_added", 0)),
 				str(result.get("capacity", 0))
 			]
 		else:
