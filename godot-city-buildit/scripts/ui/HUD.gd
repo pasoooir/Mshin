@@ -4518,9 +4518,13 @@ func open_residential_panel(building: Building) -> void:
 	title.add_theme_font_size_override("font_size", _popup_font_size(19))
 	title.add_theme_color_override("font_color", Color("#24485B"))
 	layout.add_child(title)
-	var population_gain := ProductionManager.get_population_for_stage(mini(stage + 1, 6)) - int(building.current_population)
+	var upgrade_rewards: Dictionary = ProductionManager.get_residential_upgrade_rewards(stage, int(building.current_population))
 	var reward := Label.new()
-	reward.text = "POPULATION +%d   ·   XP +%d   ·   SIMOLEONS +%d" % [maxi(0, population_gain), maxi(0, population_gain) + 10, 50 * (stage + 1)]
+	reward.name = "ResidentialUpgradeRewardPreview"
+	if bool(upgrade_rewards.get("available", false)):
+		reward.text = "POPULATION +%d   ·   XP +%d   ·   SIMOLEONS +%d" % [int(upgrade_rewards.population_gain), int(upgrade_rewards.xp), int(upgrade_rewards.simoleons)]
+	else:
+		reward.text = "MAXIMUM LEVEL · NO FURTHER UPGRADE REWARDS"
 	reward.add_theme_font_size_override("font_size", _popup_font_size(15))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
