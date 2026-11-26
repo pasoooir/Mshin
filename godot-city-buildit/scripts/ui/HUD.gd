@@ -4524,6 +4524,13 @@ func open_residential_panel(building: Building) -> void:
 	reward.add_theme_font_size_override("font_size", _popup_font_size(15))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
 	layout.add_child(reward)
+	var utility_load_summary := Label.new()
+	utility_load_summary.name = "ResidentialUtilityLoadSummary"
+	utility_load_summary.text = _get_residential_utility_load_preview(building)
+	utility_load_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	utility_load_summary.add_theme_font_size_override("font_size", _popup_font_size(12))
+	utility_load_summary.add_theme_color_override("font_color", Color("#587487"))
+	layout.add_child(utility_load_summary)
 	var plan_note := Label.new()
 	plan_note.name = "ResidentialPlanDataNote"
 	plan_note.text = ProductionManager.get_upgrade_plan_note(stage)
@@ -4891,6 +4898,32 @@ func _close_epic_project_panel() -> void:
 		epic_project_overlay.queue_free()
 	epic_project_overlay = null
 	_epic_panel_building = null
+
+func _get_residential_utility_load_preview(building: Building) -> String:
+	if not is_instance_valid(building):
+		return ""
+	var utility_profiles: Array[Dictionary] = [
+		{"key":"power", "label":"Power"},
+		{"key":"water", "label":"Water"},
+		{"key":"sewage", "label":"Sewage"},
+		{"key":"waste", "label":"Waste"}
+	]
+	var load_parts: Array[String] = []
+	for profile in utility_profiles:
+		var utility_key := str(profile.key)
+		var current_load := ServiceManager.get_home_utility_demand(building, utility_key)
+		# Residential level currently gates service coverage but does not scale
+		# the catalog-defined per-home utility demand.
+		var after_upgrade_load := current_load
+		if current_load > 0:
+			load_parts.append("%s %d → %d" % [str(profile.label), current_load, after_upgrade_load])
+	var summary := "UTILITY LOAD (CURRENT → AFTER)"
+	if load_parts.is_empty():
+		summary += " · No household utility demand is unlocked at this Mayor Level."
+	else:
+		summary += " · " + "  |  ".join(load_parts)
+	return summary + "\nPer-home utility demand remains constant across residential stages in current Mshin rules."
+
 
 func _close_residential_panel() -> void:
 	_residential_building = null
