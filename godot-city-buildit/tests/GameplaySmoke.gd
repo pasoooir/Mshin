@@ -3827,7 +3827,7 @@ func _test_building_model_loader_contract() -> void:
 	art_deco_probe.mesh_root.free()
 	art_deco_probe.free()
 	var residential_visual_source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
-	_check(residential_visual_source.contains("building_type == \"residential_apartment\"") and residential_visual_source.contains("_build_manhattan_art_deco_crown("), "Standard apartment level 6 must select the Manhattan Art Deco crown.")
+	_check(residential_visual_source.contains("subtype == \"apartment\"") and residential_visual_source.contains("if stage >= 6:") and residential_visual_source.contains("_build_manhattan_art_deco_crown("), "Standard apartment level 6 must select the Manhattan Art Deco crown.")
 
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
 	for commercial_id in ["art_supplies", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
