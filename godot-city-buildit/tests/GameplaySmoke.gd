@@ -6023,6 +6023,60 @@ func _run_gameplay_test() -> void:
 	if home != null:
 		home._check_upgrade_ready()
 
+	# Exercise every later residential service milestone independently. Keep all
+	# other service maps satisfied so each assertion identifies the exact gate.
+	if home != null:
+		var previous_upgrade_stage := home.upgrade_stage
+		var previous_service_maps := {
+			"power": ServiceManager.power_served_ids.duplicate(true),
+			"water": ServiceManager.water_served_ids.duplicate(true),
+			"fire": ServiceManager.fire_served_ids.duplicate(true),
+			"sewage": ServiceManager.sewage_served_ids.duplicate(true),
+			"police": ServiceManager.police_served_ids.duplicate(true),
+			"waste": ServiceManager.waste_served_ids.duplicate(true),
+			"health": ServiceManager.health_served_ids.duplicate(true)
+		}
+		var service_milestones := [
+			{"stage": 3, "level": 8, "group": "sewage", "label": "Sewage"},
+			{"stage": 4, "level": 12, "group": "police", "label": "Police coverage"},
+			{"stage": 5, "level": 14, "group": "waste", "label": "Waste collection"},
+			{"stage": 6, "level": 16, "group": "health", "label": "Healthcare"}
+		]
+		for service_group in previous_service_maps:
+			var coverage: Dictionary = previous_service_maps[service_group].duplicate(true)
+			coverage[home.building_id] = true
+			match service_group:
+				"power": ServiceManager.power_served_ids = coverage
+				"water": ServiceManager.water_served_ids = coverage
+				"fire": ServiceManager.fire_served_ids = coverage
+				"sewage": ServiceManager.sewage_served_ids = coverage
+				"police": ServiceManager.police_served_ids = coverage
+				"waste": ServiceManager.waste_served_ids = coverage
+				"health": ServiceManager.health_served_ids = coverage
+		for milestone in service_milestones:
+			home.upgrade_stage = int(milestone.stage) - 1
+			GameManager.level = int(milestone.level)
+			var missing_group: String = str(milestone.group)
+			match missing_group:
+				"sewage": ServiceManager.sewage_served_ids.erase(home.building_id)
+				"police": ServiceManager.police_served_ids.erase(home.building_id)
+				"waste": ServiceManager.waste_served_ids.erase(home.building_id)
+				"health": ServiceManager.health_served_ids.erase(home.building_id)
+			var milestone_reason := home.get_residential_upgrade_block_reason()
+			_check(milestone_reason.contains(str(milestone.label)), "Residential stage %d must require %s coverage at City Level %d; got: %s" % [int(milestone.stage), str(milestone.label), int(milestone.level), milestone_reason])
+		for service_group in previous_service_maps:
+			match service_group:
+				"power": ServiceManager.power_served_ids = previous_service_maps[service_group]
+				"water": ServiceManager.water_served_ids = previous_service_maps[service_group]
+				"fire": ServiceManager.fire_served_ids = previous_service_maps[service_group]
+				"sewage": ServiceManager.sewage_served_ids = previous_service_maps[service_group]
+				"police": ServiceManager.police_served_ids = previous_service_maps[service_group]
+				"waste": ServiceManager.waste_served_ids = previous_service_maps[service_group]
+				"health": ServiceManager.health_served_ids = previous_service_maps[service_group]
+		home.upgrade_stage = previous_upgrade_stage
+		GameManager.level = level_after_first_upgrade
+		home._check_upgrade_ready()
+
 	# Isolate the material/Save test from later service-unlock milestones; the
 	# explicit Fire gate above is tested separately and remains active in-game.
 	var second_upgrade_level := GameManager.level
