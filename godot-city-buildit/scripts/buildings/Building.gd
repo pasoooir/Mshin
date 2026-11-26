@@ -2209,10 +2209,13 @@ func _finish_residential_upgrade() -> void:
 	if not upgrade_in_progress:
 		return
 	var old_population := current_population
-	upgrade_stage = mini(upgrade_stage + 1, max_stage)
+	var upgrade_rewards: Dictionary = ProductionManager.get_residential_upgrade_rewards(upgrade_stage, old_population)
+	if not bool(upgrade_rewards.get("available", false)):
+		return
+	upgrade_stage = int(upgrade_rewards.get("target_stage", mini(upgrade_stage + 1, max_stage)))
 	# Population never drops during an upgrade; new residents are added only
 	# when the short scaffold phase has completed.
-	current_population = maxi(old_population, ProductionManager.get_population_for_stage(upgrade_stage))
+	current_population = maxi(old_population, int(upgrade_rewards.get("target_population", old_population)))
 	var gained := current_population - old_population
 	upgrade_in_progress = false
 	upgrade_finish_unix = 0
@@ -2227,8 +2230,8 @@ func _finish_residential_upgrade() -> void:
 	_update_stage_label()
 	_play_completion_effect()
 	GameManager.add_population(gained)
-	GameManager.add_experience(gained + 10)
-	EconomyManager.add_simoleons(50 * upgrade_stage)
+	GameManager.add_experience(int(upgrade_rewards.get("xp", gained + 10)))
+	EconomyManager.add_simoleons(int(upgrade_rewards.get("simoleons", 50 * upgrade_stage)))
 	_check_upgrade_ready()
 	upgraded.emit(upgrade_stage)
 	ServiceManager.recalculate_from_buildings()
