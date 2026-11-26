@@ -4572,7 +4572,11 @@ func open_residential_panel(building: Building) -> void:
 			if str(home_need.get("item_id", "")) == item_id:
 				allocated_need = home_need
 				break
-		var owned := int(allocated_need.get("stored", StorageManager.get_count(item_id)))
+		# The City Needs dashboard allocates shared stock across all homes for
+		# planning purposes. A selected home's upgrade panel must instead read the
+		# actual warehouse count: another home's display allocation cannot make
+		# physically available items disappear from this home's upgrade plan.
+		var owned := StorageManager.get_count(item_id)
 		var ready_count := int(allocated_need.get("ready_to_collect", 0))
 		var producing_count := int(allocated_need.get("in_production", 0))
 		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
