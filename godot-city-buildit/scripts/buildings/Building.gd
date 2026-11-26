@@ -662,9 +662,15 @@ func _build_residential_level_architecture(
 		if stage >= 6:
 			_add_box(Vector3(w * 0.34, 2.10, d * 0.48), Vector3(-w * 0.22, body_h + 2.10, 0), glass_blue, "glass")
 			_add_box(Vector3(w * 0.40, 0.20, d * 0.56), Vector3(-w * 0.22, body_h + 3.18, 0), accent)
-			_add_residential_glass_dome(
-				Vector3(-w * 0.22, body_h + 3.30, -d * 0.05), maxf(0.52, w * 0.16)
-			)
+			if building_type == "residential_apartment" or building_type == "residential_2":
+				# Manhattan-inspired Art Deco crown: stepped limestone setbacks,
+				# bronze verticals and a restrained central finial. Six static
+				# meshes keep the silhouette readable without adding runtime work.
+				_build_manhattan_art_deco_crown(w, d, body_h, front, frame, stone, accent)
+			else:
+				_add_residential_glass_dome(
+					Vector3(-w * 0.22, body_h + 3.30, -d * 0.05), maxf(0.52, w * 0.16)
+				)
 		return
 
 	match stage:
@@ -711,6 +717,29 @@ func _build_residential_level_architecture(
 			_add_box(Vector3(w * 0.46, 0.16, d * 0.46), Vector3(0, body_h + 2.16, -d * 0.05), accent)
 			for column in [-1.0, 1.0]:
 				_add_box(Vector3(0.10, 1.88, 0.10), Vector3(column * w * 0.34, body_h + 1.00, front + 0.12), frame)
+
+
+func _build_manhattan_art_deco_crown(
+	w: float, d: float, body_h: float, front: float,
+	frame: Color, stone: Color, accent: Color
+) -> void:
+	# Compact setback massing recalls New York's Art Deco residential towers.
+	# Six static meshes keep the crown readable without per-frame work.
+	var limestone := Color(0.76, 0.72, 0.63)
+	var bronze := Color(0.42, 0.31, 0.20)
+	_add_box(Vector3(w * 0.76, 0.48, d * 0.78),
+		Vector3(0, body_h + 0.30, -d * 0.04), limestone)
+	_add_box(Vector3(w * 0.58, 0.78, d * 0.60),
+		Vector3(0, body_h + 0.88, -d * 0.04), stone.lightened(0.16))
+	_add_box(Vector3(w * 0.66, 0.12, d * 0.68),
+		Vector3(0, body_h + 1.34, -d * 0.04), bronze)
+	for side in [-1.0, 1.0]:
+		_add_box(Vector3(0.075, 1.28, 0.085),
+			Vector3(side * w * 0.245, body_h + 0.80, front + 0.12), frame)
+	_add_box(Vector3(0.12, 0.82, 0.12),
+		Vector3(0, body_h + 1.78, -d * 0.04), bronze)
+	_add_box(Vector3(w * 0.28, 0.10, d * 0.30),
+		Vector3(0, body_h + 2.22, -d * 0.04), accent)
 
 
 func _add_residential_glass_dome(base_position: Vector3, radius: float) -> void:
