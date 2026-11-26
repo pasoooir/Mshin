@@ -2094,10 +2094,47 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	var resumed_store_slot: Dictionary = disconnected_store.get_slot(0)
 	_check(int(resumed_store_slot.get("finish_unix", 0)) >= store_pause_now + 135, "A store must preserve its remaining order time across a 15-second road outage.")
 	_check(not resumed_store_slot.has("paused_at_unix"), "A reconnected store order must clear its paused timestamp.")
+
 	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
 	_check(disconnected_home.upgrade_in_progress and disconnected_home.upgrade_paused_remaining_seconds == -1 and disconnected_home.upgrade_finish_unix == store_pause_now + 102, "A residential upgrade must resume with its preserved two seconds after Gateway reconnection.")
 	disconnected_construction.update_construction_access_state(store_pause_now + 100)
 	_check(disconnected_construction.status == "constructing" and disconnected_construction.construction_paused_remaining_seconds == -1 and disconnected_construction.construction_finish_unix == store_pause_now + 102, "Construction must resume with its preserved two seconds after Gateway reconnection.")
+	# Commercial production must not be gated or paused by the separate
+	# Mshin utility/workforce simulation. Only Gateway road access controls it.
+	var previous_store_probe_storage: Dictionary = StorageManager.to_save_dict()
+	var commercial_store_owner := FireHazardTestBuilding.new()
+	commercial_store_owner.building_id = "commercial_store_without_utility_coverage"
+	commercial_store_owner.status = "completed"
+	commercial_store_owner.grid_pos = Vector2i(1, 1)
+	commercial_store_owner.definition = {"size": Vector2i.ONE, "category": "commercial", "shop_id": "building_supplies"}
+	add_child(commercial_store_owner)
+	var live_nails_store := ProductionComponentScript.new()
+	live_nails_store.shop_id = "building_supplies"
+	live_nails_store.slot_count = 2
+	live_nails_store.owner_building = commercial_store_owner
+	add_child(live_nails_store)
+	StorageManager.from_save_dict({"capacity": 50, "items": {"metal": 2}})
+	_check(not ServiceManager.is_building_services_served(commercial_store_owner), "The commercial store fixture must have no power/water service coverage so the production regression is actually exercised.")
+	_check(BuildManager.is_production_building_operational(commercial_store_owner), "A Gateway-connected commercial store must remain operational for production without municipal utility/workforce coverage.")
+	_check(live_nails_store.start_craft("nails", 0), "A Building Supplies store must accept Nails when its exact two Metal prerequisites are in City Storage.")
+	var live_nails_slot: Dictionary = live_nails_store.get_slot(0)
+	_check(int(live_nails_slot.get("finish_unix", 0)) > int(Time.get_unix_time_from_system()), "An accepted Nails order must immediately receive a future production deadline.")
+	_check(not live_nails_slot.has("paused_at_unix"), "A commercial Nails order must not start in a service-paused state.")
+	# Simulate a store order restored from an old save while service coverage
+	# was missing. The new production gate must resume the deadline and clear
+	# the stale pause marker, after which the live UI countdown can advance.
+	var timer_probe_now := int(Time.get_unix_time_from_system())
+	live_nails_slot["finish_unix"] = timer_probe_now + 120
+	live_nails_slot["paused_at_unix"] = timer_probe_now - 15
+	live_nails_store.slots[0] = live_nails_slot
+	live_nails_store.refresh_slots()
+	var resumed_nails_slot: Dictionary = live_nails_store.get_slot(0)
+	_check(int(resumed_nails_slot.get("finish_unix", 0)) >= timer_probe_now + 135, "A previously paused commercial store timer must resume without losing remaining production time.")
+	_check(not resumed_nails_slot.has("paused_at_unix"), "A service-paused commercial order must clear the stale pause marker when road access is valid.")
+	live_nails_store.queue_free()
+	commercial_store_owner.queue_free()
+	StorageManager.from_save_dict(previous_store_probe_storage)
+	await get_tree().process_frame
 	disconnected_home.upgrade_in_progress = false
 	disconnected_home.upgrade_finish_unix = 0
 	disconnected_home.upgrade_paused_remaining_seconds = -1

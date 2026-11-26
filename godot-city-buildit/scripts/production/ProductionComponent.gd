@@ -135,14 +135,14 @@ func purchase_store_queue_slot(simcash_cost: int) -> bool:
 
 func _owner_has_road_access() -> bool:
 	# Standalone components are used by isolated catalog tests. In-game
-	# components always receive their owning Building before they can run.
+	# production components always use the same operational gate as the HUD:
+	# factories and commercial stores require Gateway-connected road access,
+	# not utility/workforce coverage from the separate city-service simulation.
 	if owner_building == null:
 		return true
 	if not is_instance_valid(owner_building):
 		return false
-	if is_factory:
-		return BuildManager.is_production_building_operational(owner_building)
-	return BuildManager.is_building_operational(owner_building)
+	return BuildManager.is_production_building_operational(owner_building)
 
 func refresh_slots() -> void:
 	_ensure_slots()

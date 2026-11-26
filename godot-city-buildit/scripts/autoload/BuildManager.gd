@@ -366,10 +366,13 @@ func is_production_building_operational(building: Node) -> bool:
 	var size: Vector2i = definition.get("size", Vector2i(2, 2))
 	if not has_road_access(anchor, size):
 		return false
-	# Factories in the reference production loop need road access, not the
-	# city's residential power/water/workforce allocation. Applying the full
-	# municipal-service gate here deadlocks the starter factory at Level 1.
-	if str(definition.get("category", "")) == "industrial":
+	# Factories and commercial production stores run on their own production
+	# loop. They require a live Gateway-connected road, but not the city's
+	# Mshin-only power/water/workforce service simulation. Applying those
+	# municipal-service gates can reject a valid order or pause its timer even
+	# when every recipe input is already in City Storage.
+	var category := str(definition.get("category", ""))
+	if category in ["industrial", "commercial"]:
 		return true
 	return is_building_operational(building)
 

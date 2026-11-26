@@ -1899,7 +1899,7 @@ func start_factory_production(item_id: String = "") -> bool:
 	return true
 
 func start_commercial_production(item_id: String) -> bool:
-	if not BuildManager.is_building_operational(self):
+	if not BuildManager.is_production_building_operational(self):
 		return false
 	if status != "completed" or definition.get("category", "") != "commercial":
 		return false
