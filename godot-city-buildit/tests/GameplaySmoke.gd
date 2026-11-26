@@ -3803,6 +3803,20 @@ func _test_building_model_loader_contract() -> void:
 		var showcase_id: String = str(la_showcase_ids[showcase_index])
 		_check(str(BuildManager.building_types[showcase_id].get("model_path", "")) == model_paths[10 + showcase_index], "LA showcase type must select its own dedicated local model: " + showcase_id)
 	_check(BuildingModelLoader.load_model_scene(model_paths[10]) != null and BuildingModelLoader.load_model_scene(model_paths[15]) != null, "The LA showcase scene pack must be locally loadable.")
+	# The standard apartment progression must finish with a distinct New York
+	# setback crown, while LA showcase towers retain their glazed dome identity.
+	var art_deco_probe := Building.new()
+	art_deco_probe.mesh_root = Node3D.new()
+	art_deco_probe._build_manhattan_art_deco_crown(
+		3.4, 3.4, 16.2, 1.56, Color(0.72, 0.72, 0.68),
+		Color(0.66, 0.59, 0.48), Color(0.12, 0.62, 0.66)
+	)
+	_check(art_deco_probe.mesh_root.get_child_count() == 7, "Manhattan Art Deco crown must build its seven lightweight setback/vertical details.")
+	art_deco_probe.mesh_root.free()
+	art_deco_probe.free()
+	var residential_visual_source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
+	_check(residential_visual_source.contains("building_type == \"residential_apartment\"") and residential_visual_source.contains("_build_manhattan_art_deco_crown("), "Standard apartment level 6 must select the Manhattan Art Deco crown.")
+
 	_check(not BuildManager.building_types["factory_basic"].has("model_path") and not BuildManager.building_types["factory_mass"].has("model_path") and not BuildManager.building_types["factory_hightech"].has("model_path") and not BuildManager.building_types["factory_nano"].has("model_path"), "Larger factory tiers must retain their distinct procedural facilities instead of sharing the small-factory GLTF.")
 	for commercial_id in ["art_supplies", "gardening_supplies", "donut_shop", "home_appliances", "fashion_store", "sports_shop", "toy_store", "restoration_office", "farmers_store", "dessert_shop"]:
 		_check(not BuildManager.building_types[commercial_id].has("model_path"), "Commercial type %s must not inherit a category-wide generic GLTF." % commercial_id)
