@@ -6065,23 +6065,23 @@ func _run_gameplay_test() -> void:
 			# this reset, the previous milestone remains missing and contaminates
 			# the next service-gate assertion.
 			for service_group in previous_service_maps:
-				var coverage: Dictionary = previous_service_maps[service_group].duplicate(true)
-				coverage[home.building_id] = true
+				var milestone_coverage: Dictionary = previous_service_maps[service_group].duplicate(true)
+				milestone_coverage[home.building_id] = true
 				match service_group:
 					"power":
-						ServiceManager.power_served_ids = coverage
+						ServiceManager.power_served_ids = milestone_coverage
 					"water":
-						ServiceManager.water_served_ids = coverage
+						ServiceManager.water_served_ids = milestone_coverage
 					"fire":
-						ServiceManager.fire_served_ids = coverage
+						ServiceManager.fire_served_ids = milestone_coverage
 					"sewage":
-						ServiceManager.sewage_served_ids = coverage
+						ServiceManager.sewage_served_ids = milestone_coverage
 					"police":
-						ServiceManager.police_served_ids = coverage
+						ServiceManager.police_served_ids = milestone_coverage
 					"waste":
-						ServiceManager.waste_served_ids = coverage
+						ServiceManager.waste_served_ids = milestone_coverage
 					"health":
-						ServiceManager.health_served_ids = coverage
+						ServiceManager.health_served_ids = milestone_coverage
 			home.upgrade_stage = int(milestone.stage) - 1
 			GameManager.level = int(milestone.level)
 			var missing_group: String = str(milestone.group)
