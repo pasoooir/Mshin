@@ -311,22 +311,19 @@ func get_storage_ratio() -> String:
 
 
 
-func fill_catalog_inventory_for_testing(raw_catalog: Dictionary, crafted_catalog: Dictionary, extra_catalog: Dictionary = {}, amount: int = 1000) -> Dictionary:
-	# Explicit test-only grant: replace every known production item quantity while
-	# preserving special storage expansion items. This deliberately expands the
-	# warehouse beyond normal gameplay limits so the player can test all upgrade
-	# tiers without spending time producing or selling materials.
+func fill_catalog_inventory_for_testing(raw_catalog: Dictionary, crafted_catalog: Dictionary, extra_catalog: Dictionary = {}, amount: int = 500) -> Dictionary:
+	# Add test stock for every registered item without replacing existing inventory.
 	if amount <= 0:
 		return {"success": false, "reason": "invalid_amount"}
-	var test_inventory: Dictionary = {}
-	for item_variant in raw_catalog.keys():
-		var raw_item_id := str(item_variant)
-		if not raw_item_id.is_empty():
-			test_inventory[raw_item_id] = amount
-	for item_variant in crafted_catalog.keys():
-		var crafted_item_id := str(item_variant)
-		if not crafted_item_id.is_empty():
-			test_inventory[crafted_item_id] = amount
+	var catalog_ids: Dictionary = {}
+	for item_id_variant in item_definitions.keys():
+		var item_id := str(item_id_variant)
+		if not item_id.is_empty() and not STORAGE_ITEM_IDS.has(item_id):
+			catalog_ids[item_id] = true
+	for item_id_variant in raw_catalog.keys():
+		catalog_ids[str(item_id_variant)] = true
+	for item_id_variant in crafted_catalog.keys():
+		catalog_ids[str(item_id_variant)] = true
 	for store_variant in extra_catalog.keys():
 		var products: Variant = extra_catalog[store_variant]
 		if products is Array:
@@ -334,20 +331,17 @@ func fill_catalog_inventory_for_testing(raw_catalog: Dictionary, crafted_catalog
 				if product_variant is Dictionary:
 					var catalog_item_id := str(product_variant.get("id", ""))
 					if not catalog_item_id.is_empty():
-						test_inventory[catalog_item_id] = amount
-	for special_item_id in STORAGE_ITEM_IDS:
-		var existing_special_count := get_count(special_item_id)
-		if existing_special_count > 0:
-			test_inventory[special_item_id] = existing_special_count
-	if test_inventory.is_empty():
+						catalog_ids[catalog_item_id] = true
+	if catalog_ids.is_empty():
 		return {"success": false, "reason": "empty_catalog"}
-	items = test_inventory
-	var required_capacity := get_used()
-	if capacity < required_capacity:
-		capacity = required_capacity
+	for item_id_variant in catalog_ids.keys():
+		var grant_item_id := str(item_id_variant)
+		items[grant_item_id] = get_count(grant_item_id) + amount
+		_append_cost_batch(grant_item_id, amount, 0, false)
+	capacity += 10000
 	capacity_changed.emit(capacity)
 	storage_changed.emit()
-	return {"success": true, "item_types": test_inventory.size(), "quantity_each": amount, "total_items": get_used(), "capacity": capacity}
+	return {"success": true, "item_types": catalog_ids.size(), "quantity_added_each": amount, "total_added": catalog_ids.size() * amount, "total_items": get_used(), "capacity_added": 10000, "capacity": capacity}
 
 func get_cost_basis(requirements: Dictionary) -> Dictionary:
 	if requirements.is_empty() or not has_items(requirements):
