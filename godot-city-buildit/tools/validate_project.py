@@ -840,6 +840,12 @@ for level_contract in [
     'func _add_residential_glass_dome(',
     'dome_mesh.radial_segments = 12',
     'Los Angeles-inspired residential tower progression',
+    'var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)',
+    'residential_floors = 7',
+    'residential_floors = 9',
+    'residential_floors = 12',
+    'Every non-farm home reaches the same New York glass-tower',
+    '_build_manhattan_art_deco_crown(w, d, body_h, front, frame, stone, accent)',
 ]:
     if level_contract not in building_source:
         errors.append(f"Residential level architecture contract is missing: {level_contract}")
