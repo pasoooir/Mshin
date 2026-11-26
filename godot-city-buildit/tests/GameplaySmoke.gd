@@ -6038,7 +6038,7 @@ func _run_gameplay_test() -> void:
 		}
 		var service_milestones := [
 			{"stage": 3, "level": 8, "group": "sewage", "label": "Sewage"},
-			{"stage": 4, "level": 12, "group": "police", "label": "Police coverage"},
+			{"stage": 4, "level": 12, "group": "police", "label": "Police"},
 			{"stage": 5, "level": 14, "group": "waste", "label": "Waste collection"},
 			{"stage": 6, "level": 16, "group": "health", "label": "Healthcare"}
 		]
@@ -6061,6 +6061,27 @@ func _run_gameplay_test() -> void:
 				"health":
 					ServiceManager.health_served_ids = coverage
 		for milestone in service_milestones:
+			# Start each assertion from the same fully-covered baseline. Without
+			# this reset, the previous milestone remains missing and contaminates
+			# the next service-gate assertion.
+			for service_group in previous_service_maps:
+				var coverage: Dictionary = previous_service_maps[service_group].duplicate(true)
+				coverage[home.building_id] = true
+				match service_group:
+					"power":
+						ServiceManager.power_served_ids = coverage
+					"water":
+						ServiceManager.water_served_ids = coverage
+					"fire":
+						ServiceManager.fire_served_ids = coverage
+					"sewage":
+						ServiceManager.sewage_served_ids = coverage
+					"police":
+						ServiceManager.police_served_ids = coverage
+					"waste":
+						ServiceManager.waste_served_ids = coverage
+					"health":
+						ServiceManager.health_served_ids = coverage
 			home.upgrade_stage = int(milestone.stage) - 1
 			GameManager.level = int(milestone.level)
 			var missing_group: String = str(milestone.group)
