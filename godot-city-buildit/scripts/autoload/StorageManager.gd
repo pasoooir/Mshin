@@ -310,6 +310,45 @@ func get_storage_ratio() -> String:
 	return "%d/%d" % [get_used(), capacity]
 
 
+
+func fill_catalog_inventory_for_testing(raw_catalog: Dictionary, crafted_catalog: Dictionary, extra_catalog: Dictionary = {}, amount: int = 1000) -> Dictionary:
+	# Explicit test-only grant: replace every known production item quantity while
+	# preserving special storage expansion items. This deliberately expands the
+	# warehouse beyond normal gameplay limits so the player can test all upgrade
+	# tiers without spending time producing or selling materials.
+	if amount <= 0:
+		return {"success": false, "reason": "invalid_amount"}
+	var test_inventory: Dictionary = {}
+	for item_variant in raw_catalog.keys():
+		var raw_item_id := str(item_variant)
+		if not raw_item_id.is_empty():
+			test_inventory[raw_item_id] = amount
+	for item_variant in crafted_catalog.keys():
+		var crafted_item_id := str(item_variant)
+		if not crafted_item_id.is_empty():
+			test_inventory[crafted_item_id] = amount
+	for store_variant in extra_catalog.keys():
+		var products: Variant = extra_catalog[store_variant]
+		if products is Array:
+			for product_variant in products:
+				if product_variant is Dictionary:
+					var catalog_item_id := str(product_variant.get("id", ""))
+					if not catalog_item_id.is_empty():
+						test_inventory[catalog_item_id] = amount
+	for special_item_id in STORAGE_ITEM_IDS:
+		var existing_special_count := get_count(special_item_id)
+		if existing_special_count > 0:
+			test_inventory[special_item_id] = existing_special_count
+	if test_inventory.is_empty():
+		return {"success": false, "reason": "empty_catalog"}
+	items = test_inventory
+	var required_capacity := get_used()
+	if capacity < required_capacity:
+		capacity = required_capacity
+	capacity_changed.emit(capacity)
+	storage_changed.emit()
+	return {"success": true, "item_types": test_inventory.size(), "quantity_each": amount, "total_items": get_used(), "capacity": capacity}
+
 func get_cost_basis(requirements: Dictionary) -> Dictionary:
 	if requirements.is_empty() or not has_items(requirements):
 		return {"known": false, "total_cost": 0, "reason": "insufficient_inventory"}
