@@ -6046,33 +6046,51 @@ func _run_gameplay_test() -> void:
 			var coverage: Dictionary = previous_service_maps[service_group].duplicate(true)
 			coverage[home.building_id] = true
 			match service_group:
-				"power": ServiceManager.power_served_ids = coverage
-				"water": ServiceManager.water_served_ids = coverage
-				"fire": ServiceManager.fire_served_ids = coverage
-				"sewage": ServiceManager.sewage_served_ids = coverage
-				"police": ServiceManager.police_served_ids = coverage
-				"waste": ServiceManager.waste_served_ids = coverage
-				"health": ServiceManager.health_served_ids = coverage
+				"power":
+					ServiceManager.power_served_ids = coverage
+				"water":
+					ServiceManager.water_served_ids = coverage
+				"fire":
+					ServiceManager.fire_served_ids = coverage
+				"sewage":
+					ServiceManager.sewage_served_ids = coverage
+				"police":
+					ServiceManager.police_served_ids = coverage
+				"waste":
+					ServiceManager.waste_served_ids = coverage
+				"health":
+					ServiceManager.health_served_ids = coverage
 		for milestone in service_milestones:
 			home.upgrade_stage = int(milestone.stage) - 1
 			GameManager.level = int(milestone.level)
 			var missing_group: String = str(milestone.group)
 			match missing_group:
-				"sewage": ServiceManager.sewage_served_ids.erase(home.building_id)
-				"police": ServiceManager.police_served_ids.erase(home.building_id)
-				"waste": ServiceManager.waste_served_ids.erase(home.building_id)
-				"health": ServiceManager.health_served_ids.erase(home.building_id)
+				"sewage":
+					ServiceManager.sewage_served_ids.erase(home.building_id)
+				"police":
+					ServiceManager.police_served_ids.erase(home.building_id)
+				"waste":
+					ServiceManager.waste_served_ids.erase(home.building_id)
+				"health":
+					ServiceManager.health_served_ids.erase(home.building_id)
 			var milestone_reason := home.get_residential_upgrade_block_reason()
 			_check(milestone_reason.contains(str(milestone.label)), "Residential stage %d must require %s coverage at City Level %d; got: %s" % [int(milestone.stage), str(milestone.label), int(milestone.level), milestone_reason])
 		for service_group in previous_service_maps:
 			match service_group:
-				"power": ServiceManager.power_served_ids = previous_service_maps[service_group]
-				"water": ServiceManager.water_served_ids = previous_service_maps[service_group]
-				"fire": ServiceManager.fire_served_ids = previous_service_maps[service_group]
-				"sewage": ServiceManager.sewage_served_ids = previous_service_maps[service_group]
-				"police": ServiceManager.police_served_ids = previous_service_maps[service_group]
-				"waste": ServiceManager.waste_served_ids = previous_service_maps[service_group]
-				"health": ServiceManager.health_served_ids = previous_service_maps[service_group]
+				"power":
+					ServiceManager.power_served_ids = previous_service_maps[service_group]
+				"water":
+					ServiceManager.water_served_ids = previous_service_maps[service_group]
+				"fire":
+					ServiceManager.fire_served_ids = previous_service_maps[service_group]
+				"sewage":
+					ServiceManager.sewage_served_ids = previous_service_maps[service_group]
+				"police":
+					ServiceManager.police_served_ids = previous_service_maps[service_group]
+				"waste":
+					ServiceManager.waste_served_ids = previous_service_maps[service_group]
+				"health":
+					ServiceManager.health_served_ids = previous_service_maps[service_group]
 		home.upgrade_stage = previous_upgrade_stage
 		GameManager.level = level_after_first_upgrade
 		home._check_upgrade_ready()
