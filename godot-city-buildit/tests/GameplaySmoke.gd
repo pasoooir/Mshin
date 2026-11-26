@@ -60,8 +60,19 @@ func _ready() -> void:
 	_test_camera_gesture_math()
 	_test_hud_touch_session_ownership()
 	_test_store_building_identity_contract()
+	_test_residential_reward_contract()
 	await _test_each_store_direct_production()
 	call_deferred("_run_gameplay_test")
+
+func _test_residential_reward_contract() -> void:
+	var stage_one: Dictionary = ProductionManager.get_residential_upgrade_rewards(1, 52)
+	_check(bool(stage_one.get("available", false)) and int(stage_one.get("target_stage", 0)) == 2, "A Level 1 residential reward preview must target Level 2.")
+	_check(int(stage_one.get("population_gain", -1)) == 52 and int(stage_one.get("xp", -1)) == 62 and int(stage_one.get("simoleons", -1)) == 100, "Residential Level 1→2 preview must match the shared population/XP/Simoleon reward contract.")
+	var final_step: Dictionary = ProductionManager.get_residential_upgrade_rewards(5, 752)
+	_check(int(final_step.get("population_gain", -1)) == 1084 and int(final_step.get("xp", -1)) == 1094 and int(final_step.get("simoleons", -1)) == 300, "Residential Level 5→6 reward preview must use the current Mshin stage table and completion formula.")
+	var maximum: Dictionary = ProductionManager.get_residential_upgrade_rewards(6, 1836)
+	_check(not bool(maximum.get("available", true)) and int(maximum.get("xp", -1)) == 0 and int(maximum.get("simoleons", -1)) == 0, "Maximum-level homes must not advertise rewards for a nonexistent next upgrade.")
+
 
 func _test_store_building_identity_contract() -> void:
 	# Verify exact city building/shop ownership and source-level visual identity
