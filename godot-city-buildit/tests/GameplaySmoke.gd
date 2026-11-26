@@ -5959,6 +5959,13 @@ func _run_gameplay_test() -> void:
 	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
 	StorageManager.add_item("metal",1)
 	StorageManager.add_item("nails",1)
+	# A selected home's plan must use the physical warehouse count, not the
+	# City Needs dashboard's cross-home display allocation.
+	production_hud.open_residential_panel(home)
+	await get_tree().process_frame
+	var funded_upgrade_button := production_hud.residential_overlay.find_child("ResidentialUpgradeButton", true, false) as Button
+	_check(funded_upgrade_button != null and not funded_upgrade_button.disabled, "Selected home upgrade button must enable when its full BOM is physically present in City Storage.")
+	production_hud._close_residential_panel()
 	var population_before_upgrade: int = int(home.current_population) if home != null else 0
 	var city_population_before_upgrade := GameManager.population
 	_check(home != null and home.try_upgrade(), "House upgrade failed despite having Nails and Metal.")
