@@ -2095,11 +2095,13 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	_check(int(resumed_store_slot.get("finish_unix", 0)) >= store_pause_now + 135, "A store must preserve its remaining order time across a 15-second road outage.")
 	_check(not resumed_store_slot.has("paused_at_unix"), "A reconnected store order must clear its paused timestamp.")
 
+	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
+	_check(disconnected_home.upgrade_in_progress and disconnected_home.upgrade_paused_remaining_seconds == -1 and disconnected_home.upgrade_finish_unix == store_pause_now + 102, "A residential upgrade must resume with its preserved two seconds after Gateway reconnection.")
+	disconnected_construction.update_construction_access_state(store_pause_now + 100)
+	_check(disconnected_construction.status == "constructing" and disconnected_construction.construction_paused_remaining_seconds == -1 and disconnected_construction.construction_finish_unix == store_pause_now + 102, "Construction must resume with its preserved two seconds after Gateway reconnection.")
 	# Commercial production must not be gated or paused by the separate
 	# Mshin utility/workforce simulation. Only Gateway road access controls it.
 	var previous_store_probe_storage: Dictionary = StorageManager.to_save_dict()
-	var previous_store_probe_level := GameManager.level
-	GameManager.level = 1
 	var commercial_store_owner := FireHazardTestBuilding.new()
 	commercial_store_owner.building_id = "commercial_store_without_utility_coverage"
 	commercial_store_owner.status = "completed"
@@ -2132,12 +2134,7 @@ func _test_road_gateway_connectivity(road_system) -> void:
 	live_nails_store.queue_free()
 	commercial_store_owner.queue_free()
 	StorageManager.from_save_dict(previous_store_probe_storage)
-	GameManager.level = previous_store_probe_level
 	await get_tree().process_frame
-	disconnected_home.update_upgrade_access_state(store_pause_now + 100)
-	_check(disconnected_home.upgrade_in_progress and disconnected_home.upgrade_paused_remaining_seconds == -1 and disconnected_home.upgrade_finish_unix == store_pause_now + 102, "A residential upgrade must resume with its preserved two seconds after Gateway reconnection.")
-	disconnected_construction.update_construction_access_state(store_pause_now + 100)
-	_check(disconnected_construction.status == "constructing" and disconnected_construction.construction_paused_remaining_seconds == -1 and disconnected_construction.construction_finish_unix == store_pause_now + 102, "Construction must resume with its preserved two seconds after Gateway reconnection.")
 	disconnected_home.upgrade_in_progress = false
 	disconnected_home.upgrade_finish_unix = 0
 	disconnected_home.upgrade_paused_remaining_seconds = -1
