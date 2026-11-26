@@ -380,6 +380,7 @@ func _test_mixed_hud_world_touch_isolation(city_input: Node, camera: Node) -> vo
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
+		push_warning("[GameplaySmoke] CHECK FAILED: " + message)
 		push_error("[GameplaySmoke] " + message)
 
 func _confirm_catalog_build(hud) -> void:
