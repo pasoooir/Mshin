@@ -6251,6 +6251,8 @@ func _show_settings_panel() -> void:
 	more_actions.add_theme_constant_override("v_separation", 10 * compact_scale)
 	more_content.add_child(more_actions)
 	_add_settings_action(more_actions, "SettingsNotificationsButton", "Notifications", _show_notification_settings)
+	if PlayerAccountManager.player_id == 100001 or OS.has_feature("editor"):
+		_add_settings_action(more_actions, "SettingsGrantTestInventoryButton", "TEST: 1,000 of Every Item", _confirm_test_inventory_grant)
 	_add_settings_action(more_actions, "SettingsWalletButton", "City Wallet", _show_wallet_panel)
 	_add_settings_action(more_actions, "SettingsAboutButton", "About & Advanced", _show_settings_about)
 
@@ -6761,6 +6763,42 @@ func _show_settings_about() -> void:
 	dialog.canceled.connect(_close_settings_modal.bind(dialog))
 	_style_settings_dialog(dialog, Vector2i(roundi(minf(720.0, viewport_size.x * 0.90)), roundi(minf(640.0, viewport_size.y * 0.88))))
 
+
+
+func _confirm_test_inventory_grant() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.name = "GrantTestInventoryConfirmation"
+	dialog.title = "Developer Test Inventory"
+	dialog.dialog_text = "Replace the quantities of every registered raw material and crafted product with 1,000 each?\n\nWarehouse capacity will expand beyond normal gameplay limits for this test. This changes the current city's saved inventory."
+	dialog.ok_button_text = "Grant 1,000 Each"
+	dialog.cancel_button_text = "Cancel"
+	add_child(dialog)
+	dialog.confirmed.connect(func() -> void:
+		var result: Dictionary = StorageManager.fill_catalog_inventory_for_testing(
+			ProductionManager.raw_materials,
+			ProductionManager.crafted_items,
+			ProductionManager.store_catalog,
+			1000
+		)
+		var report := AcceptDialog.new()
+		report.name = "TestInventoryGrantResult"
+		report.title = "Test Inventory"
+		if bool(result.get("success", false)):
+			report.dialog_text = "Inventory updated.\n%d item types · %s total items · Warehouse capacity %s." % [
+				int(result.get("item_types", 0)),
+				str(result.get("total_items", 0)),
+				str(result.get("capacity", 0))
+			]
+		else:
+			report.dialog_text = "Inventory could not be updated: " + str(result.get("reason", "unknown error"))
+		add_child(report)
+		report.popup_centered()
+		report.confirmed.connect(report.queue_free)
+		report.canceled.connect(report.queue_free)
+	)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.popup_centered()
 
 func _show_settings_help() -> void:
 	_close_settings_panel()
