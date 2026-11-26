@@ -4438,7 +4438,7 @@ func open_residential_panel(building: Building) -> void:
 	details_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	details_content.add_child(details_scroll)
+	layout.add_child(details_scroll)
 	var details_content := VBoxContainer.new()
 	details_content.name = "ResidentialUpgradeDetails"
 	details_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
