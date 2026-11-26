@@ -320,21 +320,21 @@ func fill_catalog_inventory_for_testing(raw_catalog: Dictionary, crafted_catalog
 		return {"success": false, "reason": "invalid_amount"}
 	var test_inventory: Dictionary = {}
 	for item_variant in raw_catalog.keys():
-		var item_id := str(item_variant)
-		if not item_id.is_empty():
-			test_inventory[item_id] = amount
+		var raw_item_id := str(item_variant)
+		if not raw_item_id.is_empty():
+			test_inventory[raw_item_id] = amount
 	for item_variant in crafted_catalog.keys():
-		var item_id := str(item_variant)
-		if not item_id.is_empty():
-			test_inventory[item_id] = amount
+		var crafted_item_id := str(item_variant)
+		if not crafted_item_id.is_empty():
+			test_inventory[crafted_item_id] = amount
 	for store_variant in extra_catalog.keys():
 		var products: Variant = extra_catalog[store_variant]
 		if products is Array:
 			for product_variant in products:
 				if product_variant is Dictionary:
-					var item_id := str(product_variant.get("id", ""))
-					if not item_id.is_empty():
-						test_inventory[item_id] = amount
+					var catalog_item_id := str(product_variant.get("id", ""))
+					if not catalog_item_id.is_empty():
+						test_inventory[catalog_item_id] = amount
 	for special_item_id in STORAGE_ITEM_IDS:
 		var existing_special_count := get_count(special_item_id)
 		if existing_special_count > 0:
