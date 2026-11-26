@@ -4414,7 +4414,7 @@ func open_residential_panel(building: Building) -> void:
 	residential_overlay.add_child(shade)
 	var viewport_size := get_viewport().get_visible_rect().size
 	var width := minf(600.0 * _ui_scale, viewport_size.x * 0.90)
-	var height := minf(520.0 * _ui_scale, viewport_size.y * 0.88)
+	var height := minf(680.0 * _ui_scale, viewport_size.y * 0.94)
 	var panel := PanelContainer.new()
 	panel.name = "ResidentialUpgradePanel"
 	panel.anchor_left = 0.5
@@ -4431,10 +4431,27 @@ func open_residential_panel(building: Building) -> void:
 	layout.add_theme_constant_override("separation", 8)
 	panel.add_child(layout)
 	_city_panel_heading(layout, "RESIDENTIAL UPGRADE PLAN", _close_residential_panel)
+	# Keep the action area visible on short mobile viewports. Long plan details
+	# scroll independently instead of pushing the primary action below the panel.
+	var details_scroll := ScrollContainer.new()
+	details_scroll.name = "ResidentialUpgradeDetailsScroll"
+	details_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	details_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	details_content.add_child(details_scroll)
+	var details_content := VBoxContainer.new()
+	details_content.name = "ResidentialUpgradeDetails"
+	details_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details_content.add_theme_constant_override("separation", 8)
+	details_scroll.add_child(details_content)
+	var action_footer := VBoxContainer.new()
+	action_footer.name = "ResidentialUpgradeActions"
+	action_footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_footer.add_theme_constant_override("separation", 6)
 	var plan_icon := Icons.make_icon("hard_hat", Vector2(38, 38) * _ui_scale)
 	plan_icon.name = "ResidentialPlanHardHat"
 	plan_icon.modulate = Color("#3D9DE5")
-	layout.add_child(plan_icon)
+	details_content.add_child(plan_icon)
 	var stage := int(building.upgrade_stage)
 	var is_upgrading := bool(building.upgrade_in_progress)
 	var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
@@ -4517,7 +4534,7 @@ func open_residential_panel(building: Building) -> void:
 	title.text = "%s  ·  LEVEL %d → %d" % [str(building.definition.get("name", "Home")), stage, mini(stage + 1, 6)]
 	title.add_theme_font_size_override("font_size", _popup_font_size(19))
 	title.add_theme_color_override("font_color", Color("#24485B"))
-	layout.add_child(title)
+	details_content.add_child(title)
 	var upgrade_rewards: Dictionary = ProductionManager.get_residential_upgrade_rewards(stage, int(building.current_population))
 	var reward := Label.new()
 	reward.name = "ResidentialUpgradeRewardPreview"
@@ -4527,28 +4544,28 @@ func open_residential_panel(building: Building) -> void:
 		reward.text = "MAXIMUM LEVEL · NO FURTHER UPGRADE REWARDS"
 	reward.add_theme_font_size_override("font_size", _popup_font_size(15))
 	reward.add_theme_color_override("font_color", Color("#34734D"))
-	layout.add_child(reward)
+	details_content.add_child(reward)
 	var utility_load_summary := Label.new()
 	utility_load_summary.name = "ResidentialUtilityLoadSummary"
 	utility_load_summary.text = _get_residential_utility_load_preview(building)
 	utility_load_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	utility_load_summary.add_theme_font_size_override("font_size", _popup_font_size(12))
 	utility_load_summary.add_theme_color_override("font_color", Color("#587487"))
-	layout.add_child(utility_load_summary)
+	details_content.add_child(utility_load_summary)
 	var plan_note := Label.new()
 	plan_note.name = "ResidentialPlanDataNote"
 	plan_note.text = ProductionManager.get_upgrade_plan_note(stage)
 	plan_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	plan_note.add_theme_font_size_override("font_size", _popup_font_size(13))
 	plan_note.add_theme_color_override("font_color", Color("#8A672B"))
-	layout.add_child(plan_note)
+	details_content.add_child(plan_note)
 	if is_upgrading:
 		var upgrade_status := Label.new()
 		upgrade_status.name = "ResidentialUpgradeInProgress"
 		upgrade_status.text = "SCAFFOLDING IN PROGRESS  ·  %d SECONDS REMAINING" % building.get_upgrade_remaining_seconds()
 		upgrade_status.add_theme_font_size_override("font_size", _popup_font_size(15))
 		upgrade_status.add_theme_color_override("font_color", Color("#315C8A"))
-		layout.add_child(upgrade_status)
+		details_content.add_child(upgrade_status)
 	var all_available := not requirements.is_empty() and not is_upgrading
 	var shortage_lines: Array[String] = []
 	var service_shortage_lines: Array[String] = []
@@ -4563,7 +4580,7 @@ func open_residential_panel(building: Building) -> void:
 			service_shortage_lines.append(service_name)
 		var service_row := HBoxContainer.new()
 		service_row.add_theme_constant_override("separation", 8)
-		layout.add_child(service_row)
+		details_content.add_child(service_row)
 		var service_icon := Label.new()
 		service_icon.text = "✓" if is_served else "!"
 		service_icon.add_theme_font_size_override("font_size", _popup_font_size(18))
@@ -4608,7 +4625,7 @@ func open_residential_panel(building: Building) -> void:
 				need_color = Color("#A13F35")
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		layout.add_child(row)
+		details_content.add_child(row)
 		var icon_type := "raw" if ProductionManager.raw_materials.has(item_id) else "crafted"
 		row.add_child(Icons.make_item_icon(icon_type, item_id, Vector2(46, 46) * _ui_scale))
 		var item_label := Label.new()
@@ -4622,7 +4639,7 @@ func open_residential_panel(building: Building) -> void:
 		supplier_line.text = "SUPPLIER  " + (str(supplier_rows[0].get("name", "Unknown")) if not supplier_rows.is_empty() else "No registered supplier")
 		supplier_line.add_theme_font_size_override("font_size", _popup_font_size(13))
 		supplier_line.add_theme_color_override("font_color", Color("#607989"))
-		layout.add_child(supplier_line)
+		details_content.add_child(supplier_line)
 	var plan_status := Label.new()
 	plan_status.name = "ResidentialPlanStatus"
 	plan_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -4647,7 +4664,7 @@ func open_residential_panel(building: Building) -> void:
 		plan_status.text = "UPGRADE BLOCKED · " + (" · ".join(missing_parts) if not missing_parts.is_empty() else "CHECK REQUIRED ITEMS")
 		plan_status.add_theme_color_override("font_color", Color("#A13F35"))
 	plan_status.add_theme_font_size_override("font_size", _popup_font_size(14))
-	layout.add_child(plan_status)
+	details_content.add_child(plan_status)
 	if is_upgrading:
 		var upgrade_progress := ProgressBar.new()
 		upgrade_progress.name = "ResidentialUpgradeProgress"
@@ -4657,7 +4674,7 @@ func open_residential_panel(building: Building) -> void:
 		var remaining_seconds := building.get_upgrade_remaining_seconds()
 		upgrade_progress.value = clampf(1.0 - float(remaining_seconds) / 4.0, 0.0, 1.0)
 		upgrade_progress.custom_minimum_size.y = 10.0 * _ui_scale
-		layout.add_child(upgrade_progress)
+		details_content.add_child(upgrade_progress)
 		if remaining_seconds > 0:
 			var progress_tween := create_tween()
 			progress_tween.tween_property(upgrade_progress, "value", 1.0, float(remaining_seconds))
@@ -4676,7 +4693,7 @@ func open_residential_panel(building: Building) -> void:
 		cancel_upgrade.custom_minimum_size.y = 44 * _ui_scale
 		cancel_upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#C65C52"), Color("#F0A49C")))
 		cancel_upgrade.pressed.connect(_cancel_residential_upgrade_from_panel.bind(building))
-		layout.add_child(cancel_upgrade)
+		action_footer.add_child(cancel_upgrade)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
 	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("ROAD ACCESS MISSING" if upgrade_block_reason.to_lower().contains("road") else ("CITY SERVICES MISSING" if not service_shortage_lines.is_empty() else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))))
@@ -4685,7 +4702,7 @@ func open_residential_panel(building: Building) -> void:
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
 	upgrade.add_theme_stylebox_override("normal", _toolbar_style(Color("#55B96A"), Color("#A6E4A9")))
 	upgrade.pressed.connect(_upgrade_residential_from_panel.bind(building))
-	layout.add_child(upgrade)
+	action_footer.add_child(upgrade)
 	if stage >= 6:
 		var epic_action := Button.new()
 		epic_action.name = "EpicProjectAction"
@@ -4702,7 +4719,7 @@ func open_residential_panel(building: Building) -> void:
 		epic_action.add_theme_stylebox_override("normal", _toolbar_style(Color("#B68A35"), Color("#F2D27B")))
 		epic_action.add_theme_color_override("font_color", Color("#34280B"))
 		epic_action.pressed.connect(_open_epic_project_panel.bind(building))
-		layout.add_child(epic_action)
+		action_footer.add_child(epic_action)
 
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if not is_instance_valid(building) or _residential_building != building or not is_instance_valid(residential_overlay):
