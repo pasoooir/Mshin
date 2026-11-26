@@ -1240,6 +1240,29 @@ func get_upgrade_plan_note(from_stage: int) -> String:
 func get_population_for_stage(stage: int) -> int:
 	return residential_population.get(clampi(stage,1,6),15)
 
+func get_residential_upgrade_rewards(from_stage: int, current_population: int) -> Dictionary:
+	var stage := clampi(from_stage, 1, 6)
+	if stage >= 6:
+		return {
+			"available": false,
+			"target_stage": 6,
+			"target_population": get_population_for_stage(6),
+			"population_gain": 0,
+			"xp": 0,
+			"simoleons": 0
+		}
+	var target_stage := stage + 1
+	var target_population := get_population_for_stage(target_stage)
+	var population_gain := maxi(0, target_population - maxi(0, current_population))
+	return {
+		"available": true,
+		"target_stage": target_stage,
+		"target_population": target_population,
+		"population_gain": population_gain,
+		"xp": population_gain + 10,
+		"simoleons": 50 * target_stage
+	}
+
 func can_afford_upgrade(from_stage: int) -> bool:
 	for requirement in get_upgrade_requirements(from_stage):
 		if StorageManager.get_count(str(requirement.item)) < int(requirement.amount):
