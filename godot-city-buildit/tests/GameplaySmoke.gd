@@ -5369,6 +5369,8 @@ func _run_gameplay_test() -> void:
 	_check(needs_hud.find_child("ResidentialUpgradePanel", true, false) != null, "Selecting a residential building must open its detailed upgrade plan.")
 	_check(needs_hud.find_child("ResidentialUpgradeButton", true, false) is Button, "Residential plan must expose an explicit upgrade action.")
 	_check(needs_hud.find_child("ResidentialPlanStatus", true, false) is Label, "Residential plan must clearly show whether materials are missing or the home is ready.")
+	var utility_load_preview := needs_hud.find_child("ResidentialUtilityLoadSummary", true, false) as Label
+	_check(utility_load_preview != null and utility_load_preview.text.contains("UTILITY LOAD (CURRENT → AFTER)") and utility_load_preview.text.contains("remains constant"), "The selected-home upgrade plan must disclose the current per-home utility load and avoid implying an unsupported level-based increase.")
 	var home_material_tokens: Array = needs_hud.residential_overlay.find_children("ResidentialNeed_*", "Button", true, false)
 	_check(needs_hud._residential_world_orbit != null and needs_hud._residential_world_orbit.get_child_count() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "A selected home must show its required upgrade materials as real 3D hex platforms around the building.")
 	_check(home_material_tokens.size() == ProductionManager.get_upgrade_requirements(home.upgrade_stage).size(), "Every residential upgrade material must have a tappable projected token.")
