@@ -6026,7 +6026,7 @@ func _run_gameplay_test() -> void:
 	# Exercise every later residential service milestone independently. Keep all
 	# other service maps satisfied so each assertion identifies the exact gate.
 	if home != null:
-		var previous_upgrade_stage := home.upgrade_stage
+		var previous_upgrade_stage: int = int(home.upgrade_stage)
 		var previous_service_maps := {
 			"power": ServiceManager.power_served_ids.duplicate(true),
 			"water": ServiceManager.water_served_ids.duplicate(true),
@@ -6073,7 +6073,7 @@ func _run_gameplay_test() -> void:
 					ServiceManager.waste_served_ids.erase(home.building_id)
 				"health":
 					ServiceManager.health_served_ids.erase(home.building_id)
-			var milestone_reason := home.get_residential_upgrade_block_reason()
+			var milestone_reason: String = str(home.get_residential_upgrade_block_reason())
 			_check(milestone_reason.contains(str(milestone.label)), "Residential stage %d must require %s coverage at City Level %d; got: %s" % [int(milestone.stage), str(milestone.label), int(milestone.level), milestone_reason])
 		for service_group in previous_service_maps:
 			match service_group:
