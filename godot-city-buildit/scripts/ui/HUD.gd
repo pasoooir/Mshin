@@ -4720,6 +4720,7 @@ func open_residential_panel(building: Building) -> void:
 		epic_action.add_theme_color_override("font_color", Color("#34280B"))
 		epic_action.pressed.connect(_open_epic_project_panel.bind(building))
 		action_footer.add_child(epic_action)
+	layout.add_child(action_footer)
 
 func _upgrade_residential_from_panel(building: Building) -> void:
 	if not is_instance_valid(building) or _residential_building != building or not is_instance_valid(residential_overlay):
