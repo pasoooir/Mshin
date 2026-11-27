@@ -75,7 +75,7 @@ func _test_residential_reward_contract() -> void:
 	var maximum: Dictionary = ProductionManager.get_residential_upgrade_rewards(6, 1836)
 	_check(not bool(maximum.get("available", true)) and int(maximum.get("xp", -1)) == 0 and int(maximum.get("simoleons", -1)) == 0, "Maximum-level homes must not advertise rewards for a nonexistent next upgrade.")
 	var expected_upgrade_durations := [5, 10, 20, 35, 60]
-	var duration_probe = BuildingScene.instantiate()
+	var duration_probe = BuildingScene.instantiate() as Building
 	for stage_index in range(expected_upgrade_durations.size()):
 		var duration := duration_probe.get_residential_upgrade_duration_seconds(stage_index + 1)
 		_check(duration == expected_upgrade_durations[stage_index] and duration >= 5 and duration <= 60, "Residential stage %d must use its configured 5–60 second construction duration." % (stage_index + 1))
@@ -6193,6 +6193,9 @@ func _run_gameplay_test() -> void:
 	var marker_button: Button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path(), "A completed non-maximum residential home must retain an upgrade path even when its BOM is absent.")
 	_check(marker_layer._entries.has(home_upgrade_key) and is_instance_valid(marker_button), "An eligible home must keep its hardhat marker visible without upgrade materials.")
+	marker_layer.set_building_alerts_enabled(false)
+	_check(marker_layer._entries.has(home_upgrade_key), "Disabling optional building alerts must not hide essential residential upgrade helmets.")
+	marker_layer.set_building_alerts_enabled(true)
 	_check(marker_button == null or marker_button.find_child("UpgradeStockCheck", true, false) == null, "A home without its complete BOM must not show the green stock check.")
 	_check(StorageManager.add_items({"metal": 1, "nails": 1}), "Could not seed the exact starter BOM for the residential check-icon test.")
 	if home != null:
