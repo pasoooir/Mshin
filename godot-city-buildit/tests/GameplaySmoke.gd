@@ -132,49 +132,92 @@ func _test_store_building_identity_contract() -> void:
 		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
 
 func _test_each_store_direct_production() -> void:
-	# Exercise one real recipe through enqueue -> timer -> ready -> collect for
-	# every standard store. Seed only the exact declared inputs; no recipe data
-	# or quantities are synthesized by the test.
+	# Exercise every verified product in all 14 standard stores through the
+	# real inventory -> enqueue -> timer -> READY -> collect lifecycle.
+	# Recipe inputs and quantities are read only from ProductionManager.
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_level := GameManager.level
-	GameManager.level = 90
+	var previous_experience := GameManager.experience
+	# Use the highest supported Mayor Level without allowing test collections
+	# to level up or permanently alter the live HUD/progression state.
+	GameManager.level = 60
 	var store_ids := [
 		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
 		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
 		"fashion_store", "sports_shop", "toy_store", "restoration_office",
 		"farmers_store", "dessert_shop"
 	]
+	var tested_recipe_ids: Dictionary = {}
 	for store_id in store_ids:
 		var recipe_ids: Array = ProductionManager.get_store_recipe_ids(store_id)
-		_check(not recipe_ids.is_empty(), "%s must have at least one production recipe for its live order test." % store_id)
-		if recipe_ids.is_empty():
-			continue
-		var item_id := str(recipe_ids[0])
-		var recipe := ProductionManager.get_recipe(item_id)
-		var inputs: Dictionary = recipe.get("inputs", {})
-		StorageManager.from_save_dict({"capacity": 500, "items": inputs})
-		var component := ProductionComponentScript.new()
-		component.name = "StoreDirectOrderProbe_%s" % store_id
-		component.shop_id = store_id
-		component.slot_count = 2
-		component.store_star_level = 3
-		add_child(component)
-		_check(ProductionManager.get_recipe_lock_reason(item_id, component.store_star_level).is_empty(), "%s test product %s must be unlocked at the high-level test fixture." % [store_id, item_id])
-		var accepted := component.start_craft(item_id, 0)
-		_check(accepted, "%s must accept its own product %s when exact declared inputs are in storage." % [store_id, item_id])
-		if accepted:
-			var order: Dictionary = component.get_slot(0)
-			_check(str(order.get("item_id", "")) == item_id and int(order.get("finish_unix", 0)) > 0, "%s must start a timed order in its own production lane." % store_id)
-			order["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
-			component.slots[0] = order
-			component.refresh_slots()
-			_check(bool(component.get_slot(0).get("ready", false)), "%s must transition its completed order to READY." % store_id)
-			_check(component.collect(0), "%s must allow the player to collect its finished product." % store_id)
-			_check(StorageManager.get_count(item_id) == 1, "%s must deliver exactly one collected %s to City Storage." % [store_id, item_id])
-		component.queue_free()
-		await get_tree().process_frame
+		_check(not recipe_ids.is_empty(), "%s must have production recipes for its runtime audit." % store_id)
+		for item_variant in recipe_ids:
+			var item_id := str(item_variant)
+			var recipe := ProductionManager.get_recipe(item_id)
+			_check(not recipe.is_empty(), "%s must resolve to an enabled recipe." % item_id)
+			if recipe.is_empty():
+				continue
+			_check(str(recipe.get("store", "")) == store_id, "%s must be owned only by %s." % [item_id, store_id])
+			var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, 3)
+			var recipe_unlock_level := int(recipe.get("level", 0))
+			# Mshin's live progression is capped at Mayor Level 60. Verified
+			# SCBI recipes above that cap are valid catalog entries but cannot be
+			# exercised through the live order flow until progression is extended.
+			if recipe_unlock_level > 60:
+				_check(not lock_reason.is_empty(), "%s must remain locked above the current Mayor Level 60 cap." % item_id)
+				continue
+			if not lock_reason.is_empty():
+				_check(not bool(recipe.get("unlock_level_verified", true)), "%s must not be locked by an unexpected runtime rule: %s" % [item_id, lock_reason])
+				continue
+			_check(ProductionManager.are_recipe_inputs_unlocked(recipe), "%s must have all declared ingredients unlocked at the high-level fixture." % item_id)
+			var inputs: Dictionary = recipe.get("inputs", {})
+			# First prove that a missing-input attempt is rejected without
+			# occupying a queue slot or mutating the inventory.
+			StorageManager.from_save_dict({"capacity": 500, "items": {}})
+			var component := ProductionComponentScript.new()
+			component.name = "StoreRuntimeProbe_%s" % item_id
+			component.shop_id = store_id
+			component.slot_count = 2
+			component.store_star_level = 3
+			add_child(component)
+			var rejected_without_inputs := not component.start_craft(item_id, 0)
+			_check(rejected_without_inputs, "%s must reject an order when its exact inputs are absent." % item_id)
+			_check(component.get_slot(0).is_empty(), "%s must not occupy a queue slot after a missing-input rejection." % item_id)
+			# Seed only the exact recipe BOM, then check atomic deduction.
+			StorageManager.from_save_dict({"capacity": 500, "items": inputs})
+			var accepted := component.start_craft(item_id, 0)
+			_check(accepted, "%s must accept its own product when exact declared inputs are in storage." % item_id)
+			if accepted:
+				var order: Dictionary = component.get_slot(0)
+				_check(str(order.get("item_id", "")) == item_id and int(order.get("finish_unix", 0)) > 0, "%s must start a timed order in its own production lane." % item_id)
+				for input_variant in inputs.keys():
+					var input_id := str(input_variant)
+					_check(StorageManager.get_count(input_id) == 0, "%s must atomically consume the complete %s input quantity exactly once." % [item_id, input_id])
+				# A duplicate tap cannot enqueue into an occupied slot or
+				# consume the BOM a second time.
+				_check(not component.start_craft(item_id, 0), "%s must reject a duplicate order in an occupied slot." % item_id)
+				order["finish_unix"] = int(Time.get_unix_time_from_system()) - 1
+				component.slots[0] = order
+				component.refresh_slots()
+				_check(bool(component.get_slot(0).get("ready", false)), "%s must transition its completed order to READY." % item_id)
+				_check(component.collect(0), "%s must allow the player to collect its finished product." % item_id)
+				_check(StorageManager.get_count(item_id) == 1, "%s must deliver exactly one product to City Storage." % item_id)
+				_check(component.get_slot(0).is_empty(), "%s must clear only the collected queue slot." % item_id)
+			tested_recipe_ids[item_id] = true
+			component.queue_free()
+			await get_tree().process_frame
+	_check(tested_recipe_ids.size() >= 60, "The runtime audit must cover the verified majority of the 73-product catalog; tested %d." % tested_recipe_ids.size())
+	_check(not tested_recipe_ids.has("soccer_shoes") and not tested_recipe_ids.has("kite") and not tested_recipe_ids.has("teddy_bear"), "Products with unresolved Mayor Level gates must remain excluded from direct production.")
 	StorageManager.from_save_dict(previous_storage)
 	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	# The test temporarily changes progression state directly; publish the
+	# restored values so HUD widgets and level-gated service warnings recalculate.
+	GameManager.level_changed.emit(previous_level)
+	GameManager.xp_changed.emit(previous_experience, GameManager.get_xp_needed())
+	var hud := get_node_or_null("HUD")
+	if is_instance_valid(hud) and hud.has_method("_update_service_warning_banner"):
+		hud.call("_update_service_warning_banner")
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
@@ -974,7 +1017,21 @@ func _test_automatic_production_chain() -> void:
 	furniture_store.slot_count = 2
 	add_child(furniture_store)
 	StorageManager.from_save_dict({"capacity": 50, "items": {}})
-	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified.")
+	var chair_recipe_probe := ProductionManager.get_recipe("chair")
+	var chair_missing_probe: Array[String] = []
+	for chair_input_variant in chair_recipe_probe.get("inputs", {}).keys():
+		var chair_input_id := str(chair_input_variant)
+		var chair_missing_amount := maxi(0, int(chair_recipe_probe.inputs[chair_input_variant]) - StorageManager.get_count(chair_input_id))
+		if chair_missing_amount > 0 and not ProductionManager._can_resolve_automatic_chain_item(chair_input_id, chair_missing_amount, {"chair": true}, furniture_store):
+			chair_missing_probe.append(chair_input_id)
+	var chair_preflight_detail := "lock=%s; inputs_unlocked=%s; unresolved=%s; level=%d; suppliers=%d" % [
+		ProductionManager.get_recipe_lock_reason("chair", furniture_store.store_star_level),
+		str(ProductionManager.are_recipe_inputs_unlocked(chair_recipe_probe)),
+		",".join(chair_missing_probe),
+		GameManager.level,
+		get_tree().get_nodes_in_group("production_components").size()
+	]
+	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified. " + chair_preflight_detail)
 	var nested_chain_id := str(furniture_store.slots[0].get("auto_chain_id", ""))
 	for _step in range(40):
 		ProductionManager._process_automatic_chains()
