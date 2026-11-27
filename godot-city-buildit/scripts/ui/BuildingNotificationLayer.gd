@@ -139,6 +139,8 @@ func _sync_notifications() -> void:
 			_entries[key] = {"button": button}
 		var entry: Dictionary = _entries[key]
 		entry["building"] = data.building
+		# Mesh bounds are traversed only during the low-frequency sync, not every frame.
+		entry["roof_anchor"] = _get_roof_anchor(data.building)
 		entry["kind"] = data.kind
 		entry["item_id"] = data.item_id
 		entry["slots"] = data.slots
@@ -416,7 +418,8 @@ func _update_positions() -> void:
 	for building_id in grouped:
 		var entries: Array = grouped[building_id]
 		var building = entries[0].get("building")
-		var anchor := _get_roof_anchor(building)
+		var cached_anchor: Variant = entries[0].get("roof_anchor", null)
+		var anchor: Vector3 = cached_anchor if cached_anchor is Vector3 else _get_roof_anchor(building)
 		if camera.is_position_behind(anchor):
 			for entry in entries:
 				entry.button.hide()
