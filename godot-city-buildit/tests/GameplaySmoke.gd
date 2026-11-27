@@ -4050,7 +4050,7 @@ func _test_residential_construction_progress_math() -> void:
 	probe.construction_paused_remaining_seconds = -1
 	_check(is_equal_approx(probe._get_residential_construction_progress(105), 0.5), "Initial residential construction must use the same timestamp-based visual progress calculation.")
 	var source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
-	_check(source.contains("func _create_residential_progress_frame") and source.contains("ConstructionFloor_") and source.contains("TowerCraneHoistLoad"), "Residential construction must build staged floor frames and animate a visible crane hoist load.")
+	_check(source.contains("func _create_residential_progress_frame") and source.contains("ConstructionFloor_") and source.contains("TowerCraneHoistLoad") and source.contains("TowerCraneHoistCable"), "Residential construction must build staged floor frames and animate a visible crane hoist load.")
 	probe.free()
 
 
