@@ -11,24 +11,24 @@ var xp_table := {
 }
 
 var unlocks := {
-	1: {"materials": ["metal", "nails"], "commercial": ["building_supplies"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
+	1: {"materials": ["metal", "nails"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
 	2: {"materials": ["wood"], "factories": 3},
 	3: {"materials": ["planks"], "factories": 4, "other": ["parks"]},
-	4: {"materials": ["hammer"], "commercial": ["hardware_store"], "factories": 4, "other": ["storage_upgrade"]},
+	4: {"materials": ["hammer"], "factories": 4, "other": ["storage_upgrade"]},
 	5: {"materials": ["plastic"], "services": ["fire"], "buildings": ["city_hall", "fire_station"]},
 	6: {"materials": ["measuring_tape"], "factories": 5, "buildings": ["mayors_mansion"]},
 	7: {"materials": ["seeds"]},
-	8: {"materials": ["vegetables"], "commercial": ["farmers_market"], "services": ["sewage"]},
+	8: {"materials": ["vegetables"], "services": ["sewage"]},
 	9: {"materials": ["shovel"], "other": ["4lane_road"]},
-	10: {"materials": ["chair"], "commercial": ["furniture_store"], "other": ["education", "transportation"]},
+	10: {"materials": ["chair"], "other": ["education", "transportation"]},
 	11: {"materials": ["minerals"]},
 	12: {"factories": 6, "services": ["police"]},
 	13: {"materials": ["chemicals", "bricks"]},
-	14: {"materials": ["grass", "cement"], "commercial": ["gardening_supplies"], "services": ["waste"]},
+	14: {"materials": ["grass", "cement"], "services": ["waste"]},
 	15: {"materials": ["glue", "textiles"], "other": ["6lane_road", "beach"]},
 	16: {"materials": ["paint", "table"], "services": ["health"], "buildings": ["epic_projects_department"]},
 	17: {"materials": ["sugar_spices"]},
-	18: {"materials": ["donut", "fruit"], "commercial": ["donut_shop"], "factories": 7},
+	18: {"materials": ["donut", "fruit"], "factories": 7},
 	19: {"materials": ["glass"]},
 	20: {"other": ["entertainment", "avenue"]},
 	23: {"materials": ["animal_feed"]},
@@ -119,7 +119,6 @@ func is_commercial_unlocked(type_id: String, level_override: int = -1) -> bool:
 
 func on_level_up(new_level: int) -> void:
 	_apply_level(new_level)
-	_sync_commercial_unlocks(new_level)
 	print("[LevelProgression] Level ", new_level, " applied. Factories: ", max_factories)
 
 func get_factory_limit_for_level(level: int) -> int:
