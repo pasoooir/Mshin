@@ -137,7 +137,10 @@ func _test_each_store_direct_production() -> void:
 	# Recipe inputs and quantities are read only from ProductionManager.
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	var previous_level := GameManager.level
-	GameManager.level = 90
+	var previous_experience := GameManager.experience
+	# Use the highest supported Mayor Level without allowing test collections
+	# to level up or permanently alter the live HUD/progression state.
+	GameManager.level = 60
 	var store_ids := [
 		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
 		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
@@ -200,6 +203,14 @@ func _test_each_store_direct_production() -> void:
 	_check(not tested_recipe_ids.has("soccer_shoes") and not tested_recipe_ids.has("kite") and not tested_recipe_ids.has("teddy_bear"), "Products with unresolved Mayor Level gates must remain excluded from direct production.")
 	StorageManager.from_save_dict(previous_storage)
 	GameManager.level = previous_level
+	GameManager.experience = previous_experience
+	# The test temporarily changes progression state directly; publish the
+	# restored values so HUD widgets and level-gated service warnings recalculate.
+	GameManager.level_changed.emit(previous_level)
+	GameManager.xp_changed.emit(previous_experience, GameManager.get_xp_needed())
+	var hud := get_node_or_null("HUD")
+	if is_instance_valid(hud) and hud.has_method("_update_service_warning_banner"):
+		hud.call("_update_service_warning_banner")
 
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
