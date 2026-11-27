@@ -1647,7 +1647,8 @@ func _create_scaffold() -> void:
 	var structure_height := 2.4
 	match category:
 		"residential":
-			structure_height = 1.8 + upgrade_stage * 0.35
+			var construction_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
+			structure_height = 1.8 + construction_stage * 0.35
 		"commercial":
 			structure_height = 2.0
 		"industrial":
@@ -1776,8 +1777,6 @@ func _update_residential_construction_visual_progress(now_unix: int = -1) -> voi
 	if is_instance_valid(_tower_crane_load):
 		var lift_cycle := sin(float(Time.get_ticks_msec()) / 1250.0) * 0.55
 		_tower_crane_load.position.y = maxf(0.65, 1.25 + lift_cycle + progress * 0.65)
-	if is_instance_valid(scaffold_root):
-		scaffold_root.scale = Vector3.ONE
 
 func _ensure_residential_tower_crane() -> void:
 	if str(definition.get("category", "")) != "residential" or is_instance_valid(_tower_crane_root):
