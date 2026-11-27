@@ -47,6 +47,7 @@ var _tower_crane_root: Node3D
 var _tower_crane_load: Node3D
 var _tower_crane_cable: MeshInstance3D
 var _tower_crane_cargo: MeshInstance3D
+var _residential_crane_slews := false
 var _residential_frame_levels: Array[Node3D] = []
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
@@ -1709,7 +1710,7 @@ func _create_scaffold() -> void:
 			Vector3(-half_w - 0.34, 0.19, -half_d * 0.45), Color(0.95, 0.78, 0.15))
 	if category == "residential" and (status == "constructing" or upgrade_in_progress):
 		_create_residential_progress_frame(width, depth, structure_height)
-		_create_residential_tower_crane(width, depth, structure_height)
+		_ensure_residential_construction_crane(width, depth, structure_height)
 
 
 
@@ -1785,13 +1786,80 @@ func _update_residential_construction_visual_progress(now_unix: int = -1) -> voi
 		_tower_crane_cable.position.y = -cable_length * 0.5
 		_tower_crane_cargo.position.y = -cable_length - 0.22
 
-func _ensure_residential_tower_crane() -> void:
+func _ensure_residential_construction_crane(width: float = -1.0, depth: float = -1.0, structure_height: float = -1.0) -> void:
 	if str(definition.get("category", "")) != "residential" or is_instance_valid(_tower_crane_root):
 		return
 	var plot_size: Vector2i = definition.get("size", Vector2i(2, 2))
-	var width := float(plot_size.x) * 1.7
-	var depth := float(plot_size.y) * 1.7
-	_create_residential_tower_crane(width, depth, 1.8 + upgrade_stage * 0.35)
+	var crane_width := width if width > 0.0 else float(plot_size.x) * 1.7
+	var crane_depth := depth if depth > 0.0 else float(plot_size.y) * 1.7
+	var target_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
+	var target_floors := _get_residential_stage_floor_count(target_stage, str(definition.get("subtype", "villa")))
+	var crane_height := structure_height if structure_height > 0.0 else maxf(2.0, float(target_floors) * 1.8)
+	if target_floors >= 7:
+		_create_residential_tower_crane(crane_width, crane_depth, crane_height)
+	else:
+		_create_residential_mobile_crane(crane_width, crane_depth, crane_height)
+
+
+func _create_residential_mobile_crane(width: float, depth: float, structure_height: float) -> void:
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.queue_free()
+	_tower_crane_root = Node3D.new()
+	_tower_crane_root.name = "ResidentialMobileCrane"
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = false
+	_tower_crane_root.position = Vector3(width * 0.52 + 0.72, 0.0, -depth * 0.38)
+	scaffold_root.add_child(_tower_crane_root)
+	var yellow := Color("#E8B83E")
+	var dark := Color("#59616A")
+	_add_tower_crane_box(Vector3(1.05, 0.34, 0.58), Vector3(0.0, 0.48, 0.0), yellow)
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.20
+			wheel_mesh.bottom_radius = 0.20
+			wheel_mesh.height = 0.13
+			wheel.mesh = wheel_mesh
+			var wheel_material := StandardMaterial3D.new()
+			wheel_material.albedo_color = dark
+			wheel.material_override = wheel_material
+			wheel.rotation.z = PI * 0.5
+			wheel.position = Vector3(x_sign * 0.38, 0.22, z_sign * 0.29)
+			_tower_crane_root.add_child(wheel)
+	var boom_length := maxf(2.8, structure_height + 1.6)
+	var boom_angle := deg_to_rad(-28.0)
+	var boom := _add_tower_crane_box(Vector3(0.17, boom_length, 0.17), Vector3(-0.18, 0.62 + boom_length * 0.5, 0.0), yellow)
+	boom.rotation.z = boom_angle
+	_tower_crane_load = Node3D.new()
+	_tower_crane_load.name = "TowerCraneHoistLoad"
+	_tower_crane_load.position = Vector3(-0.18 - sin(boom_angle) * boom_length * 0.5, 0.62 + cos(boom_angle) * boom_length, 0.0)
+	_tower_crane_root.add_child(_tower_crane_load)
+	_add_residential_crane_hoist(dark)
+
+func _add_residential_crane_hoist(cable_color: Color) -> void:
+	_tower_crane_cable = MeshInstance3D.new()
+	_tower_crane_cable.name = "TowerCraneHoistCable"
+	var cable_mesh := BoxMesh.new()
+	cable_mesh.size = Vector3(0.045, 1.0, 0.045)
+	_tower_crane_cable.mesh = cable_mesh
+	var cable_material := StandardMaterial3D.new()
+	cable_material.albedo_color = cable_color
+	_tower_crane_cable.material_override = cable_material
+	_tower_crane_cable.position = Vector3(0.0, -0.675, 0.0)
+	_tower_crane_load.add_child(_tower_crane_cable)
+	_tower_crane_cargo = MeshInstance3D.new()
+	_tower_crane_cargo.name = "TowerCraneCargo"
+	var cargo_mesh := BoxMesh.new()
+	cargo_mesh.size = Vector3(0.48, 0.38, 0.42)
+	_tower_crane_cargo.mesh = cargo_mesh
+	var cargo_material := StandardMaterial3D.new()
+	cargo_material.albedo_color = Color("#D9A441")
+	_tower_crane_cargo.material_override = cargo_material
+	_tower_crane_cargo.position = Vector3(0.0, -1.57, 0.0)
+	_tower_crane_load.add_child(_tower_crane_cargo)
 
 func _create_residential_tower_crane(width: float, depth: float, structure_height: float) -> void:
 	if is_instance_valid(_tower_crane_root):
@@ -1800,7 +1868,9 @@ func _create_residential_tower_crane(width: float, depth: float, structure_heigh
 	_tower_crane_load = null
 	_tower_crane_cable = null
 	_tower_crane_cargo = null
+	_residential_crane_slews = true
 	_tower_crane_root.name = "ResidentialTowerCrane"
+	_residential_crane_slews = true
 	_tower_crane_root.position = Vector3(-width * 0.43, 0.0, -depth * 0.43)
 	scaffold_root.add_child(_tower_crane_root)
 	var mast_height := maxf(4.0, structure_height + 2.8)
@@ -1824,26 +1894,7 @@ func _create_residential_tower_crane(width: float, depth: float, structure_heigh
 	_tower_crane_load.name = "TowerCraneHoistLoad"
 	_tower_crane_load.position = Vector3(jib_length * 0.72, mast_height - 0.55, 0.0)
 	_tower_crane_root.add_child(_tower_crane_load)
-	_tower_crane_cable = MeshInstance3D.new()
-	_tower_crane_cable.name = "TowerCraneHoistCable"
-	var cable_mesh := BoxMesh.new()
-	cable_mesh.size = Vector3(0.045, 1.0, 0.045)
-	_tower_crane_cable.mesh = cable_mesh
-	var cable_material := StandardMaterial3D.new()
-	cable_material.albedo_color = crane_dark
-	_tower_crane_cable.material_override = cable_material
-	_tower_crane_cable.position = Vector3(0.0, -0.675, 0.0)
-	_tower_crane_load.add_child(_tower_crane_cable)
-	_tower_crane_cargo = MeshInstance3D.new()
-	_tower_crane_cargo.name = "TowerCraneCargo"
-	var cargo_mesh := BoxMesh.new()
-	cargo_mesh.size = Vector3(0.48, 0.38, 0.42)
-	_tower_crane_cargo.mesh = cargo_mesh
-	var cargo_material := StandardMaterial3D.new()
-	cargo_material.albedo_color = Color("#D9A441")
-	_tower_crane_cargo.material_override = cargo_material
-	_tower_crane_cargo.position = Vector3(0.0, -1.57, 0.0)
-	_tower_crane_load.add_child(_tower_crane_cargo)
+	_add_residential_crane_hoist(crane_dark)
 
 
 
@@ -1863,6 +1914,7 @@ func _remove_residential_tower_crane() -> void:
 	_tower_crane_load = null
 	_tower_crane_cable = null
 	_tower_crane_cargo = null
+	_residential_crane_slews = false
 	_residential_frame_levels.clear()
 
 func _add_tower_crane_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
@@ -2217,7 +2269,7 @@ func _process(delta: float) -> void:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
 	if (upgrade_in_progress or status == "constructing"):
-		if is_instance_valid(_tower_crane_root):
+		if is_instance_valid(_tower_crane_root) and _residential_crane_slews:
 			_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.22, 0.0, TAU)
 		_update_residential_construction_visual_progress()
 	if upgrade_in_progress:
@@ -2408,7 +2460,7 @@ func _start_residential_upgrade_animation() -> void:
 	_create_scaffold()
 	if str(definition.get("category", "")) == "residential" and is_instance_valid(mesh_root):
 		mesh_root.visible = false
-	_ensure_residential_tower_crane()
+	_ensure_residential_construction_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
 	scaffold_root.visible = true
