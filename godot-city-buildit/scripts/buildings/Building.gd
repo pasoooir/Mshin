@@ -2061,9 +2061,8 @@ func get_residential_upgrade_service_status() -> Array:
 	if str(definition.get("category", "")) != "residential" or upgrade_stage >= max_stage:
 		return result
 	var target_stage := mini(upgrade_stage + 1, max_stage)
-	# Service gates are Mshin progression rules, not claims about EA's hidden
-	# density formula. Only require systems after their city unlock and at the
-	# corresponding residential development milestone.
+	# Coverage is displayed as city-planning information and contributes to
+	# happiness/immigration scoring. It is deliberately not an upgrade prerequisite.
 	var service_rules: Array[Dictionary] = [
 		{"group":"power", "label":"Power", "stage":2, "unlock":2},
 		{"group":"water", "label":"Water", "stage":2, "unlock":2},
@@ -2098,12 +2097,6 @@ func get_residential_upgrade_block_reason() -> String:
 		return "This home is already being upgraded."
 	if not BuildManager.is_building_operational(self):
 		return "Connect this home to a Gateway-connected road."
-	var missing_services: Array[String] = []
-	for service in get_residential_upgrade_service_status():
-		if not bool(service.get("served", false)):
-			missing_services.append(str(service.get("label", service.get("group", "Service"))))
-	if not missing_services.is_empty():
-		return "Restore city coverage for: " + ", ".join(missing_services)
 	if not ProductionManager.can_afford_upgrade(upgrade_stage):
 		return "Required upgrade materials are missing from City Storage."
 	return ""

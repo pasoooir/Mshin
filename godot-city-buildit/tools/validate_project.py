@@ -856,8 +856,9 @@ for level_contract in [
     if level_contract not in building_source:
         errors.append(f"Residential level architecture contract is missing: {level_contract}")
 
-# Residential upgrade prerequisites must include city-service coverage and
-# must refresh from state-change signals rather than every rendered frame.
+# Residential service coverage is advisory for upgrades, while road access,
+# construction state and physical materials remain hard prerequisites.
+upgrade_block = building_source.split("func get_residential_upgrade_block_reason() -> String:", 1)[1].split("\nfunc ", 1)[0]
 for upgrade_contract in [
     'func get_residential_upgrade_service_status() -> Array:',
     'func get_residential_upgrade_block_reason() -> String:',
@@ -867,8 +868,23 @@ for upgrade_contract in [
 ]:
     if upgrade_contract not in building_source:
         errors.append(f"Residential upgrade/service contract is missing: {upgrade_contract}")
+if "get_residential_upgrade_service_status()" in upgrade_block or "missing_services" in upgrade_block:
+    errors.append("Residential service coverage must not block home upgrades.")
+if "BuildManager.is_building_operational(self)" not in upgrade_block or "ProductionManager.can_afford_upgrade(upgrade_stage)" not in upgrade_block:
+    errors.append("Residential upgrades must retain Gateway road access and required-material checks.")
 if '_check_upgrade_ready()' in re.search(r'func _process\(delta: float\) -> void:(.*?)(?=\nfunc )', building_source, re.S).group(1):
     errors.append("Residential upgrade readiness must not be polled every rendered frame.")
+
+# Emergency/municipal service coverage must continue to affect city happiness.
+happiness_source = (ROOT / "scripts/autoload/HappinessManager.gd").read_text(encoding="utf-8")
+for service_score_contract in [
+    '_nearby_service_group(home, FIRE_SERVICE_GROUP, 38.0)',
+    '_nearby_service_group(home, POLICE_SERVICE_GROUP, 38.0)',
+    '_nearby_service_group(home, HEALTH_SERVICE_GROUP, 42.0)',
+    'score -= 6.0',
+]:
+    if service_score_contract not in happiness_source:
+        errors.append(f"City happiness service scoring is missing: {service_score_contract}")
 
 # A selected residential plan must display and gate materials from physical City
 # Storage, never from CityDemandManager's cross-home dashboard allocation.
