@@ -173,14 +173,14 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 		var building = data.get("building")
 		if not is_instance_valid(building):
 			continue
-		var building_id := str(building.building_id)
-		if not grouped.has(building_id):
-			grouped[building_id] = []
 		var kind := str(data.get("kind", "idle"))
 		# Residential upgrade markers are rendered by the screen-space tap target
 		# below; do not create a second overlapping Sprite3D hardhat.
 		if kind == "upgrade":
 			continue
+		var building_id := str(building.building_id)
+		if not grouped.has(building_id):
+			grouped[building_id] = []
 		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
 		notification.priority = int(data.get("priority", 0))
 		notification.detail = ("stock_ready" if bool(data.get("stock_ready", false)) else "missing_materials") if kind == "upgrade" else str(data.get("missing_text", ""))
