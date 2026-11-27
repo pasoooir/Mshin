@@ -219,6 +219,63 @@ func _test_each_store_direct_production() -> void:
 	if is_instance_valid(hud) and hud.has_method("_update_service_warning_banner"):
 		hud.call("_update_service_warning_banner")
 
+func _test_all_store_production_panels(hud: Node) -> void:
+	# Exercise the real HUD store workspace for every standard commercial
+	# building, not only the Hardware Store regression fixture.
+	var store_ids := [
+		"building_supplies", "hardware_store", "farmers_market", "furniture_store",
+		"fast_food", "donut_shop", "home_appliances", "gardening_supplies",
+		"fashion_store", "sports_shop", "toy_store", "restoration_office",
+		"farmers_store", "dessert_shop"
+	]
+	for store_id in store_ids:
+		var definition: Dictionary = BuildManager.building_types.get(store_id, {})
+		if definition.is_empty():
+			_check(false, "%s must have a definition before its production panel can be opened." % store_id)
+			continue
+		var probe = BuildingScene.instantiate()
+		probe.name = "StorePanelProbe_%s" % store_id
+		probe.building_id = "store_panel_probe_%s" % store_id
+		probe.building_type = store_id
+		probe.definition = definition.duplicate(true)
+		probe.status = "completed"
+		var component = ProductionComponentScript.new()
+		component.name = "StorePanelProduction_%s" % store_id
+		component.owner_building = probe
+		component.shop_id = str(definition.get("shop_id", store_id))
+		component.slot_count = int(definition.get("production_slots", 2))
+		component.store_star_level = 3
+		probe.production_component = component
+		probe.add_child(component)
+		add_child(probe)
+		hud.open_production_panel(probe)
+		var overlay: Control = hud.get("production_overlay") as Control
+		var grid := overlay.find_child("StoreProductsGrid", true, false) as GridContainer if is_instance_valid(overlay) else null
+		var expected_ids: Dictionary = {}
+		for item_variant in ProductionManager.get_store_catalog_ids(store_id):
+			var item_id := str(item_variant)
+			var recipe := ProductionManager.get_recipe(item_id)
+			if not recipe.is_empty() and str(recipe.get("store", "")) == store_id:
+				expected_ids[item_id] = true
+		_check(is_instance_valid(grid), "%s must open its own StoreProductsGrid workspace." % store_id)
+		if is_instance_valid(grid):
+			var rendered_ids: Dictionary = {}
+			for child in grid.get_children():
+				if child is Button:
+					var rendered_id := str(child.get_meta("production_item_id", ""))
+					_check(expected_ids.has(rendered_id), "%s panel must not render foreign or unresolved product %s." % [store_id, rendered_id])
+					_check(not rendered_ids.has(rendered_id), "%s panel must not render duplicate product %s." % [store_id, rendered_id])
+					rendered_ids[rendered_id] = true
+			_check(rendered_ids.size() == expected_ids.size(), "%s panel must render every verified store product (%d expected, %d rendered)." % [store_id, expected_ids.size(), rendered_ids.size()])
+			for expected_id in expected_ids.keys():
+				_check(rendered_ids.has(expected_id), "%s panel is missing its own verified product %s." % [store_id, expected_id])
+		_check(overlay.find_child("StoreProductionHeader", true, false) is PanelContainer, "%s panel must identify its selected store in the dedicated header." % store_id)
+		_check(overlay.find_child("ProductionQueueHeading", true, false) is HBoxContainer, "%s panel must expose its own production queue." % store_id)
+		_check(overlay.find_child("ProductionClose", true, false) is Button, "%s panel must provide a close control." % store_id)
+		hud.call("_close_production_panel")
+		probe.queue_free()
+		await get_tree().process_frame
+
 func _test_camera_gesture_math() -> void:
 	var blocked_touch := InputEventScreenTouch.new()
 	var blocked_drag := InputEventScreenDrag.new()
@@ -6093,6 +6150,7 @@ func _run_gameplay_test() -> void:
 	_check(hardware_component.get_slot(0).is_empty() and StorageManager.get_count("hammer") == 1, "Collecting the finished Hammer must transfer it to City Storage and clear the store queue slot.")
 	BuildManager.unregister_building(hardware.building_id)
 	hardware.queue_free()
+	await _test_all_store_production_panels(production_hud)
 	GameManager.level = previous_level
 
 	# Residential service coverage must not gate upgrades. Remove Level 2 utility
