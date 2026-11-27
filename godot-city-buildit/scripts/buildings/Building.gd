@@ -2075,9 +2075,9 @@ func _process(delta: float) -> void:
 			if production_icon:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
+	if (upgrade_in_progress or status == "constructing") and is_instance_valid(_tower_crane_root):
+		_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.12, 0.0, TAU)
 	if upgrade_in_progress:
-		if is_instance_valid(_tower_crane_root):
-			_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.12, 0.0, TAU)
 		update_upgrade_access_state()
 	# Residential upgrade readiness is refreshed by inventory, service and city events.
 
