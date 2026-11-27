@@ -1178,7 +1178,10 @@ func _show_group_options(groups: Array, parent_category: String) -> void:
 		var group_label := str(group.get("label", group_id))
 		var buildings: Array = group.get("buildings", [])
 		var required_level := LevelProgression.get_service_unlock_level(group_id) if parent_category == "services" else 1
+		var group_unlocked := LevelProgression.is_service_unlocked(group_id) if parent_category == "services" else true
 		var group_detail := "Choose category" if not buildings.is_empty() else "Not implemented yet — planned feature"
+		if parent_category == "services" and not group_unlocked:
+			group_detail = "Unlocks at Mayor Level %d" % required_level
 		_add_submenu_button("group_" + group_id, group_label, group_id, group_detail, false, parent_category, required_level, buildings.is_empty())
 
 func _show_group_buildings(group_id: String, parent_category: String) -> void:
@@ -1429,7 +1432,8 @@ func _show_building_info(type_id: String) -> void:
 		status_label.text = "Unlocked at Level %d." % required_level
 	elif not region_lock.is_empty():
 		status_label.text = region_lock
-	var can_build := GameManager.level >= required_level and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty() and bom_lock.is_empty()
+	var service_level_unlocked := str(definition.get("category", "")) != "service" or LevelProgression.is_service_building_unlocked(type_id)
+	var can_build := GameManager.level >= required_level and service_level_unlocked and population_lock.is_empty() and factory_lock.is_empty() and region_lock.is_empty() and bom_lock.is_empty()
 	var build := Button.new()
 	build.name = "CatalogBuildButton"
 	build.text = "BUILD" if can_build else ("NEEDS MATERIALS" if not bom_lock.is_empty() else ("LOCKED · " + region_lock if not region_lock.is_empty() else ("LOCKED · " + factory_lock if not factory_lock.is_empty() else ("LOCKED · POPULATION %s" % _format_count(required_population) if population_lock != "" else "LOCKED · LEVEL %d" % required_level))))
@@ -1517,7 +1521,7 @@ func _select_building_type(type_id: String) -> void:
 		return
 	var definition: Dictionary = BuildManager.building_types[type_id]
 	var required_level := int(definition.get("level", 1))
-	if GameManager.level < required_level:
+	if GameManager.level < required_level or (str(definition.get("category", "")) == "service" and not LevelProgression.is_service_building_unlocked(type_id)):
 		status_label.text = "Unlocked at Level %d." % required_level
 		return
 	var population_lock := BuildManager.get_population_build_lock_reason(type_id)
