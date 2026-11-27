@@ -2451,6 +2451,8 @@ func _finish_non_residential_upgrade() -> void:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	# Commercial and industrial upgrades add a real production lane. Service
 	# buildings gain capacity/radius through ServiceManager's stage multipliers.
 	if is_instance_valid(production_component):
