@@ -226,6 +226,18 @@ The Metal is a raw factory material and has no crafting inputs. Its recorded bas
 - Tapestry is a separate catalog identity with conflicting input candidates and remains disabled.
 - These counts describe the current Mshin data, not the complete total number of items in every current SCBI update.
 
+### 7.1 Per-store ownership and timing audit — 2026-11-25
+
+The 73 enabled recipes are distributed across 14 standard store families: Building Supplies (6), Hardware (6), Furniture (5), Farmer's Market (7), Donut Shop (6), Home Appliances (5), Fast Food (6), Gardening Supplies (6), Fashion (5), Sports (5), Toy (4), Bureau of Restoration (4), Farmer's Store (3) and Dessert Shop (5).
+
+**Ownership:** each enabled product must resolve to one existing commercial building, and its effective `shop_id` must match the recipe's `store` ID. Products must not leak into another store's catalog.
+
+**Timing and provenance:** `time` and `time_sec` must match and be positive. Every recipe must retain non-empty source provenance. Store-star speed reductions are runtime adjustments, not part of the base duration.
+
+**Unresolved products:** Football Shoes, Kite and Teddy Bear remain locked because their exact unlock levels are unverified. Tapestry remains a catalog-only Restoration Office entry with conflicting ingredient candidates; it is not an enabled recipe.
+
+**Automated enforcement:** `ProductionManager.get_recipe_validation_report()` validates supplier category and shop ownership, matching base-time fields, source provenance, verified unlock levels and catalog-only product metadata. `GameplaySmoke.gd` checks all 14 store counts, 73 active recipes, exact ownership and the Tapestry lock.
+
 ## 8. Source register
 
 ### Official

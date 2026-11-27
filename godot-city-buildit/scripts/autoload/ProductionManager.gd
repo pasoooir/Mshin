@@ -188,8 +188,23 @@ func get_recipe_validation_report() -> Dictionary:
 		# BuildManager.building_types.
 		if store_id.is_empty() or not BuildManager.building_types.has(store_id):
 			item_errors.append("missing or unknown supplier building")
-		if float(recipe.get("time_sec", 0)) <= 0.0:
+		else:
+			var supplier_definition: Dictionary = BuildManager.building_types[store_id]
+			if str(supplier_definition.get("category", "")) != "commercial":
+				item_errors.append("supplier building is not commercial")
+			var declared_shop_id := str(supplier_definition.get("shop_id", store_id))
+			if declared_shop_id != store_id:
+				item_errors.append("recipe store ID does not match supplier shop_id")
+		var base_time_sec := float(recipe.get("time_sec", 0))
+		var legacy_time_sec := float(recipe.get("time", base_time_sec))
+		if base_time_sec <= 0.0:
 			item_errors.append("production duration must be positive")
+		elif not is_equal_approx(base_time_sec, legacy_time_sec):
+			item_errors.append("legacy time and time_sec values do not match")
+		if str(recipe.get("source", "")).strip_edges().is_empty():
+			item_errors.append("recipe source provenance is missing")
+		if int(recipe.get("level", 0)) <= 0 and bool(recipe.get("unlock_level_verified", true)):
+			item_errors.append("verified recipe must have a positive unlock level")
 		var inputs: Dictionary = recipe.get("requires", {})
 		if inputs.is_empty():
 			item_errors.append("recipe has no declared inputs")
@@ -218,6 +233,18 @@ func get_recipe_validation_report() -> Dictionary:
 			if catalog_item_id.is_empty():
 				errors.append("%s catalog: product ID is empty" % catalog_store_id)
 				continue
+			if not BuildManager.building_types.has(catalog_store_id):
+				errors.append("%s: catalog owner has no matching building definition" % catalog_item_id)
+			else:
+				var catalog_supplier: Dictionary = BuildManager.building_types[catalog_store_id]
+				if str(catalog_supplier.get("category", "")) != "commercial":
+					errors.append("%s: catalog owner is not a commercial building" % catalog_item_id)
+				if str(catalog_supplier.get("shop_id", catalog_store_id)) != catalog_store_id:
+					errors.append("%s: catalog owner shop_id does not match" % catalog_item_id)
+			if float(product.get("time_sec", 0)) <= 0.0:
+				errors.append("%s: catalog-only product duration must be positive" % catalog_item_id)
+			if str(product.get("source", "")).strip_edges().is_empty():
+				errors.append("%s: catalog-only product source provenance is missing" % catalog_item_id)
 			if catalog_owners.has(catalog_item_id):
 				errors.append("%s: catalog product is duplicated between %s and %s" % [
 					catalog_item_id, str(catalog_owners[catalog_item_id]), catalog_store_id

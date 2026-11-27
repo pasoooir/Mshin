@@ -59,6 +59,7 @@ func _on_test_traffic_fleet_changed(_public_count: int, _emergency_count: int) -
 func _ready() -> void:
 	_test_camera_gesture_math()
 	_test_hud_touch_session_ownership()
+	_test_production_store_catalog_integrity()
 	_test_store_building_identity_contract()
 	_test_residential_reward_contract()
 	_test_residential_six_stage_visual_growth()
@@ -74,6 +75,31 @@ func _test_residential_reward_contract() -> void:
 	var maximum: Dictionary = ProductionManager.get_residential_upgrade_rewards(6, 1836)
 	_check(not bool(maximum.get("available", true)) and int(maximum.get("xp", -1)) == 0 and int(maximum.get("simoleons", -1)) == 0, "Maximum-level homes must not advertise rewards for a nonexistent next upgrade.")
 
+
+func _test_production_store_catalog_integrity() -> void:
+	var expected_recipe_counts := {
+		"building_supplies": 6, "hardware_store": 6, "furniture_store": 5,
+		"farmers_market": 7, "donut_shop": 6, "home_appliances": 5,
+		"fast_food": 6, "gardening_supplies": 6, "fashion_store": 5,
+		"sports_shop": 5, "toy_store": 4, "restoration_office": 4,
+		"farmers_store": 3, "dessert_shop": 5
+	}
+	var report: Dictionary = ProductionManager.get_recipe_validation_report()
+	_check(bool(report.get("valid", false)), "Commercial recipes must have valid source, timing, ingredients and exact supplier ownership: %s" % str(report.get("errors", [])))
+	_check(int(report.get("recipe_count", 0)) == 73, "The audited standard-store catalog must contain 73 active recipes.")
+	for store_id_variant in expected_recipe_counts.keys():
+		var store_id := str(store_id_variant)
+		var recipe_ids: Array = ProductionManager.get_store_recipe_ids(store_id)
+		_check(recipe_ids.size() == int(expected_recipe_counts[store_id]), "%s must own exactly %d verified products, found %d." % [store_id, int(expected_recipe_counts[store_id]), recipe_ids.size()])
+		for item_id_variant in recipe_ids:
+			var item_id := str(item_id_variant)
+			var recipe: Dictionary = ProductionManager.get_recipe(item_id)
+			_check(str(recipe.get("store", "")) == store_id, "%s must belong only to %s." % [item_id, store_id])
+			_check(float(recipe.get("time_sec", 0)) > 0.0 and is_equal_approx(float(recipe.get("time", 0)), float(recipe.get("time_sec", 0))), "%s must have one consistent positive base duration." % item_id)
+			_check(not str(recipe.get("source", "")).strip_edges().is_empty(), "%s must retain source provenance." % item_id)
+	_check(ProductionManager.get_store_catalog_ids("restoration_office").has("tapestries"), "Tapestry must remain visible only in the Restoration Office unresolved catalog.")
+	_check(ProductionManager.get_recipe("tapestries").is_empty(), "Unresolved Tapestry must not become an enabled recipe.")
+	_check(ProductionManager.get_store_recipe_ids("restaurant_traditional").is_empty() and ProductionManager.get_store_recipe_ids("art_supplies").is_empty(), "Mshin custom stores must not inherit recipes from standard SCBI stores.")
 
 func _test_store_building_identity_contract() -> void:
 	# Verify exact city building/shop ownership and source-level visual identity
