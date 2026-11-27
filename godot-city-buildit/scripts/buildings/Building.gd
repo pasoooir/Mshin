@@ -192,7 +192,8 @@ func setup(data: Dictionary) -> void:
 	# the building state machine without instantiating renderer resources.
 	if DisplayServer.get_name() != "headless":
 		_create_visual()
-		_create_scaffold()
+		if status == "constructing":
+			_create_scaffold()
 	_update_stage_label()
 	if stage_label:
 		stage_label.visible = false
@@ -1835,6 +1836,16 @@ func _create_residential_tower_crane(width: float, depth: float, structure_heigh
 	_tower_crane_load.add_child(cargo)
 
 
+
+func _clear_scaffold_visuals() -> void:
+	if not is_instance_valid(scaffold_root):
+		return
+	for child in scaffold_root.get_children():
+		child.queue_free()
+	_residential_frame_levels.clear()
+	_tower_crane_root = null
+	_tower_crane_load = null
+
 func _remove_residential_tower_crane() -> void:
 	if is_instance_valid(_tower_crane_root):
 		_tower_crane_root.queue_free()
@@ -2002,6 +2013,7 @@ func _on_construction_finished() -> void:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
@@ -2369,6 +2381,7 @@ func cancel_upgrade() -> bool:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	_check_upgrade_ready()
 	return true
 
@@ -2407,6 +2420,7 @@ func _finish_residential_upgrade() -> void:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	_create_visual()
 	_update_stage_label()
 	_play_completion_effect()
