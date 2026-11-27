@@ -1649,7 +1649,8 @@ func _create_scaffold() -> void:
 	match category:
 		"residential":
 			var construction_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
-			structure_height = 1.8 + construction_stage * 0.35
+			var construction_floors := maxi(1, _get_residential_stage_floor_count(construction_stage, str(definition.get("subtype", "villa"))))
+			structure_height = maxf(2.0, float(construction_floors) * 1.8)
 		"commercial":
 			structure_height = 2.0
 		"industrial":
@@ -2382,6 +2383,8 @@ func cancel_upgrade() -> bool:
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
 	_clear_scaffold_visuals()
+	if is_instance_valid(mesh_root) and str(definition.get("category", "")) == "residential":
+		mesh_root.visible = true
 	_check_upgrade_ready()
 	return true
 
@@ -2389,6 +2392,8 @@ func _start_residential_upgrade_animation() -> void:
 	if DisplayServer.get_name() == "headless" or not is_instance_valid(scaffold_root):
 		return
 	_create_scaffold()
+	if str(definition.get("category", "")) == "residential" and is_instance_valid(mesh_root):
+		mesh_root.visible = false
 	_ensure_residential_tower_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
@@ -2421,6 +2426,8 @@ func _finish_residential_upgrade() -> void:
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
 	_clear_scaffold_visuals()
+	if is_instance_valid(mesh_root):
+		mesh_root.visible = true
 	_create_visual()
 	_update_stage_label()
 	_play_completion_effect()
