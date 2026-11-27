@@ -432,6 +432,8 @@ func get_construction_bom_source(type_id: String) -> String:
 	var definition: Dictionary = building_types[type_id]
 	if definition.has("construction_bom"):
 		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
+	if str(definition.get("category", "")) in ["residential", "commercial"]:
+		return "No placement material charge — Mayor Level and Simoleons gated"
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return "Mshin bootstrap exception — no material charge"
 	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
@@ -507,9 +509,10 @@ func get_bom_catalog_audit() -> Dictionary:
 		var construction := get_construction_bom(type_id)
 		construction_boms[type_id] = construction.duplicate(true)
 		construction_sources[type_id] = get_construction_bom_source(type_id)
-		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
+		var level_and_currency_placement := category in ["residential", "commercial"] and not definition.has("construction_bom")
+		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id) or level_and_currency_placement:
 			if not construction.is_empty():
-				errors.append("%s: bootstrap BOM must remain empty" % type_id)
+				errors.append("%s: placement-exempt BOM must remain empty" % type_id)
 		else:
 			if construction.is_empty():
 				errors.append("%s: missing construction BOM" % type_id)
