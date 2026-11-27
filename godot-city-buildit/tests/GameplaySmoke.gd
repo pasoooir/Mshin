@@ -61,6 +61,7 @@ func _ready() -> void:
 	_test_hud_touch_session_ownership()
 	_test_production_store_catalog_integrity()
 	_test_store_building_identity_contract()
+	_test_commercial_level_unlock_contract()
 	_test_residential_reward_contract()
 	_test_residential_construction_progress_math()
 	_test_residential_six_stage_visual_growth()
@@ -152,6 +153,29 @@ func _test_store_building_identity_contract() -> void:
 				_check(str(recipe.get("store", "")) == store_id, "%s must never leak into another store panel." % product_id)
 		var has_visual_identity := visual_source.contains("func _build_building_supplies_showcase(") if store_id == "building_supplies" else identity_block.contains("\"" + store_id + "\"")
 		_check(has_visual_identity, "%s must have an explicit trade-specific visual identity implementation." % store_id)
+
+
+func _test_commercial_level_unlock_contract() -> void:
+	var previous_level := GameManager.level
+	GameManager.level = 9
+	var expected_unlocked := ["building_supplies", "shop_chain", "restaurant_traditional", "art_supplies", "hardware_store", "farmers_market"]
+	var visible_unlocked: Array = BuildManager.get_available_buildings("commercial")
+	for type_id_variant in BuildManager.building_types.keys():
+		var type_id := str(type_id_variant)
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		if str(definition.get("category", "")) != "commercial" or bool(definition.get("legacy_only", false)):
+			continue
+		var should_unlock := int(definition.get("level", 1)) <= 9
+		_check(LevelProgression.is_commercial_unlocked(type_id, 9) == should_unlock, "%s commercial unlock must follow its catalog Mayor Level." % type_id)
+		_check(visible_unlocked.has(type_id) == should_unlock, "%s must be available in the build menu exactly at its catalog Mayor Level." % type_id)
+		if should_unlock:
+			_check(type_id in expected_unlocked, "%s is unexpectedly eligible at Mayor Level 9; update the explicit acceptance list after catalog review." % type_id)
+		else:
+			_check(type_id not in expected_unlocked, "%s must remain locked before its catalog Mayor Level." % type_id)
+	_check(visible_unlocked.size() == expected_unlocked.size(), "Mayor Level 9 must expose exactly six catalog-eligible commercial buildings, found %d." % visible_unlocked.size())
+	GameManager.level = previous_level
+	LevelProgression._sync_commercial_unlocks(previous_level)
+
 
 func _test_each_store_direct_production() -> void:
 	# Exercise every verified product in all 14 standard stores through the
