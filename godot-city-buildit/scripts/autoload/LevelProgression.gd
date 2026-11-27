@@ -81,10 +81,6 @@ func _apply_level(level: int) -> void:
 			if m not in unlocked_materials:
 				unlocked_materials.append(m)
 				unlocked.emit("material:" + m, lv)
-		for c in data.get("commercial", []):
-			if c not in unlocked_commercial:
-				unlocked_commercial.append(c)
-				unlocked.emit("commercial:" + c, lv)
 		for s in data.get("services", []):
 			if s not in unlocked_services:
 				unlocked_services.append(s)
@@ -97,8 +93,33 @@ func _apply_level(level: int) -> void:
 				unlocked_features.append(feature)
 				unlocked.emit("feature:" + feature, lv)
 
+	_sync_commercial_unlocks(level)
+
+func _sync_commercial_unlocks(level: int) -> void:
+	# BuildManager is the single source of truth for commercial unlock levels.
+	# Keep the progression list in sync for systems that consume unlock signals.
+	for type_id in BuildManager.building_types:
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		if str(definition.get("category", "")) != "commercial" or bool(definition.get("legacy_only", false)):
+			continue
+		if int(definition.get("level", 1)) > level:
+			continue
+		if type_id not in unlocked_commercial:
+			unlocked_commercial.append(type_id)
+			unlocked.emit("commercial:" + str(type_id), int(definition.get("level", 1)))
+
+func is_commercial_unlocked(type_id: String, level_override: int = -1) -> bool:
+	if not BuildManager.building_types.has(type_id):
+		return false
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	if str(definition.get("category", "")) != "commercial" or bool(definition.get("legacy_only", false)):
+		return false
+	var effective_level := GameManager.level if level_override < 0 else level_override
+	return effective_level >= int(definition.get("level", 1))
+
 func on_level_up(new_level: int) -> void:
 	_apply_level(new_level)
+	_sync_commercial_unlocks(new_level)
 	print("[LevelProgression] Level ", new_level, " applied. Factories: ", max_factories)
 
 func get_factory_limit_for_level(level: int) -> int:
