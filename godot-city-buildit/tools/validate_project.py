@@ -870,6 +870,17 @@ for upgrade_contract in [
 if '_check_upgrade_ready()' in re.search(r'func _process\(delta: float\) -> void:(.*?)(?=\nfunc )', building_source, re.S).group(1):
     errors.append("Residential upgrade readiness must not be polled every rendered frame.")
 
+# A selected residential plan must display and gate materials from physical City
+# Storage, never from CityDemandManager's cross-home dashboard allocation.
+residential_hud_source = (ROOT / "scripts/ui/HUD.gd").read_text(encoding="utf-8")
+residential_panel_source = residential_hud_source.split("func open_residential_panel(building: Building) -> void:", 1)[1].split("\nfunc ", 1)[0]
+if "StorageManager.get_count(item_id)" not in residential_panel_source:
+    errors.append("Residential upgrade panel must read physical City Storage counts.")
+if "home_data.get(\"needs\"" in residential_panel_source or "CityDemandManager.get_city_snapshot()" in residential_panel_source:
+    errors.append("Residential upgrade panel must not use cross-home allocated inventory as physical stock.")
+if "var shortage := maxi(0, amount - owned)" not in residential_panel_source:
+    errors.append("Residential upgrade shortage must be calculated from physical warehouse stock.")
+
 # Every non-residential category also has a type-specific identity path.
 for identity_contract in [
     'func _build_commercial_identity(',
