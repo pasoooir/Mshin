@@ -157,7 +157,9 @@ func _test_store_building_identity_contract() -> void:
 
 func _test_commercial_level_unlock_contract() -> void:
 	var previous_level := GameManager.level
+	var previous_commercial_unlocks: Array = LevelProgression.unlocked_commercial.duplicate()
 	GameManager.level = 9
+	LevelProgression._sync_commercial_unlocks(9)
 	var expected_unlocked := ["building_supplies", "shop_chain", "restaurant_traditional", "art_supplies", "hardware_store", "farmers_market"]
 	var visible_unlocked: Array = BuildManager.get_available_buildings("commercial")
 	for type_id_variant in BuildManager.building_types.keys():
@@ -174,7 +176,7 @@ func _test_commercial_level_unlock_contract() -> void:
 			_check(type_id not in expected_unlocked, "%s must remain locked before its catalog Mayor Level." % type_id)
 	_check(visible_unlocked.size() == expected_unlocked.size(), "Mayor Level 9 must expose exactly six catalog-eligible commercial buildings, found %d." % visible_unlocked.size())
 	GameManager.level = previous_level
-	LevelProgression._sync_commercial_unlocks(previous_level)
+	LevelProgression.unlocked_commercial = previous_commercial_unlocks
 
 
 func _test_each_store_direct_production() -> void:
