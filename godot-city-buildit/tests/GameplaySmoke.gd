@@ -61,6 +61,7 @@ func _ready() -> void:
 	_test_hud_touch_session_ownership()
 	_test_store_building_identity_contract()
 	_test_residential_reward_contract()
+	_test_residential_six_stage_visual_growth()
 	await _test_each_store_direct_production()
 	call_deferred("_run_gameplay_test")
 
@@ -3852,6 +3853,50 @@ func _test_building_model_loader_contract() -> void:
 	roof_villa_probe.upgrade_stage = 1
 	_check(roof_villa_probe._should_use_external_model("res://assets/models/residential/la_roof_garden_villa.tscn"), "The dedicated LA roof-garden villa must use its own model at placement rather than the starter-home fallback.")
 	roof_villa_probe.free()
+
+func _measure_visual_mesh_max_y(root: Node3D) -> float:
+	var maximum_y := -INF
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var transformed_bounds: AABB = mesh_instance.transform * mesh_instance.mesh.get_aabb()
+		maximum_y = maxf(maximum_y, transformed_bounds.end.y)
+	return maximum_y
+
+
+func _test_residential_six_stage_visual_growth() -> void:
+	# Build the same procedural residential geometry used by the fallback path,
+	# then measure the real mesh bounds rather than trusting stage labels or source text.
+	var expected_floors := [1, 2, 3, 7, 9, 12]
+	var measured_heights: Array[float] = []
+	for stage in range(1, 7):
+		var probe := Building.new()
+		probe.building_type = "residential_villa"
+		probe.definition = {"category": "residential", "subtype": "villa"}
+		probe.upgrade_stage = stage
+		probe.mesh_root = Node3D.new()
+		var base_height := 2.05 + float(stage - 1) * 0.32
+		if stage >= 3:
+			base_height += 0.48
+		if stage >= 5:
+			base_height += 0.62
+		var floor_count := probe._get_residential_stage_floor_count(stage, "villa")
+		_check(floor_count == int(expected_floors[stage - 1]), "Ordinary villa stage %d must have %d designed floors, got %d." % [stage, expected_floors[stage - 1], floor_count])
+		probe._build_residential(3.4, 3.4, base_height, Color(0.72, 0.66, 0.54))
+		var visual_height := _measure_visual_mesh_max_y(probe.mesh_root)
+		measured_heights.append(visual_height)
+		_check(visual_height > 0.0, "Ordinary villa stage %d must generate measurable 3D geometry." % stage)
+		if stage > 1:
+			_check(visual_height > measured_heights[stage - 2] + 0.20, "Ordinary villa stage %d must be visibly taller than stage %d (%.2fm <= %.2fm)." % [stage, stage - 1, visual_height, measured_heights[stage - 2]])
+		if stage == 6:
+			_check(probe.mesh_root.get_child_count() >= 7, "Stage 6 villa must include the Manhattan crown geometry.")
+			var crown_cap := probe.mesh_root.get_child(probe.mesh_root.get_child_count() - 1) as MeshInstance3D
+			var crown_box := crown_cap.mesh as BoxMesh if crown_cap != null else null
+			_check(crown_box != null and is_equal_approx(crown_box.size.y, 0.10), "Stage 6 villa must end with the Art Deco crown's narrow cap detail.")
+		probe.mesh_root.free()
+		probe.free()
+
 
 func _test_regional_building_and_material_gates() -> void:
 	var previous_region := RegionManager.active_region_id

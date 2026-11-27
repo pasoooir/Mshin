@@ -360,24 +360,15 @@ func _create_visual() -> void:
 		if BuildingModelLoader.attach_model(mesh_root, model_path, model_scale) != null:
 			if category == "residential" and upgrade_stage > 1:
 				var is_farm := subtype == "farm"
-				# Ordinary villas also evolve into mid/high-rise towers from stage 4.
-				# Farms retain their rural identity; apartment plots start the tower
-				# progression earlier, while every other home joins it at stage 4.
+				# Villas grow in measured storeys before their stage-4 tower conversion:
+				# 1 → 2 → 3 → 7 → 9 → 12. Apartment plots retain their taller early
+				# progression; farms keep their separate rural architecture.
 				var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)
+				var residential_floors := _get_residential_stage_floor_count(upgrade_stage, subtype)
 				var residential_body_h := height
-				if is_apartment:
-					var residential_floors := 3
-					match upgrade_stage:
-						3:
-							residential_floors = 5
-						4:
-							residential_floors = 7
-						5:
-							residential_floors = 9
-						6:
-							residential_floors = 12
+				if not is_farm:
 					residential_body_h = maxf(height, float(residential_floors) * 1.35)
-				elif is_farm:
+				else:
 					residential_body_h = minf(height, 1.85)
 				_build_residential_level_architecture(
 					w, d, residential_body_h, color, color.lightened(0.14),
@@ -435,6 +426,28 @@ func _should_use_external_model(model_path: String) -> bool:
 	# Do not leave the original low-rise GLTF embedded inside the generated tower.
 	return not is_starter_villa and not is_villa_tower
 
+
+func _get_residential_stage_floor_count(stage: int, subtype: String) -> int:
+	var bounded_stage := clampi(stage, 1, 6)
+	if subtype == "farm":
+		return 1
+	if subtype == "apartment":
+		match bounded_stage:
+			2: return 3
+			3: return 5
+			4: return 7
+			5: return 9
+			6: return 12
+			_: return 1
+	match bounded_stage:
+		2: return 2
+		3: return 3
+		4: return 7
+		5: return 9
+		6: return 12
+		_: return 1
+
+
 func _build_residential(w: float, d: float, height: float, color: Color) -> void:
 	var residential_subtype := str(definition.get("subtype", "villa"))
 	if upgrade_stage == 1 and residential_subtype == "villa":
@@ -453,28 +466,15 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	var glass := Color(0.24, 0.43, 0.54)
 	var subtype := str(definition.get("subtype", "villa"))
 	var is_farm := subtype == "farm"
-	# Keep the same villa-to-tower transition in the procedural fallback path.
+	# Every villa stage has an explicit floor count; the same contract is used
+	# by the imported-model and procedural paths so visual growth cannot diverge.
 	var is_apartment := subtype == "apartment" or (not is_farm and upgrade_stage >= 4)
-	var floors := 1
-	if is_apartment:
-		match upgrade_stage:
-			2:
-				floors = 3
-			3:
-				floors = 5
-			4:
-				floors = 7
-			5:
-				floors = 9
-			6:
-				floors = 12
-	elif upgrade_stage >= 3:
-		floors = 2
+	var floors := _get_residential_stage_floor_count(upgrade_stage, subtype)
 
 	var body_h := height
-	if is_apartment:
+	if not is_farm:
 		body_h = maxf(height, float(floors) * 1.35)
-	elif is_farm:
+	else:
 		body_h = minf(height, 1.85)
 
 	# Raised stone foundation and a projecting water-table course.
