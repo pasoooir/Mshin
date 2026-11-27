@@ -1699,8 +1699,17 @@ func _create_scaffold() -> void:
 	else:
 		_add_scaffold_box(Vector3(0.48, 0.38, 0.46),
 			Vector3(-half_w - 0.34, 0.19, -half_d * 0.45), Color(0.95, 0.78, 0.15))
-	if category == "residential":
+	if category == "residential" and status == "constructing":
 		_create_residential_tower_crane(width, depth, structure_height)
+
+
+func _ensure_residential_tower_crane() -> void:
+	if str(definition.get("category", "")) != "residential" or is_instance_valid(_tower_crane_root):
+		return
+	var plot_size: Vector2i = definition.get("size", Vector2i(2, 2))
+	var width := float(plot_size.x) * 1.7
+	var depth := float(plot_size.y) * 1.7
+	_create_residential_tower_crane(width, depth, 1.8 + upgrade_stage * 0.35)
 
 func _create_residential_tower_crane(width: float, depth: float, structure_height: float) -> void:
 	if is_instance_valid(_tower_crane_root):
@@ -1725,6 +1734,12 @@ func _create_residential_tower_crane(width: float, depth: float, structure_heigh
 	tie_a.rotation.z = deg_to_rad(18.0)
 	var tie_b := _add_tower_crane_box(Vector3(jib_length * 0.25, 0.055, 0.055), Vector3(-jib_length * 0.14, mast_height - 0.18, 0.0), crane_dark)
 	tie_b.rotation.z = deg_to_rad(-22.0)
+
+
+func _remove_residential_tower_crane() -> void:
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.queue_free()
+	_tower_crane_root = null
 
 func _add_tower_crane_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
@@ -1885,6 +1900,7 @@ func _on_construction_finished() -> void:
 	if scaffold_root:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
@@ -2249,12 +2265,14 @@ func cancel_upgrade() -> bool:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_check_upgrade_ready()
 	return true
 
 func _start_residential_upgrade_animation() -> void:
 	if DisplayServer.get_name() == "headless" or not is_instance_valid(scaffold_root):
 		return
+	_ensure_residential_tower_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
 	scaffold_root.visible = true
@@ -2287,6 +2305,7 @@ func _finish_residential_upgrade() -> void:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_create_visual()
 	_update_stage_label()
 	_play_completion_effect()
@@ -2440,6 +2459,8 @@ func restore_production_state(saved: Dictionary) -> void:
 		if is_instance_valid(scaffold_root):
 			scaffold_root.visible = true
 			scaffold_root.scale = Vector3.ONE
+		if str(definition.get("category", "")) == "residential":
+			_start_residential_upgrade_animation()
 	current_product = str(saved.get("current_product", ""))
 	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
 	has_ready_product = bool(saved.get("has_ready_product", false))
