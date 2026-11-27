@@ -29,11 +29,26 @@ func _ready() -> void:
 		StorageManager.storage_changed.connect(_on_storage_changed)
 	if StorageManager.has_signal("capacity_changed") and not StorageManager.capacity_changed.is_connected(_on_storage_changed):
 		StorageManager.capacity_changed.connect(_on_storage_changed)
+	if not BuildManager.building_placed.is_connected(_on_city_building_changed):
+		BuildManager.building_placed.connect(_on_city_building_changed)
+	if not BuildManager.building_removed.is_connected(_on_city_building_removed):
+		BuildManager.building_removed.connect(_on_city_building_removed)
+	if not BuildManager.construction_finished.is_connected(_on_city_building_changed):
+		BuildManager.construction_finished.connect(_on_city_building_changed)
 
 func _on_storage_changed(_unused = null) -> void:
 	call_deferred("refresh_now")
 
 func _on_production_slots_changed() -> void:
+	call_deferred("refresh_now")
+
+func _on_city_building_changed(_unused = null) -> void:
+	call_deferred("refresh_now")
+
+func _on_city_building_removed(_building_id: String) -> void:
+	call_deferred("refresh_now")
+
+func _on_building_upgrade_changed(_new_stage: int) -> void:
 	call_deferred("refresh_now")
 
 func configure(hud: Node) -> void:
@@ -79,6 +94,10 @@ func _sync_notifications() -> void:
 		if not is_instance_valid(building) or not building is Building or str(building.status) != "completed":
 			continue
 		var building_id := str(building.building_id)
+		if str(building.definition.get("category", "")) == "residential":
+			if not building.upgraded.is_connected(_on_building_upgrade_changed):
+				building.upgraded.connect(_on_building_upgrade_changed)
+			building._check_upgrade_ready()
 		var component = building.production_component
 		if _building_alerts_enabled and is_instance_valid(component):
 			if component.has_signal("slots_changed") and not component.slots_changed.is_connected(_on_production_slots_changed):
@@ -158,6 +177,10 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 		if not grouped.has(building_id):
 			grouped[building_id] = []
 		var kind := str(data.get("kind", "idle"))
+		# Residential upgrade markers are rendered by the screen-space tap target
+		# below; do not create a second overlapping Sprite3D hardhat.
+		if kind == "upgrade":
+			continue
 		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
 		notification.priority = int(data.get("priority", 0))
 		notification.detail = ("stock_ready" if bool(data.get("stock_ready", false)) else "missing_materials") if kind == "upgrade" else str(data.get("missing_text", ""))
