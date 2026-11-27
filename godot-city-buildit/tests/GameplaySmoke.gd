@@ -548,12 +548,17 @@ func _confirm_catalog_build(hud) -> void:
 func _test_construction_bom_contract() -> void:
 	var previous_storage: Dictionary = StorageManager.to_save_dict()
 	for type_id in BuildManager.building_types:
-		var bom := BuildManager.get_construction_bom(str(type_id))
-		if BuildManager.CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(str(type_id)):
-			_check(bom.is_empty(), "Bootstrap building must not create a circular material prerequisite: " + str(type_id))
+		var type_key := str(type_id)
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		var category := str(definition.get("category", ""))
+		var bom := BuildManager.get_construction_bom(type_key)
+		var level_and_currency_placement := category in ["residential", "commercial"] and not definition.has("construction_bom")
+		if BuildManager.CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_key) or level_and_currency_placement:
+			_check(bom.is_empty(), "Level/currency-gated homes and stores must not require placement materials: " + type_key)
+			_check(BuildManager.get_construction_bom_lock_reason(type_key).is_empty(), "Level/currency-gated homes and stores must not be blocked by construction inventory: " + type_key)
 		else:
-			_check(not bom.is_empty(), "Every non-bootstrap building type must resolve a construction BOM: " + str(type_id))
-			_check(BuildManager.get_construction_bom_source(str(type_id)).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + str(type_id))
+			_check(not bom.is_empty(), "Every non-exempt building type must resolve a construction BOM: " + type_key)
+			_check(BuildManager.get_construction_bom_source(type_key).contains("Mshin"), "Construction BOM provenance must identify Mshin design values: " + type_key)
 	StorageManager.items = {}
 	_check(BuildManager.get_construction_bom("power_wind").is_empty() and BuildManager.get_construction_bom("water_tower").is_empty(), "Starter Power and Water facilities must not have a material prerequisite that blocks their Level 1 placement.")
 	_check(BuildManager.get_construction_bom_lock_reason("power_wind").is_empty() and BuildManager.get_construction_bom_lock_reason("water_tower").is_empty(), "Starter Power and Water facilities must be buildable with their Simoleon cost alone.")
@@ -564,8 +569,8 @@ func _test_construction_bom_contract() -> void:
 	var apartment_bom := BuildManager.get_construction_bom("residential_apartment")
 	var large_factory_bom := BuildManager.get_construction_bom("factory_nano")
 	var sewage_bom := BuildManager.get_construction_bom("sewage_deluxe")
-	_check(villa_bom != apartment_bom, "Two residential types with different construction duration/unlock tier must resolve different exact BOMs.")
-	_check(int(apartment_bom.get("planks", 0)) > 0 and int(apartment_bom.get("nails", 0)) > int(villa_bom.get("nails", 0)), "Residential apartment BOM must scale above a starter farm by its build complexity.")
+	_check(villa_bom.is_empty() and apartment_bom.is_empty(), "Residential placement must depend on Mayor Level and Simoleons, not construction BOM materials.")
+	_check(BuildManager.get_construction_bom_lock_reason("residential_farm").is_empty() and BuildManager.get_construction_bom_lock_reason("residential_apartment").is_empty(), "Residential homes must remain placeable without construction inventory.")
 	_check(int(large_factory_bom.get("nails", 0)) > int(BuildManager.get_construction_bom("factory_basic").get("nails", 0)), "Larger/longer factory BOM must scale with its footprint and construction duration.")
 	_check(sewage_bom.has("planks") and sewage_bom.has("bricks") and sewage_bom.has("cement"), "High-tier sewage plant BOM must include the construction materials unlocked by its building tier.")
 	var bom_audit := BuildManager.get_bom_catalog_audit()

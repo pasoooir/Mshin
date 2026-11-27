@@ -395,6 +395,12 @@ func get_construction_bom(type_id: String) -> Dictionary:
 	var definition: Dictionary = building_types[type_id]
 	if definition.has("construction_bom"):
 		return definition.get("construction_bom", {}).duplicate(true)
+	# Residential and commercial placement follows the catalog Mayor Level and
+	# Simoleons cost. The generic Mshin construction BOM must not silently add
+	# Nails/Metal/Planks prerequisites to homes and stores: those are production
+	# chain inputs, not EA building-placement unlock requirements.
+	if str(definition.get("category", "")) in ["residential", "commercial"]:
+		return {}
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
 	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
@@ -426,6 +432,8 @@ func get_construction_bom_source(type_id: String) -> String:
 	var definition: Dictionary = building_types[type_id]
 	if definition.has("construction_bom"):
 		return str(definition.get("construction_bom_source", "Mshin building-specific design"))
+	if str(definition.get("category", "")) in ["residential", "commercial"]:
+		return "No placement material charge — Mayor Level and Simoleons gated"
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return "Mshin bootstrap exception — no material charge"
 	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
@@ -501,9 +509,10 @@ func get_bom_catalog_audit() -> Dictionary:
 		var construction := get_construction_bom(type_id)
 		construction_boms[type_id] = construction.duplicate(true)
 		construction_sources[type_id] = get_construction_bom_source(type_id)
-		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
+		var level_and_currency_placement := category in ["residential", "commercial"] and not definition.has("construction_bom")
+		if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id) or level_and_currency_placement:
 			if not construction.is_empty():
-				errors.append("%s: bootstrap BOM must remain empty" % type_id)
+				errors.append("%s: placement-exempt BOM must remain empty" % type_id)
 		else:
 			if construction.is_empty():
 				errors.append("%s: missing construction BOM" % type_id)
