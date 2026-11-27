@@ -6230,11 +6230,26 @@ func _run_gameplay_test() -> void:
 	marker_layer.set_building_alerts_enabled(true)
 	marker_layer._sync_notifications()
 	var home_upgrade_key := "%s|upgrade|" % str(home.building_id) if home != null else ""
+	var independent_home_id := "smoke_residential_stage2"
+	var independent_home := BuildingScene.instantiate() as Building
+	independent_home.building_id = independent_home_id
+	independent_home.building_type = home.building_type
+	independent_home.grid_pos = home.grid_pos
+	independent_home.definition = home.definition.duplicate(true)
+	independent_home.status = "completed"
+	independent_home.upgrade_stage = 2
+	independent_home.max_stage = home.max_stage
+	get_tree().current_scene.add_child(independent_home)
+	independent_home._connect_upgrade_dependency_signals()
+	BuildManager.buildings[independent_home_id] = independent_home
+	var independent_home_key := "%s|upgrade|" % independent_home_id
+	marker_layer._sync_notifications()
 	var marker_entry: Dictionary = marker_layer._entries.get(home_upgrade_key, {})
 	var marker_button: Button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path(), "A completed non-maximum residential home must retain an upgrade path even when its BOM is absent.")
 	_check(marker_layer._entries.has(home_upgrade_key) and is_instance_valid(marker_button), "An eligible home must keep its hardhat marker visible without upgrade materials.")
 	_check(marker_entry.get("roof_anchor", null) is Vector3, "The residential marker must cache its roof projection anchor outside the per-frame UI update.")
+	_check(marker_layer._entries.has(independent_home_key), "A second residential home at a different upgrade stage must receive its own independent hardhat marker.")
 	_check(not marker_layer._world_anchors.has(str(home.building_id)), "Residential hardhat must render once as a single marker, not duplicate in both 2D and 3D layers.")
 	_check(StorageManager.storage_changed.is_connected(home._on_upgrade_dependencies_changed), "Each residential home must subscribe to live City Storage changes for readiness updates.")
 	marker_layer.set_building_alerts_enabled(false)
@@ -6247,16 +6262,24 @@ func _run_gameplay_test() -> void:
 	marker_button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_materials() and home.upgrade_ready, "A home must report ready only when every exact upgrade ingredient is in City Storage, refreshed by the inventory event without manual polling.")
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) is TextureRect, "The green check icon must appear beside the hardhat when the complete BOM enters storage.")
+	var independent_entry: Dictionary = marker_layer._entries.get(independent_home_key, {})
+	var independent_button: Button = independent_entry.get("button") as Button
+	_check(not independent_home.has_residential_upgrade_materials() and not independent_home.upgrade_ready, "Stocking stage 1 ingredients must not mark a separate stage 2 home as ready.")
+	_check(independent_button != null and independent_button.find_child("UpgradeStockCheck", true, false) == null, "A second home must not inherit another home’s green stock check when its own BOM is absent.")
 	_check(StorageManager.remove_item("nails", 1), "Could not remove one required item to test live check-icon invalidation.")
 	await get_tree().process_frame
 	marker_entry = marker_layer._entries.get(home_upgrade_key, {})
 	marker_button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path() and not home.has_residential_upgrade_materials(), "Removing one required warehouse item must immediately invalidate residential upgrade readiness.")
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) == null, "The green check must disappear as soon as any required warehouse item is missing.")
+	independent_entry = marker_layer._entries.get(independent_home_key, {})
+	independent_button = independent_entry.get("button") as Button
+	_check(independent_button != null and independent_button.find_child("UpgradeStockCheck", true, false) == null, "Removing a required item must keep the second home independently unready.")
 	_check(StorageManager.add_item("nails", 1), "Could not restore the missing nail for the residential check-icon test.")
 	StorageManager.from_save_dict(indicator_storage_snapshot)
 	await get_tree().process_frame
 	_check(home != null and home.upgrade_ready == ProductionManager.can_afford_upgrade(home.upgrade_stage), "Restoring City Storage must automatically reconcile each home readiness state without manual refresh calls.")
+	_check(independent_home.upgrade_ready == ProductionManager.can_afford_upgrade(independent_home.upgrade_stage), "Storage restoration must independently reconcile a second home at its own upgrade stage.")
 
 	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
 	StorageManager.add_item("metal",1)
@@ -6292,6 +6315,10 @@ func _run_gameplay_test() -> void:
 	var next_stage_button: Button = next_stage_marker.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path() and is_instance_valid(next_stage_button), "After construction, a non-maximum home must show its next-stage hardhat again.")
 	_check(next_stage_button == null or (next_stage_button.find_child("UpgradeStockCheck", true, false) is TextureRect) == home.has_residential_upgrade_materials(), "The next-stage check must match the new stage BOM and current City Storage only.")
+	BuildManager.buildings.erase(independent_home_id)
+	marker_layer._sync_notifications()
+	independent_home.queue_free()
+	await get_tree().process_frame
 	marker_layer._clear_notification_entries()
 	marker_layer.queue_free()
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
