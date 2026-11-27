@@ -128,8 +128,11 @@ func _sync_notifications() -> void:
 		entry["item_id"] = data.item_id
 		entry["slots"] = data.slots
 		entry["missing_text"] = data.get("missing_text", "")
+		entry["stock_ready"] = bool(data.get("stock_ready", false))
 		_entries[key] = entry
 		var button: Button = entry.button
+		if str(data.kind) == "upgrade":
+			_set_upgrade_stock_check(button, bool(data.get("stock_ready", false)))
 		match str(data.kind):
 			"product":
 				button.tooltip_text = "Tap to collect %s" % _item_name(str(data.item_id))
@@ -329,13 +332,8 @@ func _create_button(data: Dictionary) -> Button:
 	icon.position = Vector2(15, 10)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(icon)
-	if kind == "upgrade" and bool(data.get("stock_ready", false)):
-		var check_icon := Icons.make_icon("check", Vector2(24, 24))
-		check_icon.name = "UpgradeStockCheck"
-		check_icon.position = Vector2(52, 1)
-		check_icon.size = Vector2(24, 24)
-		check_icon.modulate = Color("#35B96B")
-		button.add_child(check_icon)
+	if kind == "upgrade":
+		_set_upgrade_stock_check(button, bool(data.get("stock_ready", false)))
 
 	if kind in ["product", "storage_full"]:
 		var count := Label.new()
@@ -361,6 +359,19 @@ func _create_button(data: Dictionary) -> Button:
 		_:
 			button.pressed.connect(_on_building_attention_pressed.bind(str(data.building.building_id)))
 	return button
+
+
+func _set_upgrade_stock_check(button: Button, enabled: bool) -> void:
+	var existing := button.get_node_or_null("UpgradeStockCheck")
+	if enabled and not is_instance_valid(existing):
+		var check_icon := Icons.make_icon("check", Vector2(24, 24))
+		check_icon.name = "UpgradeStockCheck"
+		check_icon.position = Vector2(52, 1)
+		check_icon.size = Vector2(24, 24)
+		check_icon.modulate = Color("#35B96B")
+		button.add_child(check_icon)
+	elif not enabled and is_instance_valid(existing):
+		existing.queue_free()
 
 func _update_positions() -> void:
 	var camera := get_viewport().get_camera_3d()
