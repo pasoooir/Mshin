@@ -66,6 +66,17 @@ func _rebuild_visuals() -> void:
 		sprite.modulate = _color_for(data.type)
 		sprite.no_depth_test = true
 		root.add_child(sprite)
+		if data.type == NotificationData.Type.UPGRADE_READY and data.detail == "stock_ready":
+			var check_sprite := Sprite3D.new()
+			check_sprite.name = "UpgradeStockCheck"
+			check_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			check_sprite.pixel_size = 0.0055
+			check_sprite.shaded = false
+			check_sprite.texture = Icons.get_icon_tex("check")
+			check_sprite.modulate = Color("#35C875")
+			check_sprite.no_depth_test = true
+			check_sprite.position = Vector3(0.34, 0.20, 0.0)
+			root.add_child(check_sprite)
 		_icons.append(sprite)
 		var count := Label3D.new()
 		count.name = "Count"
