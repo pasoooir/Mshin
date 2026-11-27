@@ -2968,6 +2968,33 @@ func _test_build_menu_visibility() -> void:
 	var expected_service_unlocks := {"power":1, "water":1, "fire":5, "sewage":8, "police":12, "waste":14, "health":16, "government":1, "trade":1}
 	for service_id in expected_service_unlocks:
 		_check(LevelProgression.get_service_unlock_level(service_id) == int(expected_service_unlocks[service_id]), "Service group unlock level is inconsistent: " + service_id)
+	# Derive every service group and building unlock from the same catalog.
+	var previous_service_unlocks: Array = LevelProgression.unlocked_services.duplicate()
+	for group in HUDScript.SERVICE_GROUPS:
+		var group_id := str(group.get("id", ""))
+		var group_buildings: Array = group.get("buildings", [])
+		var catalog_unlock_level := 0
+		for type_id_value in group_buildings:
+			var type_id := str(type_id_value)
+			_check(BuildManager.building_types.has(type_id), "Service group %s references missing building %s." % [group_id, type_id])
+			if not BuildManager.building_types.has(type_id):
+				continue
+			var definition: Dictionary = BuildManager.building_types[type_id]
+			_check(str(definition.get("category", "")) == "service" and str(definition.get("service_group", "")) == group_id, "Service building %s must belong to group %s." % [type_id, group_id])
+			var building_level := maxi(1, int(definition.get("level", 1)))
+			if catalog_unlock_level == 0 or building_level < catalog_unlock_level:
+				catalog_unlock_level = building_level
+			_check(LevelProgression.is_service_building_unlocked(type_id, building_level), "Service building %s must unlock at its catalog level %d." % [type_id, building_level])
+			if building_level > 1:
+				_check(not LevelProgression.is_service_building_unlocked(type_id, building_level - 1), "Service building %s must stay locked one level before its unlock." % type_id)
+		_check(catalog_unlock_level > 0 and LevelProgression.get_service_unlock_level(group_id) == catalog_unlock_level, "Service group %s must unlock with its earliest catalog building." % group_id)
+	GameManager.level = 9
+	LevelProgression._sync_service_unlocks(9)
+	for group_id in ["power", "water", "sewage", "fire", "government", "trade"]:
+		_check(LevelProgression.is_service_unlocked(group_id), "Service group %s must be unlocked at Mayor Level 9." % group_id)
+	for group_id in ["waste", "police", "health"]:
+		_check(not LevelProgression.is_service_unlocked(group_id), "Service group %s must remain locked at Mayor Level 9." % group_id)
+	LevelProgression.unlocked_services = previous_service_unlocks
 	var saved_menu_level := GameManager.level
 	GameManager.level = 1
 	hud._show_submenu("services")
