@@ -41,10 +41,9 @@ func configure(hud: Node) -> void:
 
 func set_building_alerts_enabled(enabled: bool) -> void:
 	_building_alerts_enabled = enabled
-	if not enabled:
-		_clear_notification_entries()
-	else:
-		refresh_now()
+	# Residential upgrade markers are essential world state, not optional
+	# production alerts; keep them visible even when optional alerts are disabled.
+	refresh_now()
 
 func are_building_alerts_enabled() -> bool:
 	return _building_alerts_enabled
@@ -72,9 +71,6 @@ func _process(delta: float) -> void:
 	_update_positions()
 
 func _sync_notifications() -> void:
-	if not _building_alerts_enabled:
-		_clear_notification_entries()
-		return
 	var candidates: Dictionary = {}
 	for building in BuildManager.buildings.values():
 		# BuildManager normally stores Building nodes, but integration tests and
@@ -84,7 +80,7 @@ func _sync_notifications() -> void:
 			continue
 		var building_id := str(building.building_id)
 		var component = building.production_component
-		if is_instance_valid(component):
+		if _building_alerts_enabled and is_instance_valid(component):
 			if component.has_signal("slots_changed") and not component.slots_changed.is_connected(_on_production_slots_changed):
 				component.slots_changed.connect(_on_production_slots_changed)
 			component.refresh_slots()
