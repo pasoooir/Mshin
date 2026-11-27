@@ -169,6 +169,7 @@ func _test_commercial_level_unlock_contract() -> void:
 			continue
 		var should_unlock := int(definition.get("level", 1)) <= 9
 		_check(LevelProgression.is_commercial_unlocked(type_id, 9) == should_unlock, "%s commercial unlock must follow its catalog Mayor Level." % type_id)
+		_check((type_id in LevelProgression.unlocked_commercial) == should_unlock, "%s must be present in the progression unlock registry exactly when its catalog level is reached." % type_id)
 		_check(visible_unlocked.has(type_id) == should_unlock, "%s must be available in the build menu exactly at its catalog Mayor Level." % type_id)
 		if should_unlock:
 			_check(type_id in expected_unlocked, "%s is unexpectedly eligible at Mayor Level 9; update the explicit acceptance list after catalog review." % type_id)
