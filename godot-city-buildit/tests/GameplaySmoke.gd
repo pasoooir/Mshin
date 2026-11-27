@@ -75,9 +75,13 @@ func _test_residential_reward_contract() -> void:
 	var maximum: Dictionary = ProductionManager.get_residential_upgrade_rewards(6, 1836)
 	_check(not bool(maximum.get("available", true)) and int(maximum.get("xp", -1)) == 0 and int(maximum.get("simoleons", -1)) == 0, "Maximum-level homes must not advertise rewards for a nonexistent next upgrade.")
 	var expected_upgrade_durations := [5, 10, 20, 35, 60]
+	var duration_probe = BuildingScene.instantiate()
 	for stage_index in range(expected_upgrade_durations.size()):
-		var duration := BuildingScene.instantiate().get_residential_upgrade_duration_seconds(stage_index + 1)
+		var duration := duration_probe.get_residential_upgrade_duration_seconds(stage_index + 1)
 		_check(duration == expected_upgrade_durations[stage_index] and duration >= 5 and duration <= 60, "Residential stage %d must use its configured 5–60 second construction duration." % (stage_index + 1))
+	duration_probe.free()
+	var building_source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
+	_check(building_source.contains("func _create_residential_tower_crane") and building_source.contains("ResidentialTowerCrane"), "Residential construction must include a dedicated tower-crane visual assembly.")
 
 
 func _test_production_store_catalog_integrity() -> void:
@@ -6198,6 +6202,15 @@ func _run_gameplay_test() -> void:
 	marker_button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_materials() and home.upgrade_ready, "A home must report ready only when every exact upgrade ingredient is in City Storage.")
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) is TextureRect, "The green check icon must appear beside the hardhat when the complete BOM enters storage.")
+	_check(StorageManager.remove_item("nails", 1), "Could not remove one required item to test live check-icon invalidation.")
+	if home != null:
+		home._check_upgrade_ready()
+	marker_layer._sync_notifications()
+	marker_entry = marker_layer._entries.get(home_upgrade_key, {})
+	marker_button = marker_entry.get("button") as Button
+	_check(home != null and home.has_residential_upgrade_path() and not home.has_residential_upgrade_materials(), "Removing one required warehouse item must immediately invalidate residential upgrade readiness.")
+	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) == null, "The green check must disappear as soon as any required warehouse item is missing.")
+	_check(StorageManager.add_item("nails", 1), "Could not restore the missing nail for the residential check-icon test.")
 	StorageManager.from_save_dict(indicator_storage_snapshot)
 	if home != null:
 		home._check_upgrade_ready()
@@ -6219,6 +6232,7 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.upgrade_in_progress and home.upgrade_stage == 1, "House upgrade must enter a short scaffold phase before changing its level.")
 	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
 	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
+	_check(home != null and home.upgrade_finish_unix - int(Time.get_unix_time_from_system()) <= 5 and home.upgrade_finish_unix - int(Time.get_unix_time_from_system()) > 0, "Stage 1 residential construction must run for the configured five-second minimum instead of instant replacement.")
 	marker_layer._sync_notifications()
 	_check(not marker_layer._entries.has(home_upgrade_key), "The hardhat and check markers must disappear while the same home is under construction.")
 	production_hud.open_residential_panel(home)
