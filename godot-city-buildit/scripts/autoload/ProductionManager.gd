@@ -1291,10 +1291,14 @@ func get_residential_upgrade_rewards(from_stage: int, current_population: int) -
 	}
 
 func can_afford_upgrade(from_stage: int) -> bool:
+	var aggregate: Dictionary = {}
 	for requirement in get_upgrade_requirements(from_stage):
-		if StorageManager.get_count(str(requirement.item)) < int(requirement.amount):
+		var item_id := str(requirement.get("item", ""))
+		var amount := int(requirement.get("amount", 0))
+		if item_id.is_empty() or amount <= 0:
 			return false
-	return not get_upgrade_requirements(from_stage).is_empty()
+		aggregate[item_id] = int(aggregate.get(item_id, 0)) + amount
+	return not aggregate.is_empty() and StorageManager.has_items(aggregate)
 
 func consume_upgrade_materials(from_stage: int) -> bool:
 	var requirements := get_upgrade_requirements(from_stage)

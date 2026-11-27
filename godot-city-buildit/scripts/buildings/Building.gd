@@ -43,6 +43,7 @@ var upgrade_reserved_cost_batches: Dictionary = {}
 var upgrade_reserved_simoleons: int = 0
 var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
+var _tower_crane_root: Node3D
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
 var _move_highlight_root: Node3D
@@ -50,7 +51,7 @@ var _move_ghost_material: StandardMaterial3D
 var _move_original_overlays: Dictionary = {}
 static var _shared_surface_texture: Texture2D
 const WIND_TURBINE_SPIN_RADIANS_PER_SECOND: float = 0.92
-const RESIDENTIAL_UPGRADE_DURATION_SECONDS: int = 4
+const RESIDENTIAL_UPGRADE_DURATIONS_BY_STAGE := {1: 5, 2: 10, 3: 20, 4: 35, 5: 60}
 const ProductionComponentScript = preload("res://scripts/production/ProductionComponent.gd")
 const BuildingModelLoader = preload("res://scripts/buildings/BuildingModelLoader.gd")
 const BuildingSurfaceLibrary = preload("res://scripts/buildings/BuildingSurfaceLibrary.gd")
@@ -1698,6 +1699,61 @@ func _create_scaffold() -> void:
 	else:
 		_add_scaffold_box(Vector3(0.48, 0.38, 0.46),
 			Vector3(-half_w - 0.34, 0.19, -half_d * 0.45), Color(0.95, 0.78, 0.15))
+	if category == "residential" and status == "constructing":
+		_create_residential_tower_crane(width, depth, structure_height)
+
+
+func _ensure_residential_tower_crane() -> void:
+	if str(definition.get("category", "")) != "residential" or is_instance_valid(_tower_crane_root):
+		return
+	var plot_size: Vector2i = definition.get("size", Vector2i(2, 2))
+	var width := float(plot_size.x) * 1.7
+	var depth := float(plot_size.y) * 1.7
+	_create_residential_tower_crane(width, depth, 1.8 + upgrade_stage * 0.35)
+
+func _create_residential_tower_crane(width: float, depth: float, structure_height: float) -> void:
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.queue_free()
+	_tower_crane_root = Node3D.new()
+	_tower_crane_root.name = "ResidentialTowerCrane"
+	_tower_crane_root.position = Vector3(-width * 0.43, 0.0, -depth * 0.43)
+	scaffold_root.add_child(_tower_crane_root)
+	var mast_height := maxf(4.0, structure_height + 2.8)
+	var crane_yellow := Color("#E8B83E")
+	var crane_dark := Color("#59616A")
+	_add_tower_crane_box(Vector3(0.22, mast_height, 0.22), Vector3(0.0, mast_height * 0.5, 0.0), crane_yellow)
+	_add_tower_crane_box(Vector3(0.12, mast_height * 0.72, 0.12), Vector3(0.0, mast_height * 0.5, 0.0), crane_dark)
+	var jib_length := maxf(4.8, width + 2.2)
+	_add_tower_crane_box(Vector3(jib_length, 0.18, 0.24), Vector3(jib_length * 0.28, mast_height + 0.08, 0.0), crane_yellow)
+	_add_tower_crane_box(Vector3(jib_length * 0.34, 0.16, 0.22), Vector3(-jib_length * 0.33, mast_height + 0.08, 0.0), crane_dark)
+	_add_tower_crane_box(Vector3(0.10, 0.72, 0.10), Vector3(jib_length * 0.72, mast_height - 0.38, 0.0), crane_dark)
+	_add_tower_crane_box(Vector3(0.055, 1.35, 0.055), Vector3(jib_length * 0.72, mast_height - 1.36, 0.0), crane_dark)
+	_add_tower_crane_box(Vector3(0.30, 0.20, 0.34), Vector3(jib_length * 0.72, mast_height - 2.05, 0.0), crane_yellow)
+	# Diagonal ties make the mast/jib silhouette read as a tower crane at city zoom.
+	var tie_a := _add_tower_crane_box(Vector3(jib_length * 0.34, 0.055, 0.055), Vector3(jib_length * 0.22, mast_height - 0.18, 0.0), crane_dark)
+	tie_a.rotation.z = deg_to_rad(18.0)
+	var tie_b := _add_tower_crane_box(Vector3(jib_length * 0.25, 0.055, 0.055), Vector3(-jib_length * 0.14, mast_height - 0.18, 0.0), crane_dark)
+	tie_b.rotation.z = deg_to_rad(-22.0)
+
+
+func _remove_residential_tower_crane() -> void:
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.queue_free()
+	_tower_crane_root = null
+
+func _add_tower_crane_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh_instance.mesh = box
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.72
+	material.metallic = 0.28
+	mesh_instance.material_override = material
+	mesh_instance.position = pos
+	_tower_crane_root.add_child(mesh_instance)
+	return mesh_instance
 
 func _add_scaffold_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
@@ -1844,6 +1900,7 @@ func _on_construction_finished() -> void:
 	if scaffold_root:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
@@ -2034,6 +2091,8 @@ func _process(delta: float) -> void:
 			if production_icon:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
+	if (upgrade_in_progress or status == "constructing") and is_instance_valid(_tower_crane_root):
+		_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.12, 0.0, TAU)
 	if upgrade_in_progress:
 		update_upgrade_access_state()
 	# Residential upgrade readiness is refreshed by inventory, service and city events.
@@ -2101,8 +2160,18 @@ func get_residential_upgrade_block_reason() -> String:
 		return "Required upgrade materials are missing from City Storage."
 	return ""
 
+func has_residential_upgrade_path() -> bool:
+	return str(definition.get("category", "")) == "residential" and status == "completed" and not is_epic_building and upgrade_stage < max_stage and not upgrade_in_progress and BuildManager.is_building_operational(self)
+
+func has_residential_upgrade_materials() -> bool:
+	return has_residential_upgrade_path() and ProductionManager.can_afford_upgrade(upgrade_stage)
+
+func get_residential_upgrade_duration_seconds(from_stage: int = -1) -> int:
+	var stage := upgrade_stage if from_stage < 0 else from_stage
+	return int(RESIDENTIAL_UPGRADE_DURATIONS_BY_STAGE.get(stage, 0))
+
 func _check_upgrade_ready() -> void:
-	upgrade_ready = get_residential_upgrade_block_reason().is_empty()
+	upgrade_ready = has_residential_upgrade_materials()
 	# Show the blue plan marker only while this home's upgrade plan is selected.
 	if hard_hat:
 		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
@@ -2135,7 +2204,12 @@ func try_upgrade() -> bool:
 		if not bool(residential_removal.get("success", false)):
 			return false
 		upgrade_reserved_cost_batches = residential_removal.get("cost_batches", {}).duplicate(true)
-		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + RESIDENTIAL_UPGRADE_DURATION_SECONDS
+		var upgrade_duration := get_residential_upgrade_duration_seconds(upgrade_stage)
+		if upgrade_duration < 5 or upgrade_duration > 60:
+			StorageManager.restore_items_with_cost_batches(consumed_bom, upgrade_reserved_cost_batches)
+			upgrade_reserved_cost_batches.clear()
+			return false
+		upgrade_finish_unix = int(Time.get_unix_time_from_system()) + upgrade_duration
 	elif category in ["commercial", "industrial", "service", "park"]:
 		var upgrade_bom := BuildManager.get_non_residential_upgrade_bom(building_type, upgrade_stage)
 		var lock_reason := BuildManager.get_non_residential_upgrade_lock_reason(building_type, upgrade_stage)
@@ -2191,18 +2265,24 @@ func cancel_upgrade() -> bool:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_check_upgrade_ready()
 	return true
 
 func _start_residential_upgrade_animation() -> void:
 	if DisplayServer.get_name() == "headless" or not is_instance_valid(scaffold_root):
 		return
+	_ensure_residential_tower_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
 	scaffold_root.visible = true
 	scaffold_root.scale = Vector3(1.0, 0.01, 1.0)
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.rotation.y = 0.0
+	var remaining := maxf(0.35, float(get_upgrade_remaining_seconds()))
+	var reveal_time := minf(2.0, remaining * 0.30)
 	_upgrade_tween = create_tween()
-	_upgrade_tween.tween_property(scaffold_root, "scale", Vector3.ONE, 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_upgrade_tween.tween_property(scaffold_root, "scale", Vector3.ONE, reveal_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func _finish_residential_upgrade() -> void:
 	if not upgrade_in_progress:
@@ -2225,6 +2305,7 @@ func _finish_residential_upgrade() -> void:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
 	_create_visual()
 	_update_stage_label()
 	_play_completion_effect()
@@ -2378,6 +2459,8 @@ func restore_production_state(saved: Dictionary) -> void:
 		if is_instance_valid(scaffold_root):
 			scaffold_root.visible = true
 			scaffold_root.scale = Vector3.ONE
+		if str(definition.get("category", "")) == "residential":
+			_start_residential_upgrade_animation()
 	current_product = str(saved.get("current_product", ""))
 	is_producing = bool(saved.get("is_producing", false)) and not current_product.is_empty()
 	has_ready_product = bool(saved.get("has_ready_product", false))

@@ -41,10 +41,9 @@ func configure(hud: Node) -> void:
 
 func set_building_alerts_enabled(enabled: bool) -> void:
 	_building_alerts_enabled = enabled
-	if not enabled:
-		_clear_notification_entries()
-	else:
-		refresh_now()
+	# Residential upgrade markers are essential world state, not optional
+	# production alerts; keep them visible even when optional alerts are disabled.
+	refresh_now()
 
 func are_building_alerts_enabled() -> bool:
 	return _building_alerts_enabled
@@ -72,9 +71,6 @@ func _process(delta: float) -> void:
 	_update_positions()
 
 func _sync_notifications() -> void:
-	if not _building_alerts_enabled:
-		_clear_notification_entries()
-		return
 	var candidates: Dictionary = {}
 	for building in BuildManager.buildings.values():
 		# BuildManager normally stores Building nodes, but integration tests and
@@ -84,7 +80,7 @@ func _sync_notifications() -> void:
 			continue
 		var building_id := str(building.building_id)
 		var component = building.production_component
-		if is_instance_valid(component):
+		if _building_alerts_enabled and is_instance_valid(component):
 			if component.has_signal("slots_changed") and not component.slots_changed.is_connected(_on_production_slots_changed):
 				component.slots_changed.connect(_on_production_slots_changed)
 			component.refresh_slots()
@@ -102,9 +98,11 @@ func _sync_notifications() -> void:
 				else:
 					var key := _entry_key(building_id, "idle", "")
 					candidates[key] = _make_entry(building, "idle", "", [])
-		if bool(building.upgrade_ready):
+		if building.has_method("has_residential_upgrade_path") and building.has_residential_upgrade_path():
 			var upgrade_key := _entry_key(building_id, "upgrade", "")
-			candidates[upgrade_key] = _make_entry(building, "upgrade", "", [])
+			var upgrade_entry := _make_entry(building, "upgrade", "", [])
+			upgrade_entry["stock_ready"] = building.has_residential_upgrade_materials()
+			candidates[upgrade_key] = upgrade_entry
 
 	var wanted := _limit_per_building(candidates, MAX_NOTIFICATIONS_PER_BUILDING)
 	for key in _entries.keys():
@@ -126,8 +124,11 @@ func _sync_notifications() -> void:
 		entry["item_id"] = data.item_id
 		entry["slots"] = data.slots
 		entry["missing_text"] = data.get("missing_text", "")
+		entry["stock_ready"] = bool(data.get("stock_ready", false))
 		_entries[key] = entry
 		var button: Button = entry.button
+		if str(data.kind) == "upgrade":
+			_set_upgrade_stock_check(button, bool(data.get("stock_ready", false)))
 		match str(data.kind):
 			"product":
 				button.tooltip_text = "Tap to collect %s" % _item_name(str(data.item_id))
@@ -159,7 +160,7 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 		var kind := str(data.get("kind", "idle"))
 		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
 		notification.priority = int(data.get("priority", 0))
-		notification.detail = str(data.get("missing_text", ""))
+		notification.detail = ("stock_ready" if bool(data.get("stock_ready", false)) else "missing_materials") if kind == "upgrade" else str(data.get("missing_text", ""))
 		grouped[building_id].append(notification)
 	for existing_id in _world_anchors.keys():
 		if not grouped.has(str(existing_id)):
@@ -327,6 +328,8 @@ func _create_button(data: Dictionary) -> Button:
 	icon.position = Vector2(15, 10)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(icon)
+	if kind == "upgrade":
+		_set_upgrade_stock_check(button, bool(data.get("stock_ready", false)))
 
 	if kind in ["product", "storage_full"]:
 		var count := Label.new()
@@ -352,6 +355,19 @@ func _create_button(data: Dictionary) -> Button:
 		_:
 			button.pressed.connect(_on_building_attention_pressed.bind(str(data.building.building_id)))
 	return button
+
+
+func _set_upgrade_stock_check(button: Button, enabled: bool) -> void:
+	var existing := button.get_node_or_null("UpgradeStockCheck")
+	if enabled and not is_instance_valid(existing):
+		var check_icon := Icons.make_icon("check", Vector2(24, 24))
+		check_icon.name = "UpgradeStockCheck"
+		check_icon.position = Vector2(52, 1)
+		check_icon.size = Vector2(24, 24)
+		check_icon.modulate = Color("#35B96B")
+		button.add_child(check_icon)
+	elif not enabled and is_instance_valid(existing):
+		existing.queue_free()
 
 func _update_positions() -> void:
 	var camera := get_viewport().get_camera_3d()
@@ -436,11 +452,14 @@ func _on_product_pressed(building_id: String, item_id: String) -> void:
 
 func _on_upgrade_pressed(building_id: String) -> void:
 	var building = BuildManager.buildings.get(building_id)
-	if not is_instance_valid(building) or not bool(building.upgrade_ready) or not is_instance_valid(_hud):
+	if not is_instance_valid(building) or not is_instance_valid(_hud):
 		return
-	if str(building.definition.get("category", "")) == "residential" and _hud.has_method("open_residential_panel"):
-		_hud.call("open_residential_panel", building)
-	elif _hud.has_method("open_building_upgrade_panel"):
+	if str(building.definition.get("category", "")) == "residential":
+		if not building.has_method("has_residential_upgrade_path") or not building.has_residential_upgrade_path():
+			return
+		if _hud.has_method("open_residential_panel"):
+			_hud.call("open_residential_panel", building)
+	elif bool(building.upgrade_ready) and _hud.has_method("open_building_upgrade_panel"):
 		_hud.call("open_building_upgrade_panel", building)
 
 func _on_building_attention_pressed(building_id: String) -> void:
