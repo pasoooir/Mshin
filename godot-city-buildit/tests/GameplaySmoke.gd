@@ -6012,9 +6012,8 @@ func _run_gameplay_test() -> void:
 	hardware.queue_free()
 	GameManager.level = previous_level
 
-	# Residential development must use real city service coverage, not materials alone.
-	# Temporarily remove the home's Level 2 utility coverage and verify that the
-	# upgrade explains the missing infrastructure; restore the live service snapshot.
+	# Residential service coverage must not gate upgrades. Remove Level 2 utility
+	# coverage and verify that the block reason is not a Power/Water requirement.
 	var previous_upgrade_level := GameManager.level
 	var previous_power_coverage: Dictionary = ServiceManager.power_served_ids.duplicate(true)
 	var previous_water_coverage: Dictionary = ServiceManager.water_served_ids.duplicate(true)
@@ -6022,7 +6021,7 @@ func _run_gameplay_test() -> void:
 	ServiceManager.power_served_ids.clear()
 	ServiceManager.water_served_ids.clear()
 	var service_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
-	_check(service_block_reason.contains("Power") or service_block_reason.contains("Water"), "A Level 2 residential upgrade must be blocked with a clear missing Power/Water coverage reason.")
+	_check(not service_block_reason.contains("Power") and not service_block_reason.contains("Water"), "Missing Power/Water coverage must not block a Level 2 residential upgrade.")
 	ServiceManager.power_served_ids = previous_power_coverage
 	ServiceManager.water_served_ids = previous_water_coverage
 	GameManager.level = previous_upgrade_level
@@ -6057,20 +6056,20 @@ func _run_gameplay_test() -> void:
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
 	_check(home != null and home.current_population > population_before_upgrade and GameManager.population > city_population_before_upgrade, "House upgrade did not increase service-adjusted population.")
 
-	# At the next residential tier, a Level 5 city must have local fire coverage.
+	# Missing emergency-service coverage must remain advisory at later tiers.
 	var level_after_first_upgrade := GameManager.level
 	var previous_fire_coverage: Dictionary = ServiceManager.fire_served_ids.duplicate(true)
 	GameManager.level = maxi(GameManager.level, 5)
 	ServiceManager.fire_served_ids.clear()
 	var fire_block_reason: String = home.get_residential_upgrade_block_reason() if home != null else "missing home"
-	_check(fire_block_reason.contains("Fire protection"), "A Level 5 residential development must require nearby Fire protection coverage.")
+	_check(not fire_block_reason.contains("Fire protection"), "Missing Fire protection coverage must not block a Level 5 residential upgrade.")
 	ServiceManager.fire_served_ids = previous_fire_coverage
 	GameManager.level = level_after_first_upgrade
 	if home != null:
 		home._check_upgrade_ready()
 
-	# Exercise every later residential service milestone independently. Keep all
-	# other service maps satisfied so each assertion identifies the exact gate.
+	# Exercise every later service milestone independently and verify that none
+	# of these non-consumable services becomes a hard upgrade prerequisite.
 	if home != null:
 		var previous_upgrade_stage: int = int(home.upgrade_stage)
 		var previous_service_maps := {
@@ -6141,7 +6140,7 @@ func _run_gameplay_test() -> void:
 				"health":
 					ServiceManager.health_served_ids.erase(home.building_id)
 			var milestone_reason: String = str(home.get_residential_upgrade_block_reason())
-			_check(milestone_reason.contains(str(milestone.label)), "Residential stage %d must require %s coverage at City Level %d; got: %s" % [int(milestone.stage), str(milestone.label), int(milestone.level), milestone_reason])
+			_check(not milestone_reason.contains(str(milestone.label)), "Residential stage %d must not require %s coverage at City Level %d; got: %s" % [int(milestone.stage), str(milestone.label), int(milestone.level), milestone_reason])
 		for service_group in previous_service_maps:
 			match service_group:
 				"power":
