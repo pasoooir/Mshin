@@ -6254,9 +6254,8 @@ func _run_gameplay_test() -> void:
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) == null, "The green check must disappear as soon as any required warehouse item is missing.")
 	_check(StorageManager.add_item("nails", 1), "Could not restore the missing nail for the residential check-icon test.")
 	StorageManager.from_save_dict(indicator_storage_snapshot)
-	if home != null:
-		home._check_upgrade_ready()
-	marker_layer._sync_notifications()
+	await get_tree().process_frame
+	_check(home != null and home.upgrade_ready == ProductionManager.can_afford_upgrade(home.upgrade_stage), "Restoring City Storage must automatically reconcile each home readiness state without manual refresh calls.")
 
 	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
 	StorageManager.add_item("metal",1)
