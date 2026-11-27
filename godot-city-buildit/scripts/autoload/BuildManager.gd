@@ -395,6 +395,13 @@ func get_construction_bom(type_id: String) -> Dictionary:
 	var definition: Dictionary = building_types[type_id]
 	if definition.has("construction_bom"):
 		return definition.get("construction_bom", {}).duplicate(true)
+	# Residential and commercial placement follows the catalog Mayor Level and
+	# Simoleons cost. The generic Mshin construction BOM must not silently add
+	# Nails/Metal/Planks prerequisites to homes and stores: those are production
+	# chain inputs, not EA building-placement unlock requirements.
+	var category := str(definition.get("category", ""))
+	if category in ["residential", "commercial"]:
+		return {}
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
 	if CONSTRUCTION_BOM_TYPE_PROFILES.has(type_id):
