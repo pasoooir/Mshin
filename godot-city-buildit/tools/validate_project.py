@@ -448,7 +448,7 @@ for contract in [
         errors.append(f"Epic Project manager contract is missing: {contract}")
 if '"epic_projects_department": {"name":"Department of Epic Projects"' not in build_manager:
     errors.append("Department of Epic Projects building definition is missing")
-if '16: {"materials": ["paint", "table"], "services": ["health"], "buildings": ["epic_projects_department"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
+if '16: {"materials": ["paint", "table"], "buildings": ["epic_projects_department"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
     errors.append("Department of Epic Projects must unlock at Level 16")
 if '24: {"factories": 8, "other": ["epic_projects"]}' not in (ROOT / "scripts/autoload/LevelProgression.gd").read_text(encoding="utf-8"):
     errors.append("Epic Projects must unlock at Level 24")
@@ -1698,11 +1698,14 @@ for contract in [
         errors.append(f"City-wide service capacity/demand contract is missing: {contract}")
 
 for contract in [
-    "const SERVICE_UNLOCK_LEVELS :=",
     "func get_service_unlock_level(id: String) -> int:",
+    "func is_service_building_unlocked(type_id: String, level_override: int = -1) -> bool:",
+    "func _sync_service_unlocks(level: int) -> void:",
 ]:
     if contract not in level_progression_source:
-        errors.append(f"Service unlock progression contract is missing: {contract}")
+        errors.append(f"Catalog-driven service unlock contract is missing: {contract}")
+if '"police_station", "police_small", "police_basic", "police_precinct"' not in hud_source:
+    errors.append("Police service group must expose every police station tier")
 
 for contract in [
     "Level 1 starter homes must not consume household Power and Water.",
