@@ -4455,12 +4455,6 @@ func open_residential_panel(building: Building) -> void:
 	var stage := int(building.upgrade_stage)
 	var is_upgrading := bool(building.upgrade_in_progress)
 	var requirements: Array = [] if is_upgrading else ProductionManager.get_upgrade_requirements(stage)
-	var city_snapshot := CityDemandManager.get_city_snapshot()
-	var home_data: Dictionary = {}
-	for candidate in city_snapshot.get("homes", []):
-		if str(candidate.get("building_id", "")) == building.building_id:
-			home_data = candidate
-			break
 	# Home upgrade materials are shown as the same raised 3D hex tokens around
 	# the selected house. Tapping a shortage token opens its actual supplier and
 	# submits the corresponding production order when that supplier can accept it.
@@ -4475,11 +4469,10 @@ func open_residential_panel(building: Building) -> void:
 		if item_id.is_empty():
 			continue
 		var amount := int(requirement.get("amount", 0))
+		# A home's plan must read physical City Storage directly. CityDemandManager
+		# allocates shared stock for dashboard planning; that allocation must never
+		# hide real inventory or disable a material token in the selected home's panel.
 		var owned := StorageManager.get_count(item_id)
-		for home_need in home_data.get("needs", []):
-			if str(home_need.get("item_id", "")) == item_id:
-				owned = int(home_need.get("stored", owned))
-				break
 		var footprint_size: Vector2i = building.definition.get("size", Vector2i(2, 2))
 		var orbit_camera := get_viewport().get_camera_3d()
 		var orbit_right := orbit_camera.global_transform.basis.x.normalized() if is_instance_valid(orbit_camera) else Vector3.RIGHT
@@ -4595,34 +4588,18 @@ func open_residential_panel(building: Building) -> void:
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
 		var amount := int(requirement.get("amount", 0))
-		var allocated_need: Dictionary = {}
-		for home_need in home_data.get("needs", []):
-			if str(home_need.get("item_id", "")) == item_id:
-				allocated_need = home_need
-				break
-		# The City Needs dashboard allocates shared stock across all homes for
-		# planning purposes. A selected home's upgrade panel must instead read the
-		# actual warehouse count: another home's display allocation cannot make
-		# physically available items disappear from this home's upgrade plan.
+		# Residential readiness is based only on items physically collected in
+		# City Storage. In-production and ready-to-collect batches are not stock.
 		var owned := StorageManager.get_count(item_id)
-		var ready_count := int(allocated_need.get("ready_to_collect", 0))
-		var producing_count := int(allocated_need.get("in_production", 0))
-		var shortage := int(allocated_need.get("shortage", maxi(0, amount - owned)))
+		var shortage := maxi(0, amount - owned)
 		if owned < amount:
 			all_available = false
 			shortage_lines.append("%s ×%d" % [CityDemandManager.get_item_name(item_id), maxi(0, amount - owned)])
 		var need_status := "READY"
 		var need_color := Color("#34734D")
 		if owned < amount:
-			if ready_count > 0:
-				need_status = "READY TO COLLECT %d" % ready_count
-				need_color = Color("#9A6B1D")
-			elif producing_count > 0:
-				need_status = "IN PRODUCTION %d" % producing_count
-				need_color = Color("#315C8A")
-			else:
-				need_status = "SHORT %d" % shortage
-				need_color = Color("#A13F35")
+			need_status = "SHORT %d" % shortage
+			need_color = Color("#A13F35")
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		details_content.add_child(row)
