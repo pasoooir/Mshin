@@ -6209,6 +6209,7 @@ func _run_gameplay_test() -> void:
 	if home != null:
 		home._check_upgrade_ready()
 	marker_layer._sync_notifications()
+	await get_tree().process_frame
 	marker_entry = marker_layer._entries.get(home_upgrade_key, {})
 	marker_button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path() and not home.has_residential_upgrade_materials(), "Removing one required warehouse item must immediately invalidate residential upgrade readiness.")
