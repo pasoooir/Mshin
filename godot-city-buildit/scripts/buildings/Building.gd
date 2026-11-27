@@ -44,6 +44,11 @@ var upgrade_reserved_simoleons: int = 0
 var residential_plan_selected: bool = false
 var _upgrade_tween: Tween
 var _tower_crane_root: Node3D
+var _tower_crane_load: Node3D
+var _tower_crane_cable: MeshInstance3D
+var _tower_crane_cargo: MeshInstance3D
+var _residential_crane_slews := false
+var _residential_frame_levels: Array[Node3D] = []
 var demolition_highlight_active: bool = false
 var _demolition_highlight_root: Node3D
 var _move_highlight_root: Node3D
@@ -189,7 +194,8 @@ func setup(data: Dictionary) -> void:
 	# the building state machine without instantiating renderer resources.
 	if DisplayServer.get_name() != "headless":
 		_create_visual()
-		_create_scaffold()
+		if status == "constructing":
+			_create_scaffold()
 	_update_stage_label()
 	if stage_label:
 		stage_label.visible = false
@@ -1634,6 +1640,14 @@ func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: 
 func _create_scaffold() -> void:
 	if DisplayServer.get_name() == "headless" or not scaffold_root:
 		return
+	# The old children are queued for deletion; clear their references before
+	# rebuilding so the new stage receives a fresh crane and frame assembly.
+	_tower_crane_root = null
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = false
+	_residential_frame_levels.clear()
 	for child in scaffold_root.get_children():
 		child.queue_free()
 
@@ -1644,7 +1658,9 @@ func _create_scaffold() -> void:
 	var structure_height := 2.4
 	match category:
 		"residential":
-			structure_height = 1.8 + upgrade_stage * 0.35
+			var construction_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
+			var construction_floors := maxi(1, _get_residential_stage_floor_count(construction_stage, str(definition.get("subtype", "villa"))))
+			structure_height = maxf(2.0, float(construction_floors) * 1.8)
 		"commercial":
 			structure_height = 2.0
 		"industrial":
@@ -1699,23 +1715,169 @@ func _create_scaffold() -> void:
 	else:
 		_add_scaffold_box(Vector3(0.48, 0.38, 0.46),
 			Vector3(-half_w - 0.34, 0.19, -half_d * 0.45), Color(0.95, 0.78, 0.15))
-	if category == "residential" and status == "constructing":
-		_create_residential_tower_crane(width, depth, structure_height)
+	if category == "residential" and (status == "constructing" or upgrade_in_progress):
+		_create_residential_progress_frame(width, depth, structure_height)
+		_ensure_residential_construction_crane(width, depth, structure_height)
 
 
-func _ensure_residential_tower_crane() -> void:
+
+func _create_residential_progress_frame(width: float, depth: float, structure_height: float) -> void:
+	_residential_frame_levels.clear()
+	var subtype := str(definition.get("subtype", "villa"))
+	var target_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
+	var floor_count := maxi(1, _get_residential_stage_floor_count(target_stage, subtype))
+	var frame_width := width * 0.68
+	var frame_depth := depth * 0.68
+	var floor_height := maxf(0.48, structure_height / float(floor_count))
+	var column_color := Color("#A9B6BF")
+	var slab_color := Color("#87949D")
+	var column_material := StandardMaterial3D.new()
+	column_material.albedo_color = column_color
+	column_material.metallic = 0.42
+	column_material.roughness = 0.66
+	var slab_material := StandardMaterial3D.new()
+	slab_material.albedo_color = slab_color
+	slab_material.roughness = 0.82
+	for floor_index in range(floor_count):
+		var floor_root := Node3D.new()
+		floor_root.name = "ConstructionFloor_%02d" % (floor_index + 1)
+		floor_root.visible = false
+		scaffold_root.add_child(floor_root)
+		var base_y := float(floor_index) * floor_height
+		var column_height := maxf(0.24, floor_height)
+		for x_sign in [-1.0, 1.0]:
+			for z_sign in [-1.0, 1.0]:
+				var column := MeshInstance3D.new()
+				var column_mesh := BoxMesh.new()
+				column_mesh.size = Vector3(0.13, column_height, 0.13)
+				column.mesh = column_mesh
+				column.material_override = column_material
+				column.position = Vector3(x_sign * frame_width * 0.43, base_y + column_height * 0.5, z_sign * frame_depth * 0.43)
+				floor_root.add_child(column)
+		var slab := MeshInstance3D.new()
+		var slab_mesh := BoxMesh.new()
+		slab_mesh.size = Vector3(frame_width, 0.12, frame_depth)
+		slab.mesh = slab_mesh
+		slab.material_override = slab_material
+		slab.position = Vector3(0.0, base_y + column_height, 0.0)
+		floor_root.add_child(slab)
+		_residential_frame_levels.append(floor_root)
+
+func _get_residential_construction_progress(now_unix: int = -1) -> float:
+	var now := now_unix if now_unix >= 0 else int(Time.get_unix_time_from_system())
+	var duration := 0
+	var remaining := 0
+	if upgrade_in_progress:
+		duration = get_residential_upgrade_duration_seconds(upgrade_stage)
+		remaining = upgrade_paused_remaining_seconds if upgrade_paused_remaining_seconds >= 0 else maxi(0, upgrade_finish_unix - now)
+	elif status == "constructing":
+		duration = maxi(1, int(ceil(build_time)))
+		remaining = construction_paused_remaining_seconds if construction_paused_remaining_seconds >= 0 else maxi(0, construction_finish_unix - now)
+	else:
+		return 1.0
+	if duration <= 0:
+		return 0.0
+	return clampf(1.0 - float(remaining) / float(duration), 0.0, 1.0)
+
+func _update_residential_construction_visual_progress(now_unix: int = -1) -> void:
+	if not (upgrade_in_progress or status == "constructing"):
+		return
+	var progress := _get_residential_construction_progress(now_unix)
+	for index in range(_residential_frame_levels.size()):
+		var threshold := float(index + 1) / float(_residential_frame_levels.size())
+		_residential_frame_levels[index].visible = progress >= threshold * 0.88
+	if is_instance_valid(_tower_crane_cable) and is_instance_valid(_tower_crane_cargo):
+		var lift_cycle := sin(float(Time.get_ticks_msec()) / 1250.0) * 0.55
+		var cable_length := clampf(1.35 + lift_cycle + progress * 0.25, 0.55, 2.25)
+		_tower_crane_cable.scale.y = cable_length
+		_tower_crane_cable.position.y = -cable_length * 0.5
+		_tower_crane_cargo.position.y = -cable_length - 0.22
+
+func _ensure_residential_construction_crane(width: float = -1.0, depth: float = -1.0, structure_height: float = -1.0) -> void:
 	if str(definition.get("category", "")) != "residential" or is_instance_valid(_tower_crane_root):
 		return
 	var plot_size: Vector2i = definition.get("size", Vector2i(2, 2))
-	var width := float(plot_size.x) * 1.7
-	var depth := float(plot_size.y) * 1.7
-	_create_residential_tower_crane(width, depth, 1.8 + upgrade_stage * 0.35)
+	var crane_width := width if width > 0.0 else float(plot_size.x) * 1.7
+	var crane_depth := depth if depth > 0.0 else float(plot_size.y) * 1.7
+	var target_stage := mini(upgrade_stage + 1, max_stage) if upgrade_in_progress else upgrade_stage
+	var target_floors := _get_residential_stage_floor_count(target_stage, str(definition.get("subtype", "villa")))
+	var crane_height := structure_height if structure_height > 0.0 else maxf(2.0, float(target_floors) * 1.8)
+	if target_floors >= 7:
+		_create_residential_tower_crane(crane_width, crane_depth, crane_height)
+	else:
+		_create_residential_mobile_crane(crane_width, crane_depth, crane_height)
+
+
+func _create_residential_mobile_crane(width: float, depth: float, structure_height: float) -> void:
+	if is_instance_valid(_tower_crane_root):
+		_tower_crane_root.queue_free()
+	_tower_crane_root = Node3D.new()
+	_tower_crane_root.name = "ResidentialMobileCrane"
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = false
+	_tower_crane_root.position = Vector3(width * 0.52 + 0.72, 0.0, -depth * 0.38)
+	scaffold_root.add_child(_tower_crane_root)
+	var yellow := Color("#E8B83E")
+	var dark := Color("#59616A")
+	_add_tower_crane_box(Vector3(1.05, 0.34, 0.58), Vector3(0.0, 0.48, 0.0), yellow)
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			var wheel := MeshInstance3D.new()
+			var wheel_mesh := CylinderMesh.new()
+			wheel_mesh.top_radius = 0.20
+			wheel_mesh.bottom_radius = 0.20
+			wheel_mesh.height = 0.13
+			wheel.mesh = wheel_mesh
+			var wheel_material := StandardMaterial3D.new()
+			wheel_material.albedo_color = dark
+			wheel.material_override = wheel_material
+			wheel.rotation.z = PI * 0.5
+			wheel.position = Vector3(x_sign * 0.38, 0.22, z_sign * 0.29)
+			_tower_crane_root.add_child(wheel)
+	var boom_length := maxf(2.8, structure_height + 1.6)
+	var boom_angle := deg_to_rad(-28.0)
+	var boom := _add_tower_crane_box(Vector3(0.17, boom_length, 0.17), Vector3(-0.18, 0.62 + boom_length * 0.5, 0.0), yellow)
+	boom.rotation.z = boom_angle
+	_tower_crane_load = Node3D.new()
+	_tower_crane_load.name = "TowerCraneHoistLoad"
+	_tower_crane_load.position = Vector3(-0.18 - sin(boom_angle) * boom_length * 0.5, 0.62 + cos(boom_angle) * boom_length, 0.0)
+	_tower_crane_root.add_child(_tower_crane_load)
+	_add_residential_crane_hoist(dark)
+
+func _add_residential_crane_hoist(cable_color: Color) -> void:
+	_tower_crane_cable = MeshInstance3D.new()
+	_tower_crane_cable.name = "TowerCraneHoistCable"
+	var cable_mesh := BoxMesh.new()
+	cable_mesh.size = Vector3(0.045, 1.0, 0.045)
+	_tower_crane_cable.mesh = cable_mesh
+	var cable_material := StandardMaterial3D.new()
+	cable_material.albedo_color = cable_color
+	_tower_crane_cable.material_override = cable_material
+	_tower_crane_cable.position = Vector3(0.0, -0.675, 0.0)
+	_tower_crane_load.add_child(_tower_crane_cable)
+	_tower_crane_cargo = MeshInstance3D.new()
+	_tower_crane_cargo.name = "TowerCraneCargo"
+	var cargo_mesh := BoxMesh.new()
+	cargo_mesh.size = Vector3(0.48, 0.38, 0.42)
+	_tower_crane_cargo.mesh = cargo_mesh
+	var cargo_material := StandardMaterial3D.new()
+	cargo_material.albedo_color = Color("#D9A441")
+	_tower_crane_cargo.material_override = cargo_material
+	_tower_crane_cargo.position = Vector3(0.0, -1.57, 0.0)
+	_tower_crane_load.add_child(_tower_crane_cargo)
 
 func _create_residential_tower_crane(width: float, depth: float, structure_height: float) -> void:
 	if is_instance_valid(_tower_crane_root):
 		_tower_crane_root.queue_free()
 	_tower_crane_root = Node3D.new()
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = true
 	_tower_crane_root.name = "ResidentialTowerCrane"
+	_residential_crane_slews = true
 	_tower_crane_root.position = Vector3(-width * 0.43, 0.0, -depth * 0.43)
 	scaffold_root.add_child(_tower_crane_root)
 	var mast_height := maxf(4.0, structure_height + 2.8)
@@ -1734,12 +1896,33 @@ func _create_residential_tower_crane(width: float, depth: float, structure_heigh
 	tie_a.rotation.z = deg_to_rad(18.0)
 	var tie_b := _add_tower_crane_box(Vector3(jib_length * 0.25, 0.055, 0.055), Vector3(-jib_length * 0.14, mast_height - 0.18, 0.0), crane_dark)
 	tie_b.rotation.z = deg_to_rad(-22.0)
+	# Suspended cargo rises and falls on a simple hoist while the jib slews.
+	_tower_crane_load = Node3D.new()
+	_tower_crane_load.name = "TowerCraneHoistLoad"
+	_tower_crane_load.position = Vector3(jib_length * 0.72, mast_height - 0.55, 0.0)
+	_tower_crane_root.add_child(_tower_crane_load)
+	_add_residential_crane_hoist(crane_dark)
 
+
+
+func _clear_scaffold_visuals() -> void:
+	if not is_instance_valid(scaffold_root):
+		return
+	for child in scaffold_root.get_children():
+		child.queue_free()
+	_residential_frame_levels.clear()
+	_tower_crane_root = null
+	_tower_crane_load = null
 
 func _remove_residential_tower_crane() -> void:
 	if is_instance_valid(_tower_crane_root):
 		_tower_crane_root.queue_free()
 	_tower_crane_root = null
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = false
+	_residential_frame_levels.clear()
 
 func _add_tower_crane_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
@@ -1901,6 +2084,7 @@ func _on_construction_finished() -> void:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	_play_completion_effect()
 	mesh_root.scale = Vector3.ONE
 	construction_finished_signal.emit()
@@ -2091,8 +2275,10 @@ func _process(delta: float) -> void:
 			if production_icon:
 				production_icon.text = "✅"
 			production_ready.emit(current_product)
-	if (upgrade_in_progress or status == "constructing") and is_instance_valid(_tower_crane_root):
-		_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.12, 0.0, TAU)
+	if (upgrade_in_progress or status == "constructing"):
+		if is_instance_valid(_tower_crane_root) and _residential_crane_slews:
+			_tower_crane_root.rotation.y = wrapf(_tower_crane_root.rotation.y + delta * 0.22, 0.0, TAU)
+		_update_residential_construction_visual_progress()
 	if upgrade_in_progress:
 		update_upgrade_access_state()
 	# Residential upgrade readiness is refreshed by inventory, service and city events.
@@ -2172,14 +2358,17 @@ func get_residential_upgrade_duration_seconds(from_stage: int = -1) -> int:
 
 func _check_upgrade_ready() -> void:
 	upgrade_ready = has_residential_upgrade_materials()
-	# Show the blue plan marker only while this home's upgrade plan is selected.
+	# The notification layer owns the single completed-home hardhat marker.
+	# Keep this construction-site mesh hidden after completion to avoid duplicates.
 	if hard_hat:
-		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+		hard_hat.visible = status == "constructing"
 
 func set_residential_plan_selected(selected: bool) -> void:
 	residential_plan_selected = selected
+	# Selection is represented by the residential plan panel; the world helmet
+	# remains a single inventory-driven marker owned by BuildingNotificationLayer.
 	if hard_hat:
-		hard_hat.visible = selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+		hard_hat.visible = status == "constructing"
 
 func try_upgrade() -> bool:
 	if not BuildManager.is_building_operational(self):
@@ -2266,23 +2455,26 @@ func cancel_upgrade() -> bool:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
+	if is_instance_valid(mesh_root) and str(definition.get("category", "")) == "residential":
+		mesh_root.visible = true
 	_check_upgrade_ready()
 	return true
 
 func _start_residential_upgrade_animation() -> void:
 	if DisplayServer.get_name() == "headless" or not is_instance_valid(scaffold_root):
 		return
-	_ensure_residential_tower_crane()
+	_create_scaffold()
+	if str(definition.get("category", "")) == "residential" and is_instance_valid(mesh_root):
+		mesh_root.visible = false
+	_ensure_residential_construction_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
 	scaffold_root.visible = true
-	scaffold_root.scale = Vector3(1.0, 0.01, 1.0)
+	scaffold_root.scale = Vector3.ONE
 	if is_instance_valid(_tower_crane_root):
 		_tower_crane_root.rotation.y = 0.0
-	var remaining := maxf(0.35, float(get_upgrade_remaining_seconds()))
-	var reveal_time := minf(2.0, remaining * 0.30)
-	_upgrade_tween = create_tween()
-	_upgrade_tween.tween_property(scaffold_root, "scale", Vector3.ONE, reveal_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_update_residential_construction_visual_progress()
 
 func _finish_residential_upgrade() -> void:
 	if not upgrade_in_progress:
@@ -2306,6 +2498,9 @@ func _finish_residential_upgrade() -> void:
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
 	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
+	if is_instance_valid(mesh_root):
+		mesh_root.visible = true
 	_create_visual()
 	_update_stage_label()
 	_play_completion_effect()
@@ -2329,6 +2524,8 @@ func _finish_non_residential_upgrade() -> void:
 	if is_instance_valid(scaffold_root):
 		scaffold_root.visible = false
 		scaffold_root.scale = Vector3.ONE
+	_remove_residential_tower_crane()
+	_clear_scaffold_visuals()
 	# Commercial and industrial upgrades add a real production lane. Service
 	# buildings gain capacity/radius through ServiceManager's stage multipliers.
 	if is_instance_valid(production_component):

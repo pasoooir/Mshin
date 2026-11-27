@@ -62,6 +62,7 @@ func _ready() -> void:
 	_test_production_store_catalog_integrity()
 	_test_store_building_identity_contract()
 	_test_residential_reward_contract()
+	_test_residential_construction_progress_math()
 	_test_residential_six_stage_visual_growth()
 	await _test_each_store_direct_production()
 	call_deferred("_run_gameplay_test")
@@ -4026,6 +4027,33 @@ func _measure_visual_mesh_max_y(root: Node3D) -> float:
 	return maximum_y
 
 
+func _test_residential_construction_progress_math() -> void:
+	var probe := Building.new()
+	probe.definition = {"category":"residential", "subtype":"villa"}
+	probe.status = "completed"
+	probe.upgrade_stage = 1
+	probe.upgrade_in_progress = true
+	probe.upgrade_finish_unix = 105
+	probe.upgrade_paused_remaining_seconds = -1
+	_check(is_equal_approx(probe._get_residential_construction_progress(100), 0.0), "Residential construction progress must begin at zero when its persisted finish timestamp is five seconds ahead.")
+	_check(is_equal_approx(probe._get_residential_construction_progress(102), 0.4), "Residential construction frame progress must track elapsed wall-clock time, not a short one-shot tween.")
+	probe.upgrade_paused_remaining_seconds = 3
+	probe.upgrade_finish_unix = 0
+	_check(is_equal_approx(probe._get_residential_construction_progress(102), 0.4), "Paused residential construction must retain its exact visual progress.")
+	probe.upgrade_paused_remaining_seconds = -1
+	probe.upgrade_finish_unix = 100
+	_check(is_equal_approx(probe._get_residential_construction_progress(105), 1.0), "Residential construction progress must reach one when the persisted finish timestamp expires.")
+	probe.upgrade_in_progress = false
+	probe.status = "constructing"
+	probe.build_time = 10.0
+	probe.construction_finish_unix = 110
+	probe.construction_paused_remaining_seconds = -1
+	_check(is_equal_approx(probe._get_residential_construction_progress(105), 0.5), "Initial residential construction must use the same timestamp-based visual progress calculation.")
+	var source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
+	_check(source.contains("func _create_residential_progress_frame") and source.contains("ConstructionFloor_") and source.contains("TowerCraneHoistLoad") and source.contains("TowerCraneHoistCable") and source.contains("ResidentialMobileCrane") and source.contains("ResidentialTowerCrane"), "Residential construction must build staged floor frames and animate a visible crane hoist load.")
+	probe.free()
+
+
 func _test_residential_six_stage_visual_growth() -> void:
 	# Build the same procedural residential geometry used by the fallback path,
 	# then measure the real mesh bounds rather than trusting stage labels or source text.
@@ -6202,36 +6230,56 @@ func _run_gameplay_test() -> void:
 	marker_layer.set_building_alerts_enabled(true)
 	marker_layer._sync_notifications()
 	var home_upgrade_key := "%s|upgrade|" % str(home.building_id) if home != null else ""
+	var independent_home_id := "smoke_residential_stage2"
+	var independent_home := BuildingScene.instantiate() as Building
+	independent_home.building_id = independent_home_id
+	independent_home.building_type = home.building_type
+	independent_home.grid_pos = home.grid_pos
+	independent_home.definition = home.definition.duplicate(true)
+	independent_home.status = "completed"
+	independent_home.upgrade_stage = 2
+	independent_home.max_stage = home.max_stage
+	get_tree().current_scene.add_child(independent_home)
+	independent_home._connect_upgrade_dependency_signals()
+	BuildManager.buildings[independent_home_id] = independent_home
+	var independent_home_key := "%s|upgrade|" % independent_home_id
+	marker_layer._sync_notifications()
 	var marker_entry: Dictionary = marker_layer._entries.get(home_upgrade_key, {})
 	var marker_button: Button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path(), "A completed non-maximum residential home must retain an upgrade path even when its BOM is absent.")
 	_check(marker_layer._entries.has(home_upgrade_key) and is_instance_valid(marker_button), "An eligible home must keep its hardhat marker visible without upgrade materials.")
+	_check(marker_entry.get("roof_anchor", null) is Vector3, "The residential marker must cache its roof projection anchor outside the per-frame UI update.")
+	_check(marker_layer._entries.has(independent_home_key), "A second residential home at a different upgrade stage must receive its own independent hardhat marker.")
+	_check(not marker_layer._world_anchors.has(str(home.building_id)), "Residential hardhat must render once as a single marker, not duplicate in both 2D and 3D layers.")
+	_check(StorageManager.storage_changed.is_connected(home._on_upgrade_dependencies_changed), "Each residential home must subscribe to live City Storage changes for readiness updates.")
 	marker_layer.set_building_alerts_enabled(false)
 	_check(marker_layer._entries.has(home_upgrade_key), "Disabling optional building alerts must not hide essential residential upgrade helmets.")
 	marker_layer.set_building_alerts_enabled(true)
 	_check(marker_button == null or marker_button.find_child("UpgradeStockCheck", true, false) == null, "A home without its complete BOM must not show the green stock check.")
 	_check(StorageManager.add_items({"metal": 1, "nails": 1}), "Could not seed the exact starter BOM for the residential check-icon test.")
-	if home != null:
-		home._check_upgrade_ready()
-	marker_layer._sync_notifications()
+	await get_tree().process_frame
 	marker_entry = marker_layer._entries.get(home_upgrade_key, {})
 	marker_button = marker_entry.get("button") as Button
-	_check(home != null and home.has_residential_upgrade_materials() and home.upgrade_ready, "A home must report ready only when every exact upgrade ingredient is in City Storage.")
+	_check(home != null and home.has_residential_upgrade_materials() and home.upgrade_ready, "A home must report ready only when every exact upgrade ingredient is in City Storage, refreshed by the inventory event without manual polling.")
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) is TextureRect, "The green check icon must appear beside the hardhat when the complete BOM enters storage.")
+	var independent_entry: Dictionary = marker_layer._entries.get(independent_home_key, {})
+	var independent_button: Button = independent_entry.get("button") as Button
+	_check(not independent_home.has_residential_upgrade_materials() and not independent_home.upgrade_ready, "Stocking stage 1 ingredients must not mark a separate stage 2 home as ready.")
+	_check(independent_button != null and independent_button.find_child("UpgradeStockCheck", true, false) == null, "A second home must not inherit another home’s green stock check when its own BOM is absent.")
 	_check(StorageManager.remove_item("nails", 1), "Could not remove one required item to test live check-icon invalidation.")
-	if home != null:
-		home._check_upgrade_ready()
-	marker_layer._sync_notifications()
 	await get_tree().process_frame
 	marker_entry = marker_layer._entries.get(home_upgrade_key, {})
 	marker_button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path() and not home.has_residential_upgrade_materials(), "Removing one required warehouse item must immediately invalidate residential upgrade readiness.")
 	_check(marker_button != null and marker_button.find_child("UpgradeStockCheck", true, false) == null, "The green check must disappear as soon as any required warehouse item is missing.")
+	independent_entry = marker_layer._entries.get(independent_home_key, {})
+	independent_button = independent_entry.get("button") as Button
+	_check(independent_button != null and independent_button.find_child("UpgradeStockCheck", true, false) == null, "Removing a required item must keep the second home independently unready.")
 	_check(StorageManager.add_item("nails", 1), "Could not restore the missing nail for the residential check-icon test.")
 	StorageManager.from_save_dict(indicator_storage_snapshot)
-	if home != null:
-		home._check_upgrade_ready()
-	marker_layer._sync_notifications()
+	await get_tree().process_frame
+	_check(home != null and home.upgrade_ready == ProductionManager.can_afford_upgrade(home.upgrade_stage), "Restoring City Storage must automatically reconcile each home readiness state without manual refresh calls.")
+	_check(independent_home.upgrade_ready == ProductionManager.can_afford_upgrade(independent_home.upgrade_stage), "Storage restoration must independently reconcile a second home at its own upgrade stage.")
 
 	# Existing level-1 upgrade recipe needs Nails and Metal from the shared warehouse.
 	StorageManager.add_item("metal",1)
@@ -6250,10 +6298,11 @@ func _run_gameplay_test() -> void:
 	_check(home != null and home.current_population == population_before_upgrade and GameManager.population == city_population_before_upgrade, "Residential population must not change before the upgrade animation completes.")
 	_check(home != null and home.get_upgrade_remaining_seconds() > 0, "Residential upgrade must expose a persisted remaining-time value.")
 	_check(home != null and home.upgrade_finish_unix - int(Time.get_unix_time_from_system()) <= 5 and home.upgrade_finish_unix - int(Time.get_unix_time_from_system()) > 0, "Stage 1 residential construction must run for the configured five-second minimum instead of instant replacement.")
-	marker_layer._sync_notifications()
+	await get_tree().process_frame
 	_check(not marker_layer._entries.has(home_upgrade_key), "The hardhat and check markers must disappear while the same home is under construction.")
 	production_hud.open_residential_panel(home)
-	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
+	_check(home.residential_plan_selected, "Opening a home plan must select that home independently.")
+	_check(home.hard_hat == null or not home.hard_hat.visible, "Selecting a completed home must not add a second 3D hardhat over the single live inventory-driven marker.")
 	_check(production_hud.residential_overlay.find_child("ResidentialPlanDataNote", true, false) != null, "Residential panel must disclose that the fixed plan table is a Mshin fallback.")
 	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
 	production_hud._close_residential_panel()
@@ -6261,11 +6310,15 @@ func _run_gameplay_test() -> void:
 	home.upgrade_finish_unix = int(Time.get_unix_time_from_system()) - 1
 	home._process(0.0)
 	_check(home != null and not home.upgrade_in_progress and home.upgrade_stage == 2, "Residential upgrade must complete when its finish timestamp elapses.")
-	marker_layer._sync_notifications()
+	await get_tree().process_frame
 	var next_stage_marker: Dictionary = marker_layer._entries.get(home_upgrade_key, {})
 	var next_stage_button: Button = next_stage_marker.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path() and is_instance_valid(next_stage_button), "After construction, a non-maximum home must show its next-stage hardhat again.")
 	_check(next_stage_button == null or (next_stage_button.find_child("UpgradeStockCheck", true, false) is TextureRect) == home.has_residential_upgrade_materials(), "The next-stage check must match the new stage BOM and current City Storage only.")
+	BuildManager.buildings.erase(independent_home_id)
+	marker_layer._sync_notifications()
+	independent_home.queue_free()
+	await get_tree().process_frame
 	marker_layer._clear_notification_entries()
 	marker_layer.queue_free()
 	print("[GameplaySmoke] upgraded home population=%d city=%d happiness=%.1f served_power=%s served_water=%s" % [home.current_population if home else -1, GameManager.population, GameManager.happiness, str(ServiceManager.power_served_ids.has(home.building_id)) if home else "n/a", str(ServiceManager.water_served_ids.has(home.building_id)) if home else "n/a"])
