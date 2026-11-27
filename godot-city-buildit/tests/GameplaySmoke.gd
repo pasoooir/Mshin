@@ -6234,6 +6234,7 @@ func _run_gameplay_test() -> void:
 	var marker_button: Button = marker_entry.get("button") as Button
 	_check(home != null and home.has_residential_upgrade_path(), "A completed non-maximum residential home must retain an upgrade path even when its BOM is absent.")
 	_check(marker_layer._entries.has(home_upgrade_key) and is_instance_valid(marker_button), "An eligible home must keep its hardhat marker visible without upgrade materials.")
+	_check(marker_entry.get("roof_anchor", null) is Vector3, "The residential marker must cache its roof projection anchor outside the per-frame UI update.")
 	_check(not marker_layer._world_anchors.has(str(home.building_id)), "Residential hardhat must render once as a single marker, not duplicate in both 2D and 3D layers.")
 	_check(StorageManager.storage_changed.is_connected(home._on_upgrade_dependencies_changed), "Each residential home must subscribe to live City Storage changes for readiness updates.")
 	marker_layer.set_building_alerts_enabled(false)
