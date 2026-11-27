@@ -2288,14 +2288,17 @@ func get_residential_upgrade_duration_seconds(from_stage: int = -1) -> int:
 
 func _check_upgrade_ready() -> void:
 	upgrade_ready = has_residential_upgrade_materials()
-	# Show the blue plan marker only while this home's upgrade plan is selected.
+	# The notification layer owns the single completed-home hardhat marker.
+	# Keep this construction-site mesh hidden after completion to avoid duplicates.
 	if hard_hat:
-		hard_hat.visible = residential_plan_selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+		hard_hat.visible = status == "constructing"
 
 func set_residential_plan_selected(selected: bool) -> void:
 	residential_plan_selected = selected
+	# Selection is represented by the residential plan panel; the world helmet
+	# remains a single inventory-driven marker owned by BuildingNotificationLayer.
 	if hard_hat:
-		hard_hat.visible = selected and status == "completed" and upgrade_stage < max_stage and not upgrade_in_progress
+		hard_hat.visible = status == "constructing"
 
 func try_upgrade() -> bool:
 	if not BuildManager.is_building_operational(self):
