@@ -73,7 +73,6 @@ var action_notification_label: Label3D
 @onready var stage_label: Label3D = get_node_or_null("StageLabel") as Label3D
 
 func _ready() -> void:
-	_connect_upgrade_dependency_signals()
 	if DisplayServer.get_name() == "headless":
 		if is_instance_valid(hard_hat):
 			hard_hat.visible = false
