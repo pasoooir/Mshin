@@ -11,24 +11,24 @@ var xp_table := {
 }
 
 var unlocks := {
-	1: {"materials": ["metal", "nails"], "commercial": ["building_supplies"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
+	1: {"materials": ["metal", "nails"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
 	2: {"materials": ["wood"], "factories": 3},
 	3: {"materials": ["planks"], "factories": 4, "other": ["parks"]},
-	4: {"materials": ["hammer"], "commercial": ["hardware_store"], "factories": 4, "other": ["storage_upgrade"]},
+	4: {"materials": ["hammer"], "factories": 4, "other": ["storage_upgrade"]},
 	5: {"materials": ["plastic"], "services": ["fire"], "buildings": ["city_hall", "fire_station"]},
 	6: {"materials": ["measuring_tape"], "factories": 5, "buildings": ["mayors_mansion"]},
 	7: {"materials": ["seeds"]},
-	8: {"materials": ["vegetables"], "commercial": ["farmers_market"], "services": ["sewage"]},
+	8: {"materials": ["vegetables"], "services": ["sewage"]},
 	9: {"materials": ["shovel"], "other": ["4lane_road"]},
-	10: {"materials": ["chair"], "commercial": ["furniture_store"], "other": ["education", "transportation"]},
+	10: {"materials": ["chair"], "other": ["education", "transportation"]},
 	11: {"materials": ["minerals"]},
 	12: {"factories": 6, "services": ["police"]},
 	13: {"materials": ["chemicals", "bricks"]},
-	14: {"materials": ["grass", "cement"], "commercial": ["gardening_supplies"], "services": ["waste"]},
+	14: {"materials": ["grass", "cement"], "services": ["waste"]},
 	15: {"materials": ["glue", "textiles"], "other": ["6lane_road", "beach"]},
 	16: {"materials": ["paint", "table"], "services": ["health"], "buildings": ["epic_projects_department"]},
 	17: {"materials": ["sugar_spices"]},
-	18: {"materials": ["donut", "fruit"], "commercial": ["donut_shop"], "factories": 7},
+	18: {"materials": ["donut", "fruit"], "factories": 7},
 	19: {"materials": ["glass"]},
 	20: {"other": ["entertainment", "avenue"]},
 	23: {"materials": ["animal_feed"]},
@@ -81,10 +81,6 @@ func _apply_level(level: int) -> void:
 			if m not in unlocked_materials:
 				unlocked_materials.append(m)
 				unlocked.emit("material:" + m, lv)
-		for c in data.get("commercial", []):
-			if c not in unlocked_commercial:
-				unlocked_commercial.append(c)
-				unlocked.emit("commercial:" + c, lv)
 		for s in data.get("services", []):
 			if s not in unlocked_services:
 				unlocked_services.append(s)
@@ -96,6 +92,30 @@ func _apply_level(level: int) -> void:
 			if feature not in unlocked_features:
 				unlocked_features.append(feature)
 				unlocked.emit("feature:" + feature, lv)
+
+	_sync_commercial_unlocks(level)
+
+func _sync_commercial_unlocks(level: int) -> void:
+	# BuildManager is the single source of truth for commercial unlock levels.
+	# Keep the progression list in sync for systems that consume unlock signals.
+	for type_id in BuildManager.building_types:
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		if str(definition.get("category", "")) != "commercial" or bool(definition.get("legacy_only", false)):
+			continue
+		if int(definition.get("level", 1)) > level:
+			continue
+		if type_id not in unlocked_commercial:
+			unlocked_commercial.append(type_id)
+			unlocked.emit("commercial:" + str(type_id), int(definition.get("level", 1)))
+
+func is_commercial_unlocked(type_id: String, level_override: int = -1) -> bool:
+	if not BuildManager.building_types.has(type_id):
+		return false
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	if str(definition.get("category", "")) != "commercial" or bool(definition.get("legacy_only", false)):
+		return false
+	var effective_level := GameManager.level if level_override < 0 else level_override
+	return effective_level >= int(definition.get("level", 1))
 
 func on_level_up(new_level: int) -> void:
 	_apply_level(new_level)
