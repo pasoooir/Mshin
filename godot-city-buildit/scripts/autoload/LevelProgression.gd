@@ -11,22 +11,22 @@ var xp_table := {
 }
 
 var unlocks := {
-	1: {"materials": ["metal", "nails"], "factories": 2, "services": ["power", "water", "government", "trade"], "other": ["roads", "residential"]},
+	1: {"materials": ["metal", "nails"], "factories": 2, "other": ["roads", "residential"]},
 	2: {"materials": ["wood"], "factories": 3},
 	3: {"materials": ["planks"], "factories": 4, "other": ["parks"]},
 	4: {"materials": ["hammer"], "factories": 4, "other": ["storage_upgrade"]},
-	5: {"materials": ["plastic"], "services": ["fire"], "buildings": ["city_hall", "fire_station"]},
+	5: {"materials": ["plastic"], "buildings": ["city_hall", "fire_station"]},
 	6: {"materials": ["measuring_tape"], "factories": 5, "buildings": ["mayors_mansion"]},
 	7: {"materials": ["seeds"]},
-	8: {"materials": ["vegetables"], "services": ["sewage"]},
+	8: {"materials": ["vegetables"], },
 	9: {"materials": ["shovel"], "other": ["4lane_road"]},
 	10: {"materials": ["chair"], "other": ["education", "transportation"]},
 	11: {"materials": ["minerals"]},
-	12: {"factories": 6, "services": ["police"]},
+	12: {"factories": 6, },
 	13: {"materials": ["chemicals", "bricks"]},
-	14: {"materials": ["grass", "cement"], "services": ["waste"]},
+	14: {"materials": ["grass", "cement"], },
 	15: {"materials": ["glue", "textiles"], "other": ["6lane_road", "beach"]},
-	16: {"materials": ["paint", "table"], "services": ["health"], "buildings": ["epic_projects_department"]},
+	16: {"materials": ["paint", "table"], "buildings": ["epic_projects_department"]},
 	17: {"materials": ["sugar_spices"]},
 	18: {"materials": ["donut", "fruit"], "factories": 7},
 	19: {"materials": ["glass"]},
@@ -61,11 +61,6 @@ var unlocked_services: Array = ["power", "water", "government", "trade"]
 var max_factories: int = 2
 
 const FACTORY_LIMITS := {1:2, 2:3, 3:4, 6:5, 12:6, 18:7, 24:8, 30:9, 37:10, 46:11, 58:12}
-const SERVICE_UNLOCK_LEVELS := {
-	"power": 1, "water": 1, "fire": 5, "sewage": 8,
-	"police": 12, "waste": 14, "health": 16,
-	"government": 1, "trade": 1
-}
 var unlocked_features: Array = ["roads", "residential"]
 
 func _ready() -> void:
@@ -81,10 +76,6 @@ func _apply_level(level: int) -> void:
 			if m not in unlocked_materials:
 				unlocked_materials.append(m)
 				unlocked.emit("material:" + m, lv)
-		for s in data.get("services", []):
-			if s not in unlocked_services:
-				unlocked_services.append(s)
-				unlocked.emit("service:" + s, lv)
 		if data.has("factories") and data.factories > max_factories:
 			max_factories = data.factories
 			factory_slot_unlocked.emit(max_factories)
@@ -94,6 +85,7 @@ func _apply_level(level: int) -> void:
 				unlocked.emit("feature:" + feature, lv)
 
 	_sync_commercial_unlocks(level)
+	_sync_service_unlocks(level)
 
 func _sync_commercial_unlocks(level: int) -> void:
 	# BuildManager is the single source of truth for commercial unlock levels.
@@ -133,11 +125,51 @@ func get_factory_limit_for_level(level: int) -> int:
 func is_material_unlocked(id: String) -> bool:
 	return id in unlocked_materials or (ProductionManager.raw_materials.has(id) and int(ProductionManager.raw_materials[id].get("level", 1)) <= GameManager.level)
 
-func is_service_unlocked(id: String) -> bool:
-	return id in unlocked_services
+func _get_service_group_ids() -> Array[String]:
+	var group_ids: Array[String] = []
+	for type_id in BuildManager.building_types:
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		if str(definition.get("category", "")) != "service":
+			continue
+		var group_id := str(definition.get("service_group", ""))
+		if not group_id.is_empty() and group_id not in group_ids:
+			group_ids.append(group_id)
+	group_ids.sort()
+	return group_ids
 
 func get_service_unlock_level(id: String) -> int:
-	return int(SERVICE_UNLOCK_LEVELS.get(id, 1))
+	# The earliest building level in a service group is the group's unlock.
+	# This keeps group cards aligned with the actual building catalog.
+	var earliest_level := 0
+	for type_id in BuildManager.building_types:
+		var definition: Dictionary = BuildManager.building_types[type_id]
+		if str(definition.get("category", "")) != "service" or str(definition.get("service_group", "")) != id:
+			continue
+		var building_level := maxi(1, int(definition.get("level", 1)))
+		if earliest_level == 0 or building_level < earliest_level:
+			earliest_level = building_level
+	return earliest_level
+
+func is_service_unlocked(id: String) -> bool:
+	var required_level := get_service_unlock_level(id)
+	return required_level > 0 and GameManager.level >= required_level
+
+func is_service_building_unlocked(type_id: String, level_override: int = -1) -> bool:
+	if not BuildManager.building_types.has(type_id):
+		return false
+	var definition: Dictionary = BuildManager.building_types[type_id]
+	if str(definition.get("category", "")) != "service":
+		return false
+	var effective_level := GameManager.level if level_override < 0 else level_override
+	return effective_level >= maxi(1, int(definition.get("level", 1)))
+
+func _sync_service_unlocks(level: int) -> void:
+	for group_id in _get_service_group_ids():
+		var required_level := get_service_unlock_level(group_id)
+		if required_level <= 0 or level < required_level or group_id in unlocked_services:
+			continue
+		unlocked_services.append(group_id)
+		unlocked.emit("service:" + group_id, required_level)
 
 func is_feature_unlocked(id: String) -> bool:
 	return id in unlocked_features
