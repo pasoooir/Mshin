@@ -159,6 +159,13 @@ func _test_each_store_direct_production() -> void:
 				continue
 			_check(str(recipe.get("store", "")) == store_id, "%s must be owned only by %s." % [item_id, store_id])
 			var lock_reason := ProductionManager.get_recipe_lock_reason(item_id, 3)
+			var recipe_unlock_level := int(recipe.get("level", 0))
+			# Mshin's live progression is capped at Mayor Level 60. Verified
+			# SCBI recipes above that cap are valid catalog entries but cannot be
+			# exercised through the live order flow until progression is extended.
+			if recipe_unlock_level > 60:
+				_check(not lock_reason.is_empty(), "%s must remain locked above the current Mayor Level 60 cap." % item_id)
+				continue
 			if not lock_reason.is_empty():
 				_check(not bool(recipe.get("unlock_level_verified", true)), "%s must not be locked by an unexpected runtime rule: %s" % [item_id, lock_reason])
 				continue
