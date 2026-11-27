@@ -6277,7 +6277,8 @@ func _run_gameplay_test() -> void:
 	await get_tree().process_frame
 	_check(not marker_layer._entries.has(home_upgrade_key), "The hardhat and check markers must disappear while the same home is under construction.")
 	production_hud.open_residential_panel(home)
-	_check(home.residential_plan_selected, "Opening a home plan must select its blue hardhat indicator.")
+	_check(home.residential_plan_selected, "Opening a home plan must select that home independently.")
+	_check(home.hard_hat == null or not home.hard_hat.visible, "Selecting a completed home must not add a second 3D hardhat over the single live inventory-driven marker.")
 	_check(production_hud.residential_overlay.find_child("ResidentialPlanDataNote", true, false) != null, "Residential panel must disclose that the fixed plan table is a Mshin fallback.")
 	_check(production_hud.residential_overlay.find_child("ResidentialUpgradeInProgress", true, false) != null, "Residential panel must show the scaffold upgrade state.")
 	production_hud._close_residential_panel()
