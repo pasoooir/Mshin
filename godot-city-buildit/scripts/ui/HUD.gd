@@ -4561,16 +4561,14 @@ func open_residential_panel(building: Building) -> void:
 		details_content.add_child(upgrade_status)
 	var all_available := not requirements.is_empty() and not is_upgrading
 	var shortage_lines: Array[String] = []
-	var service_shortage_lines: Array[String] = []
 	var upgrade_block_reason: String = building.get_residential_upgrade_block_reason() if not is_upgrading else ""
 	if not is_upgrading and not upgrade_block_reason.is_empty():
 		all_available = false
+	# Service coverage is informational here. HappinessManager continues to
+	# score these services, but they never disable a material-complete upgrade.
 	for service in building.get_residential_upgrade_service_status():
 		var service_name := str(service.get("label", service.get("group", "Service")))
 		var is_served := bool(service.get("served", false))
-		if not is_served:
-			all_available = false
-			service_shortage_lines.append(service_name)
 		var service_row := HBoxContainer.new()
 		service_row.add_theme_constant_override("separation", 8)
 		details_content.add_child(service_row)
@@ -4580,10 +4578,11 @@ func open_residential_panel(building: Building) -> void:
 		service_icon.add_theme_color_override("font_color", Color("#34734D") if is_served else Color("#A13F35"))
 		service_row.add_child(service_icon)
 		var service_label := Label.new()
-		service_label.text = "%s coverage  ·  %s" % [service_name, "CONNECTED" if is_served else "BUILD / COMPLETE A COVERING FACILITY"]
+		service_label.text = "%s coverage  ·  %s  ·  AFFECTS CITY HAPPINESS, NOT UPGRADE" % [service_name, "COVERED" if is_served else "NOT COVERED"]
 		service_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		service_label.add_theme_font_size_override("font_size", _popup_font_size(14))
-		service_label.add_theme_color_override("font_color", Color("#34734D") if is_served else Color("#A13F35"))
+		service_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		service_label.add_theme_font_size_override("font_size", _popup_font_size(12))
+		service_label.add_theme_color_override("font_color", Color("#34734D") if is_served else Color("#8A672B"))
 		service_row.add_child(service_label)
 	for requirement in requirements:
 		var item_id := str(requirement.get("item", ""))
@@ -4634,8 +4633,6 @@ func open_residential_panel(building: Building) -> void:
 		var missing_parts: Array[String] = []
 		if not shortage_lines.is_empty():
 			missing_parts.append("Materials: " + ", ".join(shortage_lines))
-		if not service_shortage_lines.is_empty():
-			missing_parts.append("City services: " + ", ".join(service_shortage_lines))
 		if missing_parts.is_empty() and not upgrade_block_reason.is_empty():
 			missing_parts.append(upgrade_block_reason)
 		plan_status.text = "UPGRADE BLOCKED · " + (" · ".join(missing_parts) if not missing_parts.is_empty() else "CHECK REQUIRED ITEMS")
@@ -4673,7 +4670,7 @@ func open_residential_panel(building: Building) -> void:
 		action_footer.add_child(cancel_upgrade)
 	var upgrade := Button.new()
 	upgrade.name = "ResidentialUpgradeButton"
-	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("ROAD ACCESS MISSING" if upgrade_block_reason.to_lower().contains("road") else ("CITY SERVICES MISSING" if not service_shortage_lines.is_empty() else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL"))))
+	upgrade.text = "CONSTRUCTION IN PROGRESS" if is_upgrading else ("DELIVER MATERIALS & UPGRADE" if all_available else ("ROAD ACCESS MISSING" if upgrade_block_reason.to_lower().contains("road") else ("MATERIALS MISSING" if stage < 6 else "MAXIMUM LEVEL")))
 	upgrade.disabled = is_upgrading or stage >= 6 or not all_available
 	upgrade.tooltip_text = "" if all_available or is_upgrading else upgrade_block_reason
 	upgrade.custom_minimum_size.y = 44 * _ui_scale
