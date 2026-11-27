@@ -1641,6 +1641,14 @@ func _add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: 
 func _create_scaffold() -> void:
 	if DisplayServer.get_name() == "headless" or not scaffold_root:
 		return
+	# The old children are queued for deletion; clear their references before
+	# rebuilding so the new stage receives a fresh crane and frame assembly.
+	_tower_crane_root = null
+	_tower_crane_load = null
+	_tower_crane_cable = null
+	_tower_crane_cargo = null
+	_residential_crane_slews = false
+	_residential_frame_levels.clear()
 	for child in scaffold_root.get_children():
 		child.queue_free()
 
