@@ -102,9 +102,11 @@ func _sync_notifications() -> void:
 				else:
 					var key := _entry_key(building_id, "idle", "")
 					candidates[key] = _make_entry(building, "idle", "", [])
-		if bool(building.upgrade_ready):
+		if building.has_method("has_residential_upgrade_path") and building.has_residential_upgrade_path():
 			var upgrade_key := _entry_key(building_id, "upgrade", "")
-			candidates[upgrade_key] = _make_entry(building, "upgrade", "", [])
+			var upgrade_entry := _make_entry(building, "upgrade", "", [])
+			upgrade_entry["stock_ready"] = building.has_residential_upgrade_materials()
+			candidates[upgrade_key] = upgrade_entry
 
 	var wanted := _limit_per_building(candidates, MAX_NOTIFICATIONS_PER_BUILDING)
 	for key in _entries.keys():
@@ -159,7 +161,7 @@ func _sync_world_anchors(wanted: Dictionary) -> void:
 		var kind := str(data.get("kind", "idle"))
 		var notification = NotificationData.new(building_id, _notification_type(kind), str(data.get("item_id", "")), data.get("slots", []).size(), str(data.get("missing_text", "")))
 		notification.priority = int(data.get("priority", 0))
-		notification.detail = str(data.get("missing_text", ""))
+		notification.detail = ("stock_ready" if bool(data.get("stock_ready", false)) else "missing_materials") if kind == "upgrade" else str(data.get("missing_text", ""))
 		grouped[building_id].append(notification)
 	for existing_id in _world_anchors.keys():
 		if not grouped.has(str(existing_id)):
@@ -327,6 +329,13 @@ func _create_button(data: Dictionary) -> Button:
 	icon.position = Vector2(15, 10)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(icon)
+	if kind == "upgrade" and bool(data.get("stock_ready", false)):
+		var check_icon := Icons.make_icon("check", Vector2(24, 24))
+		check_icon.name = "UpgradeStockCheck"
+		check_icon.position = Vector2(52, 1)
+		check_icon.size = Vector2(24, 24)
+		check_icon.modulate = Color("#35B96B")
+		button.add_child(check_icon)
 
 	if kind in ["product", "storage_full"]:
 		var count := Label.new()
@@ -436,11 +445,14 @@ func _on_product_pressed(building_id: String, item_id: String) -> void:
 
 func _on_upgrade_pressed(building_id: String) -> void:
 	var building = BuildManager.buildings.get(building_id)
-	if not is_instance_valid(building) or not bool(building.upgrade_ready) or not is_instance_valid(_hud):
+	if not is_instance_valid(building) or not is_instance_valid(_hud):
 		return
-	if str(building.definition.get("category", "")) == "residential" and _hud.has_method("open_residential_panel"):
-		_hud.call("open_residential_panel", building)
-	elif _hud.has_method("open_building_upgrade_panel"):
+	if str(building.definition.get("category", "")) == "residential":
+		if not building.has_method("has_residential_upgrade_path") or not building.has_residential_upgrade_path():
+			return
+		if _hud.has_method("open_residential_panel"):
+			_hud.call("open_residential_panel", building)
+	elif bool(building.upgrade_ready) and _hud.has_method("open_building_upgrade_panel"):
 		_hud.call("open_building_upgrade_panel", building)
 
 func _on_building_attention_pressed(building_id: String) -> void:
