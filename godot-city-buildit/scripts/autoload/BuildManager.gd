@@ -399,8 +399,7 @@ func get_construction_bom(type_id: String) -> Dictionary:
 	# Simoleons cost. The generic Mshin construction BOM must not silently add
 	# Nails/Metal/Planks prerequisites to homes and stores: those are production
 	# chain inputs, not EA building-placement unlock requirements.
-	var category := str(definition.get("category", ""))
-	if category in ["residential", "commercial"]:
+	if str(definition.get("category", "")) in ["residential", "commercial"]:
 		return {}
 	if CONSTRUCTION_BOM_BOOTSTRAP_TYPES.has(type_id):
 		return {}
