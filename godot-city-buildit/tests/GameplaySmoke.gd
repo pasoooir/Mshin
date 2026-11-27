@@ -82,6 +82,19 @@ func _test_residential_reward_contract() -> void:
 	duration_probe.free()
 	var building_source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
 	_check(building_source.contains("func _create_residential_tower_crane") and building_source.contains("ResidentialTowerCrane"), "Residential construction must include a dedicated tower-crane visual assembly.")
+	var previous_duplicate_fixture: Variant = ProductionManager.upgrade_requirements.get(99, null)
+	var had_duplicate_fixture := ProductionManager.upgrade_requirements.has(99)
+	var previous_inventory := StorageManager.items.duplicate(true)
+	ProductionManager.upgrade_requirements[99] = [{"item":"nails", "amount":1}, {"item":"nails", "amount":1}]
+	StorageManager.items = {"nails":1}
+	_check(not ProductionManager.can_afford_upgrade(99), "Upgrade readiness must aggregate repeated BOM rows for the same product instead of checking each row independently.")
+	StorageManager.items = {"nails":2}
+	_check(ProductionManager.can_afford_upgrade(99), "Aggregated upgrade BOM must become ready when the full repeated-product quantity is physically stored.")
+	StorageManager.items = previous_inventory
+	if had_duplicate_fixture:
+		ProductionManager.upgrade_requirements[99] = previous_duplicate_fixture
+	else:
+		ProductionManager.upgrade_requirements.erase(99)
 
 
 func _test_production_store_catalog_integrity() -> void:
