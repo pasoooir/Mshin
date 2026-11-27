@@ -1017,7 +1017,21 @@ func _test_automatic_production_chain() -> void:
 	furniture_store.slot_count = 2
 	add_child(furniture_store)
 	StorageManager.from_save_dict({"capacity": 50, "items": {}})
-	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified.")
+	var chair_recipe_probe := ProductionManager.get_recipe("chair")
+	var chair_missing_probe: Array[String] = []
+	for chair_input_variant in chair_recipe_probe.get("inputs", {}).keys():
+		var chair_input_id := str(chair_input_variant)
+		var chair_missing_amount := maxi(0, int(chair_recipe_probe.inputs[chair_input_variant]) - StorageManager.get_count(chair_input_id))
+		if chair_missing_amount > 0 and not ProductionManager._can_resolve_automatic_chain_item(chair_input_id, chair_missing_amount, {"chair": true}, furniture_store):
+			chair_missing_probe.append(chair_input_id)
+	var chair_preflight_detail := "lock=%s; inputs_unlocked=%s; unresolved=%s; level=%d; suppliers=%d" % [
+		ProductionManager.get_recipe_lock_reason("chair", furniture_store.store_star_level),
+		str(ProductionManager.are_recipe_inputs_unlocked(chair_recipe_probe)),
+		",".join(chair_missing_probe),
+		GameManager.level,
+		get_tree().get_nodes_in_group("production_components").size()
+	]
+	_check(ProductionManager.request_automatic_chain(furniture_store, "chair", 0), "A nested Chair order must be accepted when its recipe and all dependency unlocks are verified. " + chair_preflight_detail)
 	var nested_chain_id := str(furniture_store.slots[0].get("auto_chain_id", ""))
 	for _step in range(40):
 		ProductionManager._process_automatic_chains()
