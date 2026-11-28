@@ -500,13 +500,14 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			break
 	if gateway_index < 0:
 		if not pending_roads.is_empty():
-			push_error("Saved region road network is missing its permanent highway gateway tile.")
+			_set_restore_error("[CityRestore] Road restore stopped: saved road list has %d entries but no permanent highway gateway at %s." % [pending_roads.size(), str(gateway_position)])
 			return false
 		if not road_system.restore_road(gateway_position):
+			_set_restore_error("[CityRestore] Road restore stopped: could not create the default gateway tile at %s." % str(gateway_position))
 			return false
 	else:
 		if not road_system.restore_road(gateway_position):
-			push_error("Saved region highway gateway could not be restored.")
+			_set_restore_error("[CityRestore] Road restore stopped: permanent highway gateway tile %s could not be restored." % str(gateway_position))
 			return false
 		pending_roads.remove_at(gateway_index)
 	while not pending_roads.is_empty():
@@ -514,8 +515,8 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 		for index in range(pending_roads.size() - 1, -1, -1):
 			var road: Variant = pending_roads[index]
 			if not (road is Array) or road.size() < 2:
-				pending_roads.remove_at(index)
-				continue
+				_set_restore_error("[CityRestore] Invalid road record at pending index %d: %s" % [index, str(road)])
+				return false
 			var road_position := Vector2i(int(road[0]), int(road[1]))
 			if road_system.has_road(road_position):
 				pending_roads.remove_at(index)
