@@ -5693,6 +5693,26 @@ func _run_gameplay_test() -> void:
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
 	GameManager.level = saved_level
+	# A saved building must restore even when its original population unlock is
+	# not yet reconstructed. New placement still obeys the population gate.
+	var restore_gate_level := GameManager.level
+	var restore_gate_population := GameManager.population
+	GameManager.level = 60
+	GameManager.population = 0
+	_check(not BuildManager.can_place_at(Vector2i(0, 1), "trade_depot"), "New Trade Depot placement must remain population-locked below 8,000 residents.")
+	_check(BuildManager.can_place_at(Vector2i(0, 1), "trade_depot", 0, true), "Saved Trade Depot must restore before city population is recalculated, without reapplying the original population unlock gate.")
+	var restore_gate_money := EconomyManager.simoleons
+	EconomyManager.simoleons = 0
+	var restored_trade_depot := BuildManager.place_building(Vector2i(8, 1), "trade_depot", 1, "completed", 0, true)
+	_check(restored_trade_depot, "Saved Trade Depot must restore even when the current Simoleon balance is below its original purchase price.")
+	if restored_trade_depot:
+		var restored_trade_depot_node := BuildManager.building_at_cell(Vector2i(8, 1))
+		if restored_trade_depot_node != null:
+			BuildManager.unregister_building(restored_trade_depot_node.building_id)
+			restored_trade_depot_node.queue_free()
+	EconomyManager.simoleons = restore_gate_money
+	GameManager.level = restore_gate_level
+	GameManager.population = restore_gate_population
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
 	_test_drag_gestures_do_not_place()
