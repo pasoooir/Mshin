@@ -4174,7 +4174,7 @@ func _test_residential_six_stage_visual_growth() -> void:
 		for visual in apartment.mesh_root.get_children():
 			if visual is MeshInstance3D and abs(abs(visual.position.x) - 3.4 * 0.435) < 0.02 and abs(visual.position.z) > 0.10:
 				apartment_side_windows += 1
-		_check(apartment_side_windows >= 8, "Apartment stage %d must retain complete side facades with windows." % stage)
+		_check(apartment_side_windows >= apartment_floors * 4, "Apartment stage %d must have four side-facade windows per floor (expected at least %d, found %d)." % [stage, apartment_floors * 4, apartment_side_windows])
 		var expected_apartment_floors := [1, 3, 5, 7, 9, 12]
 		_check(apartment_floors == int(expected_apartment_floors[stage - 1]), "Apartment stage %d must follow its designed %d-floor progression." % [stage, int(expected_apartment_floors[stage - 1])])
 		apartment.mesh_root.free()
