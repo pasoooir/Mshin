@@ -12,6 +12,7 @@ const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
 var is_loading: bool = false
+var last_restore_error: String = ""
 var persistence_ready: bool = false
 var _save_debounce_timer: Timer
 var _save_pending := false
@@ -462,14 +463,20 @@ func load_game() -> bool:
 	return true
 
 
+func _set_restore_error(message: String) -> void:
+	last_restore_error = message
+	push_error(message)
+
+
 func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool, land_expansion_data: Dictionary = {}) -> bool:
+	last_restore_error = ""
 	var scene = get_tree().current_scene
 	if scene == null:
-		push_error("[CityRestore] Aborted: current scene is null.")
+		_set_restore_error("[CityRestore] Aborted: current scene is null.")
 		return false
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
-		push_error("[CityRestore] Aborted: World/RoadSystem node is missing.")
+		_set_restore_error("[CityRestore] Aborted: World/RoadSystem node is missing.")
 		return false
 	print("[CityRestore] Begin: roads=%d buildings=%d level=%d save=%s" % [road_data.size(), building_data.size(), GameManager.level, get_active_save_path()])
 	LandExpansionManager.from_save_dict(land_expansion_data)
@@ -531,21 +538,21 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 					unresolved.append(str(Vector2i(int(pending[0]), int(pending[1]))))
 				else:
 					unresolved.append("invalid_record=" + str(pending))
-			push_error("[CityRestore] Road restore stopped: no remaining tile connects to the gateway. Unresolved road cells: %s" % ", ".join(unresolved))
+			_set_restore_error("[CityRestore] Road restore stopped: no remaining tile connects to the gateway. Unresolved road cells: %s" % ", ".join(unresolved))
 			return false
 	var restored_building_count := 0
 	for saved_index in range(building_data.size()):
 		var saved_building: Variant = building_data[saved_index]
 		if not (saved_building is Dictionary):
-			push_error("[CityRestore] Invalid building record at index %d: expected Dictionary, got %s. Record=%s" % [saved_index, type_string(typeof(saved_building)), str(saved_building)])
+			_set_restore_error("[CityRestore] Invalid building record at index %d: expected Dictionary, got %s. Record=%s" % [saved_index, type_string(typeof(saved_building)), str(saved_building)])
 			return false
 		var grid: Array = saved_building.get("grid", [])
 		var type_id := str(saved_building.get("type", ""))
 		if grid.size() != 2:
-			push_error("[CityRestore] Invalid grid for building record index %d type='%s': %s" % [saved_index, type_id, str(grid)])
+			_set_restore_error("[CityRestore] Invalid grid for building record index %d type='%s': %s" % [saved_index, type_id, str(grid)])
 			return false
 		if not BuildManager.building_types.has(type_id):
-			push_error("[CityRestore] Unknown building type at record index %d: '%s'. Save version/catalog mismatch." % [saved_index, type_id])
+			_set_restore_error("[CityRestore] Unknown building type at record index %d: '%s'. Save version/catalog mismatch." % [saved_index, type_id])
 			return false
 		var restored := BuildManager.place_building(
 			Vector2i(int(grid[0]), int(grid[1])),
@@ -561,7 +568,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			var block_reason := BuildManager.get_restore_placement_block_reason(failed_grid, type_id, failed_rotation)
 			var footprint_free := BuildManager.is_cell_free(failed_grid, BuildManager.get_building_size(type_id, failed_rotation), true)
 			var road_access := BuildManager.has_road_access(failed_grid, BuildManager.get_building_size(type_id, failed_rotation))
-			push_error(
+			_set_restore_error(
 				"[CityRestore] STOPPED at building index %d/%d: type='%s', grid=%s, stage=%d, status='%s', rotation=%d; reason=%s; footprint_free=%s; road_access=%s; level=%d; population=%d. Saved JSON remains untouched."
 				% [saved_index + 1, building_data.size(), type_id, str(failed_grid), int(saved_building.get("stage", 1)), str(saved_building.get("status", "constructing")), failed_rotation, block_reason, str(footprint_free), str(road_access), GameManager.level, GameManager.population]
 			)
