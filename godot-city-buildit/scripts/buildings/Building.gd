@@ -510,7 +510,13 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 		var window_y := 0.34 + (float(floor_index) + 0.55) * body_h / float(floors)
 		for column in range(columns):
 			var x_pos := -w * 0.29 + float(column) * (w * 0.58 / float(maxi(columns - 1, 1)))
-			_add_natural_window(Vector3(x_pos, window_y, d * 0.435), frame, glass)
+			if is_apartment:
+				# Apartment/tower floors must read as a complete 3D building, not a
+				# single decorated front plane. Give both front and rear real window bays.
+				_add_window(Vector3(x_pos, window_y, d * 0.435), frame, glass, false, false, 0.44, 0.48, 1.0)
+				_add_window(Vector3(x_pos, window_y, -d * 0.435), frame, glass, false, false, 0.44, 0.48, -1.0)
+			else:
+				_add_natural_window(Vector3(x_pos, window_y, d * 0.435), frame, glass)
 			if is_apartment and floor_index > 0:
 				# Small projecting sill/balcony rails make apartment floors read as occupied.
 				_add_box(Vector3(window_w * 1.45, 0.055, 0.18),
@@ -520,6 +526,15 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 				for rail_x in [-0.5, 0.5]:
 					_add_box(Vector3(0.035, 0.17, 0.035),
 						Vector3(x_pos + rail_x * window_w, window_y - 0.18, d * 0.545), frame)
+		if is_apartment:
+			# Two windows on each side wall per floor. The side-aware window helper
+			# rotates the frames so their glass and sills face outward from the mass.
+			for z_sign in [-1.0, 1.0]:
+				for side_column in [-1.0, 1.0]:
+					_add_window(
+						Vector3(z_sign * w * 0.435, window_y, side_column * d * 0.22),
+						frame, glass, false, true, 0.38, 0.48
+					)
 
 	# A real entrance composition: recessed dark door, surround, lintel, handle and two steps.
 	var door_w := 0.48
@@ -890,7 +905,8 @@ func _add_gabled_roof(w: float, d: float, base_y: float, rise: float, roof_col: 
 
 
 func _add_window(pos: Vector3, frame_col: Color, glass_col: Color, has_shutters: bool = false,
-		side: bool = false, window_w: float = 0.52, window_h: float = 0.52) -> void:
+		side: bool = false, window_w: float = 0.52, window_h: float = 0.52,
+		face_sign: float = 1.0) -> void:
 	var frame_depth := 0.075
 	var glass_depth := 0.035
 	var frame_size: Vector3
@@ -913,9 +929,9 @@ func _add_window(pos: Vector3, frame_col: Color, glass_col: Color, has_shutters:
 		glass_size = Vector3(window_w * 0.76, window_h * 0.76, glass_depth)
 		cross_size = Vector3(0.045, window_h * 0.76, glass_depth * 1.2)
 		sill_size = Vector3(window_w * 1.08, 0.07, 0.14)
-		glass_offset = Vector3(0, 0, 0.045)
-		cross_offset = Vector3(0, 0, 0.066)
-		sill_offset = Vector3(0, -window_h * 0.5 - 0.025, 0.075)
+		glass_offset = Vector3(0, 0, 0.045 * face_sign)
+		cross_offset = Vector3(0, 0, 0.066 * face_sign)
+		sill_offset = Vector3(0, -window_h * 0.5 - 0.025, 0.075 * face_sign)
 	_add_box(frame_size, pos, frame_col, "painted_metal")
 	_add_box(glass_size, pos + glass_offset, glass_col, "glass")
 	_add_box(cross_size, pos + cross_offset, frame_col.darkened(0.16), "painted_metal")
