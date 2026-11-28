@@ -426,12 +426,12 @@ func _create_visual() -> void:
 func _should_use_external_model(model_path: String) -> bool:
 	if model_path.is_empty():
 		return false
-	# Residential stage 1 may use its authored local model (except the
-	# hand-built starter-villa hero). Every upgrade from stage 2 onward must
-	# be generated from that stage's own procedural architecture. Reusing the
-	# imported base GLTF and layering details onto it preserves the old house
-	# silhouette and violates the replacement-building upgrade contract.
-	if str(definition.get("category", "")) == "residential" and upgrade_stage > 1:
+	# Preserve the tested imported residential models for the early
+	# low-rise stages. Rebuild only at the villa-to-tower transition and above,
+	# where the complete procedural tower replaces the entire previous shell.
+	# Forcing every upgraded home through the procedural path caused a broad
+	# WebGL visual regression across ordinary upgraded houses.
+	if str(definition.get("category", "")) == "residential" and upgrade_stage >= 4:
 		return false
 	var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1
 	return not is_starter_villa
