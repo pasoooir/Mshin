@@ -484,6 +484,13 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 	else:
 		body_h = minf(height, 1.85)
 
+	# High-rise stages are a complete replacement building, not a villa shell
+	# with tower details attached. Build a fresh podium, full-height envelope,
+	# four finished elevations and a flat roof, then add only tower-stage design.
+	if not is_farm and is_apartment and upgrade_stage >= 4:
+		_build_residential_tower(w, d, body_h, color, floors)
+		return
+
 	# Raised stone foundation and a projecting water-table course.
 	_add_box(Vector3(w * 0.98, 0.30, d * 0.98), Vector3(0, 0.15, 0), stone)
 	_add_box(Vector3(w * 1.01, 0.075, d * 1.01), Vector3(0, 0.31, 0), stone_cap)
@@ -605,6 +612,57 @@ func _build_residential(w: float, d: float, height: float, color: Color) -> void
 			w, d, body_h, plaster, plaster_light, stone_cap, roof_tile,
 			frame, glass, is_apartment, is_farm
 		)
+
+
+func _build_residential_tower(w: float, d: float, body_h: float, color: Color, floors: int) -> void:
+	var concrete := Color(0.78, 0.82, 0.82)
+	var concrete_light := Color(0.91, 0.93, 0.90)
+	var graphite := Color(0.16, 0.21, 0.25)
+	var frame := Color(0.72, 0.82, 0.84)
+	var glass := Color(0.16, 0.42, 0.58)
+	var accent := Color(0.12, 0.62, 0.66)
+	var stone := Color(0.43, 0.48, 0.51)
+	var front := d * 0.435
+	var side := w * 0.435
+	var floor_height := body_h / float(maxi(floors, 1))
+
+	# The tower is one clean structural volume on its own foundation.
+	_add_box(Vector3(w * 1.02, 0.30, d * 1.02), Vector3(0, 0.15, 0), stone)
+	_add_box(Vector3(w * 0.94, 0.22, d * 0.94), Vector3(0, 0.41, 0), accent)
+	_add_box(Vector3(w * 0.88, body_h, d * 0.86), Vector3(0, body_h * 0.5 + 0.52, 0), concrete)
+
+	# Repeated windows and floor bands wrap around every elevation.
+	for floor_index in range(floors):
+		var window_y := 0.52 + (float(floor_index) + 0.52) * floor_height
+		for column in range(3):
+			var x_pos := -w * 0.27 + float(column) * (w * 0.27)
+			if floor_index == 0 and column == 1:
+				continue # Reserve the central ground-floor entrance.
+			_add_window(Vector3(x_pos, window_y, front), frame, glass, false, false, 0.48, 0.62, 1.0)
+			_add_window(Vector3(x_pos, window_y, -front), frame, glass, false, false, 0.48, 0.62, -1.0)
+		for side_sign in [-1.0, 1.0]:
+			for side_column in [-1.0, 1.0]:
+				_add_window(Vector3(side_sign * side, window_y, side_column * d * 0.22),
+					frame, glass, false, true, 0.42, 0.62)
+		if floor_index > 0:
+			var band_y := 0.52 + float(floor_index) * floor_height
+			_add_box(Vector3(w * 0.94, 0.065, d * 0.92), Vector3(0, band_y, 0), graphite)
+
+	# Ground-floor entrance and accessible front steps are part of the new tower.
+	_add_box(Vector3(0.82, 1.42, 0.10), Vector3(0, 1.23, front + 0.035), concrete_light)
+	_add_box(Vector3(0.56, 1.12, 0.055), Vector3(0, 1.12, front + 0.095), graphite)
+	_add_box(Vector3(0.12, 0.12, 0.035), Vector3(0.18, 1.12, front + 0.13), Color(0.88, 0.72, 0.35))
+	_add_box(Vector3(1.05, 0.12, 0.48), Vector3(0, 0.40, front + 0.22), stone)
+	_add_box(Vector3(0.86, 0.10, 0.34), Vector3(0, 0.29, front + 0.52), concrete_light)
+
+	# Finished flat roof with a continuous parapet; no villa roof or old-house wing.
+	_add_box(Vector3(w * 0.94, 0.18, d * 0.92), Vector3(0, body_h + 0.62, 0), graphite)
+	_add_box(Vector3(w * 0.88, 0.12, d * 0.86), Vector3(0, body_h + 0.77, 0), concrete_light)
+	_add_box(Vector3(w * 0.90, 0.22, 0.10), Vector3(0, body_h + 0.90, front * 0.86), accent)
+	_build_residential_level_architecture(
+		w, d, body_h, concrete, concrete_light, stone,
+		Color(0.48, 0.22, 0.16), frame, glass, true, false
+	)
 
 
 func _build_residential_level_architecture(
@@ -2475,7 +2533,9 @@ func cancel_upgrade() -> bool:
 	_remove_residential_tower_crane()
 	_clear_scaffold_visuals()
 	if is_instance_valid(mesh_root) and str(definition.get("category", "")) == "residential":
+		# Cancellation restores the unchanged source stage from its saved state.
 		mesh_root.visible = true
+		_create_visual()
 	_check_upgrade_ready()
 	return true
 
@@ -2484,7 +2544,12 @@ func _start_residential_upgrade_animation() -> void:
 		return
 	_create_scaffold()
 	if str(definition.get("category", "")) == "residential" and is_instance_valid(mesh_root):
+		# Demolish the previous residential model at the start of the upgrade.
+		# The construction frame is a separate temporary root; it must never
+		# coexist visibly with the completed old home.
 		mesh_root.visible = false
+		for old_piece in mesh_root.get_children():
+			old_piece.queue_free()
 	_ensure_residential_construction_crane()
 	if is_instance_valid(_upgrade_tween) and _upgrade_tween.is_running():
 		_upgrade_tween.kill()
