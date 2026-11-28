@@ -8,7 +8,12 @@ func _restore_city() -> void:
 	var account_ready: bool = await PlayerAccountManager.bootstrap()
 	if account_ready and PlayerAccountManager.is_authenticated() and status:
 		status.text = "Welcome back, Mayor #%d" % PlayerAccountManager.player_id
-	SaveManager.load_game()
+	var had_saved_city := FileAccess.file_exists(SaveManager.get_active_save_path())
+	var city_restored := SaveManager.load_game()
+	if had_saved_city and not city_restored:
+		push_error("[GameBootstrap] Saved city restoration failed. The JSON save was not overwritten; inspect the preceding SaveManager/BuildManager error for the exact road or building that could not be restored.")
+		if status:
+			status.text = "City restore failed — saved city data is preserved. Please retry after the restore issue is fixed."
 	var road_system = get_node_or_null("World/RoadSystem")
 
 	# Keep the free starter road access, but never place a sample house.
