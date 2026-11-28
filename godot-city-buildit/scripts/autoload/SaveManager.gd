@@ -540,7 +540,15 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			true
 		)
 		if not restored:
-			push_error("Could not restore region building: " + type_id)
+			var failed_grid := Vector2i(int(grid[0]), int(grid[1]))
+			var failed_rotation := int(saved_building.get("rotation_quarters", 0))
+			var failed_size := BuildManager.get_building_size(type_id, failed_rotation)
+			var footprint_free := BuildManager.is_cell_free(failed_grid, failed_size, true)
+			var road_access := BuildManager.has_road_access(failed_grid, failed_size)
+			push_error(
+				"Could not restore region building '%s' at %s (stage %d, city level %d, population %d; footprint_free=%s, road_access=%s). Saved JSON remains untouched."
+				% [type_id, str(failed_grid), int(saved_building.get("stage", 1)), GameManager.level, GameManager.population, str(footprint_free), str(road_access)]
+			)
 			return false
 		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
 		if restored_building != null:
