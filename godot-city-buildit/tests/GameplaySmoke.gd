@@ -5693,6 +5693,16 @@ func _run_gameplay_test() -> void:
 	else:
 		_check(false, "HUD node is missing for building submenu tests.")
 	GameManager.level = saved_level
+	# A saved building must restore even when its original population unlock is
+	# not yet reconstructed. New placement still obeys the population gate.
+	var restore_gate_level := GameManager.level
+	var restore_gate_population := GameManager.population
+	GameManager.level = 60
+	GameManager.population = 0
+	_check(not BuildManager.can_place_at(Vector2i(0, 1), "trade_depot"), "New Trade Depot placement must remain population-locked below 8,000 residents.")
+	_check(BuildManager.can_place_at(Vector2i(0, 1), "trade_depot", 0, true), "Saved Trade Depot must restore before city population is recalculated, without reapplying the original population unlock gate.")
+	GameManager.level = restore_gate_level
+	GameManager.population = restore_gate_population
 	_check(not road_system.place_road(Vector2i(20, 20)), "Disconnected road was incorrectly accepted.")
 	_check(not BuildManager.can_place_at(Vector2i(20, 20), "residential_1"), "Building without road access was incorrectly accepted.")
 	_test_drag_gestures_do_not_place()
