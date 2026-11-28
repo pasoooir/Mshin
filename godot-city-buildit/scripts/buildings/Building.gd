@@ -670,17 +670,19 @@ func _build_residential_level_architecture(
 		if stage >= 3:
 			_add_box(Vector3(w * 0.34, 1.35, d * 0.70), Vector3(-w * 0.31, body_h + 0.68, 0), modern_white)
 			_add_box(Vector3(w * 0.38, 0.12, d * 0.74), Vector3(-w * 0.31, body_h + 1.38, 0), accent)
-			# One continuous reflective curtain-wall panel instead of dozens of panes.
-			_add_box(Vector3(w * 0.78, body_h * 0.90, 0.055),
-				Vector3(0, body_h * 0.52 + 0.34, front + 0.065), glass_blue, "glass")
-			for mullion in range(4):
-				var mullion_x := -w * 0.34 + float(mullion) * (w * 0.68 / 3.0)
-				_add_box(Vector3(0.045, body_h * 0.88, 0.075),
-					Vector3(mullion_x, body_h * 0.52 + 0.34, front + 0.105), frame, "painted_metal")
-			for floor_band in range(1, 4):
-				var band_y := 0.34 + body_h * float(floor_band) / 4.0
-				_add_box(Vector3(w * 0.82, 0.055, 0.075),
-					Vector3(0, band_y, front + 0.11), graphite, "painted_metal")
+			# Use discrete floor windows and continuous structural bands on all four
+			# elevations. A single glass sheet on the front made the tower read like
+			# a thin facade instead of a complete building volume.
+			for floor_band in range(1, maxi(2, _get_residential_stage_floor_count(stage, str(definition.get("subtype", "villa"))))):
+				var band_y := 0.34 + body_h * float(floor_band) / float(maxi(2, _get_residential_stage_floor_count(stage, str(definition.get("subtype", "villa")))))
+				_add_box(Vector3(w * 0.92, 0.055, 0.075),
+					Vector3(0, band_y, front + 0.055), graphite, "painted_metal")
+				_add_box(Vector3(w * 0.92, 0.055, 0.075),
+					Vector3(0, band_y, -front - 0.055), graphite, "painted_metal")
+				_add_box(Vector3(0.075, 0.055, d * 0.86),
+					Vector3(side + 0.055, band_y, 0), graphite, "painted_metal")
+				_add_box(Vector3(0.075, 0.055, d * 0.86),
+					Vector3(-side - 0.055, band_y, 0), graphite, "painted_metal")
 		if stage >= 4:
 			_add_box(Vector3(0.34, body_h * 0.72, 0.30), Vector3(side * 0.66, body_h * 0.52 + 0.34, front + 0.06), glass_blue, "glass")
 			_add_box(Vector3(w * 1.08, 0.16, d * 0.20), Vector3(0, body_h + 0.84, -d * 0.34), warm_wood)
