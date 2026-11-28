@@ -4161,7 +4161,7 @@ func _test_residential_six_stage_visual_growth() -> void:
 
 	# Apartment plots have their own early high-rise progression. Verify each
 	# generated stage has outward-facing side facade geometry on both sides.
-	for stage in range(2, 7):
+	for stage in range(1, 7):
 		var apartment := Building.new()
 		apartment.building_type = "residential_apartment"
 		apartment.definition = {"category": "residential", "subtype": "apartment"}
@@ -4175,8 +4175,24 @@ func _test_residential_six_stage_visual_growth() -> void:
 			if visual is MeshInstance3D and abs(abs(visual.position.x) - 3.4 * 0.435) < 0.02 and abs(visual.position.z) > 0.10:
 				apartment_side_windows += 1
 		_check(apartment_side_windows >= 8, "Apartment stage %d must retain complete side facades with windows." % stage)
+		var expected_apartment_floors := [1, 3, 5, 7, 9, 12]
+		_check(apartment_floors == int(expected_apartment_floors[stage - 1]), "Apartment stage %d must follow its designed %d-floor progression." % [stage, int(expected_apartment_floors[stage - 1])])
 		apartment.mesh_root.free()
 		apartment.free()
+
+	# Farms deliberately remain low-rise rural properties and must never be
+	# swept into the villa-to-tower conversion at any residential upgrade stage.
+	for stage in range(1, 7):
+		var farm := Building.new()
+		farm.building_type = "residential_farm"
+		farm.definition = {"category": "residential", "subtype": "farm"}
+		farm.upgrade_stage = stage
+		farm.mesh_root = Node3D.new()
+		farm._build_residential(3.4, 3.4, 2.05 + float(stage - 1) * 0.32, Color(0.72, 0.66, 0.54))
+		_check(farm._get_residential_stage_floor_count(stage, "farm") == 1, "Farm stage %d must retain its single-storey rural profile." % stage)
+		_check(farm.mesh_root.get_child_count() >= 5, "Farm stage %d must generate its own complete rural building geometry." % stage)
+		farm.mesh_root.free()
+		farm.free()
 
 
 func _test_regional_building_and_material_gates() -> void:
