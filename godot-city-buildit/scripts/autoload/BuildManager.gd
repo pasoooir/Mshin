@@ -720,7 +720,10 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 		return false
 	var definition: Dictionary = building_types[chosen]
 	var cost: int = int(definition.get("cost", 0))
-	if cost > 0 and not EconomyManager.can_afford(cost):
+	# The saved building's purchase was already paid when it was first
+	# placed. Do not reject restoration because the player's current balance
+	# is lower than the original catalog price.
+	if not allow_reserved_restore and cost > 0 and not EconomyManager.can_afford(cost):
 		return false
 	var scene = get_tree().current_scene
 	var world = scene.get_node_or_null("World/Buildings") if scene else null
