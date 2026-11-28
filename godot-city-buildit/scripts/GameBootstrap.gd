@@ -10,10 +10,11 @@ func _restore_city() -> void:
 		status.text = "Welcome back, Mayor #%d" % PlayerAccountManager.player_id
 	var had_saved_city := FileAccess.file_exists(SaveManager.get_active_save_path())
 	var city_restored := SaveManager.load_game()
-	if had_saved_city and not city_restored:
+	var city_restore_failed := had_saved_city and not city_restored
+	if city_restore_failed:
 		push_error("[GameBootstrap] Saved city restoration failed. The JSON save was not overwritten; inspect the preceding SaveManager/BuildManager error for the exact road or building that could not be restored.")
 		if status:
-			status.text = "City restore failed — saved city data is preserved. Please retry after the restore issue is fixed."
+			status.text = SaveManager.last_restore_error if not SaveManager.last_restore_error.is_empty() else "City restore failed. Saved city data is preserved."
 	var road_system = get_node_or_null("World/RoadSystem")
 
 	# Keep the free starter road access, but never place a sample house.
@@ -35,5 +36,5 @@ func _restore_city() -> void:
 	SaveManager.persistence_ready = true
 	var tutorial_guide = get_tree().current_scene.get_node_or_null("TutorialGuide") if get_tree().current_scene else null
 	var tutorial_is_active := is_instance_valid(tutorial_guide) and bool(tutorial_guide.get("tutorial_enabled")) and not bool(tutorial_guide.get("completed"))
-	if status and not account_ready and not tutorial_is_active:
+	if status and not city_restore_failed and not account_ready and not tutorial_is_active:
 		status.text = "Your city is ready. Select Residential and place your first house beside a road."

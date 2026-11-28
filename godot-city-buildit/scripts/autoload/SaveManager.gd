@@ -12,6 +12,7 @@ const AUTOSAVE_INTERVAL: float = 30.0
 
 var autosave_elapsed: float = 0.0
 var is_loading: bool = false
+var last_restore_error: String = ""
 var persistence_ready: bool = false
 var _save_debounce_timer: Timer
 var _save_pending := false
@@ -462,13 +463,22 @@ func load_game() -> bool:
 	return true
 
 
+func _set_restore_error(message: String) -> void:
+	last_restore_error = message
+	push_error(message)
+
+
 func _restore_region_world(road_data: Array, building_data: Array, epic_data: Dictionary, _allow_empty_region: bool, land_expansion_data: Dictionary = {}) -> bool:
+	last_restore_error = ""
 	var scene = get_tree().current_scene
 	if scene == null:
+		_set_restore_error("[CityRestore] Aborted: current scene is null.")
 		return false
 	var road_system = scene.get_node_or_null("World/RoadSystem")
 	if road_system == null:
+		_set_restore_error("[CityRestore] Aborted: World/RoadSystem node is missing.")
 		return false
+	print("[CityRestore] Begin: roads=%d buildings=%d level=%d save=%s" % [road_data.size(), building_data.size(), GameManager.level, get_active_save_path()])
 	LandExpansionManager.from_save_dict(land_expansion_data)
 	if land_expansion_data.is_empty():
 		LandExpansionManager.migrate_legacy_land(road_data, building_data)
@@ -490,13 +500,14 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			break
 	if gateway_index < 0:
 		if not pending_roads.is_empty():
-			push_error("Saved region road network is missing its permanent highway gateway tile.")
+			_set_restore_error("[CityRestore] Road restore stopped: saved road list has %d entries but no permanent highway gateway at %s." % [pending_roads.size(), str(gateway_position)])
 			return false
 		if not road_system.restore_road(gateway_position):
+			_set_restore_error("[CityRestore] Road restore stopped: could not create the default gateway tile at %s." % str(gateway_position))
 			return false
 	else:
 		if not road_system.restore_road(gateway_position):
-			push_error("Saved region highway gateway could not be restored.")
+			_set_restore_error("[CityRestore] Road restore stopped: permanent highway gateway tile %s could not be restored." % str(gateway_position))
 			return false
 		pending_roads.remove_at(gateway_index)
 	while not pending_roads.is_empty():
@@ -504,8 +515,8 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 		for index in range(pending_roads.size() - 1, -1, -1):
 			var road: Variant = pending_roads[index]
 			if not (road is Array) or road.size() < 2:
-				pending_roads.remove_at(index)
-				continue
+				_set_restore_error("[CityRestore] Invalid road record at pending index %d: %s" % [index, str(road)])
+				return false
 			var road_position := Vector2i(int(road[0]), int(road[1]))
 			if road_system.has_road(road_position):
 				pending_roads.remove_at(index)
@@ -522,15 +533,28 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 				pending_roads.remove_at(index)
 				placed_road_this_pass = true
 		if not placed_road_this_pass:
-			push_error("Saved region road network contains disconnected or invalid tiles.")
+			var unresolved: Array[String] = []
+			for pending in pending_roads:
+				if pending is Array and pending.size() >= 2:
+					unresolved.append(str(Vector2i(int(pending[0]), int(pending[1]))))
+				else:
+					unresolved.append("invalid_record=" + str(pending))
+			_set_restore_error("[CityRestore] Road restore stopped: no remaining tile connects to the gateway. Unresolved road cells: %s" % ", ".join(unresolved))
 			return false
-	for saved_building in building_data:
+	var restored_building_count := 0
+	for saved_index in range(building_data.size()):
+		var saved_building: Variant = building_data[saved_index]
 		if not (saved_building is Dictionary):
-			continue
+			_set_restore_error("[CityRestore] Invalid building record at index %d: expected Dictionary, got %s. Record=%s" % [saved_index, type_string(typeof(saved_building)), str(saved_building)])
+			return false
 		var grid: Array = saved_building.get("grid", [])
 		var type_id := str(saved_building.get("type", ""))
-		if grid.size() != 2 or not BuildManager.building_types.has(type_id):
-			continue
+		if grid.size() != 2:
+			_set_restore_error("[CityRestore] Invalid grid for building record index %d type='%s': %s" % [saved_index, type_id, str(grid)])
+			return false
+		if not BuildManager.building_types.has(type_id):
+			_set_restore_error("[CityRestore] Unknown building type at record index %d: '%s'. Save version/catalog mismatch." % [saved_index, type_id])
+			return false
 		var restored := BuildManager.place_building(
 			Vector2i(int(grid[0]), int(grid[1])),
 			type_id,
@@ -542,14 +566,15 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 		if not restored:
 			var failed_grid := Vector2i(int(grid[0]), int(grid[1]))
 			var failed_rotation := int(saved_building.get("rotation_quarters", 0))
-			var failed_size := BuildManager.get_building_size(type_id, failed_rotation)
-			var footprint_free := BuildManager.is_cell_free(failed_grid, failed_size, true)
-			var road_access := BuildManager.has_road_access(failed_grid, failed_size)
-			push_error(
-				"Could not restore region building '%s' at %s (stage %d, city level %d, population %d; footprint_free=%s, road_access=%s). Saved JSON remains untouched."
-				% [type_id, str(failed_grid), int(saved_building.get("stage", 1)), GameManager.level, GameManager.population, str(footprint_free), str(road_access)]
+			var block_reason := BuildManager.get_restore_placement_block_reason(failed_grid, type_id, failed_rotation)
+			var footprint_free := BuildManager.is_cell_free(failed_grid, BuildManager.get_building_size(type_id, failed_rotation), true)
+			var road_access := BuildManager.has_road_access(failed_grid, BuildManager.get_building_size(type_id, failed_rotation))
+			_set_restore_error(
+				"[CityRestore] STOPPED at building index %d/%d: type='%s', grid=%s, stage=%d, status='%s', rotation=%d; reason=%s; footprint_free=%s; road_access=%s; level=%d; population=%d. Saved JSON remains untouched."
+				% [saved_index + 1, building_data.size(), type_id, str(failed_grid), int(saved_building.get("stage", 1)), str(saved_building.get("status", "constructing")), failed_rotation, block_reason, str(footprint_free), str(road_access), GameManager.level, GameManager.population]
 			)
 			return false
+		restored_building_count += 1
 		var restored_building = BuildManager.building_at_cell(Vector2i(int(grid[0]), int(grid[1])))
 		if restored_building != null:
 			restored_building.restore_production_state(saved_building.get("production", {}))
@@ -563,6 +588,7 @@ func _restore_region_world(road_data: Array, building_data: Array, epic_data: Di
 			if restored_building.status == "completed":
 				restored_building.set_meta("immigration_population_initialized", true)
 	EpicProjectManager.from_save_dict(epic_data)
+	print("[CityRestore] Completed: restored_buildings=%d/%d roads=%d" % [restored_building_count, building_data.size(), road_system.roads.size()])
 	return true
 
 func load_region_snapshot(snapshot: Dictionary) -> bool:
