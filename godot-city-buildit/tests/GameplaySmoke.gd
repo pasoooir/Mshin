@@ -4118,6 +4118,8 @@ func _test_residential_construction_progress_math() -> void:
 	_check(is_equal_approx(probe._get_residential_construction_progress(105), 0.5), "Initial residential construction must use the same timestamp-based visual progress calculation.")
 	var source := FileAccess.get_file_as_string("res://scripts/buildings/Building.gd")
 	_check(source.contains("func _create_residential_progress_frame") and source.contains("ConstructionFloor_") and source.contains("TowerCraneHoistLoad") and source.contains("TowerCraneHoistCable") and source.contains("ResidentialMobileCrane") and source.contains("ResidentialTowerCrane"), "Residential construction must build staged floor frames and animate a visible crane hoist load.")
+	_check(source.contains("mesh_root.visible = false") and source.contains("old_piece.queue_free()"), "Starting a residential upgrade must hide and remove every mesh from the previous completed home before scaffold construction.")
+	_check(source.contains("func _build_residential_tower(") and source.contains("_build_residential_tower(w, d, body_h, color, floors)"), "Villa stages 4–6 and high-rise apartment stages must use a dedicated replacement tower body, not the low-rise villa shell.")
 	probe.free()
 
 
@@ -4146,6 +4148,18 @@ func _test_residential_six_stage_visual_growth() -> void:
 		if stage > 1:
 			_check(visual_height > measured_heights[stage - 2] + 0.20, "Ordinary villa stage %d must be visibly taller than stage %d (%.2fm <= %.2fm)." % [stage, stage - 1, visual_height, measured_heights[stage - 2]])
 		if stage >= 4:
+			var rotated_roof_panels := 0
+			for visual in probe.mesh_root.get_children():
+				if visual is MeshInstance3D and (abs(visual.rotation.x) > 0.001 or abs(visual.rotation.z) > 0.001):
+					rotated_roof_panels += 1
+			_check(rotated_roof_panels == 0, "Villa tower stage %d must not retain pitched villa roof panels." % stage)
+			var tower_body_found := false
+			for visual in probe.mesh_root.get_children():
+				if visual is MeshInstance3D and visual.mesh is BoxMesh:
+					var box := visual.mesh as BoxMesh
+					if is_equal_approx(box.size.x, 3.4 * 0.88) and is_equal_approx(box.size.z, 3.4 * 0.86):
+						tower_body_found = true
+			_check(tower_body_found, "Villa tower stage %d must have its own full-height structural body." % stage)
 			var side_window_frames := 0
 			for visual in probe.mesh_root.get_children():
 				if visual is MeshInstance3D and abs(abs(visual.position.x) - 3.4 * 0.435) < 0.02 and abs(visual.position.z) > 0.10:
