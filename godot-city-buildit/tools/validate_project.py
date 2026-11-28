@@ -820,7 +820,7 @@ for level_contract in [
     'func _build_residential_level_architecture(',
     'var is_starter_villa := (building_type == "residential_1" or building_type == "residential_villa") and upgrade_stage == 1',
     'if category == "residential" and upgrade_stage > 1:',
-    'if str(definition.get("category", "")) == "residential" and upgrade_stage > 1:',
+    'if str(definition.get("category", "")) == "residential" and upgrade_stage >= 4:',
     'return false',
     'return not is_starter_villa',
     'elif category == "commercial" and not model_path.ends_with(".tscn"):',
