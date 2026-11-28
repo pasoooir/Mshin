@@ -4074,8 +4074,18 @@ func _test_building_model_loader_contract() -> void:
 	villa_visual_probe.upgrade_stage = 1
 	_check(not villa_visual_probe._should_use_external_model(model_paths[0]), "Level-one starter villa must retain its bespoke hero visual.")
 	villa_visual_probe.upgrade_stage = 2
-	_check(villa_visual_probe._should_use_external_model(model_paths[0]), "Upgraded villa must be able to use the local GLTF model.")
+	_check(not villa_visual_probe._should_use_external_model(model_paths[0]), "Villa stage 2 must build a new procedural house instead of retaining the imported stage-1 shell.")
+	for stage in range(3, 7):
+		villa_visual_probe.upgrade_stage = stage
+		_check(not villa_visual_probe._should_use_external_model(model_paths[0]), "Villa stage %d must be a complete independent model, including the tower conversion." % stage)
 	villa_visual_probe.free()
+	var apartment_visual_probe := Building.new()
+	apartment_visual_probe.building_type = "residential_apartment"
+	apartment_visual_probe.definition = {"category": "residential", "subtype": "apartment"}
+	for stage in range(2, 7):
+		apartment_visual_probe.upgrade_stage = stage
+		_check(not apartment_visual_probe._should_use_external_model(model_paths[0]), "Apartment stage %d must use its own complete procedural architecture rather than layering onto a shared imported base." % stage)
+	apartment_visual_probe.free()
 	var roof_villa_probe := Building.new()
 	roof_villa_probe.building_type = "la_roof_garden_villa"
 	roof_villa_probe.definition = {"category": "residential", "subtype": "villa"}
