@@ -38,3 +38,43 @@ func _restore_city() -> void:
 	var tutorial_is_active := is_instance_valid(tutorial_guide) and bool(tutorial_guide.get("tutorial_enabled")) and not bool(tutorial_guide.get("completed"))
 	if status and not city_restore_failed and not account_ready and not tutorial_is_active:
 		status.text = "Your city is ready. Select Residential and place your first house beside a road."
+	call_deferred("_show_world_render_diagnostics")
+
+
+func _show_world_render_diagnostics() -> void:
+	var world := get_node_or_null("World")
+	var presentation := world.get_node_or_null("WorldPresentation") if world != null else null
+	var terrain := presentation.get_node_or_null("NaturalTerrain") as MeshInstance3D if presentation != null else null
+	var terrain_surfaces := terrain.mesh.get_surface_count() if is_instance_valid(terrain) and terrain.mesh != null else 0
+	var world_mesh_count := 0
+	var visible_mesh_count := 0
+	if world != null:
+		for node in world.find_children("*", "MeshInstance3D", true, false):
+			world_mesh_count += 1
+			var mesh_node := node as MeshInstance3D
+			if mesh_node.is_visible_in_tree() and mesh_node.mesh != null and mesh_node.mesh.get_surface_count() > 0:
+				visible_mesh_count += 1
+	var building_count := 0
+	for building in BuildManager.buildings.values():
+		if is_instance_valid(building):
+			building_count += 1
+	var road_count := 0
+	var road_system := world.get_node_or_null("RoadSystem") if world != null else null
+	if road_system != null and road_system.get("roads") is Dictionary:
+		road_count = road_system.roads.size()
+	var camera_rig := get_node_or_null("CameraRig") as Node3D
+	var camera := camera_rig.get_node_or_null("Camera3D") as Camera3D if camera_rig != null else null
+	var camera_info := "missing"
+	if camera_rig != null and camera != null:
+		camera_info = "rig=(%.1f,%.1f,%.1f) rotation=(%.1f,%.1f,%.1f) current=%s mask=%d" % [camera_rig.global_position.x, camera_rig.global_position.y, camera_rig.global_position.z, camera_rig.rotation_degrees.x, camera_rig.rotation_degrees.y, camera_rig.rotation_degrees.z, str(camera.current), camera.cull_mask]
+	var terrain_state := "missing"
+	if is_instance_valid(terrain):
+		terrain_state = "visible=%s surfaces=%d mesh=%s" % [str(terrain.is_visible_in_tree()), terrain_surfaces, terrain.mesh.get_class() if terrain.mesh != null else "null"]
+	var diagnostic := "[WorldRender] terrain=%s; meshes=%d/%d; buildings=%d roads=%d; camera=%s" % [terrain_state, visible_mesh_count, world_mesh_count, building_count, road_count, camera_info]
+	print(diagnostic)
+	var status := get_node_or_null("HUD/StatusLabel")
+	if status != null:
+		status.text = "WORLD: terrain=%s | meshes %d/%d | buildings %d | roads %d | camera %s" % [terrain_state, visible_mesh_count, world_mesh_count, building_count, road_count, camera_info]
+		status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		status.offset_top = -154.0
+		status.offset_bottom = -104.0
