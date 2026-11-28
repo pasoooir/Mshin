@@ -4145,6 +4145,12 @@ func _test_residential_six_stage_visual_growth() -> void:
 		_check(visual_height > 0.0, "Ordinary villa stage %d must generate measurable 3D geometry." % stage)
 		if stage > 1:
 			_check(visual_height > measured_heights[stage - 2] + 0.20, "Ordinary villa stage %d must be visibly taller than stage %d (%.2fm <= %.2fm)." % [stage, stage - 1, visual_height, measured_heights[stage - 2]])
+		if stage >= 4:
+			var side_window_frames := 0
+			for visual in probe.mesh_root.get_children():
+				if visual is MeshInstance3D and abs(abs(visual.position.x) - 3.4 * 0.435) < 0.02 and abs(visual.position.z) > 0.10:
+					side_window_frames += 1
+			_check(side_window_frames >= 8, "Villa tower stage %d must have window frames on both side facades, not only one decorated wall." % stage)
 		if stage == 6:
 			_check(probe.mesh_root.get_child_count() >= 7, "Stage 6 villa must include the Manhattan crown geometry.")
 			var crown_cap := probe.mesh_root.get_child(probe.mesh_root.get_child_count() - 1) as MeshInstance3D
@@ -4152,6 +4158,25 @@ func _test_residential_six_stage_visual_growth() -> void:
 			_check(crown_box != null and is_equal_approx(crown_box.size.y, 0.10), "Stage 6 villa must end with the Art Deco crown's narrow cap detail.")
 		probe.mesh_root.free()
 		probe.free()
+
+	# Apartment plots have their own early high-rise progression. Verify each
+	# generated stage has outward-facing side facade geometry on both sides.
+	for stage in range(2, 7):
+		var apartment := Building.new()
+		apartment.building_type = "residential_apartment"
+		apartment.definition = {"category": "residential", "subtype": "apartment"}
+		apartment.upgrade_stage = stage
+		apartment.mesh_root = Node3D.new()
+		var apartment_floors := apartment._get_residential_stage_floor_count(stage, "apartment")
+		var apartment_height := maxf(2.05, float(apartment_floors) * 1.35)
+		apartment._build_residential(3.4, 3.4, apartment_height, Color(0.72, 0.66, 0.54))
+		var apartment_side_windows := 0
+		for visual in apartment.mesh_root.get_children():
+			if visual is MeshInstance3D and abs(abs(visual.position.x) - 3.4 * 0.435) < 0.02 and abs(visual.position.z) > 0.10:
+				apartment_side_windows += 1
+		_check(apartment_side_windows >= 8, "Apartment stage %d must retain complete side facades with windows." % stage)
+		apartment.mesh_root.free()
+		apartment.free()
 
 
 func _test_regional_building_and_material_gates() -> void:
