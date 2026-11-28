@@ -70,8 +70,11 @@ func _show_world_render_diagnostics() -> void:
 	var terrain_state := "missing"
 	if is_instance_valid(terrain):
 		terrain_state = "visible=%s surfaces=%d mesh=%s" % [str(terrain.is_visible_in_tree()), terrain_surfaces, terrain.mesh.get_class() if terrain.mesh != null else "null"]
-	var diagnostic := "[WorldRender] terrain=%s; world_meshes=%d visible_meshes=%d; buildings=%d roads=%d; camera=%s" % [terrain_state, world_mesh_count, visible_mesh_count, building_count, road_count, camera_info]
+	var diagnostic := "[WorldRender] terrain=%s; meshes=%d/%d; buildings=%d roads=%d; camera=%s" % [terrain_state, visible_mesh_count, world_mesh_count, building_count, road_count, camera_info]
 	print(diagnostic)
 	var status := get_node_or_null("HUD/StatusLabel")
 	if status != null:
-		status.text = diagnostic
+		status.text = "WORLD: terrain=%s | meshes %d/%d | buildings %d | roads %d | camera %s" % [terrain_state, visible_mesh_count, world_mesh_count, building_count, road_count, camera_info]
+		status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		status.offset_top = -154.0
+		status.offset_bottom = -104.0
