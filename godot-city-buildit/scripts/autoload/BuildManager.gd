@@ -594,19 +594,25 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 	if chosen == "" or not building_types.has(chosen):
 		return false
 	var definition: Dictionary = building_types[chosen]
-	if int(definition.get("level", 1)) > GameManager.level:
-		return false
-	if get_region_build_lock_reason(chosen) != "":
-		return false
-	if get_population_build_lock_reason(chosen) != "":
-		return false
-	# Factory gates are checked before affordability and physical placement.
-	if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(chosen) != "":
-		return false
-	if not EconomyManager.can_afford(int(definition.get("cost", 0))):
-		return false
-	if not allow_reserved_restore and not get_construction_bom_lock_reason(chosen).is_empty():
-		return false
+	# Restoring a saved city is not a new placement action. Progression,
+	# region, population, factory and affordability gates were already satisfied
+	# when the building was originally placed; rechecking them against partially
+	# restored city totals (especially population, which is rebuilt afterwards)
+	# can reject the first saved building and leave the city empty.
+	if not allow_reserved_restore:
+		if int(definition.get("level", 1)) > GameManager.level:
+			return false
+		if get_region_build_lock_reason(chosen) != "":
+			return false
+		if get_population_build_lock_reason(chosen) != "":
+			return false
+		# Factory gates are checked before affordability and physical placement.
+		if definition.get("category", "") == "industrial" and get_factory_build_lock_reason(chosen) != "":
+			return false
+		if not EconomyManager.can_afford(int(definition.get("cost", 0))):
+			return false
+		if not get_construction_bom_lock_reason(chosen).is_empty():
+			return false
 	var applied_rotation := rotation_quarters
 	if applied_rotation < 0:
 		applied_rotation = placement_rotation_quarters if chosen == selected_building_type else 0
@@ -732,14 +738,14 @@ func place_building(grid_pos: Vector2i, type_id: String = "", saved_stage: int =
 			building_node.free()
 			return false
 		construction_cost_batches = construction_removal.get("cost_batches", {}).duplicate(true)
-	if cost > 0 and not EconomyManager.spend_simoleons(cost):
+	if not allow_reserved_restore and cost > 0 and not EconomyManager.spend_simoleons(cost):
 		if not construction_bom.is_empty():
 			StorageManager.restore_items_with_cost_batches(construction_bom, construction_cost_batches)
 		building_node.free()
 		return false
 	building_node.construction_reserved_bom = construction_bom.duplicate(true)
 	building_node.construction_reserved_cost_batches = construction_cost_batches.duplicate(true)
-	building_node.construction_reserved_simoleons = cost
+	building_node.construction_reserved_simoleons = cost if not allow_reserved_restore else 0
 	var building_id: String = "b_%d_%d" % [Time.get_ticks_msec(), buildings.size()]
 	var data: Dictionary = {
 		"id": building_id,
