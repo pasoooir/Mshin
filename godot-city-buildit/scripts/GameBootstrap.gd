@@ -14,7 +14,7 @@ func _restore_city() -> void:
 	if city_restore_failed:
 		push_error("[GameBootstrap] Saved city restoration failed. The JSON save was not overwritten; inspect the preceding SaveManager/BuildManager error for the exact road or building that could not be restored.")
 		if status:
-			status.text = "City restore failed — saved city data is preserved. Please retry after the restore issue is fixed."
+			status.text = SaveManager.last_restore_error if not SaveManager.last_restore_error.is_empty() else "City restore failed. Saved city data is preserved."
 	var road_system = get_node_or_null("World/RoadSystem")
 
 	# Keep the free starter road access, but never place a sample house.
