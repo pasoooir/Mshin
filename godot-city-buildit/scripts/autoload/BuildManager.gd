@@ -621,6 +621,27 @@ func can_place_at(grid_pos: Vector2i, type_id: String = "", rotation_quarters: i
 		return false
 	return true
 
+func get_restore_placement_block_reason(grid_pos: Vector2i, type_id: String, rotation_quarters: int = 0) -> String:
+	if type_id.is_empty() or not building_types.has(type_id):
+		return "unknown building type '%s'" % type_id
+	var size := get_building_size(type_id, rotation_quarters)
+	if not is_inside_world(grid_pos, size):
+		return "footprint %s size %s is outside world bounds" % [str(grid_pos), str(size)]
+	var scene = get_tree().current_scene
+	var road_system = scene.get_node_or_null("World/RoadSystem") if scene else null
+	for cell in get_footprint_cells(grid_pos, size):
+		if not LandExpansionManager.is_cell_unlocked(cell):
+			return "footprint cell %s is locked land" % str(cell)
+		if road_system != null and road_system.has_road(cell):
+			return "footprint cell %s is occupied by a road" % str(cell)
+		if building_cells.has(cell):
+			var occupant = building_cells[cell]
+			if is_instance_valid(occupant):
+				return "footprint cell %s is occupied by building '%s'" % [str(cell), str(occupant.building_type)]
+	if not has_road_access(grid_pos, size):
+		return "no gateway-connected road adjacent to footprint %s size %s" % [str(grid_pos), str(size)]
+	return ""
+
 func can_move_to(grid_pos: Vector2i) -> bool:
 	if not is_moving or not is_instance_valid(moving_building):
 		return false
